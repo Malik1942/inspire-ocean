@@ -23,6 +23,7 @@ struct CaptureView: View {
     @State private var lastRecordedFile: String?
 
     @State private var confirmation: String?
+    @State private var showFastCaptureSettings = false
     @FocusState private var textFocused: Bool
 
     var body: some View {
@@ -37,7 +38,20 @@ struct CaptureView: View {
             }
             .navigationTitle("Capture")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showFastCaptureSettings = true
+                    } label: {
+                        Image(systemName: "bolt.circle")
+                    }
+                    .accessibilityLabel("Fast Capture settings")
+                }
+            }
             .toolbarBackground(.hidden, for: .navigationBar)
+            .sheet(isPresented: $showFastCaptureSettings) {
+                FastCaptureSettingsView()
+            }
             .onChange(of: photoItem) { _, newItem in
                 Task {
                     if let data = try? await newItem?.loadTransferable(type: Data.self) {

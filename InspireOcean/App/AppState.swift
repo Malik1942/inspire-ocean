@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 import Observation
 
@@ -13,6 +14,7 @@ enum OceanTab: Hashable {
 @Observable
 final class AppState {
     var selectedTab: OceanTab = .ocean
+    var fastCaptureRequest: FastCaptureRequest?
 
     /// A prompt queued for the Ask tab, consumed when Ask appears.
     var pendingAskPrompt: String?
@@ -32,5 +34,23 @@ final class AppState {
     func ask(_ prompt: String) {
         pendingAskPrompt = prompt
         selectedTab = .ask
+    }
+
+    func startFastCapture(
+        source: FastCaptureLaunchSource = .inApp,
+        imageData: Data? = nil,
+        seedText: String = ""
+    ) {
+        fastCaptureRequest = FastCaptureRequest(
+            source: source,
+            inputPreference: FastCapturePreferences.inputPreference,
+            imageData: imageData,
+            seedText: seedText
+        )
+    }
+
+    func consumePendingFastCapture() {
+        guard let request = FastCaptureLaunchStore.consumePendingRequest() else { return }
+        fastCaptureRequest = request
     }
 }

@@ -90,6 +90,68 @@ struct SaveToOceanIntent: AppIntent {
     }
 }
 
+/// Opens the app straight into the low-friction Fast Capture overlay. This is
+/// the intent users assign to the Action Button through Shortcuts.
+struct StartFastCaptureIntent: AppIntent {
+    static let title: LocalizedStringResource = "Start Fast Capture"
+    static let description = IntentDescription(
+        "Open Inspire Ocean in a lightweight capture state.",
+        categoryName: "Fast Capture"
+    )
+    static let openAppWhenRun = true
+
+    @Parameter(title: "Opening Thought", default: "")
+    var note: String
+
+    static var parameterSummary: some ParameterSummary {
+        Summary("Start Fast Capture") {
+            \.$note
+        }
+    }
+
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        FastCaptureLaunchStore.stagePendingRequest(
+            source: configuredTriggerSource,
+            seedText: note
+        )
+        return .result(dialog: "Fast Capture is ready.")
+    }
+}
+
+/// Receives a screenshot from a Shortcut before opening Fast Capture. The
+/// screenshot action itself must live in Shortcuts; iOS does not let a normal
+/// app silently capture another app's screen.
+struct StartContextCaptureIntent: AppIntent {
+    static let title: LocalizedStringResource = "Start Context Capture"
+    static let description = IntentDescription(
+        "Open Fast Capture with the current screenshot attached.",
+        categoryName: "Fast Capture"
+    )
+    static let openAppWhenRun = true
+
+    @Parameter(title: "Screenshot", supportedContentTypes: [.image])
+    var screenshot: IntentFile
+
+    @Parameter(title: "Opening Thought", default: "")
+    var note: String
+
+    static var parameterSummary: some ParameterSummary {
+        Summary("Start Context Capture with \(\.$screenshot)") {
+            \.$note
+        }
+    }
+
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        let imageData = FastCapturePreferences.autoScreenshotEnabled ? screenshot.data : nil
+        FastCaptureLaunchStore.stagePendingRequest(
+            source: configuredTriggerSource,
+            imageData: imageData,
+            seedText: note
+        )
+        return .result(dialog: "Fast Capture is ready.")
+    }
+}
+
 /// Registers spoken phrases so the intents work with Siri out of the box (no
 /// manual Shortcut setup required).
 struct OceanAppShortcuts: AppShortcutsProvider {
@@ -114,5 +176,31 @@ struct OceanAppShortcuts: AppShortcutsProvider {
             shortTitle: "Save to Ocean",
             systemImageName: "photo.on.rectangle.angled"
         )
+        AppShortcut(
+            intent: StartFastCaptureIntent(),
+            phrases: [
+                "Start Fast Capture in \(.applicationName)",
+                "Fast Capture in \(.applicationName)",
+                "Catch this in \(.applicationName)"
+            ],
+            shortTitle: "Fast Capture",
+            systemImageName: "bolt.circle"
+        )
+        AppShortcut(
+            intent: StartContextCaptureIntent(),
+            phrases: [
+                "Capture this screen in \(.applicationName)",
+                "Start Context Capture in \(.applicationName)"
+            ],
+            shortTitle: "Context Capture",
+            systemImageName: "camera.viewfinder"
+        )
+    }
+}
+
+private var configuredTriggerSource: FastCaptureLaunchSource {
+    switch FastCapturePreferences.trigger {
+    case .actionButton: return .actionButton
+    case .cameraControl: return .cameraControl
     }
 }
