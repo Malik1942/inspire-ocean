@@ -22,7 +22,9 @@ struct CaptureView: View {
     @State private var imageData: Data?
     @State private var lastRecordedFile: String?
 
-    @State private var confirmation: String?
+    @State private var moment: PostCaptureMoment?
+    @State private var fadeTask: Task<Void, Never>?
+    @State private var questionTarget: Node?
     @State private var showFastCaptureSettings = false
     @FocusState private var textFocused: Bool
 
@@ -31,9 +33,17 @@ struct CaptureView: View {
             ZStack {
                 OceanBackground()
                 content
-                if let confirmation {
-                    DriftConfirmation(text: confirmation)
-                        .transition(.scale.combined(with: .opacity))
+                if let moment {
+                    VStack {
+                        Spacer()
+                        PostCaptureMomentView(
+                            moment: moment,
+                            onTurnIntoQuestion: { turnIntoQuestion(moment) },
+                            onSeeInOcean: { seeInOcean(moment) }
+                        )
+                        .padding(.bottom, 40)
+                    }
+                    .transition(.scale.combined(with: .opacity))
                 }
             }
             .navigationTitle("Capture")
@@ -51,6 +61,13 @@ struct CaptureView: View {
             .toolbarBackground(.hidden, for: .navigationBar)
             .sheet(isPresented: $showFastCaptureSettings) {
                 FastCaptureSettingsView()
+            }
+            .sheet(item: $questionTarget, onDismiss: { dismissMoment() }) { parent in
+                BranchComposer(
+                    parent: parent,
+                    prefill: moment?.title ?? "",
+                    prefillType: .question
+                )
             }
             .onChange(of: photoItem) { _, newItem in
                 Task {
@@ -257,7 +274,10 @@ struct CaptureView: View {
             Task { await generateTitle(nodeID: nodeID) }
         }
 
-        flashConfirmation()
+        // Phase 1: received — visually identical to the old confirmation.
+        // If understanding never lands, this fades exactly like before.
+        withAnimation(.spring) { moment = .received(for: nodeID) }
+        scheduleFade(after: 1.6)
         reset()
     }
 
@@ -273,6 +293,7 @@ struct CaptureView: View {
             node.title = title
             node.updatedAt = .now
             try? context.save()
+            advanceMoment(nodeID: nodeID, title: title)
         }
     }
 
@@ -289,16 +310,58 @@ struct CaptureView: View {
             node.title = title
             node.updatedAt = .now
             try? context.save()
+            advanceMoment(nodeID: nodeID, title: title)
         }
     }
 
-    private func flashConfirmation() {
-        let messages = ["Drifted into the Ocean", "Carried out to sea", "The Ocean caught it", "Released"]
-        withAnimation(.spring) { confirmation = messages.randomElement() }
-        Task {
-            try? await Task.sleep(for: .seconds(1.4))
-            await MainActor.run { withAnimation { confirmation = nil } }
+    // MARK: Understanding moment
+
+    /// Phase 2: the interpreted title landed — show it, and look for one
+    /// strong nearby fragment. Stale results (a newer capture replaced the
+    /// moment) are dropped silently.
+    @MainActor
+    private func advanceMoment(nodeID: UUID, title: String) {
+        guard moment?.id == nodeID else { return }
+        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
+            moment?.title = title
         }
+        scheduleFade(after: 4.0)
+
+        if let hint = PostCaptureMoment.strongRelatedHint(for: nodeID, context: context, ai: ai),
+           moment?.id == nodeID {
+            withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
+                moment?.related = hint
+            }
+            scheduleFade(after: 4.5)
+        }
+    }
+
+    private func scheduleFade(after seconds: Double) {
+        fadeTask?.cancel()
+        fadeTask = Task {
+            try? await Task.sleep(for: .seconds(seconds))
+            guard !Task.isCancelled else { return }
+            await MainActor.run { dismissMoment() }
+        }
+    }
+
+    private func dismissMoment() {
+        fadeTask?.cancel()
+        withAnimation { moment = nil }
+    }
+
+    private func turnIntoQuestion(_ moment: PostCaptureMoment) {
+        fadeTask?.cancel()
+        let id = moment.id
+        let descriptor = FetchDescriptor<Node>(predicate: #Predicate { $0.id == id })
+        guard let node = try? context.fetch(descriptor).first else { return }
+        questionTarget = node
+    }
+
+    private func seeInOcean(_ moment: PostCaptureMoment) {
+        dismissMoment()
+        appState.pendingFocusNodeID = moment.id
+        appState.selectedTab = .ocean
     }
 
     private func reset() {
@@ -341,21 +404,6 @@ private struct WaveformView: View {
                 }
             }
             .frame(maxWidth: .infinity)
-        }
-    }
-}
-
-private struct DriftConfirmation: View {
-    let text: String
-    var body: some View {
-        VStack {
-            Spacer()
-            Label(text, systemImage: "checkmark.seal.fill")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(OceanTheme.foam)
-                .padding(.horizontal, 18).padding(.vertical, 12)
-                .background(.ultraThinMaterial, in: Capsule())
-                .padding(.bottom, 40)
         }
     }
 }

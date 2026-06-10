@@ -8,6 +8,9 @@ struct FastCaptureSessionView: View {
 
     let request: FastCaptureRequest
     var onFinish: () -> Void
+    /// Wired by the host so "See in Ocean" can focus the fragment after the
+    /// overlay dismisses (the overlay sits outside AppState's environment).
+    var onOpenNode: ((UUID) -> Void)? = nil
 
     @State private var mode: FastCaptureInputPreference
     @State private var text: String
@@ -17,11 +20,19 @@ struct FastCaptureSessionView: View {
     @State private var message: String?
     @State private var isSaving = false
     @State private var hasStarted = false
+    @State private var moment: PostCaptureMoment?
+    @State private var fadeTask: Task<Void, Never>?
+    @State private var questionTarget: Node?
     @FocusState private var textFocused: Bool
 
-    init(request: FastCaptureRequest, onFinish: @escaping () -> Void) {
+    init(
+        request: FastCaptureRequest,
+        onFinish: @escaping () -> Void,
+        onOpenNode: ((UUID) -> Void)? = nil
+    ) {
         self.request = request
         self.onFinish = onFinish
+        self.onOpenNode = onOpenNode
         _mode = State(initialValue: request.inputPreference)
         _text = State(initialValue: request.seedText)
         _imageData = State(initialValue: request.imageData)
@@ -36,23 +47,33 @@ struct FastCaptureSessionView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     header
 
-                    if let imageData, let uiImage = UIImage(data: imageData) {
-                        screenshotPreview(uiImage)
-                    }
-
-                    if mode == .voiceFirst {
-                        voiceCapture
+                    if let moment {
+                        // Post-release: the card becomes the understanding moment.
+                        PostCaptureMomentView(
+                            moment: moment,
+                            onTurnIntoQuestion: { turnIntoQuestion(moment) },
+                            onSeeInOcean: { seeInOcean(moment) }
+                        )
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     } else {
-                        typingCapture
-                    }
+                        if let imageData, let uiImage = UIImage(data: imageData) {
+                            screenshotPreview(uiImage)
+                        }
 
-                    if let message {
-                        Text(message)
-                            .font(.caption)
-                            .foregroundStyle(OceanTheme.mist)
-                    }
+                        if mode == .voiceFirst {
+                            voiceCapture
+                        } else {
+                            typingCapture
+                        }
 
-                    controls
+                        if let message {
+                            Text(message)
+                                .font(.caption)
+                                .foregroundStyle(OceanTheme.mist)
+                        }
+
+                        controls
+                    }
                 }
             }
             .padding(.horizontal, 14)
@@ -70,6 +91,13 @@ struct FastCaptureSessionView: View {
         .onChange(of: scenePhase) { _, phase in
             guard phase != .active else { return }
             finishInterruptedCapture()
+        }
+        .sheet(item: $questionTarget, onDismiss: { onFinish() }) { parent in
+            BranchComposer(
+                parent: parent,
+                prefill: moment?.title ?? "",
+                prefillType: .question
+            )
         }
     }
 
@@ -298,14 +326,65 @@ struct FastCaptureSessionView: View {
             Task { await generateTitle(nodeID: nodeID) }
         }
 
-        message = "Released"
-        Task {
-            try? await Task.sleep(for: .milliseconds(360))
+        // Received. If the interpreted title lands quickly (the common case for
+        // text), the card morphs into the understanding moment and lingers
+        // briefly; otherwise it dismisses almost as fast as before.
+        textFocused = false
+        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
+            moment = .received(for: nodeID)
+        }
+        scheduleFinish(after: 0.9)
+    }
+
+    // MARK: Understanding moment
+
+    @MainActor
+    private func advanceMoment(nodeID: UUID, title: String) {
+        guard moment?.id == nodeID else { return }
+        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
+            moment?.title = title
+        }
+        scheduleFinish(after: 3.6)
+
+        if let hint = PostCaptureMoment.strongRelatedHint(for: nodeID, context: context, ai: ai),
+           moment?.id == nodeID {
+            withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
+                moment?.related = hint
+            }
+            scheduleFinish(after: 4.2)
+        }
+    }
+
+    private func scheduleFinish(after seconds: Double) {
+        fadeTask?.cancel()
+        fadeTask = Task {
+            try? await Task.sleep(for: .seconds(seconds))
+            guard !Task.isCancelled else { return }
             await MainActor.run { onFinish() }
         }
     }
 
+    private func turnIntoQuestion(_ moment: PostCaptureMoment) {
+        fadeTask?.cancel()
+        let id = moment.id
+        let descriptor = FetchDescriptor<Node>(predicate: #Predicate { $0.id == id })
+        guard let node = try? context.fetch(descriptor).first else { return }
+        questionTarget = node
+    }
+
+    private func seeInOcean(_ moment: PostCaptureMoment) {
+        fadeTask?.cancel()
+        onOpenNode?(moment.id)
+        onFinish()
+    }
+
     private func cancel() {
+        fadeTask?.cancel()
+        if moment != nil {
+            // Post-release: the fragment is already saved — just close.
+            onFinish()
+            return
+        }
         if recorder.isRecording {
             recorder.cancel()
         } else if let lastRecordedFile {
@@ -342,6 +421,7 @@ struct FastCaptureSessionView: View {
             node.title = title
             node.updatedAt = .now
             try? context.save()
+            advanceMoment(nodeID: nodeID, title: title)
         }
     }
 
@@ -358,6 +438,7 @@ struct FastCaptureSessionView: View {
             node.title = title
             node.updatedAt = .now
             try? context.save()
+            advanceMoment(nodeID: nodeID, title: title)
         }
     }
 

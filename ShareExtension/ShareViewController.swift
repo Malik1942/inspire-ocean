@@ -94,6 +94,9 @@ final class ShareViewController: UIViewController {
             linkURLString: payload.urlString,
             imageData: payload.imageData
         )
+        if !node.rawContent.isEmpty {
+            node.title = TitleDistiller.essence(from: node.rawContent)
+        }
         context.insert(node)
         try? context.save()
         complete()

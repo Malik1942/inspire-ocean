@@ -33,11 +33,18 @@ struct RootTabView: View {
         .environment(appState)
         .overlay {
             if let request = appState.fastCaptureRequest {
-                FastCaptureSessionView(request: request) {
-                    withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
-                        appState.fastCaptureRequest = nil
+                FastCaptureSessionView(
+                    request: request,
+                    onFinish: {
+                        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
+                            appState.fastCaptureRequest = nil
+                        }
+                    },
+                    onOpenNode: { nodeID in
+                        appState.pendingFocusNodeID = nodeID
+                        appState.selectedTab = .ocean
                     }
-                }
+                )
                 .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
         }
