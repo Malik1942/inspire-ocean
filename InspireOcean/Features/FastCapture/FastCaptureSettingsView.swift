@@ -59,7 +59,7 @@ struct FastCaptureSettingsView: View {
                 }
             }
             .sheet(isPresented: $showOnboarding) {
-                FastCaptureOnboardingView(
+                OceanOnboardingView(
                     onComplete: {
                         onboardingCompleted = true
                         showOnboarding = false

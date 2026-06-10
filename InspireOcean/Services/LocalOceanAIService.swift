@@ -14,6 +14,16 @@ final class LocalOceanAIService: OceanAIService {
     private let embeddings = EmbeddingService.shared
     private let transcriber = SpeechTranscriber()
 
+    init() {
+        // Prime the foundation-model availability check off the critical path —
+        // the first query can take over a second on ineligible hardware, which
+        // would otherwise delay the first capture's title past the post-capture
+        // moment's window.
+        if #available(iOS 26, *) {
+            Task.detached(priority: .utility) { _ = Self.foundationModelAvailable }
+        }
+    }
+
     // MARK: Transcription
 
     func transcribe(audioURL: URL) async -> String? {
@@ -38,12 +48,22 @@ final class LocalOceanAIService: OceanAIService {
         return TitleDistiller.essence(from: cleaned)
     }
 
+    /// Cached once per process: the availability query itself is slow on
+    /// ineligible hardware, and the answer doesn't change mid-session.
+    @available(iOS 26, *)
+    private static let foundationModelAvailable: Bool = {
+        #if canImport(FoundationModels)
+        if case .available = SystemLanguageModel.default.availability { return true }
+        #endif
+        return false
+    }()
+
     /// Apple's on-device foundation model (Apple Intelligence). Returns nil when
     /// the model isn't available on the device, so the caller can fall back.
     @available(iOS 26, *)
     private func foundationModelTitle(for text: String) async -> String? {
         #if canImport(FoundationModels)
-        guard case .available = SystemLanguageModel.default.availability else { return nil }
+        guard Self.foundationModelAvailable else { return nil }
         do {
             let session = LanguageModelSession {
                 """

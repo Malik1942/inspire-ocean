@@ -333,7 +333,7 @@ struct FastCaptureSessionView: View {
         withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
             moment = .received(for: nodeID)
         }
-        scheduleFinish(after: 0.9)
+        scheduleFinish(after: 1.2)
     }
 
     // MARK: Understanding moment

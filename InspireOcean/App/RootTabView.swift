@@ -41,8 +41,14 @@ struct RootTabView: View {
                         }
                     },
                     onOpenNode: { nodeID in
-                        appState.pendingFocusNodeID = nodeID
                         appState.selectedTab = .ocean
+                        // Let the overlay's dismissal animation finish first —
+                        // presenting the node sheet in the same transaction as
+                        // the overlay teardown drops the presentation.
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(420))
+                            appState.pendingFocusNodeID = nodeID
+                        }
                     }
                 )
                 .transition(.opacity.combined(with: .move(edge: .bottom)))
@@ -50,7 +56,7 @@ struct RootTabView: View {
         }
         .animation(.spring(response: 0.36, dampingFraction: 0.86), value: appState.fastCaptureRequest?.id)
         .sheet(isPresented: $showFastCaptureOnboarding) {
-            FastCaptureOnboardingView(
+            OceanOnboardingView(
                 onComplete: {
                     fastCaptureOnboardingCompleted = true
                     showFastCaptureOnboarding = false
