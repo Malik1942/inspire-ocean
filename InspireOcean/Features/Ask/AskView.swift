@@ -11,10 +11,17 @@ struct AskView: View {
 
     @Query(filter: #Predicate<Node> { !$0.isArchived }) private var nodes: [Node]
 
+    /// The visible "ask → find → answer" beat: the Ocean is read, then the
+    /// find is named, then the reply lands.
+    private enum SearchPhase: Equatable {
+        case reading
+        case found(Int)
+    }
+
     @State private var conversation: Conversation?
     @State private var mode: DialogueMode = .synthesis
     @State private var input: String = ""
-    @State private var thinking = false
+    @State private var searchPhase: SearchPhase?
 
     @State private var openedNode: Node?
     @State private var branchTarget: Node?
@@ -66,19 +73,19 @@ struct AskView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
-                    if messages.isEmpty { emptyState }
+                    if messages.isEmpty && searchPhase == nil { emptyState }
                     ForEach(messages) { message in
                         messageView(message).id(message.id)
                     }
-                    if thinking { thinkingBubble.id("thinking") }
+                    if let searchPhase { searchBubble(searchPhase).id("searching") }
                 }
                 .padding()
             }
             .onChange(of: messages.count) { _, _ in
                 withAnimation { proxy.scrollTo(messages.last?.id, anchor: .bottom) }
             }
-            .onChange(of: thinking) { _, t in
-                if t { withAnimation { proxy.scrollTo("thinking", anchor: .bottom) } }
+            .onChange(of: searchPhase) { _, phase in
+                if phase != nil { withAnimation { proxy.scrollTo("searching", anchor: .bottom) } }
             }
         }
     }
@@ -151,17 +158,42 @@ struct AskView: View {
         }
     }
 
-    private var thinkingBubble: some View {
-        HStack(spacing: 6) {
-            ForEach(0..<3, id: \.self) { i in
-                Circle().fill(OceanTheme.mist).frame(width: 7, height: 7)
-                    .opacity(0.4)
-                    .scaleEffect(thinking ? 1 : 0.6)
-                    .animation(.easeInOut(duration: 0.6).repeatForever().delay(Double(i) * 0.2), value: thinking)
+    /// The finding, made visible — same capsule, two quiet beats.
+    private func searchBubble(_ phase: SearchPhase) -> some View {
+        HStack(spacing: 8) {
+            switch phase {
+            case .reading:
+                ForEach(0..<3, id: \.self) { i in
+                    Circle().fill(OceanTheme.mist).frame(width: 5, height: 5)
+                        .opacity(0.4)
+                        .scaleEffect(searchPhase == .reading ? 1 : 0.6)
+                        .animation(.easeInOut(duration: 0.6).repeatForever().delay(Double(i) * 0.2),
+                                   value: searchPhase)
+                }
+                Text("Reading your Ocean…")
+                    .font(.caption)
+                    .foregroundStyle(OceanTheme.mist)
+
+            case .found(let count):
+                Image(systemName: "water.waves")
+                    .font(.caption2)
+                    .foregroundStyle(OceanTheme.mist)
+                Text(foundLabel(count))
+                    .font(.caption)
+                    .foregroundStyle(OceanTheme.mist)
             }
         }
         .padding(.horizontal, 14).padding(.vertical, 12)
         .background(.ultraThinMaterial, in: Capsule())
+        .animation(.spring(response: 0.36, dampingFraction: 0.86), value: phase)
+    }
+
+    private func foundLabel(_ count: Int) -> String {
+        switch count {
+        case 0:  "Nothing drifts near this yet"
+        case 1:  "Found one fragment that drifts near this"
+        default: "Found \(count) fragments that drift near this"
+        }
     }
 
     private var emptyState: some View {
@@ -212,7 +244,7 @@ struct AskView: View {
         .background(.ultraThinMaterial)
     }
 
-    private var canSend: Bool { !input.trimmed.isEmpty && !thinking }
+    private var canSend: Bool { !input.trimmed.isEmpty && searchPhase == nil }
 
     // MARK: Logic
 
@@ -236,6 +268,11 @@ struct AskView: View {
         guard !query.isEmpty else { return }
         let convo = ensureConversation()
 
+        // Prior turns (before this one), for follow-up continuity.
+        let history = messages.suffix(4).map {
+            DialogueTurn(isUser: $0.role == .user, text: $0.text)
+        }
+
         let userMessage = ChatMessage(role: .user, text: query, mode: mode)
         userMessage.conversation = convo
         context.insert(userMessage)
@@ -243,12 +280,27 @@ struct AskView: View {
         try? context.save()
 
         input = ""
-        thinking = true
+        withAnimation { searchPhase = .reading }
         let currentMode = mode
         let snapshot = nodes
 
         Task {
-            let response = await ai.respond(to: query, mode: currentMode, nodes: snapshot)
+            let started = ContinuousClock.now
+            let response = await ai.respond(
+                to: query, history: history, mode: currentMode, nodes: snapshot
+            )
+
+            // Let "Reading your Ocean…" breathe even when retrieval is instant,
+            // then name the find for a beat before the reply lands.
+            let elapsed = started.duration(to: .now)
+            if elapsed < .milliseconds(500) {
+                try? await Task.sleep(for: .milliseconds(500) - elapsed)
+            }
+            await MainActor.run {
+                withAnimation { searchPhase = .found(response.sourceNodeIDs.count) }
+            }
+            try? await Task.sleep(for: .milliseconds(700))
+
             await MainActor.run {
                 let oceanMessage = ChatMessage(
                     role: .ocean,
@@ -261,7 +313,7 @@ struct AskView: View {
                 context.insert(oceanMessage)
                 convo.updatedAt = .now
                 try? context.save()
-                thinking = false
+                withAnimation { searchPhase = nil }
             }
         }
     }

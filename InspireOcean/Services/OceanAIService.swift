@@ -17,6 +17,13 @@ struct OceanResponse {
     var suggestedBranches: [SuggestedBranch]
 }
 
+/// One prior turn of an Ocean Dialogue, passed back into `respond` so
+/// follow-ups ("tell me more about that") keep their footing.
+struct DialogueTurn: Sendable {
+    var isUser: Bool
+    var text: String
+}
+
 /// The AI seam for Inspire Ocean.
 ///
 /// V1 ships an on-device implementation (`LocalOceanAIService`). The PRD calls
@@ -35,7 +42,8 @@ protocol OceanAIService {
     func relatedNodeIDs(to node: Node, among nodes: [Node], limit: Int) -> [UUID]
 
     /// Carry an Ocean Dialogue turn, grounded in the user's saved nodes.
-    func respond(to query: String, mode: DialogueMode, nodes: [Node]) async -> OceanResponse
+    /// `history` is the last few turns (oldest first), for continuity.
+    func respond(to query: String, history: [DialogueTurn], mode: DialogueMode, nodes: [Node]) async -> OceanResponse
 
     /// A short, evocative title (≤ ~6 words) interpreting a fragment so it can be
     /// shown in full in the Library. Uses the on-device foundation model when

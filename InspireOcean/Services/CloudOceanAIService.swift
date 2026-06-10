@@ -41,14 +41,15 @@ final class CloudOceanAIService: OceanAIService {
         fallback.relatedNodeIDs(to: node, among: nodes, limit: limit)
     }
 
-    func respond(to query: String, mode: DialogueMode, nodes: [Node]) async -> OceanResponse {
+    func respond(to query: String, history: [DialogueTurn], mode: DialogueMode, nodes: [Node]) async -> OceanResponse {
         guard configuration != nil else {
-            return await fallback.respond(to: query, mode: mode, nodes: nodes)
+            return await fallback.respond(to: query, history: history, mode: mode, nodes: nodes)
         }
-        // TODO: retrieve top-k nodes locally, send them as grounding context to the
-        // dialogue endpoint, and map the response into `OceanResponse`. Always pass
-        // the source node ids through so responses stay evidence-based.
-        return await fallback.respond(to: query, mode: mode, nodes: nodes)
+        // TODO: retrieve top-k nodes locally, send them (plus the recent turns)
+        // as grounding context to the dialogue endpoint, and map the response
+        // into `OceanResponse`. Always pass the source node ids through so
+        // responses stay evidence-based.
+        return await fallback.respond(to: query, history: history, mode: mode, nodes: nodes)
     }
 
     func conciseTitle(for text: String) async -> String {

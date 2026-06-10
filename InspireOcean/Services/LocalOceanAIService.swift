@@ -93,12 +93,15 @@ final class LocalOceanAIService: OceanAIService {
 
     // MARK: Dialogue
 
-    func respond(to query: String, mode: DialogueMode, nodes: [Node]) async -> OceanResponse {
+    func respond(to query: String, history: [DialogueTurn], mode: DialogueMode, nodes: [Node]) async -> OceanResponse {
         let active = nodes.filter { !$0.isArchived }
 
-        // 1. Retrieve the fragments most relevant to the query.
+        // 1. Retrieve the fragments most relevant to the query. Follow-up
+        //    queries lean on the previous user turn so "tell me more" still
+        //    points at something.
+        let retrievalQuery = expandedRetrievalQuery(query, history: history)
         let ranked = embeddings.rank(
-            query: query,
+            query: retrievalQuery,
             candidates: active.map { (id: $0.id, text: $0.searchableText) },
             limit: 5
         )
@@ -111,8 +114,15 @@ final class LocalOceanAIService: OceanAIService {
             .reduce(into: [String: Int]()) { $0[$1, default: 0] += 1 }
         let topThemes = themeCounts.sorted { $0.value > $1.value }.prefix(3).map { $0.key }
 
-        // 3. Compose a grounded reflection in the chosen mode.
-        let reflection = compose(
+        // 3. Compose the reflection: genuine on-device synthesis when the
+        //    foundation model is available, grounded templates otherwise.
+        var reflection: String?
+        if #available(iOS 26, *), !sources.isEmpty {
+            reflection = await foundationModelReflection(
+                query: query, history: history, mode: mode, sources: sources
+            )
+        }
+        let finalReflection = reflection ?? compose(
             mode: mode,
             query: query,
             sources: sources,
@@ -127,11 +137,88 @@ final class LocalOceanAIService: OceanAIService {
         let branches = suggestBranches(mode: mode, query: query, themes: topThemes, sources: sources)
 
         return OceanResponse(
-            reflection: reflection,
+            reflection: finalReflection,
             sourceNodeIDs: sources.map { $0.id },
             patternSummary: patternSummary,
             suggestedBranches: branches
         )
+    }
+
+    /// A short query expansion for follow-ups: when the new message is brief
+    /// and deictic ("tell me more", "why is that"), blend in the previous user
+    /// turn so retrieval has real words to work with.
+    private func expandedRetrievalQuery(_ query: String, history: [DialogueTurn]) -> String {
+        let words = query.split(separator: " ").count
+        guard words <= 6,
+              let lastUser = history.last(where: { $0.isUser })?.text,
+              !lastUser.isEmpty
+        else { return query }
+        return lastUser + "\n" + query
+    }
+
+    /// True synthesis on Apple-Intelligence-eligible hardware: answer from the
+    /// retrieved fragments only, in the Ocean's ambient voice. Returns nil on
+    /// ineligible devices or any failure so the template path takes over.
+    @available(iOS 26, *)
+    private func foundationModelReflection(
+        query: String,
+        history: [DialogueTurn],
+        mode: DialogueMode,
+        sources: [Node]
+    ) async -> String? {
+        #if canImport(FoundationModels)
+        guard Self.foundationModelAvailable else { return nil }
+
+        let fragments = sources.prefix(5).map { node -> String in
+            var line = "“\(node.displayTitle)”"
+            if let parent = node.parent {
+                line += " (a branch of “\(parent.displayTitle)”)"
+            }
+            let body = node.searchableText.prefix(300)
+            if !body.isEmpty { line += ": \(body)" }
+            return "- " + line
+        }.joined(separator: "\n")
+
+        let recentTurns = history.suffix(4).map {
+            ($0.isUser ? "They said: " : "You said: ") + $0.text.prefix(200)
+        }.joined(separator: "\n")
+
+        let modeFraming: String = switch mode {
+        case .search:    "They are looking for something they captured."
+        case .synthesis: "They want to see the thread running through these fragments."
+        case .expansion: "They want to grow these thoughts further."
+        case .research:  "They want directions worth exploring next."
+        }
+
+        do {
+            let session = LanguageModelSession {
+                """
+                You are the quiet, reflective voice of a personal inspiration space \
+                called the Ocean. You answer ONLY from the user's own captured \
+                fragments, provided below. Write 2 to 4 calm sentences in plain \
+                prose — no lists, no headers, no advice-column tone, no exclamation \
+                marks. Refer to fragments by their quoted titles. If a pattern or \
+                question sits underneath the fragments, name it plainly. Never \
+                invent fragments that are not provided.
+                """
+            }
+            let prompt = """
+            \(modeFraming)
+            \(recentTurns.isEmpty ? "" : "Recent conversation:\n\(recentTurns)\n")
+            Their fragments:
+            \(fragments)
+
+            Their question: \(query)
+            """
+            let response = try await session.respond(to: prompt)
+            let text = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
+            return text.isEmpty ? nil : text
+        } catch {
+            return nil
+        }
+        #else
+        return nil
+        #endif
     }
 
     // MARK: - Composition
