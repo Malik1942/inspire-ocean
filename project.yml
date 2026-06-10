@@ -24,6 +24,8 @@ targets:
     dependencies:
       - target: ShareExtension
         embed: true
+      - target: OceanWidgets
+        embed: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.inspireocean.app
@@ -38,6 +40,10 @@ targets:
       path: InspireOcean/Info.plist
       properties:
         CFBundleDisplayName: Inspire Ocean
+        CFBundleURLTypes:
+          - CFBundleURLName: com.inspireocean.app
+            CFBundleURLSchemes:
+              - inspireocean
         UILaunchScreen:
           UIColorName: ""
         ITSAppUsesNonExemptEncryption: false
@@ -80,3 +86,25 @@ targets:
               NSExtensionActivationSupportsText: true
               NSExtensionActivationSupportsWebURLWithMaxCount: 1
               NSExtensionActivationSupportsImageWithMaxCount: 1
+
+  OceanWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Shared
+      - path: OceanWidgets
+      - path: InspireOcean/DesignSystem/OceanTheme.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.inspireocean.app.widgets
+    entitlements:
+      path: OceanWidgets/OceanWidgets.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.inspireocean.shared
+    info:
+      path: OceanWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: Inspire Ocean
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension

@@ -19,6 +19,10 @@ final class AppState {
     /// A prompt queued for the Ask tab, consumed when Ask appears.
     var pendingAskPrompt: String?
 
+    /// A node queued for the Ocean tab (e.g. tapping the Resurfacing widget),
+    /// consumed when the Ocean Field appears: it focuses and opens the node.
+    var pendingFocusNodeID: UUID?
+
     init() {
         // Testing seam: launch straight into a tab via the OCEAN_START_TAB env var
         // (e.g. `SIMCTL_CHILD_OCEAN_START_TAB=ask`). No effect in normal use.
@@ -38,12 +42,13 @@ final class AppState {
 
     func startFastCapture(
         source: FastCaptureLaunchSource = .inApp,
+        inputPreference: FastCaptureInputPreference? = nil,
         imageData: Data? = nil,
         seedText: String = ""
     ) {
         fastCaptureRequest = FastCaptureRequest(
             source: source,
-            inputPreference: FastCapturePreferences.inputPreference,
+            inputPreference: inputPreference ?? FastCapturePreferences.inputPreference,
             imageData: imageData,
             seedText: seedText
         )
@@ -52,5 +57,37 @@ final class AppState {
     func consumePendingFastCapture() {
         guard let request = FastCaptureLaunchStore.consumePendingRequest() else { return }
         fastCaptureRequest = request
+    }
+
+    // MARK: Deep links (widgets, Control Center, Lock Screen)
+
+    /// Routes `inspireocean://` URLs:
+    /// - `inspireocean://capture/thought` — Fast Capture, typing first
+    /// - `inspireocean://capture/whisper` — Fast Capture, voice first
+    /// - `inspireocean://capture` — Fast Capture, user's preferred input
+    /// - `inspireocean://node/<uuid>` — focus + open a node in the Ocean
+    func handleDeepLink(_ url: URL) {
+        guard url.scheme == "inspireocean" else { return }
+        let path = [url.host, url.pathComponents.dropFirst().first]
+            .compactMap { $0 }
+
+        switch path.first {
+        case "capture":
+            let mode = path.count > 1 ? path[1] : nil
+            let preference: FastCaptureInputPreference? = switch mode {
+            case "thought": .typingFirst
+            case "whisper": .voiceFirst
+            default: nil
+            }
+            startFastCapture(source: .widget, inputPreference: preference)
+
+        case "node":
+            guard path.count > 1, let id = UUID(uuidString: path[1]) else { return }
+            pendingFocusNodeID = id
+            selectedTab = .ocean
+
+        default:
+            break
+        }
     }
 }

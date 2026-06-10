@@ -65,6 +65,9 @@ struct RootTabView: View {
             guard phase == .active else { return }
             appState.consumePendingFastCapture()
         }
+        .onOpenURL { url in
+            appState.handleDeepLink(url)
+        }
     }
 
     /// Tab label that always renders the outline (stroke) form of its symbol.

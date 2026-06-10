@@ -53,8 +53,12 @@ struct OceanFieldView: View {
                         field(in: geo.size)
                     }
                 }
-                .onAppear   { recompute(geo.size) }
+                .onAppear {
+                    recompute(geo.size)
+                    consumePendingFocus()
+                }
                 .onChange(of: key) { _, _ in recompute(geo.size) }
+                .onChange(of: appState.pendingFocusNodeID) { _, _ in consumePendingFocus() }
             }
             .overlay(alignment: .top) { header }
             .ignoresSafeArea(edges: .bottom)
@@ -172,6 +176,15 @@ struct OceanFieldView: View {
         }
     }
 
+    /// A deep link (e.g. the Resurfacing widget) queued a node: focus and open it.
+    private func consumePendingFocus() {
+        guard let id = appState.pendingFocusNodeID else { return }
+        appState.pendingFocusNodeID = nil
+        guard let node = nodeByID[id] else { return }
+        setFocus(node.id)
+        selected = node
+    }
+
     private func recompute(_ size: CGSize) {
         let next = OceanLayoutEngine.compute(
             nodes: nodes, size: size, resurfacingID: resurfacing?.id)
@@ -183,15 +196,7 @@ struct OceanFieldView: View {
 
     // MARK: Resurfacing (ambient rediscovery)
 
-    private var resurfacing: Node? {
-        guard nodes.count > 3 else { return nil }
-        let older = nodes
-            .filter { Date.now.timeIntervalSince($0.createdAt) > 60 * 60 * 24 * 2 }
-            .sorted { $0.createdAt < $1.createdAt }
-        guard !older.isEmpty else { return nil }
-        let day = Calendar.current.ordinality(of: .day, in: .era, for: .now) ?? 0
-        return older[day % older.count]
-    }
+    private var resurfacing: Node? { Resurfacing.pick(from: nodes) }
 
     // MARK: Header
 

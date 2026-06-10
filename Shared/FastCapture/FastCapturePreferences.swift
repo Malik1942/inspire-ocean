@@ -67,6 +67,8 @@ enum FastCaptureLaunchSource: String, Codable {
     case shortcut
     case onboarding
     case inApp
+    case widget
+    case controlCenter
 
     var label: String {
         switch self {
@@ -75,6 +77,8 @@ enum FastCaptureLaunchSource: String, Codable {
         case .shortcut: return "Shortcut"
         case .onboarding: return "First capture"
         case .inApp: return "Fast Capture"
+        case .widget: return "Widget"
+        case .controlCenter: return "Control Center"
         }
     }
 }
