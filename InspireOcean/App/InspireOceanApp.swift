@@ -5,9 +5,12 @@ import SwiftData
 struct InspireOceanApp: App {
     let container = Persistence.shared
 
-    /// V1 runs on-device. To move Ocean to the cloud (§14), swap this for
-    /// `CloudOceanAIService(configuration: …)` — nothing else changes.
-    private let ai: any OceanAIService = LocalOceanAIService()
+    /// The cloud seam (§14) activates itself when an `ANTHROPIC_API_KEY` is
+    /// present in the environment (or `AnthropicAPIKey` in Info.plist via a
+    /// local xcconfig — never commit a key). Without one, this behaves exactly
+    /// like the on-device V1: retrieval, themes, and transcription never leave
+    /// the device either way.
+    private let ai: any OceanAIService = CloudOceanAIService(configuration: .fromEnvironment())
 
     var body: some Scene {
         WindowGroup {

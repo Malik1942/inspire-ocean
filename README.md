@@ -57,17 +57,25 @@ Then select an iPhone simulator and press ⌘R.
   container so the share extension writes into the same Ocean.
   See `Shared/Persistence/Persistence.swift`.
 - **AI Layer:** a single protocol seam, `OceanAIService`.
-  - `LocalOceanAIService` (default, ships in V1) — on-device. Uses Apple's
-    `NLEmbedding` for genuine **semantic** related-node sensing and dialogue
-    retrieval, `NaturalLanguage` for theme detection, and `Speech` for voice
-    transcription. Every dialogue response is **grounded in the user's saved
-    nodes** (PRD risk mitigation: *AI feels generic → ground responses in saved
-    nodes*). Concise, fully-displayable fragment titles are interpreted with
-    Apple's on-device **Foundation Models** (Apple Intelligence) when the device
-    is eligible, with a heuristic fallback otherwise.
-  - `CloudOceanAIService` — drop-in cloud seam (PRD §14). Conforms to the same
-    protocol; swapping it in `InspireOceanApp.swift` requires **no UI changes**.
-    `TODO`s mark exactly where the network calls go.
+  - `LocalOceanAIService` — on-device. Uses Apple's `NLEmbedding` for genuine
+    **semantic** related-node sensing and dialogue retrieval, `NaturalLanguage`
+    for theme detection, and `Speech` for voice transcription. Every dialogue
+    response is **grounded in the user's saved nodes** (PRD risk mitigation:
+    *AI feels generic → ground responses in saved nodes*). Dialogue reflections
+    and concise titles are composed with Apple's on-device **Foundation
+    Models** (Apple Intelligence) when the device is eligible, with grounded
+    template / heuristic fallbacks otherwise.
+  - `CloudOceanAIService` (the app's default) — the cloud seam (PRD §14),
+    wired to the Anthropic Claude API (`claude-opus-4-8`). It self-activates
+    when an `ANTHROPIC_API_KEY` is present in the environment (simulator:
+    `SIMCTL_CHILD_ANTHROPIC_API_KEY=… xcrun simctl launch …`) or as an
+    `AnthropicAPIKey` Info.plist entry injected from a local xcconfig —
+    **never commit a key**. Retrieval, themes, and transcription always stay
+    on-device; only the dialogue reflection and concise titles are composed in
+    the cloud, grounded in the handful of fragments retrieval already
+    selected. Without a key (or on any network failure) it behaves exactly
+    like `LocalOceanAIService`. Optional env overrides: `OCEAN_CLOUD_MODEL`,
+    `OCEAN_CLOUD_BASE_URL`.
 
 ### Data model (`Shared/Models`)
 - `Node` — one inspiration fragment ("drift"). Branching is a self-referential
