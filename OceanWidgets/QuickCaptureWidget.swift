@@ -62,7 +62,7 @@ struct QuickCaptureView: View {
             Image(systemName: "drop")
                 .font(.title2.weight(.light))
         }
-        .widgetURL(URL(string: "inspireocean://capture"))
+        .widgetURL(URL(string: "oryn://capture"))
         .containerBackground(for: .widget) { Color.clear }
     }
 
@@ -83,62 +83,63 @@ struct QuickCaptureView: View {
                 .foregroundStyle(OceanTheme.mist)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .widgetURL(URL(string: "inspireocean://capture"))
+        .widgetURL(URL(string: "oryn://capture"))
         .containerBackground(for: .widget) { OceanWidgetStyle.water }
     }
 
-    /// Medium — Thought and Whisper side by side.
+    /// Medium — Thought and Whisper side by side, resting at the waterline:
+    /// header whispers at the top, open water between, actions at the bottom.
     private var medium: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 6) {
                 Image(systemName: "water.waves")
-                    .font(.caption.weight(.light))
-                Text("Inspire Ocean")
-                    .font(.caption.weight(.medium))
+                    .font(.caption2.weight(.light))
+                Text("Oryn: Fast Capture")
+                    .font(.caption2.weight(.medium))
+                    .tracking(0.5)
             }
             .foregroundStyle(OceanTheme.mist)
 
-            HStack(spacing: 10) {
+            Spacer(minLength: 14)
+
+            HStack(spacing: 8) {
                 captureLink(
-                    url: "inspireocean://capture/thought",
+                    url: "oryn://capture/thought",
                     symbol: "text.cursor",
-                    title: "Thought",
-                    subtitle: "Type it"
+                    title: "Thought"
                 )
                 captureLink(
-                    url: "inspireocean://capture/whisper",
+                    url: "oryn://capture/whisper",
                     symbol: "waveform",
-                    title: "Whisper",
-                    subtitle: "Speak it"
+                    title: "Whisper"
                 )
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .containerBackground(for: .widget) { OceanWidgetStyle.water }
     }
 
-    private func captureLink(url: String, symbol: String, title: String, subtitle: String) -> some View {
+    /// One slim glass action — icon orb and title, centered. Depth comes from
+    /// the lifted body and a soft drop, the hairline stays a whisper.
+    private func captureLink(url: String, symbol: String, title: String) -> some View {
         Link(destination: URL(string: url)!) {
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 Image(systemName: symbol)
-                    .font(.body.weight(.light))
+                    .font(.footnote.weight(.light))
                     .foregroundStyle(OceanTheme.foam)
-                    .frame(width: 30, height: 30)
+                    .frame(width: 24, height: 24)
                     .background(Circle().fill(Color.white.opacity(0.07)))
                     .overlay(Circle().strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5))
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(title)
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(OceanTheme.foam)
-                    Text(subtitle)
-                        .font(.caption2)
-                        .foregroundStyle(OceanTheme.mist)
-                }
-                Spacer(minLength: 0)
+                Text(title)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(OceanTheme.foam)
             }
-            .padding(10)
+            .frame(maxWidth: .infinity)
+            .frame(height: 42)
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color.white.opacity(0.05))
+                    .fill(Color.white.opacity(0.06))
+                    .shadow(color: .black.opacity(0.22), radius: 7, y: 2.5)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)

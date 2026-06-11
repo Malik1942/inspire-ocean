@@ -3,17 +3,17 @@ import SwiftData
 import UniformTypeIdentifiers
 import Foundation
 
-/// Capture a spoken or typed thought into Inspire Ocean from Siri, Shortcuts, or
+/// Capture a spoken or typed thought into Oryn from Siri, Shortcuts, or
 /// Spotlight — without opening the app.
 ///
-/// "Add buy more film to Inspire Ocean" captures that text directly. Plain
-/// "Add to Inspire Ocean" makes Siri ask *what* to capture and transcribes your
+/// "Add buy more film to Oryn" captures that text directly. Plain
+/// "Add to Oryn" makes Siri ask *what* to capture and transcribes your
 /// spoken answer. The fragment is titled on-device (Foundation Models when the
 /// device is eligible, heuristic otherwise).
 struct AddInspirationIntent: AppIntent {
     static let title: LocalizedStringResource = "Add Inspiration"
     static let description = IntentDescription(
-        "Capture a thought into your Inspire Ocean.",
+        "Capture a thought into Oryn.",
         categoryName: "Capture"
     )
     /// Run silently in the background — don't interrupt the user by launching.
@@ -23,7 +23,7 @@ struct AddInspirationIntent: AppIntent {
     var text: String
 
     static var parameterSummary: some ParameterSummary {
-        Summary("Add \(\.$text) to Inspire Ocean")
+        Summary("Add \(\.$text) to Oryn")
     }
 
     @MainActor
@@ -37,8 +37,8 @@ struct AddInspirationIntent: AppIntent {
         let node = NodeComposer.make(kind: .text, text: trimmed)
         context.insert(node)
 
-        let ai = LocalOceanAIService()
-        node.title = await ai.conciseTitle(for: trimmed)
+        let understanding = await LocalOceanAIService().understand(trimmed)
+        NodeComposer.applyUnderstanding(understanding, to: node)
         try? context.save()
 
         return .result(dialog: "Drifted into your Ocean.")
@@ -46,16 +46,16 @@ struct AddInspirationIntent: AppIntent {
 }
 
 /// Save an image — e.g. a screenshot from the Shortcuts "Take Screenshot"
-/// action — into Inspire Ocean, with an optional note.
+/// action — into Oryn, with an optional note.
 ///
 /// iOS doesn't let an app grab another app's screen by voice alone, so screen
 /// capture works through a Shortcut/automation: *Take Screenshot → Save to
-/// Inspire Ocean*. This intent is the destination for that flow (and the share
+/// Oryn*. This intent is the destination for that flow (and the share
 /// sheet covers the manual case).
 struct SaveToOceanIntent: AppIntent {
-    static let title: LocalizedStringResource = "Save Image to Inspire Ocean"
+    static let title: LocalizedStringResource = "Save Image to Oryn"
     static let description = IntentDescription(
-        "Save a screenshot or image into your Inspire Ocean.",
+        "Save a screenshot or image into Oryn.",
         categoryName: "Capture"
     )
     static let openAppWhenRun = false
@@ -67,7 +67,7 @@ struct SaveToOceanIntent: AppIntent {
     var note: String
 
     static var parameterSummary: some ParameterSummary {
-        Summary("Save \(\.$image) to Inspire Ocean") {
+        Summary("Save \(\.$image) to Oryn") {
             \.$note
         }
     }
@@ -82,7 +82,8 @@ struct SaveToOceanIntent: AppIntent {
         context.insert(node)
 
         if !trimmedNote.isEmpty {
-            node.title = await LocalOceanAIService().conciseTitle(for: trimmedNote)
+            let understanding = await LocalOceanAIService().understand(trimmedNote)
+            NodeComposer.applyUnderstanding(understanding, to: node)
         }
         try? context.save()
 
@@ -95,7 +96,7 @@ struct SaveToOceanIntent: AppIntent {
 struct StartFastCaptureIntent: AppIntent {
     static let title: LocalizedStringResource = "Start Fast Capture"
     static let description = IntentDescription(
-        "Open Inspire Ocean in a lightweight capture state.",
+        "Open Oryn in a lightweight capture state.",
         categoryName: "Fast Capture"
     )
     static let openAppWhenRun = true

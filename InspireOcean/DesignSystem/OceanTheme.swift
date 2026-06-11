@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Color, type and gradient language for Inspire Ocean.
+/// Color, type and gradient language for Oryn.
 ///
 /// The Ocean should feel "atmospheric, calm, and alive" (§8) — deep and spatial,
 /// with color drawn from each fragment's `hue`.

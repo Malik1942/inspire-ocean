@@ -61,13 +61,13 @@ final class AppState {
 
     // MARK: Deep links (widgets, Control Center, Lock Screen)
 
-    /// Routes `inspireocean://` URLs:
-    /// - `inspireocean://capture/thought` — Fast Capture, typing first
-    /// - `inspireocean://capture/whisper` — Fast Capture, voice first
-    /// - `inspireocean://capture` — Fast Capture, user's preferred input
-    /// - `inspireocean://node/<uuid>` — focus + open a node in the Ocean
+    /// Routes `oryn://` URLs (the legacy `inspireocean://` scheme is still accepted so existing Shortcuts keep working):
+    /// - `oryn://capture/thought` — Fast Capture, typing first
+    /// - `oryn://capture/whisper` — Fast Capture, voice first
+    /// - `oryn://capture` — Fast Capture, user's preferred input
+    /// - `oryn://node/<uuid>` — focus + open a node in the Ocean
     func handleDeepLink(_ url: URL) {
-        guard url.scheme == "inspireocean" else { return }
+        guard url.scheme == "oryn" || url.scheme == "inspireocean" else { return }
         let path = [url.host, url.pathComponents.dropFirst().first]
             .compactMap { $0 }
 

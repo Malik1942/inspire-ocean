@@ -7,6 +7,8 @@ import SwiftData
 /// placed in the shared container so captures from extensions land in the same
 /// Ocean. Otherwise it falls back to the app's default store.
 enum Persistence {
+    // Frozen pre-rebrand (Inspire Ocean) identifiers: renaming the App Group
+    // or store file would orphan every existing user's data.
     static let appGroupID = "group.com.inspireocean.shared"
     private static let storeName = "InspireOcean.store"
 

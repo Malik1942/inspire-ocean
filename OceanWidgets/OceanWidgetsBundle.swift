@@ -1,7 +1,7 @@
 import WidgetKit
 import SwiftUI
 
-/// Inspire Ocean's Home Screen / Lock Screen widgets and Control Center
+/// Oryn's Home Screen / Lock Screen widgets and Control Center
 /// control (PRD §7 entry points: widget, Control Center; §12 ambient
 /// resurfacing).
 @main

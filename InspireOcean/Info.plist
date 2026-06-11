@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Inspire Ocean</string>
+	<string>Oryn</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -25,6 +25,7 @@
 			<string>com.inspireocean.app</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
+				<string>oryn</string>
 				<string>inspireocean</string>
 			</array>
 		</dict>
@@ -34,11 +35,11 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Inspire Ocean uses the microphone to catch voice drifts before they disappear.</string>
+	<string>Oryn uses the microphone to catch voice drifts before they disappear.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Inspire Ocean lets you capture screenshots and photos as inspiration fragments.</string>
+	<string>Oryn lets you capture screenshots and photos as inspiration fragments.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Inspire Ocean transcribes your voice captures so they can resurface and connect.</string>
+	<string>Oryn transcribes your voice captures so they can resurface and connect.</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

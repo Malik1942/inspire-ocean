@@ -1,13 +1,16 @@
-# Inspire Ocean — iOS (V1 / MVP)
+# Oryn — iOS (V1 / MVP)
 
-> *Inspire Ocean should not feel like managing ideas. It should feel like living alongside them.*
+> *Oryn should not feel like managing ideas. It should feel like living alongside them.*
 
 A mobile-first creative memory system. Fleeting thoughts, images, whispers, and
 fragments **drift** into a living field where they **resurface**, **connect**, and
 **branch** over time — built around fast capture, ambient rediscovery, and
 conversational reflection.
 
-This repository is the **V1 / MVP** built from `Inspire_Ocean_PRD_v4`.
+This repository is the **V1 / MVP** built from `Inspire_Ocean_PRD_v4`. The
+product was originally codenamed *Inspire Ocean* and is now **Oryn** — same
+vision, same interaction design, new name. The ocean/field/drift language
+remains the product's metaphor system throughout.
 
 ---
 
@@ -18,11 +21,18 @@ generated from `project.yml` with [XcodeGen](https://github.com/yonsm/XcodeGen).
 
 ```bash
 brew install xcodegen      # once
-xcodegen generate          # creates InspireOcean.xcodeproj
-open InspireOcean.xcodeproj
+xcodegen generate          # creates Oryn.xcodeproj
+open Oryn.xcodeproj
 ```
 
-Then select an iPhone simulator and press ⌘R.
+Then select an iPhone simulator and press ⌘R (scheme: **Oryn**).
+
+> **Rebrand note.** App, project, scheme, and target are named **Oryn**. The
+> bundle ids (`com.inspireocean.*`), App Group, SwiftData store name, widget
+> kind strings, and the source folder names deliberately keep their original
+> identifiers — changing them would orphan user data, placed widgets, and
+> Shortcuts automations, and would churn git history. Deep links use `oryn://`;
+> the legacy `inspireocean://` scheme is still registered and accepted.
 
 > **Signing note.** The app runs as-is in the simulator. To make the **Share
 > Extension** and **App Group** active (so captures shared from other apps land
@@ -105,7 +115,7 @@ Shared/            # compiled into both the app and the share extension
   Models/          # Node, Conversation, enums
   Persistence/     # SwiftData stack (App Group aware)
   Services/        # ThemeDetector, EmbeddingService, NodeComposer
-InspireOcean/      # the app
+InspireOcean/      # the app (folder keeps its pre-rebrand name; the target is Oryn)
   App/             # entry point, root tabs, app state, seed data
   DesignSystem/    # OceanTheme, reusable components, NodeRow, FlowLayout
   Services/        # OceanAIService seam + Local/Cloud impls, audio, speech
@@ -118,14 +128,14 @@ project.yml        # XcodeGen project definition
 ### Siri & hands-free capture (`InspireOcean/Intents`)
 Built on the **App Intents** framework (Siri, Shortcuts, Spotlight, Apple
 Intelligence actions):
-- **"Hey Siri, add an inspiration to Inspire Ocean"** → Siri asks *"What would
+- **"Hey Siri, add an inspiration to Oryn"** → Siri asks *"What would
   you like to capture?"*, transcribes your spoken answer, and saves it as a
   thought — without opening the app (`AddInspirationIntent`). The fragment is
   titled on-device.
 - **Screenshots / images** → `SaveToOceanIntent` accepts an image + optional
   note. Because iOS won't let an app grab another app's screen by voice alone,
   wire it as a one-tap automation in Shortcuts: *Take Screenshot → Save to
-  Inspire Ocean* (the share sheet covers the manual case).
+  Oryn* (the share sheet covers the manual case).
 
 ---
 
