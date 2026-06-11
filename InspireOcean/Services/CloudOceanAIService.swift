@@ -27,7 +27,16 @@ final class CloudOceanAIService: OceanAIService {
         /// Reads the key from the process environment (`ANTHROPIC_API_KEY`)
         /// or Info.plist (`AnthropicAPIKey`); nil when neither is set, which
         /// leaves the service in pure on-device mode.
+        ///
+        /// DEBUG-only by construction: a raw Anthropic key must never ride in
+        /// a distributable bundle (Info.plist ships as plaintext — trivially
+        /// extractable from any IPA), so Release builds compile this to nil
+        /// and run pure on-device until a backend proxy carries the key
+        /// server-side. The environment path was already dev-only (apps
+        /// launched from SpringBoard receive no custom environment), but the
+        /// plist path would have worked in TestFlight — this closes it.
         static func fromEnvironment() -> Configuration? {
+            #if DEBUG
             let env = ProcessInfo.processInfo.environment
             let key = env["ANTHROPIC_API_KEY"]
                 ?? Bundle.main.object(forInfoDictionaryKey: "AnthropicAPIKey") as? String
@@ -40,6 +49,9 @@ final class CloudOceanAIService: OceanAIService {
                 configuration.baseURL = url
             }
             return configuration
+            #else
+            return nil
+            #endif
         }
     }
 
