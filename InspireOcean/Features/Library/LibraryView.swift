@@ -65,23 +65,45 @@ struct LibraryView: View {
             .navigationDestination(for: Node.self) { node in
                 NodeDetailContent(node: node)
             }
-            .task { await backfillTitles() }
+            .task { await backfillUnderstanding() }
         }
     }
 
-    /// Interpret each fragment into a short, fully-displayable title using the
-    /// on-device foundation model (falling back to a heuristic). Runs once per
-    /// fragment — already-titled fragments are skipped.
-    private func backfillTitles() async {
+    /// The marker for fragments themed before the semantic understanding
+    /// layer existed; bump the suffix to re-run the migration after a
+    /// meaningful change to theme generation.
+    private static let semanticThemesMigrationKey = "ocean.semanticThemes.v1"
+
+    /// Interpret fragments that haven't been understood yet: untitled ones
+    /// (as before), plus — once — every fragment themed by the old keyword
+    /// extractor, so the whole Ocean groups and matches by meaning.
+    private func backfillUnderstanding() async {
         guard !backfilling else { return }
         backfilling = true
         defer { backfilling = false }
 
-        for node in allNodes where node.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        let migrate = !UserDefaults.standard.bool(forKey: Self.semanticThemesMigrationKey)
+
+        for node in allNodes {
+            let needsTitle = node.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            guard needsTitle || migrate else { continue }
+
             let raw = node.rawContent
-            let title = raw.isEmpty ? node.kind.label : await ai.conciseTitle(for: raw)
-            node.title = title
+            if raw.isEmpty {
+                if needsTitle {
+                    node.title = node.kind.label
+                    try? context.save()
+                }
+                continue
+            }
+
+            let understanding = await ai.understand(raw)
+            NodeComposer.applyUnderstanding(understanding, to: node, preserveTitle: !needsTitle)
             try? context.save()
+        }
+
+        if migrate {
+            UserDefaults.standard.set(true, forKey: Self.semanticThemesMigrationKey)
         }
     }
 
@@ -90,9 +112,16 @@ struct LibraryView: View {
             ForEach(groups, id: \.title) { group in
                 Section {
                     ForEach(group.nodes) { node in
-                        NavigationLink(value: node) {
-                            NodeRow(node: node)
-                        }
+                        NodeRow(node: node)
+                            .overlay {
+                                // List draws its own disclosure chevron for a
+                                // visible NavigationLink — outside the card,
+                                // doubling the card's internal one. Hidden
+                                // this way, the row still navigates and the
+                                // card keeps the full width.
+                                NavigationLink(value: node) { EmptyView() }
+                                    .opacity(0)
+                            }
                         .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)

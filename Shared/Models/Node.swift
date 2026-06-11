@@ -122,6 +122,15 @@ extension Node {
             .joined(separator: " ")
     }
 
+    /// The thought's own content (interpreted essence + raw text, no theme
+    /// labels) — used for meaning-level similarity where themes are weighed
+    /// separately, so a shared theme isn't counted twice.
+    var meaningText: String {
+        [title, text, transcription ?? ""]
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+    }
+
     var snippet: String {
         let source = !text.isEmpty ? text : (transcription ?? linkURLString ?? "")
         return String(source.prefix(140))

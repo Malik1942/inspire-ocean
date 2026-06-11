@@ -23,7 +23,11 @@ enum NodeComposer {
             .filter { !$0.isEmpty }
             .joined(separator: " ")
 
-        let themes = detectThemes ? ThemeDetector.themes(from: basis) : []
+        // Conceptual themes from the synchronous semantic layer, so every
+        // surface (share extension, intents, branches) understands before it
+        // labels. The async `understand` pass upgrades them with the language
+        // model where available.
+        let themes = detectThemes ? SemanticThemes.themes(for: basis) : []
         let mood = ThemeDetector.mood(from: basis)
         let seedKey = (themes.first ?? basis).isEmpty ? UUID().uuidString : (themes.first ?? basis)
         let hue = hue(for: seedKey)
@@ -46,6 +50,30 @@ enum NodeComposer {
             parent: parent
         )
         return node
+    }
+
+    /// Applies an async-produced understanding to a node consistently with
+    /// how `make` composes one: title, themes, mood, and the theme-derived
+    /// hue and field anchor, so the fragment regroups with its concept.
+    /// `preserveTitle` keeps an existing title (re-theming migrations).
+    static func applyUnderstanding(
+        _ understanding: ThoughtUnderstanding,
+        to node: Node,
+        preserveTitle: Bool = false
+    ) {
+        if !preserveTitle || node.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            node.title = understanding.essence
+        }
+        if !understanding.themes.isEmpty {
+            node.themes = understanding.themes
+            if let mood = understanding.mood { node.mood = mood }
+            let key = understanding.themes.first ?? ""
+            node.hue = hue(for: key.isEmpty ? node.id.uuidString : key)
+            let anchor = fieldAnchor(themeKey: key, jitterKey: node.id.uuidString)
+            node.fieldX = anchor.x
+            node.fieldY = anchor.y
+        }
+        node.updatedAt = .now
     }
 
     /// Stable hue in 0...1 derived from a string.

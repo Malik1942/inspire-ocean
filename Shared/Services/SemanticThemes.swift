@@ -65,12 +65,13 @@ enum SemanticThemes {
         ("ambition & drive", "goal ambition dream achieve push drive success determined")
     ]
 
-    /// Tuned on the word-vector scale: a content word within ~this cosine of a
-    /// concept centroid genuinely evokes it; below, the link is noise.
-    static let conceptThreshold = 0.42
+    /// Tuned on the contrast scale (cosine above the word's mean affinity to
+    /// all concepts): a concept a distinctive word genuinely evokes clears
+    /// this; flat, everything-ish affinities do not.
+    static let conceptThreshold = 0.10
     /// Runner-up concepts must hold this fraction of the top concept's score,
     /// so one strong concept isn't padded with weak ones.
-    static let runnerUpRatio = 0.82
+    static let runnerUpRatio = 0.70
 
     private static let centroidLock = NSLock()
     private static var centroids: [(label: String, vector: [Double])]?
@@ -94,35 +95,51 @@ enum SemanticThemes {
     /// raw wording — drives the mapping.
     static func themes(for text: String, essence: String = "", max: Int = 3) -> [String] {
         let basis = [essence, text].filter { !$0.isEmpty }.joined(separator: " ")
-        let words = contentWords(in: basis)
-        guard !words.isEmpty else { return [] }
+        let scored = scoredConcepts(for: basis)
 
-        let centroids = conceptCentroids()
-        if !centroids.isEmpty {
-            let vectors = words.compactMap { EmbeddingService.shared.vector(for: $0) }
-            if !vectors.isEmpty {
-                var scored: [(label: String, score: Double)] = []
-                for (label, centroid) in centroids {
-                    // Mean of the two strongest word→concept affinities: one
-                    // evocative word can carry a short thought, two confirm it.
-                    let sims = vectors.map { EmbeddingService.cosine($0, centroid) }.sorted(by: >)
-                    let top = sims.prefix(2)
-                    let score = top.reduce(0, +) / Double(top.count)
-                    scored.append((label, score))
-                }
-                scored.sort { $0.score > $1.score }
-
-                if let best = scored.first, best.score >= conceptThreshold {
-                    let floor = Swift.max(conceptThreshold, best.score * runnerUpRatio)
-                    return scored.prefix(while: { $0.score >= floor })
-                        .prefix(max)
-                        .map { $0.label }
-                }
-            }
+        if let best = scored.first, best.score >= conceptThreshold {
+            let floor = Swift.max(conceptThreshold, best.score * runnerUpRatio)
+            return scored.prefix(while: { $0.score >= floor })
+                .prefix(max)
+                .map { $0.label }
         }
 
         // Last resort (no embeddings, or nothing conceptual): clean keywords.
         return Array(ThemeDetector.themes(from: basis).prefix(2))
+    }
+
+    /// Every concept scored against the text, strongest first.
+    ///
+    /// A word's vote for a concept is its *contrast*: cosine to that concept
+    /// minus its mean cosine to all concepts. Generic words ("felt", "keeps")
+    /// sit moderately near everything, so their contrast is ~0 everywhere and
+    /// they cannot create a theme; only distinctive words carry meaning in.
+    /// A concept's score is the mean of its two strongest word votes — one
+    /// evocative word can carry a short thought, two confirm it.
+    static func scoredConcepts(for text: String) -> [(label: String, score: Double)] {
+        let words = contentWords(in: text)
+        guard !words.isEmpty else { return [] }
+        let vectors = words.compactMap { EmbeddingService.shared.vector(for: $0) }
+        guard !vectors.isEmpty else { return [] }
+
+        let centroids = conceptCentroids()
+        guard !centroids.isEmpty else { return [] }
+
+        // contrasts[w][c] = cos(word w, concept c) − mean over c
+        var contrasts: [[Double]] = []
+        for v in vectors {
+            let sims = centroids.map { EmbeddingService.cosine(v, $0.vector) }
+            let mean = sims.reduce(0, +) / Double(sims.count)
+            contrasts.append(sims.map { $0 - mean })
+        }
+
+        var scored: [(label: String, score: Double)] = []
+        for (c, centroid) in centroids.enumerated() {
+            let votes = contrasts.map { $0[c] }.sorted(by: >)
+            let top = votes.prefix(2)
+            scored.append((centroid.label, top.reduce(0, +) / Double(top.count)))
+        }
+        return scored.sorted { $0.score > $1.score }
     }
 
     /// The full understanding fallback used when no language model is
@@ -137,11 +154,35 @@ enum SemanticThemes {
         )
     }
 
+    /// Cleans a model-produced theme list ("1. Creative Direction, Memory…")
+    /// into chip-ready labels: lowercase, at most three words each, deduped,
+    /// capped at three. Returns [] when nothing usable survives, so callers
+    /// can fall back to concept mapping.
+    static func tidyThemeList(_ raw: String) -> [String] {
+        var seen = Set<String>()
+        let trimSet = CharacterSet(charactersIn: "-–—•*\"'“”‘’.:;0123456789() ")
+        let cleaned = raw
+            .split(whereSeparator: { $0 == "," || $0 == ";" || $0 == "·" || $0.isNewline })
+            .compactMap { piece -> String? in
+                let s = piece.trimmingCharacters(in: .whitespaces)
+                    .trimmingCharacters(in: trimSet)
+                    .lowercased()
+                guard !s.isEmpty, s.count <= 28,
+                      s.split(separator: " ").count <= 3,
+                      seen.insert(s).inserted
+                else { return nil }
+                return s
+            }
+        return Array(cleaned.prefix(3))
+    }
+
     // MARK: Relatedness
 
     /// Floor below which two thoughts are simply not related — better to show
-    /// nothing than a stretch.
-    static let relatednessFloor = 0.34
+    /// nothing than a stretch. Averaged word vectors give any two English
+    /// sentences a baseline ~0.3–0.4; genuine meaning-level neighbors clear
+    /// 0.48 and unrelated pairs stay under 0.41 on the blended scale.
+    static let relatednessFloor = 0.45
 
     /// How strongly two thoughts belong near each other, in ~[0, 1].
     ///
@@ -183,7 +224,7 @@ enum SemanticThemes {
         tokenizer.enumerateTokens(in: lowered.startIndex..<lowered.endIndex) { range, _ in
             let token = String(lowered[range])
             guard token.count > 2,
-                  !ThemeDetector.functionWords.contains(token),
+                  !ThemeDetector.grammaticalWords.contains(token),
                   token.rangeOfCharacter(from: .letters) != nil,
                   seen.insert(token).inserted
             else { return true }

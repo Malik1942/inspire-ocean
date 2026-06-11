@@ -52,6 +52,10 @@ struct BranchComposer: View {
                 .padding()
             }
             .background(OceanBackground())
+            .contentShape(Rectangle())
+            // Tapping outside the editor folds the keyboard; the editor and
+            // the chips have their own gestures, so their taps still win.
+            .onTapGesture { focused = false }
             .navigationTitle("Grow a branch")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

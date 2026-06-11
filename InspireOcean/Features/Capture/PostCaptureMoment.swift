@@ -50,7 +50,12 @@ struct PostCaptureMoment: Identifiable, Equatable {
               let best = nodes.first(where: { $0.id == bestID })
         else { return nil }
 
-        let strength = EmbeddingService.shared.similarity(node.searchableText, best.searchableText)
+        // A notch above the nearby-thoughts floor: the hint names one
+        // fragment with confidence, so it needs meaning-level strength.
+        let strength = SemanticThemes.relatedness(
+            textA: node.meaningText, themesA: node.themes, moodA: node.mood,
+            textB: best.meaningText, themesB: best.themes, moodB: best.mood
+        )
         guard strength >= 0.5 else { return nil }
 
         return RelatedHint(nodeID: best.id, title: best.displayTitle)

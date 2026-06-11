@@ -1,34 +1,43 @@
 import SwiftUI
 import SwiftData
 
-/// Ocean Field (§8).
+/// Ocean Field (§8) — cluster-first.
 ///
 /// Three layers, cleanly separated:
 ///  1. **Atmosphere** — `OceanBackground` + `AtmosphereView` (non-interactive,
 ///     purely decorative).
-///  2. **Structure** — a cached force-relaxation layout (`OceanLayoutEngine`)
-///     that clusters related fragments, floats newer ones up, and guarantees
-///     breathing room.
-///  3. **Interaction** — tappable glass nodes with progressive labels and
-///     focus-isolation (neighbours part softly when a node is focused).
+///  2. **Structure** — a cached layout (`OceanLayoutEngine`) whose large
+///     objects are *currents*: labeled conceptual regions sized by how many
+///     thoughts they hold. Member thoughts orbit them as small motes.
+///  3. **Interaction** — tap a current to open its stream of thoughts; tap a
+///     mote to open that single thought. Nothing on screen is unlabeled, so
+///     there is no reveal-first friction.
 ///
-/// Animation design:
-/// - `TimelineView(.animation)` with **no** minimum-interval floor — ProMotion
-///   devices run at their full 120 Hz.
-/// - Drift amplitudes are deliberately small (≤ 3 pt) so motion is noticed only
-///   when stared at — like a floating object, not a jitter.
-/// - Compound sine terms give each axis an independent, organic rhythm.
+/// Animation design is unchanged: `TimelineView(.animation)` with no minimum
+/// interval (full ProMotion), small compound-sine drift so motion reads as
+/// floating, not jitter.
 struct OceanFieldView: View {
     @Environment(AppState.self) private var appState
     @Query(filter: #Predicate<Node> { !$0.isArchived }, sort: \Node.createdAt)
     private var nodes: [Node]
 
-    @State private var layout    = OceanLayout()
-    @State private var focusedID: UUID?
-    @State private var selected:  Node?
+    @State private var layout = OceanLayout()
+    @State private var sheet: OceanSheet?
 
     private var nodeByID: [UUID: Node] {
         Dictionary(uniqueKeysWithValues: nodes.map { ($0.id, $0) })
+    }
+
+    private enum OceanSheet: Identifiable {
+        case thought(Node)
+        case stream(theme: String)
+
+        var id: String {
+            switch self {
+            case .thought(let node): return node.id.uuidString
+            case .stream(let theme): return "stream·\(theme)"
+            }
+        }
     }
 
     // MARK: Body
@@ -45,11 +54,6 @@ struct OceanFieldView: View {
                     if nodes.isEmpty {
                         emptyState
                     } else {
-                        // Tap empty water to release focus.
-                        Color.clear
-                            .contentShape(Rectangle())
-                            .onTapGesture { setFocus(nil) }
-
                         field(in: geo.size)
                     }
                 }
@@ -63,8 +67,13 @@ struct OceanFieldView: View {
             .overlay(alignment: .top) { header }
             .ignoresSafeArea(edges: .bottom)
             .navigationBarHidden(true)
-            .sheet(item: $selected, onDismiss: { setFocus(nil) }) { node in
-                ExpandedNodeView(node: node)
+            .sheet(item: $sheet) { item in
+                switch item {
+                case .thought(let node):
+                    ExpandedNodeView(node: node)
+                case .stream(let theme):
+                    ClusterStreamView(theme: theme)
+                }
             }
         }
     }
@@ -76,113 +85,85 @@ struct OceanFieldView: View {
         TimelineView(.animation) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             ZStack {
-                ForEach(layout.order, id: \.self) { id in
-                    if let node = nodeByID[id], let placement = layout.placements[id] {
-                        // Phase used for the ambient pulse — slow, independent per node.
-                        let phase = (sin(t * 0.55 + Double(placement.base.x) * 0.018) + 1) / 2
-                        OceanNodeView(
-                            node: node,
-                            placement: placement,
-                            isFocused: focusedID == id,
-                            isDimmed:  focusedID != nil && focusedID != id,
-                            pulse:     phase
-                        )
-                        .position(position(for: placement, t: t))
-                        .zIndex(focusedID == id ? 10 : Double(placement.prominence))
-                        .onTapGesture { handleTap(node: node, placement: placement) }
-                    }
+                // Currents first (beneath their particles), least prominent at the back.
+                ForEach(layout.clusters.sorted { $0.prominence < $1.prominence }) { cluster in
+                    let phase = (sin(t * 0.5 + Double(cluster.center.x) * 0.02) + 1) / 2
+                    ClusterOrbView(placement: cluster, pulse: phase)
+                        .position(clusterPosition(cluster, t: t))
+                        .onTapGesture {
+                            sheet = .stream(theme: cluster.id)
+                        }
+                }
+
+                ForEach(layout.motes) { mote in
+                    let phase = (sin(t * 0.6 + Double(mote.base.y) * 0.02) + 1) / 2
+                    ThoughtMoteView(mote: mote, pulse: phase)
+                        .position(motePosition(mote, t: t, in: size))
+                        .onTapGesture {
+                            if let node = nodeByID[mote.id] { sheet = .thought(node) }
+                        }
                 }
             }
         }
     }
 
-    // MARK: Position — base + ambient drift + focus isolation
+    // MARK: Drift — currents sway slowly; particles orbit and float
 
-    private func position(for placement: OceanPlacement, t: Double) -> CGPoint {
-        let drift = driftOffset(placement, t: t)
-        let iso   = isolationOffset(placement)
-        return CGPoint(
-            x: placement.base.x + drift.width  + iso.width,
-            y: placement.base.y + drift.height + iso.height
-        )
+    /// The sway a current applies to itself — particles orbiting that current
+    /// track the same offset so the whole region moves as one body of water.
+    private func clusterSway(key: String, t: Double) -> CGSize {
+        let seed = Double(NodeComposer.stableHash(key) % 1000) / 1000
+        let ph = seed * 6.2831
+        let x = sin(t * 0.07 + ph) * 3.5 + sin(t * 0.045 + ph * 0.6) * 1.5
+        let y = cos(t * 0.055 + ph * 1.2) * 3.0
+        return CGSize(width: x, height: y)
     }
 
-    /// Per-kind ambient drift — clearly visible, but slow and smooth so it reads
-    /// as floating, not jittering. (Smoothness comes from the uncapped frame
-    /// rate, not from a tiny amplitude.)
-    ///
-    /// Two independent sine terms per axis (different frequencies) produce an
-    /// organic, Lissajous-like float rather than a simple back-and-forth.
-    /// Background nodes move at 70 % to recede slightly.
-    private func driftOffset(_ p: OceanPlacement, t: Double) -> CGSize {
-        // Deterministic per-node seed so every fragment has its own rhythm.
-        let seed  = Double(NodeComposer.stableHash(p.id.uuidString) % 1000) / 1000
-        let ph    = seed * 6.2831
-        let scale = p.tier == .background ? 0.70 : 1.0
+    private func clusterPosition(_ c: ClusterPlacement, t: Double) -> CGPoint {
+        let sway = clusterSway(key: c.id, t: t)
+        return CGPoint(x: c.center.x + sway.width, y: c.center.y + sway.height)
+    }
 
-        switch p.kind {
+    /// Orbiting particles sway gently along their ring — a slow pendulum
+    /// around their resting slot rather than a full revolution, so a particle
+    /// can never wander across its current's label (the layout reserves the
+    /// label arc). Standalone thoughts only float.
+    private func motePosition(_ m: MotePlacement, t: Double, in size: CGSize) -> CGPoint {
+        let seed = Double(NodeComposer.stableHash(m.id.uuidString) % 1000) / 1000
+        let ph = seed * 6.2831
 
-        case .image:
-            // Images are heavy — broad, slow swells.
-            let x = sin(t * 0.085 + ph) * 6.0 + sin(t * 0.052 + ph * 0.6) * 2.0
-            let y = cos(t * 0.067 + ph) * 5.0
-            return CGSize(width: x * scale, height: y * scale)
-
-        case .voice:
-            // Voice sways more expressively, like a waveform settling.
-            let x = sin(t * 0.18 + ph) * 7.0 + sin(t * 0.30 + ph * 1.5) * 2.5
-            let y = cos(t * 0.12 + ph) * 4.5
-            return CGSize(width: x * scale, height: y * scale)
-
-        default:
-            // Text drifts on broad, gentle swells with a non-repeating feel.
-            let amp = 6.0 + p.prominence * 3.0   // 6 – 9 pt; larger = more prominent
-            let x = sin(t * 0.115 + ph) * amp + sin(t * 0.072 + ph * 0.7) * 2.5
-            let y = cos(t * 0.095 + ph * 1.2) * (amp * 0.85)
-                  + cos(t * 0.058 + ph) * 1.8
-            return CGSize(width: x * scale, height: y * scale)
+        var p: CGPoint
+        if let key = m.orbitKey {
+            // Each particle swings on its own rhythm — amplitude and tempo
+            // vary per thought (≈±3°–8°), so no two move in step.
+            let seed2 = Double(NodeComposer.stableHash(m.id.uuidString + "v") % 1000) / 1000
+            let angle = m.baseAngle + sin(t * (0.08 + seed2 * 0.09) + ph) * (0.05 + seed * 0.09)
+            let sway = clusterSway(key: key, t: t)
+            p = CGPoint(
+                x: m.orbitCenter.x + sway.width + CGFloat(cos(angle)) * m.orbitRadius,
+                y: m.orbitCenter.y + sway.height + CGFloat(sin(angle)) * m.orbitRadius
+            )
+        } else {
+            p = m.base
         }
-    }
 
-    /// When a node is focused, nearby nodes part gently to reduce accidental taps.
-    private func isolationOffset(_ p: OceanPlacement) -> CGSize {
-        guard let fid = focusedID, fid != p.id,
-              let f = layout.placements[fid] else { return .zero }
-        let dx   = p.base.x - f.base.x
-        let dy   = p.base.y - f.base.y
-        let dist = max(0.001, (dx * dx + dy * dy).squareRoot())
-        let influence: CGFloat = 150
-        guard dist < influence else { return .zero }
-        let push = (influence - dist) / influence * 48
-        return CGSize(width: dx / dist * push, height: dy / dist * push)
+        let amp = m.isResurfacing ? 3.0 : (m.orbitKey == nil ? 6.0 : 2.5)
+        p.x += sin(t * 0.14 + ph) * amp + sin(t * 0.09 + ph * 0.7) * 1.5
+        p.y += cos(t * 0.11 + ph * 1.3) * (amp * 0.85) + cos(t * 0.06 + ph) * 1.4
+
+        p.x = min(size.width - 12, max(12, p.x))
+        p.y = min(size.height - 96, max(132, p.y))
+        return p
     }
 
     // MARK: Interaction
 
-    private func handleTap(node: Node, placement: OceanPlacement) {
-        if focusedID == node.id {
-            selected = node                      // already focused → open
-        } else if placement.tier == .background {
-            setFocus(node.id)                    // background: reveal first
-        } else {
-            setFocus(node.id)
-            selected = node                      // foreground: focus + open
-        }
-    }
-
-    private func setFocus(_ id: UUID?) {
-        withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
-            focusedID = id
-        }
-    }
-
-    /// A deep link (e.g. the Resurfacing widget) queued a node: focus and open it.
+    /// A deep link (e.g. the Resurfacing widget) queued a node: open it.
     private func consumePendingFocus() {
         guard let id = appState.pendingFocusNodeID else { return }
         appState.pendingFocusNodeID = nil
         guard let node = nodeByID[id] else { return }
-        setFocus(node.id)
-        selected = node
+        sheet = .thought(node)
     }
 
     private func recompute(_ size: CGSize) {
@@ -215,8 +196,7 @@ struct OceanFieldView: View {
 
             if let resurfacing {
                 Button {
-                    setFocus(resurfacing.id)
-                    selected = resurfacing
+                    sheet = .thought(resurfacing)
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "arrow.up.heart.fill")
@@ -226,9 +206,9 @@ struct OceanFieldView: View {
                             Text("Resurfacing")
                                 .font(.caption2.weight(.semibold))
                                 .foregroundStyle(OceanTheme.glowWarm)
-                            Text(resurfacing.displayTitle)
+                            Text("Catching a thought that drifted away")
                                 .font(.caption)
-                                .foregroundStyle(OceanTheme.foam)
+                                .foregroundStyle(OceanTheme.mist)
                                 .lineLimit(1)
                         }
                         Spacer()

@@ -283,17 +283,14 @@ struct CaptureView: View {
 
     private func transcribeAndEnrich(nodeID: UUID, url: URL) async {
         guard let transcript = await ai.transcribe(audioURL: url) else { return }
-        let themes = ai.detectThemes(for: transcript)
-        let title = await ai.conciseTitle(for: transcript)
+        let understanding = await ai.understand(transcript)
         await MainActor.run {
             let descriptor = FetchDescriptor<Node>(predicate: #Predicate { $0.id == nodeID })
             guard let node = try? context.fetch(descriptor).first else { return }
             node.transcription = transcript
-            node.themes = themes
-            node.title = title
-            node.updatedAt = .now
+            NodeComposer.applyUnderstanding(understanding, to: node)
             try? context.save()
-            advanceMoment(nodeID: nodeID, title: title)
+            advanceMoment(nodeID: nodeID, title: understanding.essence)
         }
     }
 
@@ -303,14 +300,13 @@ struct CaptureView: View {
             return (try? context.fetch(descriptor).first)?.rawContent ?? ""
         }
         guard !raw.isEmpty else { return }
-        let title = await ai.conciseTitle(for: raw)
+        let understanding = await ai.understand(raw)
         await MainActor.run {
             let descriptor = FetchDescriptor<Node>(predicate: #Predicate { $0.id == nodeID })
             guard let node = try? context.fetch(descriptor).first else { return }
-            node.title = title
-            node.updatedAt = .now
+            NodeComposer.applyUnderstanding(understanding, to: node)
             try? context.save()
-            advanceMoment(nodeID: nodeID, title: title)
+            advanceMoment(nodeID: nodeID, title: understanding.essence)
         }
     }
 
