@@ -7,8 +7,9 @@ import Foundation
 /// - **Retrieval, themes, transcription**: always on-device. Only the handful
 ///   of fragments that retrieval already selected ever leave the device, and
 ///   only when a key is configured.
-/// - **Dialogue reflection + concise titles**: composed by Claude when
-///   configured; otherwise the on-device path runs exactly as before.
+/// - **Dialogue reflection, Research's outward step + concise titles**:
+///   composed by Claude when configured; otherwise the on-device path runs
+///   exactly as before.
 ///
 /// Unconfigured (no API key), this service is behaviorally identical to
 /// `LocalOceanAIService` — so it can safely be the app's default. Configure by
@@ -57,10 +58,6 @@ final class CloudOceanAIService: OceanAIService {
         await fallback.transcribe(audioURL: audioURL)
     }
 
-    func detectThemes(for text: String) -> [String] {
-        fallback.detectThemes(for: text)
-    }
-
     func relatedNodeIDs(to node: Node, among nodes: [Node], limit: Int) -> [UUID] {
         fallback.relatedNodeIDs(to: node, among: nodes, limit: limit)
     }
@@ -74,24 +71,97 @@ final class CloudOceanAIService: OceanAIService {
         // reflection below simply replaces it when configured.)
         let scaffold = await fallback.respond(to: query, history: history, mode: mode, nodes: nodes)
 
-        guard let configuration, !scaffold.sourceNodeIDs.isEmpty else { return scaffold }
+        guard let configuration else { return scaffold }
 
         let byID = Dictionary(uniqueKeysWithValues: nodes.map { ($0.id, $0) })
         let sources = scaffold.sourceNodeIDs.compactMap { byID[$0] }
-        guard !sources.isEmpty else { return scaffold }
 
+        // Search is a pure find — the sources are the answer, nothing to
+        // compose. Research's outward step runs concurrently with the
+        // grounded reflection; either may fail independently, and whatever
+        // the cloud doesn't deliver, the on-device scaffold already covers.
+        async let composedReflection = reflectIfNeeded(
+            query: query, history: history, mode: mode, sources: sources,
+            configuration: configuration,
+            enabled: mode != .search && !sources.isEmpty
+        )
+        async let composedOutward = outwardIfNeeded(
+            query: query, sources: sources,
+            configuration: configuration,
+            enabled: mode == .research
+        )
+
+        var response = scaffold
+        if let reflection = await composedReflection {
+            response.reflection = reflection
+        }
+        if let outward = await composedOutward {
+            response.outwardNote = outward
+        }
+        return response
+    }
+
+    /// The grounded reflection via Claude; nil (so the scaffold stands) when
+    /// disabled, when the call fails, or when the reply is empty.
+    private func reflectIfNeeded(
+        query: String,
+        history: [DialogueTurn],
+        mode: DialogueMode,
+        sources: [Node],
+        configuration: Configuration,
+        enabled: Bool
+    ) async -> String? {
+        guard enabled else { return nil }
         do {
             let reflection = try await reflect(
                 query: query, history: history, mode: mode,
                 sources: sources, configuration: configuration
             )
-            guard !reflection.isEmpty else { return scaffold }
-            var response = scaffold
-            response.reflection = reflection
-            return response
+            return reflection.isEmpty ? nil : reflection
         } catch {
-            // Network or API failure: the grounded on-device response stands.
-            return scaffold
+            return nil
+        }
+    }
+
+    /// Research's outward step via Claude's general knowledge: specific
+    /// directions beyond the user's notes, returned separately from the
+    /// grounded reflection so the UI can mark its provenance. Works even on
+    /// an empty Ocean — outward is exactly where an empty Ocean can't reach.
+    private func outwardIfNeeded(
+        query: String,
+        sources: [Node],
+        configuration: Configuration,
+        enabled: Bool
+    ) async -> String? {
+        guard enabled else { return nil }
+
+        let titles = sources.prefix(6).map { "“\($0.displayTitle)”" }.joined(separator: ", ")
+        let system = """
+        You are the outward-looking voice of a personal inspiration space \
+        called the Ocean. The user's own notes are answered separately — you \
+        bring what lies beyond them. From your general knowledge, name two or \
+        three specific directions worth exploring: thinkers, works, fields, \
+        or open questions that genuinely extend their interest. Write 2 to 4 \
+        calm sentences in plain prose — no lists, no exclamation marks. Be \
+        concrete with names. Never pretend to quote their notes, and never \
+        invent notes.
+        """
+        let prompt = titles.isEmpty
+            ? "They are exploring: \(query)"
+            : "They are exploring: \(query)\nTheir related notes touch on: \(titles)"
+
+        do {
+            let text = try await completeText(
+                system: system,
+                user: prompt,
+                maxTokens: 512,
+                adaptiveThinking: true,
+                configuration: configuration
+            )
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        } catch {
+            return nil
         }
     }
 
@@ -102,12 +172,14 @@ final class CloudOceanAIService: OceanAIService {
         sources: [Node],
         configuration: Configuration
     ) async throws -> String {
-        let fragments = sources.prefix(5).map { node -> String in
+        // The whole retrieved set goes in — Synthesis reads across up to 12
+        // fragments, so the body excerpt is kept short to bound the prompt.
+        let fragments = sources.map { node -> String in
             var line = "“\(node.displayTitle)”"
             if let parent = node.parent {
                 line += " (a branch of “\(parent.displayTitle)”)"
             }
-            let body = node.searchableText.prefix(300)
+            let body = node.searchableText.prefix(sources.count > 6 ? 180 : 300)
             if !body.isEmpty { line += ": \(body)" }
             return "- " + line
         }.joined(separator: "\n")
@@ -152,32 +224,56 @@ final class CloudOceanAIService: OceanAIService {
         return text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    // MARK: Concise titles
+    // MARK: Understanding
 
-    func conciseTitle(for text: String) async -> String {
+    /// One Claude call interprets the fragment into essence + conceptual
+    /// themes; mood stays on-device. Any failure or unusable reply falls back
+    /// to the local understanding path unchanged.
+    func understand(_ text: String) async -> ThoughtUnderstanding {
         let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let configuration, !cleaned.isEmpty else {
-            return await fallback.conciseTitle(for: text)
+            return await fallback.understand(text)
         }
 
         let system = """
-        You create very short titles for entries in a personal inspiration journal.
-        Reply with ONLY the title — at most 6 words, no quotation marks, no trailing \
-        punctuation. Capture the essence or feeling rather than restating the text.
+        You interpret entries in a personal inspiration journal.
+        Reply with EXACTLY two lines and nothing else.
+        Line 1: a title of at most 6 words — capture the essence or feeling \
+        rather than restating the text; no quotation marks, no trailing punctuation.
+        Line 2: 1 to 3 conceptual themes, comma-separated, each one to three \
+        lowercase words. A theme names the underlying concept, intention, \
+        emotion, or domain — what the entry is really about, never words \
+        copied from it. Examples: creative direction, career uncertainty, \
+        recurring thoughts, social energy, emotional friction.
         """
 
         do {
-            let title = try await completeText(
+            let raw = try await completeText(
                 system: system,
                 user: "Entry:\n\(cleaned)",
-                maxTokens: 64,
+                maxTokens: 96,
                 adaptiveThinking: false,
                 configuration: configuration
             )
-            let tidied = TitleDistiller.tidy(title)
-            return tidied.isEmpty ? await fallback.conciseTitle(for: text) : tidied
+            let lines = raw
+                .split(whereSeparator: \.isNewline)
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty }
+            guard let titleLine = lines.first else { return await fallback.understand(text) }
+
+            let essence = TitleDistiller.tidy(titleLine)
+            guard !essence.isEmpty else { return await fallback.understand(text) }
+
+            let themes = lines.dropFirst().first.map(SemanticThemes.tidyThemeList) ?? []
+            return ThoughtUnderstanding(
+                essence: essence,
+                themes: themes.isEmpty
+                    ? SemanticThemes.themes(for: cleaned, essence: essence)
+                    : themes,
+                mood: ThemeDetector.mood(from: cleaned)
+            )
         } catch {
-            return await fallback.conciseTitle(for: text)
+            return await fallback.understand(text)
         }
     }
 

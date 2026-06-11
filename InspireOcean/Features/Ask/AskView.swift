@@ -22,10 +22,19 @@ struct AskView: View {
     @State private var mode: DialogueMode = .synthesis
     @State private var input: String = ""
     @State private var searchPhase: SearchPhase?
+    @FocusState private var inputFocused: Bool
+
+    /// Everything the branch sheet needs, carried in the sheet item itself.
+    /// Reading companion @State inside `.sheet(item:)` is racy: the closure
+    /// can run against a pre-presentation state snapshot where it's still nil.
+    private struct BranchRequest: Identifiable {
+        let id = UUID()
+        let parent: Node
+        let suggestion: SuggestedBranch
+    }
 
     @State private var openedNode: Node?
-    @State private var branchTarget: Node?
-    @State private var branchPrefill: SuggestedBranch?
+    @State private var branchRequest: BranchRequest?
 
     private var messages: [ChatMessage] { conversation?.orderedMessages ?? [] }
 
@@ -38,16 +47,20 @@ struct AskView: View {
                     transcript
                 }
             }
+            .contentShape(Rectangle())
+            // Tapping open water folds the keyboard. Buttons, chips, and the
+            // input bar sit above this gesture, so their taps still win.
+            .onTapGesture { inputFocused = false }
             .navigationTitle("Ask the Ocean")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
             .safeAreaInset(edge: .bottom) { inputBar }
             .sheet(item: $openedNode) { ExpandedNodeView(node: $0) }
-            .sheet(item: $branchTarget) { target in
+            .sheet(item: $branchRequest) { request in
                 BranchComposer(
-                    parent: target,
-                    prefill: branchPrefill?.title ?? "",
-                    prefillType: branchPrefill?.type ?? .concept
+                    parent: request.parent,
+                    prefill: request.suggestion.title,
+                    prefillType: request.suggestion.type
                 )
             }
             .onAppear(perform: consumePendingPrompt)
@@ -108,6 +121,9 @@ struct AskView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
 
+                if let outward = message.outwardText, !outward.isEmpty {
+                    outwardView(outward)
+                }
                 if !message.referencedNodeIDs.isEmpty {
                     sourceChips(for: message)
                 }
@@ -117,6 +133,26 @@ struct AskView: View {
             }
             .padding(.trailing, 30)
         }
+    }
+
+    /// Research's outward beat — knowledge from beyond the user's notes. A
+    /// warm whisper of a rim and label set its provenance apart from the
+    /// grounded reflection above it: lit from the open sea, not their water.
+    private func outwardView(_ text: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Beyond your Ocean", systemImage: "sparkles")
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(OceanTheme.glowWarm)
+            Text(text)
+                .foregroundStyle(OceanTheme.foam)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .strokeBorder(OceanTheme.glowWarm.opacity(0.25), lineWidth: 0.6)
+        )
     }
 
     private func sourceChips(for message: ChatMessage) -> some View {
@@ -141,8 +177,8 @@ struct AskView: View {
             Text("Grow a branch").font(.caption2).foregroundStyle(OceanTheme.faint)
             ForEach(parsedBranches(message)) { branch in
                 Button {
-                    branchPrefill = branch
-                    branchTarget = sourceNodes(message).first ?? nodes.first
+                    guard let parent = sourceNodes(message).first ?? nodes.first else { return }
+                    branchRequest = BranchRequest(parent: parent, suggestion: branch)
                 } label: {
                     HStack {
                         Image(systemName: branch.type.symbol)
@@ -228,6 +264,7 @@ struct AskView: View {
         HStack(spacing: 10) {
             TextField(mode.placeholder, text: $input, axis: .vertical)
                 .textFieldStyle(.plain)
+                .focused($inputFocused)
                 .foregroundStyle(OceanTheme.foam)
                 .padding(.horizontal, 14).padding(.vertical, 10)
                 .background(.ultraThinMaterial, in: Capsule())
@@ -307,7 +344,8 @@ struct AskView: View {
                     text: composeText(response),
                     referencedNodeIDs: response.sourceNodeIDs,
                     suggestedBranches: response.suggestedBranches.map { "\($0.type.rawValue)|\($0.title)" },
-                    mode: currentMode
+                    mode: currentMode,
+                    outwardText: response.outwardNote
                 )
                 oceanMessage.conversation = convo
                 context.insert(oceanMessage)

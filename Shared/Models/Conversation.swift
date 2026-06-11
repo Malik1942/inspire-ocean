@@ -39,6 +39,9 @@ final class ChatMessage {
     /// Suggested branches the user can grow from this turn.
     var suggestedBranches: [String]
     var modeRaw: String?
+    /// Research mode's outward step — knowledge from beyond the user's notes,
+    /// stored apart from `text` so its provenance stays visible forever.
+    var outwardText: String?
 
     @Relationship(inverse: \Conversation.messages) var conversation: Conversation?
 
@@ -49,7 +52,8 @@ final class ChatMessage {
         text: String,
         referencedNodeIDs: [UUID] = [],
         suggestedBranches: [String] = [],
-        mode: DialogueMode? = nil
+        mode: DialogueMode? = nil,
+        outwardText: String? = nil
     ) {
         self.id = id
         self.createdAt = createdAt
@@ -58,6 +62,7 @@ final class ChatMessage {
         self.referencedNodeIDs = referencedNodeIDs
         self.suggestedBranches = suggestedBranches
         self.modeRaw = mode?.rawValue
+        self.outwardText = outwardText
     }
 
     var role: MessageRole {
