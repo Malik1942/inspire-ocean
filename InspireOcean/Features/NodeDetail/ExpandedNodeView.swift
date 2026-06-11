@@ -8,7 +8,9 @@ struct ExpandedNodeView: View {
 
     var body: some View {
         NavigationStack {
-            NodeDetailContent(node: node)
+            // Presented as a sheet root: it owns a leading "Close" to dismiss,
+            // so the trailing slot is free for the destructive action.
+            NodeDetailContent(node: node, isSheetRoot: true)
         }
         .presentationDetents([.large])
         .presentationBackground(.clear)
@@ -17,6 +19,10 @@ struct ExpandedNodeView: View {
 
 struct NodeDetailContent: View {
     let node: Node
+    /// True only when this is the root of a presented sheet (so it shows its
+    /// own leading "Close"). When pushed onto a navigation stack the system
+    /// supplies a back button, so the leading slot is left to it.
+    var isSheetRoot: Bool = false
 
     @Environment(\.modelContext) private var context
     @Environment(\.oceanAI) private var ai
@@ -26,6 +32,7 @@ struct NodeDetailContent: View {
     @Query(filter: #Predicate<Node> { !$0.isArchived }) private var allNodes: [Node]
 
     @State private var showBranchComposer = false
+    @State private var showDeleteConfirm = false
     @State private var relatedIDs: [UUID] = []
 
     private var related: [Node] {
@@ -54,9 +61,30 @@ struct NodeDetailContent: View {
         .navigationTitle(node.kind.label)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("Close") { dismiss() }
+            // Only a sheet root needs its own dismiss control; a pushed view
+            // already has the system back button on the leading side.
+            if isSheetRoot {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Close") { dismiss() }
+                }
             }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(role: .destructive) {
+                    showDeleteConfirm = true
+                } label: {
+                    Image(systemName: "trash")
+                }
+            }
+        }
+        .confirmationDialog(
+            "Delete this thought?",
+            isPresented: $showDeleteConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) { deleteNode() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This drifts out of the Ocean for good.")
         }
         .sheet(isPresented: $showBranchComposer) {
             BranchComposer(parent: node)
@@ -64,6 +92,14 @@ struct NodeDetailContent: View {
         .task(id: node.id) {
             relatedIDs = ai.relatedNodeIDs(to: node, among: allNodes, limit: 4)
         }
+    }
+
+    /// Removes the fragment and leaves this view (pops if pushed, dismisses the
+    /// sheet if presented). Matches Library's hard-delete semantics.
+    private func deleteNode() {
+        dismiss()
+        context.delete(node)
+        try? context.save()
     }
 
     // MARK: Sections
