@@ -1,0 +1,23 @@
+name = "oryn-cloud"
+main = "src/worker.js"
+compatibility_date = "2025-01-01"
+
+# Secrets (set via CLI, never in this file):
+#   npx wrangler secret put ANTHROPIC_API_KEY
+#
+# Use a key from a DEDICATED Anthropic workspace with a monthly spend cap —
+# never a personal key. Rotating it is then one `wrangler secret put` away.
+
+[vars]
+# Reflections and outward notes carry the product's voice — strongest model.
+MODEL_REFLECT = "claude-opus-4-8"
+# Titles fire on every capture and branches are 160 tokens — the cost lever.
+MODEL_FAST = "claude-haiku-4-5-20251001"
+DEVICE_DAILY_LIMIT = "60"
+GLOBAL_DAILY_LIMIT = "2000"
+REGISTER_DAILY_LIMIT = "5"
+
+[[kv_namespaces]]
+binding = "OCEAN_KV"
+# npx wrangler kv namespace create OCEAN_KV   → paste the id here
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
