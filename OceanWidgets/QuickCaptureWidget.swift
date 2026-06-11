@@ -93,10 +93,10 @@ struct QuickCaptureView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
                 Image(systemName: "water.waves")
-                    .font(.title3.weight(.light))
+                    .font(.system(size: 18, weight: .light))
                     .foregroundStyle(OceanTheme.mist)
                 Text("Oryn: Fast Capture")
-                    .font(.title.weight(.light))
+                    .font(.system(size: 24, weight: .light))
                     .tracking(0.3)
                     .foregroundStyle(OceanTheme.foam)
                     .lineLimit(1)
@@ -128,13 +128,13 @@ struct QuickCaptureView: View {
         Link(destination: URL(string: url)!) {
             HStack(spacing: 10) {
                 Image(systemName: symbol)
-                    .font(.callout.weight(.regular))
+                    .font(.footnote.weight(.regular))
                     .foregroundStyle(OceanTheme.foam)
-                    .frame(width: 32, height: 32)
+                    .frame(width: 28, height: 28)
                     .background(Circle().fill(Color.white.opacity(0.08)))
                     .overlay(Circle().strokeBorder(Color.white.opacity(0.14), lineWidth: 0.5))
                 Text(title)
-                    .font(.system(size: 18, weight: .light))
+                    .font(.system(size: 14, weight: .light))
                     .tracking(0.3)
                     .foregroundStyle(OceanTheme.foam)
             }
