@@ -100,6 +100,28 @@ enum DialogueMode: String, CaseIterable, Identifiable {
         case .research: return "What should I explore next?"
         }
     }
+
+    /// One whispered line naming the cognitive lens — shown under the mode
+    /// picker so each mode reads as a different way of looking, not a tone.
+    var lens: String {
+        switch self {
+        case .search: return "Find what you've captured"
+        case .synthesis: return "See the thread running through"
+        case .expansion: return "Grow it somewhere unexpected"
+        case .research: return "Look beyond your Ocean"
+        }
+    }
+
+    /// The working beat shown while the Ocean is read — each lens works
+    /// differently, so each waits differently.
+    var searching: String {
+        switch self {
+        case .search: return "Searching your Ocean…"
+        case .synthesis: return "Reading across your currents…"
+        case .expansion: return "Drifting out from your thought…"
+        case .research: return "Reading your Ocean, then looking beyond…"
+        }
+    }
 }
 
 enum MessageRole: String, Codable {

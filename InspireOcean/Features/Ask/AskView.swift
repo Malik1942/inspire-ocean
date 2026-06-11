@@ -12,10 +12,16 @@ struct AskView: View {
     @Query(filter: #Predicate<Node> { !$0.isArchived }) private var nodes: [Node]
 
     /// The visible "ask → find → answer" beat: the Ocean is read, then the
-    /// find is named, then the reply lands.
+    /// find is named, then the reply lands. Reading carries the mode — each
+    /// lens works differently, so each waits differently.
     private enum SearchPhase: Equatable {
-        case reading
+        case reading(DialogueMode)
         case found(Int)
+
+        var isReading: Bool {
+            if case .reading = self { return true }
+            return false
+        }
     }
 
     @State private var conversation: Conversation?
@@ -71,12 +77,26 @@ struct AskView: View {
     // MARK: Mode
 
     private var modePicker: some View {
-        Picker("Mode", selection: $mode) {
-            ForEach(DialogueMode.allCases) { m in
-                Text(m.label).tag(m)
+        VStack(spacing: 6) {
+            Picker("Mode", selection: $mode) {
+                ForEach(DialogueMode.allCases) { m in
+                    Text(m.label).tag(m)
+                }
             }
+            .pickerStyle(.segmented)
+
+            // The lens, whispered: a small reminder that each mode is a
+            // different way of looking, not a different tone.
+            HStack(spacing: 5) {
+                Image(systemName: mode.symbol)
+                    .font(.caption2)
+                Text(mode.lens)
+                    .font(.caption2)
+                    .kerning(0.3)
+            }
+            .foregroundStyle(OceanTheme.mist)
+            .animation(.easeInOut(duration: 0.2), value: mode)
         }
-        .pickerStyle(.segmented)
         .padding(.horizontal).padding(.vertical, 8)
     }
 
@@ -198,15 +218,15 @@ struct AskView: View {
     private func searchBubble(_ phase: SearchPhase) -> some View {
         HStack(spacing: 8) {
             switch phase {
-            case .reading:
+            case .reading(let readingMode):
                 ForEach(0..<3, id: \.self) { i in
                     Circle().fill(OceanTheme.mist).frame(width: 5, height: 5)
                         .opacity(0.4)
-                        .scaleEffect(searchPhase == .reading ? 1 : 0.6)
+                        .scaleEffect(searchPhase?.isReading == true ? 1 : 0.6)
                         .animation(.easeInOut(duration: 0.6).repeatForever().delay(Double(i) * 0.2),
                                    value: searchPhase)
                 }
-                Text("Reading your Ocean…")
+                Text(readingMode.searching)
                     .font(.caption)
                     .foregroundStyle(OceanTheme.mist)
 
@@ -254,8 +274,19 @@ struct AskView: View {
         .padding(.top, 30)
     }
 
+    /// Sample prompts speak each lens's language, so switching modes on the
+    /// empty shore already shows what kind of looking this is.
     private var samplePrompts: [String] {
-        ["What patterns keep resurfacing?", "What connects my recent thoughts?", "Help me grow my newest idea"]
+        switch mode {
+        case .search:
+            ["That idea I had about water", "What did I capture last week?", "Find my thought about beginnings"]
+        case .synthesis:
+            ["What patterns keep resurfacing?", "How has my thinking drifted lately?", "What tension am I circling?"]
+        case .expansion:
+            ["Help me grow my newest idea", "Collide two of my thoughts", "What could this become physically?"]
+        case .research:
+            ["What should I explore next?", "Who thinks about what I think about?", "What field sits next to my obsessions?"]
+        }
     }
 
     // MARK: Input
@@ -317,9 +348,17 @@ struct AskView: View {
         try? context.save()
 
         input = ""
-        withAnimation { searchPhase = .reading }
         let currentMode = mode
         let snapshot = nodes
+        withAnimation { searchPhase = .reading(currentMode) }
+
+        // Each lens has its own rhythm: Search snaps back like recall;
+        // Research holds a longer, considered beat — it looked further.
+        let (readingFloor, foundBeat): (Duration, Duration) = switch currentMode {
+        case .search:   (.milliseconds(250), .milliseconds(450))
+        case .research: (.milliseconds(650), .milliseconds(850))
+        default:        (.milliseconds(500), .milliseconds(700))
+        }
 
         Task {
             let started = ContinuousClock.now
@@ -327,16 +366,16 @@ struct AskView: View {
                 to: query, history: history, mode: currentMode, nodes: snapshot
             )
 
-            // Let "Reading your Ocean…" breathe even when retrieval is instant,
+            // Let the reading beat breathe even when retrieval is instant,
             // then name the find for a beat before the reply lands.
             let elapsed = started.duration(to: .now)
-            if elapsed < .milliseconds(500) {
-                try? await Task.sleep(for: .milliseconds(500) - elapsed)
+            if elapsed < readingFloor {
+                try? await Task.sleep(for: readingFloor - elapsed)
             }
             await MainActor.run {
                 withAnimation { searchPhase = .found(response.sourceNodeIDs.count) }
             }
-            try? await Task.sleep(for: .milliseconds(700))
+            try? await Task.sleep(for: foundBeat)
 
             await MainActor.run {
                 let oceanMessage = ChatMessage(

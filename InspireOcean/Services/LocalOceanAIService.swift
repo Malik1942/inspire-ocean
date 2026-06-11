@@ -196,7 +196,13 @@ final class LocalOceanAIService: OceanAIService {
             ? nil
             : "Recurring threads: " + topThemes.joined(separator: " · ")
 
-        let branches = suggestBranches(mode: mode, query: query, themes: topThemes, sources: sources)
+        // Expansion's branches are creative leaps, so the model proposes them
+        // when it can; the grounded templates remain the floor.
+        var branches = suggestBranches(mode: mode, query: query, themes: topThemes, sources: sources)
+        if mode == .expansion, !sources.isEmpty, #available(iOS 26, *),
+           let grown = await foundationModelBranches(query: query, sources: sources) {
+            branches = grown
+        }
 
         // 4. Research alone steps outward: directions from beyond the user's
         //    notes, composed on-device when the foundation model is available
@@ -240,41 +246,16 @@ final class LocalOceanAIService: OceanAIService {
         #if canImport(FoundationModels)
         guard Self.foundationModelAvailable else { return nil }
 
-        // The whole retrieved set goes in — Synthesis reads across up to 12
-        // fragments, so the body excerpt is kept short to bound the prompt.
-        let fragments = sources.map { node -> String in
-            var line = "“\(node.displayTitle)”"
-            if let parent = node.parent {
-                line += " (a branch of “\(parent.displayTitle)”)"
-            }
-            let body = node.searchableText.prefix(sources.count > 6 ? 180 : 300)
-            if !body.isEmpty { line += ": \(body)" }
-            return "- " + line
-        }.joined(separator: "\n")
+        let fragments = Self.fragmentLines(sources)
 
         let recentTurns = history.suffix(4).map {
             ($0.isUser ? "They said: " : "You said: ") + $0.text.prefix(200)
         }.joined(separator: "\n")
 
-        let modeFraming: String = switch mode {
-        case .search:    "They are looking for something they captured."
-        case .synthesis: "They want to see the thread running through these fragments."
-        case .expansion: "They want to grow these thoughts further."
-        case .research:  "They want directions worth exploring next."
-        }
+        let modeFraming = Self.modeFraming(for: mode)
 
         do {
-            let session = LanguageModelSession {
-                """
-                You are the quiet, reflective voice of a personal inspiration space \
-                called the Ocean. You answer ONLY from the user's own captured \
-                fragments, provided below. Write 2 to 4 calm sentences in plain \
-                prose — no lists, no headers, no advice-column tone, no exclamation \
-                marks. Refer to fragments by their quoted titles. If a pattern or \
-                question sits underneath the fragments, name it plainly. Never \
-                invent fragments that are not provided.
-                """
-            }
+            let session = LanguageModelSession { Self.reflectionVoice }
             let prompt = """
             \(modeFraming)
             \(recentTurns.isEmpty ? "" : "Recent conversation:\n\(recentTurns)\n")
@@ -286,6 +267,104 @@ final class LocalOceanAIService: OceanAIService {
             let response = try await session.respond(to: prompt)
             let text = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
             return text.isEmpty ? nil : text
+        } catch {
+            return nil
+        }
+        #else
+        return nil
+        #endif
+    }
+
+    // MARK: Shared prompt language (used by the cloud seam too, so the two
+    // model paths never drift apart)
+
+    /// One fragment per line, annotated with when it was captured and its
+    /// mood — the raw material for noticing drift over time. Synthesis reads
+    /// across up to 12 fragments, so body excerpts shrink as the set grows.
+    static func fragmentLines(_ sources: [Node]) -> String {
+        sources.map { node -> String in
+            var line = "“\(node.displayTitle)”"
+            if let parent = node.parent {
+                line += " (a branch of “\(parent.displayTitle)”)"
+            }
+            var annotations = [node.createdAt.formatted(.relative(presentation: .named))]
+            if let mood = node.mood { annotations.append(mood) }
+            line += " (\(annotations.joined(separator: " · ")))"
+            let body = node.searchableText.prefix(sources.count > 6 ? 180 : 300)
+            if !body.isEmpty { line += ": \(body)" }
+            return "- " + line
+        }.joined(separator: "\n")
+    }
+
+    static func modeFraming(for mode: DialogueMode) -> String {
+        switch mode {
+        case .search:
+            return "They are looking for something they captured."
+        case .synthesis:
+            return "They want to see the thread running through these fragments — how it has drifted over time, where it tightens, what stays unresolved. Name the quiet pattern underneath, gently; interpret rather than summarize."
+        case .expansion:
+            return "They want to grow these thoughts further. Offer one unexpected angle — a bridge to another domain, a metaphorical reframing, or a physical form it could take — without losing their voice."
+        case .research:
+            return "They want directions worth exploring next."
+        }
+    }
+
+    static let reflectionVoice = """
+    You are the quiet, reflective voice of a personal inspiration space \
+    called the Ocean. You answer ONLY from the user's own captured \
+    fragments, provided below. Write 2 to 4 calm sentences in plain \
+    prose — no lists, no headers, no advice-column tone, no exclamation \
+    marks. Refer to fragments by their quoted titles. Each fragment notes \
+    when it was captured and its mood — you may quietly draw on how the \
+    thread has moved over time. If a pattern or question sits underneath \
+    the fragments, name it plainly. Never invent fragments that are not \
+    provided.
+    """
+
+    /// The growth-direction language for Expansion's model-suggested branches,
+    /// shared with the cloud seam. Replies parse as `kind: title` lines.
+    static let branchVoice = """
+    You suggest growth directions ("branches") for thoughts in a personal \
+    inspiration space. Reply with EXACTLY two or three lines, each formatted \
+    `kind: title` and nothing else. kind is one of question, concept, \
+    project, research. Each title is at most nine words, concrete and \
+    speculative, and each line should be a different kind of leap — a bridge \
+    to another domain, a metaphorical reframing, or a physical form it could \
+    take. Never restate their fragments.
+    """
+
+    /// Parse `kind: title` lines into branches; nil when nothing usable came
+    /// back so callers can keep their grounded templates.
+    static func parseBranchLines(_ raw: String) -> [SuggestedBranch]? {
+        let branches = raw
+            .split(whereSeparator: \.isNewline)
+            .compactMap { line -> SuggestedBranch? in
+                let parts = line.split(separator: ":", maxSplits: 1).map {
+                    $0.trimmingCharacters(in: .whitespaces)
+                }
+                guard parts.count == 2, !parts[1].isEmpty,
+                      let type = BranchType(rawValue: parts[0].lowercased())
+                else { return nil }
+                return SuggestedBranch(title: parts[1], type: type)
+            }
+        return branches.isEmpty ? nil : Array(branches.prefix(3))
+    }
+
+    /// Expansion's creative leaps, on-device: the model proposes the branches
+    /// instead of templates. Returns nil on ineligible devices or failure.
+    @available(iOS 26, *)
+    private func foundationModelBranches(query: String, sources: [Node]) async -> [SuggestedBranch]? {
+        #if canImport(FoundationModels)
+        guard Self.foundationModelAvailable else { return nil }
+        do {
+            let session = LanguageModelSession { Self.branchVoice }
+            let prompt = """
+            Their question: \(query)
+            Their fragments:
+            \(Self.fragmentLines(sources))
+            """
+            let response = try await session.respond(to: prompt)
+            return Self.parseBranchLines(response.content)
         } catch {
             return nil
         }

@@ -90,6 +90,11 @@ final class CloudOceanAIService: OceanAIService {
             configuration: configuration,
             enabled: mode == .research
         )
+        async let composedBranches = branchesIfNeeded(
+            query: query, sources: sources,
+            configuration: configuration,
+            enabled: mode == .expansion && !sources.isEmpty
+        )
 
         var response = scaffold
         if let reflection = await composedReflection {
@@ -98,7 +103,38 @@ final class CloudOceanAIService: OceanAIService {
         if let outward = await composedOutward {
             response.outwardNote = outward
         }
+        if let branches = await composedBranches {
+            response.suggestedBranches = branches
+        }
         return response
+    }
+
+    /// Expansion's creative leaps via Claude — the model proposes the
+    /// branches instead of templates. nil keeps the scaffold's templates.
+    private func branchesIfNeeded(
+        query: String,
+        sources: [Node],
+        configuration: Configuration,
+        enabled: Bool
+    ) async -> [SuggestedBranch]? {
+        guard enabled else { return nil }
+        let prompt = """
+        Their question: \(query)
+        Their fragments:
+        \(LocalOceanAIService.fragmentLines(sources))
+        """
+        do {
+            let raw = try await completeText(
+                system: LocalOceanAIService.branchVoice,
+                user: prompt,
+                maxTokens: 160,
+                adaptiveThinking: false,
+                configuration: configuration
+            )
+            return LocalOceanAIService.parseBranchLines(raw)
+        } catch {
+            return nil
+        }
     }
 
     /// The grounded reflection via Claude; nil (so the scaffold stands) when
@@ -172,41 +208,17 @@ final class CloudOceanAIService: OceanAIService {
         sources: [Node],
         configuration: Configuration
     ) async throws -> String {
-        // The whole retrieved set goes in — Synthesis reads across up to 12
-        // fragments, so the body excerpt is kept short to bound the prompt.
-        let fragments = sources.map { node -> String in
-            var line = "“\(node.displayTitle)”"
-            if let parent = node.parent {
-                line += " (a branch of “\(parent.displayTitle)”)"
-            }
-            let body = node.searchableText.prefix(sources.count > 6 ? 180 : 300)
-            if !body.isEmpty { line += ": \(body)" }
-            return "- " + line
-        }.joined(separator: "\n")
+        // Prompt language is shared with the on-device path (fragment lines
+        // annotated with capture time + mood, per-mode framing, the Ocean's
+        // reflective voice) so the two model seams never drift apart.
+        let fragments = LocalOceanAIService.fragmentLines(sources)
 
         let recentTurns = history.suffix(4).map {
             ($0.isUser ? "They said: " : "You said: ") + $0.text.prefix(200)
         }.joined(separator: "\n")
 
-        let modeFraming: String = switch mode {
-        case .search:    "They are looking for something they captured."
-        case .synthesis: "They want to see the thread running through these fragments."
-        case .expansion: "They want to grow these thoughts further."
-        case .research:  "They want directions worth exploring next."
-        }
-
-        let system = """
-        You are the quiet, reflective voice of a personal inspiration space \
-        called the Ocean. You answer ONLY from the user's own captured \
-        fragments, provided below. Write 2 to 4 calm sentences in plain \
-        prose — no lists, no headers, no advice-column tone, no exclamation \
-        marks. Refer to fragments by their quoted titles. If a pattern or \
-        question sits underneath the fragments, name it plainly. Never \
-        invent fragments that are not provided.
-        """
-
         let prompt = """
-        \(modeFraming)
+        \(LocalOceanAIService.modeFraming(for: mode))
         \(recentTurns.isEmpty ? "" : "Recent conversation:\n\(recentTurns)\n")
         Their fragments:
         \(fragments)
@@ -215,7 +227,7 @@ final class CloudOceanAIService: OceanAIService {
         """
 
         let text = try await completeText(
-            system: system,
+            system: LocalOceanAIService.reflectionVoice,
             user: prompt,
             maxTokens: 1024,
             adaptiveThinking: true,
