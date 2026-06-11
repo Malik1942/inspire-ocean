@@ -95,10 +95,10 @@ struct ResurfacingView: View {
         Group {
             if let fragment = entry.fragment {
                 content(fragment)
-                    .widgetURL(URL(string: "oryn://node/\(fragment.id.uuidString)"))
+                    .widgetURL(URL(string: "oryne://node/\(fragment.id.uuidString)"))
             } else {
                 empty
-                    .widgetURL(URL(string: "oryn://capture"))
+                    .widgetURL(URL(string: "oryne://capture"))
             }
         }
         .containerBackground(for: .widget) {

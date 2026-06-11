@@ -44,7 +44,7 @@ struct OceanOnboardingView: View {
                         .padding(.bottom, 18)
                 }
             }
-            .navigationTitle("Oryn")
+            .navigationTitle("Oryne")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
@@ -52,7 +52,7 @@ struct OceanOnboardingView: View {
                 // bar: gentle tracking, with leading padding offsetting the
                 // trailing letterspace so it sits optically centered.
                 ToolbarItem(placement: .principal) {
-                    Text("Oryn")
+                    Text("Oryne")
                         .font(.headline.weight(.medium))
                         .tracking(2.5)
                         .padding(.leading, 2.5)
@@ -123,7 +123,7 @@ private struct OceanOnboardingPage {
         OceanOnboardingPage(
             visual: .stillWater,
             title: "Not another notes app.",
-            text: "Oryn is a place for unfinished thoughts, passing signals, and ideas that are not ready to become plans yet."
+            text: "Oryne is a place for unfinished thoughts, passing signals, and ideas that are not ready to become plans yet."
         ),
         OceanOnboardingPage(
             visual: .capture,
@@ -143,7 +143,7 @@ private struct OceanOnboardingPage {
         OceanOnboardingPage(
             visual: .ask,
             title: "Ask what your Ocean remembers.",
-            text: "Ask questions across your captured fragments. Oryn helps find patterns, connections, and unfinished ideas worth returning to."
+            text: "Ask questions across your captured fragments. Oryne helps find patterns, connections, and unfinished ideas worth returning to."
         )
     ]
 }

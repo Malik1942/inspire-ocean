@@ -6,7 +6,7 @@ DerivedData/
 xcuserdata/
 
 # XcodeGen generates this from project.yml
-Oryn.xcodeproj/
+Oryne.xcodeproj/
 
 # macOS
 .DS_Store

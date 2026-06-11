@@ -28,7 +28,7 @@ struct DialogueTurn: Sendable {
     var text: String
 }
 
-/// The AI seam for Oryn.
+/// The AI seam for Oryne.
 ///
 /// V1 ships an on-device implementation (`LocalOceanAIService`). The PRD calls
 /// for cloud AI for transcription, semantic search, synthesis and dialogue

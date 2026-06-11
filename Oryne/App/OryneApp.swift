@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 @main
-struct OrynApp: App {
+struct OryneApp: App {
     let container = Persistence.shared
 
     /// The cloud seam (§14) activates itself when an `ANTHROPIC_API_KEY` is

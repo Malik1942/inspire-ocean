@@ -24,7 +24,7 @@ struct FastCaptureControl: ControlWidget {
 struct OpenFastCaptureIntent: AppIntent {
     static let title: LocalizedStringResource = "Fast Capture"
     static let description = IntentDescription(
-        "Open Oryn in a lightweight capture state.",
+        "Open Oryne in a lightweight capture state.",
         categoryName: "Capture"
     )
     static let openAppWhenRun = true

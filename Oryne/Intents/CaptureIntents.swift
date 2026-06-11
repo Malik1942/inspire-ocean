@@ -3,17 +3,17 @@ import SwiftData
 import UniformTypeIdentifiers
 import Foundation
 
-/// Capture a spoken or typed thought into Oryn from Siri, Shortcuts, or
+/// Capture a spoken or typed thought into Oryne from Siri, Shortcuts, or
 /// Spotlight — without opening the app.
 ///
-/// "Add buy more film to Oryn" captures that text directly. Plain
-/// "Add to Oryn" makes Siri ask *what* to capture and transcribes your
+/// "Add buy more film to Oryne" captures that text directly. Plain
+/// "Add to Oryne" makes Siri ask *what* to capture and transcribes your
 /// spoken answer. The fragment is titled on-device (Foundation Models when the
 /// device is eligible, heuristic otherwise).
 struct AddInspirationIntent: AppIntent {
     static let title: LocalizedStringResource = "Add Inspiration"
     static let description = IntentDescription(
-        "Capture a thought into Oryn.",
+        "Capture a thought into Oryne.",
         categoryName: "Capture"
     )
     /// Run silently in the background — don't interrupt the user by launching.
@@ -23,7 +23,7 @@ struct AddInspirationIntent: AppIntent {
     var text: String
 
     static var parameterSummary: some ParameterSummary {
-        Summary("Add \(\.$text) to Oryn")
+        Summary("Add \(\.$text) to Oryne")
     }
 
     @MainActor
@@ -46,16 +46,16 @@ struct AddInspirationIntent: AppIntent {
 }
 
 /// Save an image — e.g. a screenshot from the Shortcuts "Take Screenshot"
-/// action — into Oryn, with an optional note.
+/// action — into Oryne, with an optional note.
 ///
 /// iOS doesn't let an app grab another app's screen by voice alone, so screen
 /// capture works through a Shortcut/automation: *Take Screenshot → Save to
-/// Oryn*. This intent is the destination for that flow (and the share
+/// Oryne*. This intent is the destination for that flow (and the share
 /// sheet covers the manual case).
 struct SaveToOceanIntent: AppIntent {
-    static let title: LocalizedStringResource = "Save Image to Oryn"
+    static let title: LocalizedStringResource = "Save Image to Oryne"
     static let description = IntentDescription(
-        "Save a screenshot or image into Oryn.",
+        "Save a screenshot or image into Oryne.",
         categoryName: "Capture"
     )
     static let openAppWhenRun = false
@@ -67,7 +67,7 @@ struct SaveToOceanIntent: AppIntent {
     var note: String
 
     static var parameterSummary: some ParameterSummary {
-        Summary("Save \(\.$image) to Oryn") {
+        Summary("Save \(\.$image) to Oryne") {
             \.$note
         }
     }
@@ -96,7 +96,7 @@ struct SaveToOceanIntent: AppIntent {
 struct StartFastCaptureIntent: AppIntent {
     static let title: LocalizedStringResource = "Start Fast Capture"
     static let description = IntentDescription(
-        "Open Oryn in a lightweight capture state.",
+        "Open Oryne in a lightweight capture state.",
         categoryName: "Fast Capture"
     )
     static let openAppWhenRun = true

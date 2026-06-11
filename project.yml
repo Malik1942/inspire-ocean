@@ -1,4 +1,4 @@
-name: Oryn
+name: Oryne
 options:
   # Bundle ids, the App Group, and the store name keep the original
   # com.inspireocean identifiers: changing them would orphan user data,
@@ -18,14 +18,14 @@ settings:
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     SWIFT_EMIT_LOC_STRINGS: YES
 targets:
-  # Source folders keep their historical names (InspireOcean/, OceanWidgets/)
-  # so git history and the in-flight working tree stay intact.
-  Oryn:
+  # The app source folder is Oryne/. OceanWidgets/, ShareExtension/, and
+  # Shared/ keep their descriptive (non-brand) names.
+  Oryne:
     type: application
     platform: iOS
     sources:
       - path: Shared
-      - path: InspireOcean
+      - path: Oryne
     dependencies:
       - target: ShareExtension
         embed: true
@@ -37,25 +37,26 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: "1,2"
     entitlements:
-      path: InspireOcean/InspireOcean.entitlements
+      path: Oryne/Oryne.entitlements
       properties:
         com.apple.security.application-groups:
           - group.com.inspireocean.shared
     info:
-      path: InspireOcean/Info.plist
+      path: Oryne/Info.plist
       properties:
-        CFBundleDisplayName: Oryn
+        CFBundleDisplayName: Oryne
         CFBundleURLTypes:
           - CFBundleURLName: com.inspireocean.app
             CFBundleURLSchemes:
-              - oryn
-              - inspireocean   # legacy scheme — existing widgets/Shortcuts keep working
+              - oryne
+              - oryn           # legacy scheme — already-placed widgets/Shortcuts keep working
+              - inspireocean   # legacy scheme — already-placed widgets/Shortcuts keep working
         UILaunchScreen:
           UIColorName: ""
         ITSAppUsesNonExemptEncryption: false
-        NSMicrophoneUsageDescription: "Oryn uses the microphone to catch voice drifts before they disappear."
-        NSSpeechRecognitionUsageDescription: "Oryn transcribes your voice captures so they can resurface and connect."
-        NSPhotoLibraryUsageDescription: "Oryn lets you capture screenshots and photos as inspiration fragments."
+        NSMicrophoneUsageDescription: "Oryne uses the microphone to catch voice drifts before they disappear."
+        NSSpeechRecognitionUsageDescription: "Oryne transcribes your voice captures so they can resurface and connect."
+        NSPhotoLibraryUsageDescription: "Oryne lets you capture screenshots and photos as inspiration fragments."
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationLandscapeLeft
@@ -83,7 +84,7 @@ targets:
     info:
       path: ShareExtension/Info.plist
       properties:
-        CFBundleDisplayName: Oryn
+        CFBundleDisplayName: Oryne
         NSExtension:
           NSExtensionPointIdentifier: com.apple.share-services
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
@@ -99,7 +100,7 @@ targets:
     sources:
       - path: Shared
       - path: OceanWidgets
-      - path: InspireOcean/DesignSystem/OceanTheme.swift
+      - path: Oryne/DesignSystem/OceanTheme.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.inspireocean.app.widgets
@@ -111,6 +112,6 @@ targets:
     info:
       path: OceanWidgets/Info.plist
       properties:
-        CFBundleDisplayName: Oryn
+        CFBundleDisplayName: Oryne
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension

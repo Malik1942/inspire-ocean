@@ -62,7 +62,7 @@ struct QuickCaptureView: View {
             Image(systemName: "drop")
                 .font(.title2.weight(.light))
         }
-        .widgetURL(URL(string: "oryn://capture"))
+        .widgetURL(URL(string: "oryne://capture"))
         .containerBackground(for: .widget) { Color.clear }
     }
 
@@ -83,7 +83,7 @@ struct QuickCaptureView: View {
                 .foregroundStyle(OceanTheme.mist)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .widgetURL(URL(string: "oryn://capture"))
+        .widgetURL(URL(string: "oryne://capture"))
         .containerBackground(for: .widget) { OceanWidgetStyle.water }
     }
 
@@ -95,7 +95,7 @@ struct QuickCaptureView: View {
                 Image(systemName: "water.waves")
                     .font(.system(size: 18, weight: .light))
                     .foregroundStyle(OceanTheme.mist)
-                Text("Oryn: Fast Capture")
+                Text("Oryne: Fast Capture")
                     .font(.system(size: 24, weight: .light))
                     .tracking(0.3)
                     .foregroundStyle(OceanTheme.foam)
@@ -107,12 +107,12 @@ struct QuickCaptureView: View {
 
             HStack(spacing: 8) {
                 captureLink(
-                    url: "oryn://capture/thought",
+                    url: "oryne://capture/thought",
                     symbol: "text.cursor",
                     title: "Thought"
                 )
                 captureLink(
-                    url: "oryn://capture/whisper",
+                    url: "oryne://capture/whisper",
                     symbol: "waveform",
                     title: "Whisper"
                 )
