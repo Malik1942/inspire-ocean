@@ -91,14 +91,17 @@ struct QuickCaptureView: View {
     /// header whispers at the top, open water between, actions at the bottom.
     private var medium: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
                 Image(systemName: "water.waves")
-                    .font(.caption2.weight(.light))
+                    .font(.title3.weight(.light))
+                    .foregroundStyle(OceanTheme.mist)
                 Text("Oryn: Fast Capture")
-                    .font(.caption2.weight(.medium))
-                    .tracking(0.5)
+                    .font(.title.weight(.light))
+                    .tracking(0.3)
+                    .foregroundStyle(OceanTheme.foam)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
-            .foregroundStyle(OceanTheme.mist)
 
             Spacer(minLength: 14)
 
@@ -123,27 +126,36 @@ struct QuickCaptureView: View {
     /// the lifted body and a soft drop, the hairline stays a whisper.
     private func captureLink(url: String, symbol: String, title: String) -> some View {
         Link(destination: URL(string: url)!) {
-            HStack(spacing: 8) {
+            HStack(spacing: 10) {
                 Image(systemName: symbol)
-                    .font(.footnote.weight(.light))
+                    .font(.callout.weight(.regular))
                     .foregroundStyle(OceanTheme.foam)
-                    .frame(width: 24, height: 24)
-                    .background(Circle().fill(Color.white.opacity(0.07)))
-                    .overlay(Circle().strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5))
+                    .frame(width: 32, height: 32)
+                    .background(Circle().fill(Color.white.opacity(0.08)))
+                    .overlay(Circle().strokeBorder(Color.white.opacity(0.14), lineWidth: 0.5))
                 Text(title)
-                    .font(.subheadline.weight(.medium))
+                    .font(.system(size: 18, weight: .light))
+                    .tracking(0.3)
                     .foregroundStyle(OceanTheme.foam)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 42)
+            .frame(height: 56)
             .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color.white.opacity(0.06))
+                // Top-lit glass: a faint sheen falling away toward the base,
+                // depth carried by the drop shadow — never by a heavier border.
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.white.opacity(0.09), Color.white.opacity(0.045)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
                     .shadow(color: .black.opacity(0.22), radius: 7, y: 2.5)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.08), lineWidth: 0.5)
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.10), lineWidth: 0.5)
             )
         }
     }
