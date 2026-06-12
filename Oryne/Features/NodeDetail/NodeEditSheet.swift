@@ -2,12 +2,13 @@ import SwiftUI
 import SwiftData
 
 /// Corrects a captured fragment: title, body (or voice transcript), themes.
-/// The audio, when present, is the immutable source of truth — only its
-/// interpretation is edited here.
+/// The audio, when present, is a temporary substrate for understanding —
+/// only its interpretation is edited here, and the transcript is the artifact.
 ///
 /// Edits land on draft copies, not live bindings, so Cancel is a true no-op
-/// and CloudKit never sees half-edited state. Saving bumps `updatedAt`, which
-/// is also what carries the correction to other devices.
+/// and CloudKit only ever sees saved state. Saving marks the touched fields
+/// as user-owned — from then on the system fills blanks but never overwrites
+/// them — and anchors the thought in its current so corrections don't move it.
 struct NodeEditSheet: View {
     let node: Node
     /// Set when the sheet is opened by tapping the text itself — the body
@@ -23,7 +24,20 @@ struct NodeEditSheet: View {
     @State private var noteDraft = ""
     @State private var themesDraft: [String] = []
     @State private var newTheme = ""
+    @State private var themeInputNotice: String?
+
+    @State private var originalTitle = ""
+    @State private var originalBody = ""
+    @State private var originalNote = ""
+    @State private var originalThemes: [String] = []
+
     @State private var isTranscribing = false
+    @State private var retranscribeFailed = false
+    @State private var bodyBeforeRetranscribe: String?
+    @State private var showReplaceConfirm = false
+    @State private var showDiscardConfirm = false
+    @State private var isRederiving = false
+
     @State private var loaded = false
     @FocusState private var bodyFocused: Bool
 
@@ -38,6 +52,13 @@ struct NodeEditSheet: View {
         isVoice && bodyDraft.trimmed != (node.transcription ?? "").trimmed
     }
 
+    private var hasChanges: Bool {
+        titleDraft != originalTitle
+            || bodyDraft != originalBody
+            || noteDraft != originalNote
+            || themesDraft != originalThemes
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -49,6 +70,8 @@ struct NodeEditSheet: View {
                         audioSection(audioData)
                     }
                     themesSection
+                    rederiveSection
+                    AmbientHint(hint: .ownership)
                 }
                 .padding()
                 .padding(.bottom, 30)
@@ -58,14 +81,30 @@ struct NodeEditSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") {
+                        if hasChanges {
+                            showDiscardConfirm = true
+                        } else {
+                            dismiss()
+                        }
+                    }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save", action: save)
                         .fontWeight(.semibold)
                 }
             }
+            .confirmationDialog(
+                "Discard changes?",
+                isPresented: $showDiscardConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("Discard", role: .destructive) { dismiss() }
+                Button("Keep editing", role: .cancel) {}
+            }
         }
+        // The swipe-down reflex must not silently throw away edits.
+        .interactiveDismissDisabled(hasChanges)
         .onAppear(perform: loadDrafts)
     }
 
@@ -94,7 +133,7 @@ struct NodeEditSheet: View {
                 focus: $bodyFocused
             )
             if transcriptDiverged {
-                Label("Edited transcript — original audio preserved", systemImage: "waveform")
+                Label("Edited transcript — the original words stay yours.", systemImage: "waveform")
                     .font(.caption2).foregroundStyle(OceanTheme.faint)
             }
         }
@@ -112,28 +151,64 @@ struct NodeEditSheet: View {
         }
     }
 
+    /// Quiet, not a player row: the recording is provenance, the transcript
+    /// is the thought.
     private func audioSection(_ data: Data) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionTitle("Recording")
-            AudioPlayerView(data: data)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                ListenChip(data: data)
 
-            Button {
-                Task { await retranscribe(data) }
-            } label: {
-                HStack(spacing: 6) {
-                    if isTranscribing {
-                        ProgressView().controlSize(.small)
-                        Text("Listening again…")
-                    } else {
-                        Label("Re-transcribe", systemImage: "arrow.triangle.2.circlepath")
+                Button {
+                    retranscribeTapped(data)
+                } label: {
+                    HStack(spacing: 6) {
+                        if isTranscribing {
+                            ProgressView().controlSize(.small)
+                            Text("Listening again…")
+                        } else {
+                            Label("Re-transcribe", systemImage: "arrow.triangle.2.circlepath")
+                        }
+                    }
+                    .font(.caption2.weight(.medium))
+                    .padding(.horizontal, 10).padding(.vertical, 5)
+                    .background(Color.white.opacity(0.08), in: Capsule())
+                    .foregroundStyle(OceanTheme.mist)
+                }
+                .disabled(isTranscribing)
+
+                if let previous = bodyBeforeRetranscribe {
+                    Button {
+                        bodyDraft = previous
+                        bodyBeforeRetranscribe = nil
+                    } label: {
+                        Label("Restore", systemImage: "arrow.uturn.backward")
+                            .font(.caption2.weight(.medium))
+                            .padding(.horizontal, 10).padding(.vertical, 5)
+                            .background(Color.white.opacity(0.08), in: Capsule())
+                            .foregroundStyle(OceanTheme.mist)
                     }
                 }
-                .font(.caption.weight(.medium))
-                .padding(.horizontal, 12).padding(.vertical, 8)
-                .background(Color.white.opacity(0.08), in: Capsule())
-                .foregroundStyle(OceanTheme.foam)
             }
-            .disabled(isTranscribing)
+
+            if retranscribeFailed {
+                Text("Couldn't hear it again — your words stay as they are.")
+                    .font(.caption2).foregroundStyle(OceanTheme.faint)
+            }
+
+            Text("Original audio is temporarily preserved to improve understanding.")
+                .font(.caption2).foregroundStyle(OceanTheme.faint)
+        }
+        .confirmationDialog(
+            "Replace your edited words?",
+            isPresented: $showReplaceConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Re-transcribe and replace") {
+                Task { await retranscribe(data) }
+            }
+            Button("Keep my words", role: .cancel) {}
+        } message: {
+            Text("A fresh transcription will replace the transcript you edited. You can restore it afterwards.")
         }
     }
 
@@ -162,7 +237,38 @@ struct NodeEditSheet: View {
             }
             .padding(.vertical, 8).padding(.horizontal, 12)
             .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+            if let themeInputNotice {
+                Text(themeInputNotice)
+                    .font(.caption2).foregroundStyle(OceanTheme.faint)
+            }
+
+            if themesDraft != originalThemes {
+                AmbientHint(hint: .semanticDrift)
+            }
         }
+    }
+
+    /// Regeneration is an offer, never an ambush: the system re-reads the
+    /// words only when asked, and the result is still just a draft.
+    private var rederiveSection: some View {
+        Button {
+            Task { await rederive() }
+        } label: {
+            HStack(spacing: 6) {
+                if isRederiving {
+                    ProgressView().controlSize(.small)
+                    Text("Re-reading…")
+                } else {
+                    Label("Re-derive title & themes from the words", systemImage: "sparkles")
+                }
+            }
+            .font(.caption.weight(.medium))
+            .padding(.horizontal, 12).padding(.vertical, 8)
+            .background(Color.white.opacity(0.08), in: Capsule())
+            .foregroundStyle(OceanTheme.foam)
+        }
+        .disabled(isRederiving || bodyDraft.trimmed.isEmpty)
     }
 
     private func editableThemeChip(_ theme: String) -> some View {
@@ -198,17 +304,44 @@ struct NodeEditSheet: View {
         bodyDraft = isVoice ? (node.transcription ?? "") : node.text
         noteDraft = hasNote ? node.text : ""
         themesDraft = node.themes
-        if focusBodyOnAppear { bodyFocused = true }
+        originalTitle = titleDraft
+        originalBody = bodyDraft
+        originalNote = noteDraft
+        originalThemes = themesDraft
+        if focusBodyOnAppear {
+            // Focus can only land once the editor exists in the hierarchy.
+            Task {
+                try? await Task.sleep(for: .milliseconds(350))
+                bodyFocused = true
+            }
+        }
     }
 
     /// Same normalization the capture pipeline applies: lowercase, trimmed,
-    /// deduplicated (against the chips already present).
+    /// deduplicated — and never a silent swallow.
     private func addTheme() {
-        let tidied = SemanticThemes.tidyThemeList(newTheme)
+        let raw = newTheme.trimmed
+        guard !raw.isEmpty else { return }
+        let tidied = SemanticThemes.tidyThemeList(raw)
+        guard !tidied.isEmpty else {
+            themeInputNotice = "Themes are a few short words — try something briefer."
+            return
+        }
+        themeInputNotice = nil
         for theme in tidied where !themesDraft.contains(theme) {
             themesDraft.append(theme)
         }
         newTheme = ""
+    }
+
+    private func retranscribeTapped(_ data: Data) {
+        retranscribeFailed = false
+        // Words the user has touched are never replaced without asking.
+        if transcriptDiverged || node.transcriptEditedByUser {
+            showReplaceConfirm = true
+        } else {
+            Task { await retranscribe(data) }
+        }
     }
 
     private func retranscribe(_ data: Data) async {
@@ -219,25 +352,61 @@ struct NodeEditSheet: View {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("retranscribe-\(UUID().uuidString).m4a")
         defer { try? FileManager.default.removeItem(at: url) }
-        guard (try? data.write(to: url)) != nil else { return }
-        if let transcript = await ai.transcribe(audioURL: url), !transcript.isEmpty {
-            bodyDraft = transcript   // a draft — Save still decides
+        guard (try? data.write(to: url)) != nil,
+              let transcript = await ai.transcribe(audioURL: url),
+              !transcript.isEmpty else {
+            retranscribeFailed = true
+            return
         }
+        bodyBeforeRetranscribe = bodyDraft
+        bodyDraft = transcript   // a draft — Save still decides
+    }
+
+    private func rederive() async {
+        isRederiving = true
+        defer { isRederiving = false }
+        let basis = [bodyDraft.trimmed, noteDraft.trimmed]
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n")
+        guard !basis.isEmpty else { return }
+        let understanding = await ai.understand(basis)
+        if !understanding.essence.isEmpty { titleDraft = understanding.essence }
+        if !understanding.themes.isEmpty { themesDraft = understanding.themes }
     }
 
     private func save() {
-        node.title = titleDraft.trimmed
-        if isVoice {
-            let body = bodyDraft.trimmed
-            node.transcription = body.isEmpty ? nil : body
-            if hasNote { node.text = noteDraft.trimmed }
-        } else {
-            node.text = bodyDraft.trimmed
+        let titleChanged = titleDraft != originalTitle
+        let bodyChanged = bodyDraft != originalBody
+        let noteChanged = noteDraft != originalNote
+        let themesChanged = themesDraft != originalThemes
+        guard titleChanged || bodyChanged || noteChanged || themesChanged else {
+            dismiss()
+            return
         }
-        node.themes = themesDraft
-        // Deliberately NOT recomputing hue/fieldX/fieldY — a correction
-        // shouldn't teleport the node across the Ocean. (Future: offer a
-        // "re-place" action when themes change substantially.)
+
+        if titleChanged {
+            node.title = titleDraft.trimmed
+            node.titleEditedByUser = true
+        }
+        if bodyChanged {
+            let body = bodyDraft.trimmed
+            if isVoice {
+                node.transcription = body.isEmpty ? nil : body
+            } else {
+                node.text = body
+            }
+            node.transcriptEditedByUser = true
+        }
+        if noteChanged, hasNote {
+            node.text = noteDraft.trimmed
+        }
+        if themesChanged {
+            node.themes = themesDraft
+            node.themesEditedByUser = true
+        }
+        // An edited thought keeps its place: corrections change meaning
+        // fields, never the spot in the Ocean the user knows it by.
+        node.anchorInPlace()
         node.updatedAt = .now
         try? context.save()
         dismiss()

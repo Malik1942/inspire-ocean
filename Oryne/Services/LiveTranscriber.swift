@@ -45,6 +45,9 @@ final class LiveTranscriber {
     private var latestTranscription = ""
     private var recognitionEnded = false
     private var finalContinuation: CheckedContinuation<Void, Never>?
+    /// Set synchronously at start() entry: a double-tap on the mic must not
+    /// race two starts through the permission await into a second tap install.
+    private var isStarting = false
 
     // MARK: Permissions
 
@@ -70,7 +73,9 @@ final class LiveTranscriber {
     /// Returns false when the audio session or engine can't start.
     @discardableResult
     func start(writingTo url: URL) async -> Bool {
-        guard !isRecording else { return false }
+        guard !isRecording, !isStarting else { return false }
+        isStarting = true
+        defer { isStarting = false }
 
         let session = AVAudioSession.sharedInstance()
         do {

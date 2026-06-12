@@ -19,9 +19,10 @@ struct FastCaptureSessionView: View {
     @State private var recordedURL: URL?
     @State private var recordedAudioData: Data?
     @State private var transcriptDraft: String = ""
-    /// Post-stop review: the transcript sits visible for a beat before the
-    /// fragment auto-releases — Fast Capture stays zero-friction unless the
-    /// user reaches for Edit.
+    /// Stop = captured: the node is saved the moment recording ends. The
+    /// review beat that follows edits an already-safe thought and releases
+    /// itself after a moment unless the user reaches for the words.
+    @State private var savedNodeID: UUID?
     @State private var isReviewing = false
     @State private var autoReleaseTask: Task<Void, Never>?
     @State private var message: String?
@@ -193,35 +194,53 @@ struct FastCaptureSessionView: View {
             .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    /// The brief post-stop beat: transcript visible and correctable, the
-    /// recording audible. Untouched, it releases on its own.
+    /// The brief post-stop beat: the thought is already saved; the words sit
+    /// visible for a moment and release themselves unless tapped.
     private var reviewCapture: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Label("Caught", systemImage: "waveform")
+                Label("Captured", systemImage: "checkmark.circle")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(OceanTheme.foam)
                 Spacer()
                 if autoReleaseTask != nil {
-                    Text("Releasing…")
-                        .font(.caption)
-                        .foregroundStyle(OceanTheme.mist)
+                    Text("Tap words to keep editing")
+                        .font(.caption2)
+                        .foregroundStyle(OceanTheme.faint)
                 }
             }
 
-            TranscriptEditor(
-                text: $transcriptDraft,
-                isEditable: true,
-                placeholder: transcriber.speechAvailability == .unavailable
-                    ? "Transcription is off — type the words, if you like"
-                    : "What did you say?",
-                minHeight: 54,
-                maxHeight: 110,
-                focus: $transcriptFocused
-            )
+            if autoReleaseTask == nil {
+                TranscriptEditor(
+                    text: $transcriptDraft,
+                    isEditable: true,
+                    placeholder: transcriber.speechAvailability == .unavailable
+                        ? "Transcription is off — type the words, if you like"
+                        : "What did you say?",
+                    minHeight: 54,
+                    maxHeight: 110,
+                    focus: $transcriptFocused
+                )
+            } else {
+                TranscriptEditor(
+                    text: .constant(transcriptDraft),
+                    isEditable: false,
+                    placeholder: "No words caught — tap to add them",
+                    minHeight: 54,
+                    maxHeight: 110
+                )
+                .contentShape(Rectangle())
+                .onTapGesture { pauseAutoRelease(focus: true) }
+            }
 
-            if let recordedAudioData {
-                AudioPlayerView(data: recordedAudioData)
+            // The typed note releases with the thought — it stays visible
+            // and editable here; a review that hides content isn't a review.
+            if !text.trimmed.isEmpty {
+                noteEditor
+            }
+
+            if autoReleaseTask == nil, let recordedAudioData {
+                ListenChip(data: recordedAudioData)
             }
         }
         .onChange(of: transcriptFocused) { _, focused in
@@ -254,8 +273,8 @@ struct FastCaptureSessionView: View {
         HStack(spacing: 10) {
             if isReviewing {
                 if autoReleaseTask != nil {
-                    // The pause on Fast Capture's zero-friction path: tap to
-                    // hold the fragment back and fix the words.
+                    // The pause on Fast Capture's zero-friction path: hold the
+                    // fragment back and fix the words.
                     Button {
                         pauseAutoRelease(focus: true)
                     } label: {
@@ -288,15 +307,29 @@ struct FastCaptureSessionView: View {
 
             Spacer()
 
-            Button(action: save) {
-                Label("Release", systemImage: "arrow.up.forward.circle.fill")
-                    .font(.subheadline.weight(.semibold))
+            if isReviewing {
+                if autoReleaseTask == nil {
+                    // Paused for editing: the only forward action is "keep".
+                    Button(action: finalizeReview) {
+                        Label("Keep", systemImage: "checkmark.circle.fill")
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(OceanTheme.accent)
+                    .foregroundStyle(OceanTheme.abyss)
+                    .disabled(isSaving)
+                }
+            } else {
+                Button(action: releaseNow) {
+                    Label("Release", systemImage: "arrow.up.forward.circle.fill")
+                        .font(.subheadline.weight(.semibold))
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(OceanTheme.accent)
+                .foregroundStyle(OceanTheme.abyss)
+                .disabled(!canSave || isSaving)
+                .opacity(canSave ? 1 : 0.45)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(OceanTheme.accent)
-            .foregroundStyle(OceanTheme.abyss)
-            .disabled(!canSave || isSaving)
-            .opacity(canSave ? 1 : 0.45)
         }
     }
 
@@ -328,16 +361,14 @@ struct FastCaptureSessionView: View {
 
     private var canSave: Bool {
         transcriber.isRecording
-        || recordedAudioData != nil
+        || isReviewing
         || !text.trimmed.isEmpty
-        || !transcriptDraft.trimmed.isEmpty
         || imageData != nil
     }
 
     private func toggleRecording() async {
         if transcriber.isRecording {
-            let (url, transcript) = await transcriber.stop()
-            enterReview(url: url, transcript: transcript)
+            await captureNow()
         } else {
             await startRecording()
         }
@@ -354,6 +385,7 @@ struct FastCaptureSessionView: View {
             recordedURL = nil
             recordedAudioData = nil
             transcriptDraft = ""
+            savedNodeID = nil
             isReviewing = false
         }
         if !(await transcriber.start(writingTo: url)) {
@@ -369,68 +401,141 @@ struct FastCaptureSessionView: View {
         textFocused = true
     }
 
-    /// Stop landed: hold the fragment for a beat with the transcript visible.
-    /// Untouched, it releases on its own — Fast Capture keeps its rhythm.
+    /// Stop = captured. The node is saved here, before the review beat — the
+    /// beat edits a thought that is already safe, then releases itself.
     @MainActor
-    private func enterReview(url: URL?, transcript: String) {
+    private func captureNow() async {
+        guard !isSaving, savedNodeID == nil else { return }
+        let elapsed = transcriber.elapsed
+        let (url, transcript) = await transcriber.stop()
+        let trimmedNote = text.trimmed
+        let trimmedTranscript = transcript.trimmed
+
+        // A pocket press or reflexive tap shouldn't mint an empty thought.
+        if trimmedTranscript.isEmpty, trimmedNote.isEmpty, imageData == nil, elapsed < 1 {
+            if let url { try? FileManager.default.removeItem(at: url) }
+            return
+        }
+
         recordedURL = url
         recordedAudioData = url.flatMap { try? Data(contentsOf: $0) }
-        transcriptDraft = transcript
+        let node = NodeComposer.make(
+            kind: .voice,
+            text: trimmedNote,
+            transcription: trimmedTranscript.isEmpty ? nil : trimmedTranscript,
+            audioData: recordedAudioData,
+            imageData: imageData,
+            detectThemes: !trimmedNote.isEmpty || !trimmedTranscript.isEmpty
+        )
+        context.insert(node)
+        try? context.save()
+
+        savedNodeID = node.id
+        transcriptDraft = trimmedTranscript
         withAnimation(.snappy) { isReviewing = true }
+        scheduleAutoRelease()
+    }
+
+    private func scheduleAutoRelease() {
+        autoReleaseTask?.cancel()
         autoReleaseTask = Task {
             try? await Task.sleep(for: .seconds(3))
             guard !Task.isCancelled else { return }
-            await MainActor.run { save() }
+            await MainActor.run { finalizeReview() }
         }
     }
 
     private func pauseAutoRelease(focus: Bool) {
         autoReleaseTask?.cancel()
         autoReleaseTask = nil
-        if focus { transcriptFocused = true }
+        if focus {
+            // Focus lands after the editable editor exists in the hierarchy.
+            Task {
+                try? await Task.sleep(for: .milliseconds(350))
+                transcriptFocused = true
+            }
+        }
     }
 
-    private func save() {
-        guard !isSaving, canSave else { return }
+    /// The review resolves: apply any edits to the saved node, then let
+    /// understanding run on the words the user actually kept.
+    @MainActor
+    private func finalizeReview() {
+        guard !isSaving, let nodeID = savedNodeID else { return }
         isSaving = true
         autoReleaseTask?.cancel()
         autoReleaseTask = nil
 
-        let trimmed = text.trimmed
-        let transcript = transcriptDraft.trimmed
-        let kind: NodeKind
-        if recordedAudioData != nil {
-            kind = .voice
-        } else if imageData != nil && trimmed.isEmpty && transcript.isEmpty {
-            kind = .image
-        } else {
-            kind = .text
+        let descriptor = FetchDescriptor<Node>(predicate: #Predicate { $0.id == nodeID })
+        guard let node = try? context.fetch(descriptor).first else {
+            isSaving = false
+            onFinish()
+            return
         }
 
-        // The confirmed transcript is the node's basis — themes derive from
-        // what the user saw (and possibly fixed), not raw recognizer output.
-        // Audio bytes live in the model so they sync through CloudKit.
-        let node = NodeComposer.make(
-            kind: kind,
-            text: trimmed,
-            transcription: (kind == .voice && !transcript.isEmpty) ? transcript : nil,
-            audioData: recordedAudioData,
-            imageData: imageData,
-            detectThemes: kind != .voice || !trimmed.isEmpty || !transcript.isEmpty
-        )
-        context.insert(node)
+        let editedTranscript = transcriptDraft.trimmed
+        if editedTranscript != (node.transcription ?? "") {
+            node.transcription = editedTranscript.isEmpty ? nil : editedTranscript
+            node.transcriptEditedByUser = true
+        }
+        let editedNote = text.trimmed
+        if editedNote != node.text {
+            node.text = editedNote
+        }
+        node.updatedAt = .now
         try? context.save()
 
-        let nodeID = node.id
-        if kind == .voice, transcript.isEmpty, let recordedURL {
-            // No live transcript (speech off): post-hoc transcription is the
-            // fallback; it reclaims the temp file.
-            Task { await transcribeAndEnrich(nodeID: nodeID, url: recordedURL) }
-        } else {
+        if !(node.transcription ?? "").isEmpty {
+            // A confirmed transcript wins — no post-hoc re-transcription.
             if let recordedURL { try? FileManager.default.removeItem(at: recordedURL) }
             if !node.rawContent.isEmpty {
                 Task { await generateTitle(nodeID: nodeID) }
             }
+        } else if let recordedURL {
+            // Speech was off and nothing typed: the post-hoc pass is the
+            // fallback; it reclaims the temp file.
+            Task { await transcribeAndEnrich(nodeID: nodeID, url: recordedURL) }
+        } else if !node.rawContent.isEmpty {
+            Task { await generateTitle(nodeID: nodeID) }
+        }
+
+        textFocused = false
+        transcriptFocused = false
+        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
+            isReviewing = false
+            moment = .received(for: nodeID)
+        }
+        scheduleFinish(after: 1.2)
+    }
+
+    /// The prominent Release button: while recording it stops *and* releases
+    /// in one gesture; in typing mode it saves the typed thought as before.
+    private func releaseNow() {
+        if transcriber.isRecording {
+            Task {
+                await captureNow()
+                await MainActor.run { finalizeReview() }
+            }
+        } else if isReviewing {
+            finalizeReview()
+        } else {
+            saveTyped()
+        }
+    }
+
+    private func saveTyped() {
+        guard !isSaving, canSave else { return }
+        isSaving = true
+
+        let trimmed = text.trimmed
+        let kind: NodeKind = (imageData != nil && trimmed.isEmpty) ? .image : .text
+        let node = NodeComposer.make(kind: kind, text: trimmed, imageData: imageData)
+        context.insert(node)
+        try? context.save()
+
+        let nodeID = node.id
+        if !node.rawContent.isEmpty {
+            Task { await generateTitle(nodeID: nodeID) }
         }
 
         // Received. If the interpreted title lands quickly (the common case for
@@ -495,6 +600,15 @@ struct FastCaptureSessionView: View {
         }
         if transcriber.isRecording {
             Task { await transcriber.cancel() }
+        } else if isReviewing, let nodeID = savedNodeID {
+            // Captured-but-reviewing: X is the take-it-back valve for an
+            // accidental capture — the saved node goes with it.
+            let descriptor = FetchDescriptor<Node>(predicate: #Predicate { $0.id == nodeID })
+            if let node = try? context.fetch(descriptor).first {
+                context.delete(node)
+                try? context.save()
+            }
+            if let recordedURL { try? FileManager.default.removeItem(at: recordedURL) }
         } else if let recordedURL {
             try? FileManager.default.removeItem(at: recordedURL)
         }
@@ -503,18 +617,16 @@ struct FastCaptureSessionView: View {
 
     private func finishInterruptedCapture() {
         if transcriber.isRecording {
-            // The overlay is going away — catch what we have and release;
+            // The overlay is going away — capture what we have and release;
             // no review beat to show.
             Task {
-                let (url, transcript) = await transcriber.stop()
-                recordedURL = url
-                recordedAudioData = url.flatMap { try? Data(contentsOf: $0) }
-                transcriptDraft = transcript
-                if canSave { save() }
+                await captureNow()
+                await MainActor.run { finalizeReview() }
             }
         } else if isReviewing, moment == nil {
-            // Backgrounded mid-review: untouched means release, as always.
-            save()
+            // Backgrounded mid-review — paused or not, the thought is already
+            // safe and any edits made so far go with it.
+            finalizeReview()
         }
     }
 
@@ -526,6 +638,8 @@ struct FastCaptureSessionView: View {
         let combined: String = await MainActor.run {
             let descriptor = FetchDescriptor<Node>(predicate: #Predicate { $0.id == nodeID })
             guard let node = try? context.fetch(descriptor).first else { return transcript }
+            // Ownership: never overwrite words the user has touched.
+            guard !node.transcriptEditedByUser else { return node.rawContent }
             node.transcription = transcript
             node.updatedAt = .now
             try? context.save()

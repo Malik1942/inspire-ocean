@@ -127,12 +127,36 @@ struct NodeDetailContent: View {
                         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
                 if let transcription = node.transcription, !transcription.isEmpty {
-                    Label("Transcript", systemImage: "waveform")
-                        .font(.caption).foregroundStyle(OceanTheme.mist)
+                    HStack {
+                        Label("Transcript", systemImage: "waveform")
+                            .font(.caption).foregroundStyle(OceanTheme.mist)
+                        Spacer()
+                        // The transcript is the thought; the recording is a
+                        // quiet receipt, present only while it's retained.
+                        if let data = node.audioData, !data.isEmpty {
+                            ListenChip(data: data)
+                        }
+                    }
                     Text(transcription).foregroundStyle(OceanTheme.foam)
                 } else if node.kind == .voice {
-                    Label("Transcribing…", systemImage: "waveform")
+                    HStack {
+                        // Honest about state: "transcribing" only while a pass
+                        // can plausibly still be running; after that, the words
+                        // are simply missing and the recovery is one tap away.
+                        Label(
+                            node.createdAt.timeIntervalSinceNow > -120 ? "Transcribing…" : "No words yet",
+                            systemImage: "waveform"
+                        )
                         .font(.caption).foregroundStyle(OceanTheme.mist)
+                        Spacer()
+                        if let data = node.audioData, !data.isEmpty {
+                            ListenChip(data: data)
+                        }
+                    }
+                    if node.createdAt.timeIntervalSinceNow <= -120 {
+                        Text("Tap to type the words or re-transcribe.")
+                            .font(.caption2).foregroundStyle(OceanTheme.faint)
+                    }
                 }
                 if !node.text.isEmpty {
                     Text(node.text)
@@ -143,10 +167,6 @@ struct NodeDetailContent: View {
                         Label(url.absoluteString, systemImage: "link")
                             .font(.callout).lineLimit(1)
                     }
-                }
-                if let data = node.audioData, !data.isEmpty {
-                    AudioPlayerView(data: data)
-                        .padding(.top, 2)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
