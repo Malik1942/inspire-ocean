@@ -8,31 +8,44 @@ import SwiftData
 /// overwritten (Experience Principle: *Branching Over Editing*).
 @Model
 final class Node {
-    @Attribute(.unique) var id: UUID
-    var createdAt: Date
-    var updatedAt: Date
+    // CloudKit mirroring forbids unique constraints and requires every stored
+    // property to carry a default (records can materialize partially during a
+    // merge). De-duplicate by `id` in fetches if a transient CloudKit merge
+    // ever surfaces two — last-writer-wins resolves it.
+    var id: UUID = UUID()
+    var createdAt: Date = Date.now
+    var updatedAt: Date = Date.now
 
     /// Backing storage for `NodeKind` (SwiftData stores the raw value).
-    var kindRaw: String
+    var kindRaw: String = NodeKind.text.rawValue
 
-    var title: String
-    var text: String
+    var title: String = ""
+    var text: String = ""
     var transcription: String?
     var linkURLString: String?
+
+    /// Legacy: voice drifts used to live as `.m4a` files in Application Support
+    /// with only the file name stored here. Kept for one release as the source
+    /// of the one-time migration into `audioData` (see `migrateLegacyAudio`);
+    /// delete in a later release once every store has migrated.
     var audioFileName: String?
+
+    /// Voice drift audio, stored in the model (externally) so it syncs through
+    /// CloudKit exactly the way `imageData` does — a file on disk would not.
+    @Attribute(.externalStorage) var audioData: Data?
 
     @Attribute(.externalStorage) var imageData: Data?
 
     /// Lightweight, AI-detected themes used for clustering and rediscovery.
-    var themes: [String]
+    var themes: [String] = []
     var mood: String?
 
     /// Visual identity in the Ocean Field.
-    var hue: Double          // 0...1, mapped to an ocean-toned color
-    var fieldX: Double       // normalized 0...1 layout anchor
-    var fieldY: Double       // normalized 0...1 layout anchor
+    var hue: Double = 0.55          // 0...1, mapped to an ocean-toned color
+    var fieldX: Double = 0.5        // normalized 0...1 layout anchor
+    var fieldY: Double = 0.5        // normalized 0...1 layout anchor
 
-    var isArchived: Bool
+    var isArchived: Bool = false
     var lastResurfacedAt: Date?
 
     /// The branch relationship this node represents relative to its parent.
@@ -49,7 +62,7 @@ final class Node {
         text: String = "",
         transcription: String? = nil,
         linkURLString: String? = nil,
-        audioFileName: String? = nil,
+        audioData: Data? = nil,
         imageData: Data? = nil,
         themes: [String] = [],
         mood: String? = nil,
@@ -68,7 +81,7 @@ final class Node {
         self.text = text
         self.transcription = transcription
         self.linkURLString = linkURLString
-        self.audioFileName = audioFileName
+        self.audioData = audioData
         self.imageData = imageData
         self.themes = themes
         self.mood = mood

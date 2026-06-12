@@ -256,7 +256,13 @@ struct CaptureView: View {
         let node: Node
         switch kind {
         case .voice:
-            node = NodeComposer.make(kind: .voice, audioFileName: lastRecordedFile,
+            // Audio now lives in the model (it syncs through CloudKit; a loose
+            // file would not). The temp recording is read into bytes here and
+            // deleted once transcription — which still needs a file URL — is done.
+            let audioData = lastRecordedFile
+                .map { AudioRecorder.url(for: $0) }
+                .flatMap { try? Data(contentsOf: $0) }
+            node = NodeComposer.make(kind: .voice, audioData: audioData,
                                      imageData: imageData, detectThemes: false)
         default:
             node = NodeComposer.make(kind: .text, text: text.trimmed,
@@ -282,6 +288,9 @@ struct CaptureView: View {
     }
 
     private func transcribeAndEnrich(nodeID: UUID, url: URL) async {
+        // The audio is already saved in the node; the temp file only exists for
+        // on-device transcription, so reclaim it on every exit path.
+        defer { try? FileManager.default.removeItem(at: url) }
         guard let transcript = await ai.transcribe(audioURL: url) else { return }
         let understanding = await ai.understand(transcript)
         await MainActor.run {

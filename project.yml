@@ -41,6 +41,11 @@ targets:
       properties:
         com.apple.security.application-groups:
           - group.com.inspireocean.shared
+        com.apple.developer.icloud-services:
+          - CloudKit
+        com.apple.developer.icloud-container-identifiers:
+          - iCloud.com.inspireocean.app
+        aps-environment: development
     info:
       path: Oryne/Info.plist
       properties:
@@ -54,6 +59,9 @@ targets:
         UILaunchScreen:
           UIColorName: ""
         ITSAppUsesNonExemptEncryption: false
+        UIBackgroundModes:
+          # CloudKit delivers sync changes via silent push notifications.
+          - remote-notification
         NSMicrophoneUsageDescription: "Oryne uses the microphone to catch voice drifts before they disappear."
         NSSpeechRecognitionUsageDescription: "Oryne transcribes your voice captures so they can resurface and connect."
         NSPhotoLibraryUsageDescription: "Oryne lets you capture screenshots and photos as inspiration fragments."
@@ -81,6 +89,12 @@ targets:
       properties:
         com.apple.security.application-groups:
           - group.com.inspireocean.shared
+        # Same iCloud container so share-sheet captures sync directly, rather
+        # than waiting for the main app to pick them up on next launch.
+        com.apple.developer.icloud-services:
+          - CloudKit
+        com.apple.developer.icloud-container-identifiers:
+          - iCloud.com.inspireocean.app
     info:
       path: ShareExtension/Info.plist
       properties:

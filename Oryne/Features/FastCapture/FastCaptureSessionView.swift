@@ -308,10 +308,15 @@ struct FastCaptureSessionView: View {
             kind = .text
         }
 
+        // Audio is read into the model so it syncs through CloudKit; the temp
+        // file is reclaimed after transcription (which still needs a file URL).
+        let audioData = lastRecordedFile
+            .map { AudioRecorder.url(for: $0) }
+            .flatMap { try? Data(contentsOf: $0) }
         let node = NodeComposer.make(
             kind: kind,
             text: trimmed,
-            audioFileName: lastRecordedFile,
+            audioData: audioData,
             imageData: imageData,
             detectThemes: kind != .voice || !trimmed.isEmpty
         )
@@ -402,6 +407,9 @@ struct FastCaptureSessionView: View {
     }
 
     private func transcribeAndEnrich(nodeID: UUID, url: URL) async {
+        // Audio already lives in the node; the temp file is only for on-device
+        // transcription, so reclaim it on every exit path.
+        defer { try? FileManager.default.removeItem(at: url) }
         guard let transcript = await ai.transcribe(audioURL: url) else { return }
         let combined: String = await MainActor.run {
             let descriptor = FetchDescriptor<Node>(predicate: #Predicate { $0.id == nodeID })

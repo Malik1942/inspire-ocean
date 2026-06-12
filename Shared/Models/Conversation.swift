@@ -4,10 +4,11 @@ import SwiftData
 /// A persisted Ocean Dialogue thread.
 @Model
 final class Conversation {
-    @Attribute(.unique) var id: UUID
-    var createdAt: Date
-    var updatedAt: Date
-    var title: String
+    // CloudKit mirroring: no unique constraints, every stored property defaulted.
+    var id: UUID = UUID()
+    var createdAt: Date = Date.now
+    var updatedAt: Date = Date.now
+    var title: String = "New dialogue"
 
     @Relationship(deleteRule: .cascade) var messages: [ChatMessage]?
 
@@ -29,15 +30,16 @@ final class Conversation {
 /// in saved nodes*).
 @Model
 final class ChatMessage {
-    @Attribute(.unique) var id: UUID
-    var createdAt: Date
-    var roleRaw: String
-    var text: String
+    // CloudKit mirroring: no unique constraints, every stored property defaulted.
+    var id: UUID = UUID()
+    var createdAt: Date = Date.now
+    var roleRaw: String = MessageRole.user.rawValue
+    var text: String = ""
 
     /// Source nodes this response was grounded in (by `Node.id`).
-    var referencedNodeIDs: [UUID]
+    var referencedNodeIDs: [UUID] = []
     /// Suggested branches the user can grow from this turn.
-    var suggestedBranches: [String]
+    var suggestedBranches: [String] = []
     var modeRaw: String?
     /// Research mode's outward step — knowledge from beyond the user's notes,
     /// stored apart from `text` so its provenance stays visible forever.

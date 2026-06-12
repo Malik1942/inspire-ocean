@@ -41,6 +41,10 @@
 	<string>Oryne lets you capture screenshots and photos as inspiration fragments.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Oryne transcribes your voice captures so they can resurface and connect.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
