@@ -36,6 +36,10 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.inspireocean.app
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: "1,2"
+    # Generate the scheme so CLI builds (-scheme Oryne) survive a regen;
+    # without this only Xcode's transient user scheme exists.
+    scheme:
+      configVariants: []
     entitlements:
       path: Oryne/Oryne.entitlements
       properties:
