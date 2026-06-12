@@ -12,6 +12,8 @@ struct ClusterOrbView: View {
     var isDimmed: Bool = false
     var pulse: Double = 0     // 0…1 ambient breathing phase (sin-mapped)
 
+    @Environment(\.calmAccessibility) private var calm
+
     private var diameter: CGFloat { placement.radius * 2 }
 
     private var color: Color {
@@ -30,7 +32,10 @@ struct ClusterOrbView: View {
         }
         .scaleEffect(1.0 + CGFloat(pulse) * 0.014)
         .opacity(isDimmed ? 0.35 : 1.0)
-        .contentShape(Circle())
+        // The tappable region includes the label hanging below the orb —
+        // the most legible thing about a current should open it too. The
+        // position never carries meaning a tap can't reach.
+        .contentShape(ClusterTapShape(labelDrop: 48))
         .animation(.spring(response: 0.5, dampingFraction: 0.88), value: isDimmed)
     }
 
@@ -68,12 +73,16 @@ struct ClusterOrbView: View {
     }
 
     /// A semantic whisper, not a caption: light weight, airy tracking, mist
-    /// tones that brighten only slightly with the current's recency.
+    /// tones that brighten only slightly with the current's recency. Calm
+    /// Accessibility trades the whisper for legibility — these labels are
+    /// the field's only words, so they're the first thing the mode brightens.
     private var label: some View {
         Text(placement.label)
-            .font(.caption2.weight(.light))
-            .kerning(0.6)
-            .foregroundStyle(OceanTheme.mist.opacity(0.74 + 0.24 * placement.prominence))
+            .font(calm ? .caption.weight(.medium) : .caption2.weight(.light))
+            .kerning(calm ? 0.2 : 0.6)
+            .foregroundStyle(calm
+                ? OceanTheme.foam
+                : OceanTheme.mist.opacity(0.74 + 0.24 * placement.prominence))
             .multilineTextAlignment(.center)
             .lineLimit(2)
             .fixedSize(horizontal: false, vertical: true)
@@ -90,6 +99,8 @@ struct ThoughtMoteView: View {
     var isDimmed: Bool = false
     var pulse: Double = 0
 
+    @Environment(\.calmAccessibility) private var calm
+
     private var diameter: CGFloat { mote.radius * 2 }
 
     /// Stable per-thought variation (0…1): no two particles share quite the
@@ -100,10 +111,11 @@ struct ThoughtMoteView: View {
 
     var body: some View {
         ZStack {
-            // Generous invisible touch target for a small visual.
+            // Generous invisible touch target for a small visual; Calm
+            // Accessibility widens it to the full 44pt the HIG asks for.
             Circle()
                 .fill(Color.white.opacity(0.001))
-                .frame(width: 30, height: 30)
+                .frame(width: calm ? 44 : 36, height: calm ? 44 : 36)
 
             if mote.isResurfacing {
                 Circle()
@@ -136,5 +148,26 @@ struct ThoughtMoteView: View {
         .opacity(isDimmed ? 0.25 : 1.0)
         .contentShape(Circle())
         .animation(.spring(response: 0.5, dampingFraction: 0.88), value: isDimmed)
+    }
+}
+
+// MARK: - Hit shapes
+
+/// The orb plus the label hanging below it, so tapping a current's *name*
+/// opens its stream too. The Ocean's positions are atmosphere; its words are
+/// the interface — both should answer a touch.
+private struct ClusterTapShape: Shape {
+    var labelDrop: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.addEllipse(in: rect)
+        path.addRect(CGRect(
+            x: rect.minX - 12,
+            y: rect.midY,
+            width: rect.width + 24,
+            height: rect.height / 2 + labelDrop
+        ))
+        return path
     }
 }

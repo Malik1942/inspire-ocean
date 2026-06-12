@@ -1,5 +1,30 @@
 import SwiftUI
 
+// MARK: - Calm Accessibility Mode
+
+/// Calm Accessibility Mode: the same Ocean, stilled.
+///
+/// The default experience keeps its drift and whisper-light labels. With this
+/// mode on (Ocean → settings), the water holds still, the labels that carry
+/// information brighten, and touch targets widen — the metaphor survives, the
+/// strain doesn't. The system Reduce Motion setting stills the water too,
+/// independently of this switch.
+///
+/// Lives here (not its own file) because the widget target compiles exactly
+/// this one DesignSystem file — `OceanBackground` below reads the key, so the
+/// key must travel with it.
+enum CalmAccessibility {
+    /// App-Group-backed so every surface agrees.
+    static let key = "ocean.calmAccessibilityMode"
+}
+
+extension EnvironmentValues {
+    /// True when Calm Accessibility Mode is on. Injected once at the root;
+    /// views read the environment, not the preference store, so previews and
+    /// tests can set it directly.
+    @Entry var calmAccessibility: Bool = false
+}
+
 /// Color, type and gradient language for Oryne.
 ///
 /// The Ocean should feel "atmospheric, calm, and alive" (§8) — deep and spatial,
@@ -58,6 +83,9 @@ enum OceanTheme {
 struct OceanBackground: View {
     var animated: Bool = true
 
+    @Environment(\.calmAccessibility) private var calm
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     /// 3×3 colour grid — near-monochrome, lit toward the upper-centre, sinking
     /// to abyssal dark at the lower corners.
     private let colors: [Color] = [
@@ -67,7 +95,10 @@ struct OceanBackground: View {
     ]
 
     var body: some View {
-        TimelineView(.animation(paused: !animated)) { timeline in
+        // Calm Accessibility Mode and the system Reduce Motion setting both
+        // still the water — one paused TimelineView quiets every screen that
+        // stands on this background.
+        TimelineView(.animation(paused: !animated || calm || reduceMotion)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             MeshGradient(width: 3, height: 3, points: points(t), colors: colors)
                 .ignoresSafeArea()

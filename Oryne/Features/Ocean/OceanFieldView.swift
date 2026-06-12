@@ -18,11 +18,20 @@ import SwiftData
 /// floating, not jitter.
 struct OceanFieldView: View {
     @Environment(AppState.self) private var appState
+    @Environment(\.modelContext) private var context
+    @Environment(\.calmAccessibility) private var calm
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(filter: #Predicate<Node> { !$0.isArchived }, sort: \Node.createdAt)
     private var nodes: [Node]
 
     @State private var layout = OceanLayout()
     @State private var sheet: OceanSheet?
+    @State private var showSettings = false
+
+    /// Calm Accessibility Mode or the system Reduce Motion setting holds the
+    /// water still: same layout, same light, no drift. The Ocean's positions
+    /// are atmosphere, not information — stillness costs nothing but motion.
+    private var still: Bool { calm || reduceMotion }
 
     private var nodeByID: [UUID: Node] {
         Dictionary(uniqueKeysWithValues: nodes.map { ($0.id, $0) })
@@ -75,6 +84,9 @@ struct OceanFieldView: View {
                     ClusterStreamView(theme: theme)
                 }
             }
+            .sheet(isPresented: $showSettings) {
+                OceanSettingsView()
+            }
         }
     }
 
@@ -82,12 +94,14 @@ struct OceanFieldView: View {
 
     private func field(in size: CGSize) -> some View {
         // No minimumInterval — ProMotion drives this at full refresh rate.
-        TimelineView(.animation) { timeline in
-            let t = timeline.date.timeIntervalSinceReferenceDate
+        // Stilled, the field keeps its full layout at each thought's resting
+        // place; only the drift (and its battery cost) goes quiet.
+        TimelineView(.animation(paused: still)) { timeline in
+            let t = still ? 0 : timeline.date.timeIntervalSinceReferenceDate
             ZStack {
                 // Currents first (beneath their particles), least prominent at the back.
                 ForEach(layout.clusters.sorted { $0.prominence < $1.prominence }) { cluster in
-                    let phase = (sin(t * 0.5 + Double(cluster.center.x) * 0.02) + 1) / 2
+                    let phase = still ? 0 : (sin(t * 0.5 + Double(cluster.center.x) * 0.02) + 1) / 2
                     ClusterOrbView(placement: cluster, pulse: phase)
                         .position(clusterPosition(cluster, t: t))
                         .onTapGesture {
@@ -96,11 +110,11 @@ struct OceanFieldView: View {
                 }
 
                 ForEach(layout.motes) { mote in
-                    let phase = (sin(t * 0.6 + Double(mote.base.y) * 0.02) + 1) / 2
+                    let phase = still ? 0 : (sin(t * 0.6 + Double(mote.base.y) * 0.02) + 1) / 2
                     ThoughtMoteView(mote: mote, pulse: phase)
                         .position(motePosition(mote, t: t, in: size))
                         .onTapGesture {
-                            if let node = nodeByID[mote.id] { sheet = .thought(node) }
+                            if let node = nodeByID[mote.id] { open(node) }
                         }
                 }
             }
@@ -158,12 +172,21 @@ struct OceanFieldView: View {
 
     // MARK: Interaction
 
+    /// Opens a thought; meeting today's resurfaced fragment rests it, so the
+    /// rhythm moves on to another memory tomorrow.
+    private func open(_ node: Node) {
+        if node.id == resurfacing?.id {
+            Resurfacing.markMet(node, context: context)
+        }
+        sheet = .thought(node)
+    }
+
     /// A deep link (e.g. the Resurfacing widget) queued a node: open it.
     private func consumePendingFocus() {
         guard let id = appState.pendingFocusNodeID else { return }
         appState.pendingFocusNodeID = nil
         guard let node = nodeByID[id] else { return }
-        sheet = .thought(node)
+        open(node)
     }
 
     private func recompute(_ size: CGSize) {
@@ -190,13 +213,23 @@ struct OceanFieldView: View {
                 Spacer()
                 Text("\(nodes.count) fragments")
                     .font(.caption2)
-                    .foregroundStyle(OceanTheme.faint)
+                    .foregroundStyle(calm ? OceanTheme.mist : OceanTheme.faint)
                     .padding(.bottom, 4)
+                Button {
+                    showSettings = true
+                } label: {
+                    Image(systemName: "gearshape")
+                        .font(.subheadline)
+                        .foregroundStyle(OceanTheme.mist)
+                        .frame(width: 32, height: 32)
+                        .contentShape(Circle())
+                }
+                .accessibilityLabel("Ocean settings")
             }
 
             if let resurfacing {
                 Button {
-                    sheet = .thought(resurfacing)
+                    open(resurfacing)
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "arrow.up.heart.fill")

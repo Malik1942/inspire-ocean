@@ -8,6 +8,10 @@ struct RootTabView: View {
         FastCapturePreferenceKeys.onboardingCompleted,
         store: FastCapturePreferences.defaults
     ) private var fastCaptureOnboardingCompleted = false
+    @AppStorage(
+        CalmAccessibility.key,
+        store: FastCapturePreferences.defaults
+    ) private var calmAccessibilityOn = false
 
     @State private var appState = AppState()
     @State private var showFastCaptureOnboarding = false
@@ -81,6 +85,9 @@ struct RootTabView: View {
         .onOpenURL { url in
             appState.handleDeepLink(url)
         }
+        // Outermost, so the Fast Capture overlay and every presented sheet
+        // inherit the stilled-water environment along with the tabs.
+        .environment(\.calmAccessibility, calmAccessibilityOn)
     }
 
     /// Tab label that always renders the outline (stroke) form of its symbol.

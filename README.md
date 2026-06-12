@@ -141,6 +141,10 @@ Intelligence actions):
 
 ## Notes & next steps
 
+- **Product philosophy:** [PHILOSOPHY.md](PHILOSOPHY.md) — the guardrails
+  (capture, ownership, AI behavior, motion, trust, memory, retrieval, calm
+  computing) every change is reviewed against.
+
 - First launch seeds ~10 evocative fragments so the Ocean feels alive and
   dialogue/rediscovery are demonstrable immediately (`App/SeedData.swift`).
 - Testing seam: launch env var `OCEAN_START_TAB=capture|ocean|ask|library`

@@ -13,6 +13,9 @@ import SwiftUI
 ///   devices update at full 120 Hz and the float is silky.
 struct AtmosphereView: View {
 
+    @Environment(\.calmAccessibility) private var calm
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private struct Mote {
         let x:       Double   // 0…1 normalised horizontal start
         let baseY:   Double   // 0…1 normalised vertical start (wraps)
@@ -42,8 +45,9 @@ struct AtmosphereView: View {
     }
 
     var body: some View {
-        // No minimumInterval — runs at full ProMotion refresh rate.
-        TimelineView(.animation) { timeline in
+        // No minimumInterval — runs at full ProMotion refresh rate. Stilled
+        // (motes hold their places) under Calm Accessibility / Reduce Motion.
+        TimelineView(.animation(paused: calm || reduceMotion)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             Canvas { ctx, size in
 
