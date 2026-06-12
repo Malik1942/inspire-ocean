@@ -136,7 +136,11 @@ struct FastCaptureSessionView: View {
                     .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(OceanTheme.mist)
             }
-            .accessibilityLabel("Cancel Fast Capture")
+            .accessibilityLabel(
+                transcriber.isRecording ? "Cancel recording"
+                    : isReviewing ? "Close — keeps the capture"
+                    : "Close Fast Capture"
+            )
         }
     }
 
@@ -203,11 +207,21 @@ struct FastCaptureSessionView: View {
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(OceanTheme.foam)
                 Spacer()
-                if autoReleaseTask != nil {
-                    Text("Tap words to keep editing")
-                        .font(.caption2)
-                        .foregroundStyle(OceanTheme.faint)
+                // The explicit way back — X above only closes; this deletes.
+                Button(action: undoCapture) {
+                    Label("Undo", systemImage: "arrow.uturn.backward")
+                        .font(.caption2.weight(.medium))
+                        .padding(.horizontal, 10).padding(.vertical, 5)
+                        .background(Color.white.opacity(0.08), in: Capsule())
+                        .foregroundStyle(OceanTheme.mist)
                 }
+                .accessibilityLabel("Undo capture")
+            }
+
+            if autoReleaseTask != nil {
+                Text("Tap words to keep editing")
+                    .font(.caption2)
+                    .foregroundStyle(OceanTheme.faint)
             }
 
             if autoReleaseTask == nil {
@@ -387,6 +401,11 @@ struct FastCaptureSessionView: View {
             transcriptDraft = ""
             savedNodeID = nil
             isReviewing = false
+            // System interruptions end the take like a tap on Stop: capture
+            // what was caught and show the review, never a stuck "Listening".
+            transcriber.onInterruption = { [self] in
+                Task { await captureNow() }
+            }
         }
         if !(await transcriber.start(writingTo: url)) {
             await MainActor.run { fallBackToTyping() }
@@ -590,28 +609,49 @@ struct FastCaptureSessionView: View {
         onFinish()
     }
 
+    /// The header X. Consistent close semantics: after capture it only
+    /// closes — committing what's already safe — and never deletes. Deleting
+    /// is Undo's job, and it says so. Mid-recording, nothing is saved yet, so
+    /// X cancels the take.
     private func cancel() {
         fadeTask?.cancel()
-        autoReleaseTask?.cancel()
         if moment != nil {
             // Post-release: the fragment is already saved — just close.
+            autoReleaseTask?.cancel()
             onFinish()
             return
         }
         if transcriber.isRecording {
             Task { await transcriber.cancel() }
-        } else if isReviewing, let nodeID = savedNodeID {
-            // Captured-but-reviewing: X is the take-it-back valve for an
-            // accidental capture — the saved node goes with it.
+            onFinish()
+            return
+        }
+        if isReviewing {
+            // Close = keep: commit drafts and dismiss without the moment beat.
+            finalizeReview()
+            fadeTask?.cancel()
+            onFinish()
+            return
+        }
+        if let recordedURL {
+            try? FileManager.default.removeItem(at: recordedURL)
+        }
+        onFinish()
+    }
+
+    /// The explicit take-it-back: deletes the captured node and closes.
+    private func undoCapture() {
+        autoReleaseTask?.cancel()
+        autoReleaseTask = nil
+        fadeTask?.cancel()
+        if let nodeID = savedNodeID {
             let descriptor = FetchDescriptor<Node>(predicate: #Predicate { $0.id == nodeID })
             if let node = try? context.fetch(descriptor).first {
                 context.delete(node)
                 try? context.save()
             }
-            if let recordedURL { try? FileManager.default.removeItem(at: recordedURL) }
-        } else if let recordedURL {
-            try? FileManager.default.removeItem(at: recordedURL)
         }
+        if let recordedURL { try? FileManager.default.removeItem(at: recordedURL) }
         onFinish()
     }
 

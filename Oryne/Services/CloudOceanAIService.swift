@@ -92,10 +92,11 @@ final class CloudOceanAIService: OceanAIService {
         // compose. Research's outward step runs concurrently with the
         // grounded reflection; either may fail independently, and whatever
         // the cloud doesn't deliver, the on-device scaffold already covers.
+        let reflectionExpected = mode != .search && !sources.isEmpty
         async let composedReflection = reflectIfNeeded(
             query: query, history: history, mode: mode, sources: sources,
             configuration: configuration,
-            enabled: mode != .search && !sources.isEmpty
+            enabled: reflectionExpected
         )
         async let composedOutward = outwardIfNeeded(
             query: query, sources: sources,
@@ -111,6 +112,11 @@ final class CloudOceanAIService: OceanAIService {
         var response = scaffold
         if let reflection = await composedReflection {
             response.reflection = reflection
+            response.provenance = .cloud
+        } else if reflectionExpected {
+            // The cloud was supposed to answer and couldn't — the scaffold
+            // stands, and the reply should quietly say where it came from.
+            response.provenance = .offlineFallback
         }
         if let outward = await composedOutward {
             response.outwardNote = outward

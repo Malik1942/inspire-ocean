@@ -8,6 +8,20 @@ struct SuggestedBranch: Identifiable, Hashable {
     var type: BranchType
 }
 
+/// Where a reflection's words came from. Surfaced quietly in the UI only for
+/// the cases a user would otherwise misread — a degraded cloud answer that
+/// looks normal, or an answer composed with nothing nearby to draw from.
+enum ResponseProvenance: String {
+    /// Composed by the cloud model (the norm when a key is configured).
+    case cloud
+    /// Composed on-device (the norm without one).
+    case onDevice
+    /// The cloud was expected but unreachable — the device answered instead.
+    case offlineFallback
+    /// Nothing drifted near the query; the reply is open water, not grounding.
+    case noSources
+}
+
 /// A grounded Ocean Dialogue response (§11): a reflection, the source nodes it
 /// drew from, an optional pattern summary, and suggested branches.
 struct OceanResponse {
@@ -19,6 +33,7 @@ struct OceanResponse {
     /// the user's notes. Kept separate from `reflection` so the UI can mark
     /// its provenance unmistakably — grounded water and open sea never mix.
     var outwardNote: String? = nil
+    var provenance: ResponseProvenance = .onDevice
 }
 
 /// One prior turn of an Ocean Dialogue, passed back into `respond` so

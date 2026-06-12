@@ -13,6 +13,7 @@ struct LibraryView: View {
     @State private var kindFilter: NodeKind?
     @State private var showArchived = false
     @State private var backfilling = false
+    @State private var pendingDelete: Node?
 
     private var filtered: [Node] {
         allNodes.filter { node in
@@ -64,6 +65,22 @@ struct LibraryView: View {
             }
             .navigationDestination(for: Node.self) { node in
                 NodeDetailContent(node: node)
+            }
+            .confirmationDialog(
+                "Delete this thought?",
+                isPresented: Binding(
+                    get: { pendingDelete != nil },
+                    set: { if !$0 { pendingDelete = nil } }
+                ),
+                titleVisibility: .visible
+            ) {
+                Button("Delete", role: .destructive) {
+                    if let node = pendingDelete { delete(node) }
+                    pendingDelete = nil
+                }
+                Button("Cancel", role: .cancel) { pendingDelete = nil }
+            } message: {
+                Text("This drifts out of the Ocean for good.")
             }
             .task { await backfillUnderstanding() }
         }
@@ -126,13 +143,17 @@ struct LibraryView: View {
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .swipeActions(edge: .trailing) {
-                            Button(role: .destructive) { delete(node) } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
+                            // First action = the full-swipe default. Archive
+                            // is reversible (Restore + "Show archived"), so it
+                            // takes that slot; deletion always asks first —
+                            // the same care the detail view's trash shows.
                             Button { archive(node) } label: {
                                 Label(node.isArchived ? "Restore" : "Archive",
                                       systemImage: node.isArchived ? "arrow.up.bin" : "archivebox")
                             }.tint(OceanTheme.surface)
+                            Button(role: .destructive) { pendingDelete = node } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
                         }
                     }
                 } header: {

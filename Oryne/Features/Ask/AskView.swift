@@ -141,6 +141,12 @@ struct AskView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
 
+                if let note = provenanceNote(message) {
+                    Text(note)
+                        .font(.caption2)
+                        .foregroundStyle(OceanTheme.faint)
+                        .padding(.leading, 4)
+                }
                 if let outward = message.outwardText, !outward.isEmpty {
                     outwardView(outward)
                 }
@@ -152,6 +158,16 @@ struct AskView: View {
                 }
             }
             .padding(.trailing, 30)
+        }
+    }
+
+    /// Quiet provenance, only where silence would mislead: a cloud answer that
+    /// actually came from the device, or a reply with nothing nearby behind it.
+    private func provenanceNote(_ message: ChatMessage) -> String? {
+        switch message.provenanceRaw.flatMap(ResponseProvenance.init(rawValue:)) {
+        case .offlineFallback: "Composed offline"
+        case .noSources: "Nothing drifts near this yet — answered from open water"
+        case .cloud, .onDevice, nil: nil
         }
     }
 
@@ -384,7 +400,8 @@ struct AskView: View {
                     referencedNodeIDs: response.sourceNodeIDs,
                     suggestedBranches: response.suggestedBranches.map { "\($0.type.rawValue)|\($0.title)" },
                     mode: currentMode,
-                    outwardText: response.outwardNote
+                    outwardText: response.outwardNote,
+                    provenanceRaw: response.provenance.rawValue
                 )
                 oceanMessage.conversation = convo
                 context.insert(oceanMessage)

@@ -44,6 +44,9 @@ final class ChatMessage {
     /// Research mode's outward step — knowledge from beyond the user's notes,
     /// stored apart from `text` so its provenance stays visible forever.
     var outwardText: String?
+    /// How the reflection was composed (`ResponseProvenance` raw value) —
+    /// additive optional so old messages and old clients stay untouched.
+    var provenanceRaw: String?
 
     @Relationship(inverse: \Conversation.messages) var conversation: Conversation?
 
@@ -55,7 +58,8 @@ final class ChatMessage {
         referencedNodeIDs: [UUID] = [],
         suggestedBranches: [String] = [],
         mode: DialogueMode? = nil,
-        outwardText: String? = nil
+        outwardText: String? = nil,
+        provenanceRaw: String? = nil
     ) {
         self.id = id
         self.createdAt = createdAt
@@ -65,6 +69,7 @@ final class ChatMessage {
         self.suggestedBranches = suggestedBranches
         self.modeRaw = mode?.rawValue
         self.outwardText = outwardText
+        self.provenanceRaw = provenanceRaw
     }
 
     var role: MessageRole {

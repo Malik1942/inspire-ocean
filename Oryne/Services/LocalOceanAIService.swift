@@ -217,7 +217,10 @@ final class LocalOceanAIService: OceanAIService {
             sourceNodeIDs: sources.map { $0.id },
             patternSummary: patternSummary,
             suggestedBranches: branches,
-            outwardNote: outwardNote
+            outwardNote: outwardNote,
+            // Search is a pure find — an empty result needs no caveat; for
+            // composing modes, an ungrounded reply must say so.
+            provenance: (sources.isEmpty && mode != .search) ? .noSources : .onDevice
         )
     }
 

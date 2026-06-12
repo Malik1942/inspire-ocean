@@ -49,6 +49,13 @@ final class LiveTranscriber {
     /// race two starts through the permission await into a second tap install.
     private var isStarting = false
 
+    /// Fired (on the main queue) when the system takes the audio away mid-
+    /// recording — a call, Siri, the mic route vanishing, an engine
+    /// reconfiguration. The owning view treats it exactly like a tap on stop:
+    /// capture whatever was caught, never sit stuck on "Listening…".
+    var onInterruption: (() -> Void)?
+    private var interruptionObservers: [NSObjectProtocol] = []
+
     // MARK: Permissions
 
     func requestMicPermission() async -> Bool {
@@ -159,7 +166,45 @@ final class LiveTranscriber {
             return false
         }
         isRecording = true
+        installInterruptionObservers()
         return true
+    }
+
+    /// The system can take the audio away at any moment — a phone call, the
+    /// AirPods walking off, a sample-rate change. Each of those funnels into
+    /// `onInterruption`, where the owner runs its ordinary stop path with
+    /// whatever was already written and recognized.
+    private func installInterruptionObservers() {
+        let center = NotificationCenter.default
+        interruptionObservers.append(center.addObserver(
+            forName: AVAudioSession.interruptionNotification, object: nil, queue: .main
+        ) { [weak self] note in
+            guard let self, self.isRecording else { return }
+            let type = (note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt)
+                .flatMap(AVAudioSession.InterruptionType.init)
+            if type == .began { self.onInterruption?() }
+        })
+        interruptionObservers.append(center.addObserver(
+            forName: AVAudioSession.routeChangeNotification, object: nil, queue: .main
+        ) { [weak self] note in
+            guard let self, self.isRecording else { return }
+            let reason = (note.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt)
+                .flatMap(AVAudioSession.RouteChangeReason.init)
+            // Only the input disappearing ends the take; plugging something
+            // IN reconfigures the engine, which the observer below catches.
+            if reason == .oldDeviceUnavailable { self.onInterruption?() }
+        })
+        interruptionObservers.append(center.addObserver(
+            forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main
+        ) { [weak self] _ in
+            guard let self, self.isRecording else { return }
+            self.onInterruption?()
+        })
+    }
+
+    private func removeInterruptionObservers() {
+        interruptionObservers.forEach(NotificationCenter.default.removeObserver)
+        interruptionObservers.removeAll()
     }
 
     /// Stops the engine, finishes the file, and resolves the final transcript
@@ -168,6 +213,7 @@ final class LiveTranscriber {
     func stop() async -> (audioURL: URL?, transcript: String) {
         guard isRecording else { return (currentURL, latestTranscription) }
 
+        removeInterruptionObservers()
         engine.inputNode.removeTap(onBus: 0)
         engine.stop()
         isRecording = false

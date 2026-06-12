@@ -231,10 +231,21 @@ struct CaptureView: View {
                 Label("Captured", systemImage: "checkmark.circle")
                     .font(.caption).foregroundStyle(OceanTheme.mist)
                 Spacer()
-                if !reviewPaused {
-                    Text("Tap words to keep editing")
-                        .font(.caption2).foregroundStyle(OceanTheme.faint)
+                // One explicit way back, named for what it does — never a
+                // bare X that quietly means delete.
+                Button(action: discardCapture) {
+                    Label("Undo", systemImage: "arrow.uturn.backward")
+                        .font(.caption2.weight(.medium))
+                        .padding(.horizontal, 10).padding(.vertical, 5)
+                        .background(Color.white.opacity(0.08), in: Capsule())
+                        .foregroundStyle(OceanTheme.mist)
                 }
+                .accessibilityLabel("Undo capture")
+            }
+
+            if !reviewPaused {
+                Text("Tap words to keep editing")
+                    .font(.caption2).foregroundStyle(OceanTheme.faint)
             }
 
             if reviewPaused {
@@ -257,11 +268,6 @@ struct CaptureView: View {
                         ListenChip(data: recordedAudioData)
                     }
                     Spacer()
-                    Button(role: .destructive, action: discardCapture) {
-                        Label("Discard", systemImage: "xmark.circle")
-                            .font(.caption.weight(.medium))
-                    }
-                    .foregroundStyle(OceanTheme.mist)
                     Button(action: finalizeReview) {
                         Text("Keep")
                             .font(.caption.weight(.semibold))
@@ -355,6 +361,11 @@ struct CaptureView: View {
             await captureWhisper()
         } else {
             guard await transcriber.requestMicPermission() else { return }
+            // A call, Siri, or a vanished mic ends the take like a tap on
+            // stop — capture what was caught, never stay stuck "Listening…".
+            transcriber.onInterruption = { [self] in
+                Task { await captureWhisper() }
+            }
             let url = AudioRecorder.url(for: "drift-\(UUID().uuidString).m4a")
             if await transcriber.start(writingTo: url) {
                 whisperPhase = .recording
