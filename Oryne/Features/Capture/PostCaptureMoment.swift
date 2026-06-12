@@ -71,6 +71,9 @@ struct PostCaptureMomentView: View {
     let moment: PostCaptureMoment
     var onTurnIntoQuestion: () -> Void
     var onSeeInOcean: () -> Void
+    /// Present while the released thought can still be taken back — undo
+    /// stays reachable through the whole moment, not just the capsule.
+    var onUndo: (() -> Void)? = nil
 
     var body: some View {
         Group {
@@ -83,13 +86,24 @@ struct PostCaptureMomentView: View {
         .animation(.spring(response: 0.36, dampingFraction: 0.86), value: moment)
     }
 
-    /// Phase 1 — exactly the old confirmation flash.
+    /// Phase 1 — the old confirmation flash, with the way back beside it.
     private var received: some View {
-        Label(moment.phrase, systemImage: "checkmark.seal.fill")
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(OceanTheme.foam)
-            .padding(.horizontal, 18).padding(.vertical, 12)
-            .background(.ultraThinMaterial, in: Capsule())
+        HStack(spacing: 12) {
+            Label(moment.phrase, systemImage: "checkmark.seal.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(OceanTheme.foam)
+            if let onUndo {
+                Button(action: onUndo) {
+                    Text("Undo")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(OceanTheme.mist)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Undo capture")
+            }
+        }
+        .padding(.horizontal, 18).padding(.vertical, 12)
+        .background(.ultraThinMaterial, in: Capsule())
     }
 
     /// Phase 2/3 — the Ocean's interpretation, and one quiet nearby thought.
@@ -110,12 +124,19 @@ struct PostCaptureMomentView: View {
                     .font(.caption2)
                     .foregroundStyle(OceanTheme.mist)
                     .lineLimit(1)
+            }
 
+            if moment.related != nil || onUndo != nil {
                 HStack(spacing: 8) {
-                    quietAction("Turn into question", system: "questionmark.circle",
-                                action: onTurnIntoQuestion)
-                    quietAction("See in Ocean", system: "water.waves",
-                                action: onSeeInOcean)
+                    if moment.related != nil {
+                        quietAction("Turn into question", system: "questionmark.circle",
+                                    action: onTurnIntoQuestion)
+                        quietAction("See in Ocean", system: "water.waves",
+                                    action: onSeeInOcean)
+                    }
+                    if let onUndo {
+                        quietAction("Undo", system: "arrow.uturn.backward", action: onUndo)
+                    }
                 }
                 .padding(.top, 2)
             }

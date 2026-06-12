@@ -15,7 +15,7 @@ struct FastCaptureSessionView: View {
     @State private var mode: FastCaptureInputPreference
     @State private var text: String
     @State private var imageData: Data?
-    @State private var transcriber = LiveTranscriber()
+    @State private var session = CaptureSession()
     @State private var recordedURL: URL?
     @State private var recordedAudioData: Data?
     @State private var transcriptDraft: String = ""
@@ -61,7 +61,9 @@ struct FastCaptureSessionView: View {
                         PostCaptureMomentView(
                             moment: moment,
                             onTurnIntoQuestion: { turnIntoQuestion(moment) },
-                            onSeeInOcean: { seeInOcean(moment) }
+                            onSeeInOcean: { seeInOcean(moment) },
+                            onUndo: session.undoAvailable(for: moment.id)
+                                ? { undoFromMoment() } : nil
                         )
                         .frame(maxWidth: .infinity, alignment: .leading)
                     } else {
@@ -91,6 +93,10 @@ struct FastCaptureSessionView: View {
             .padding(.bottom, 12)
         }
         .task {
+            session.configure(context: context, ai: ai)
+            session.onUnderstood = { nodeID, title in
+                advanceMoment(nodeID: nodeID, title: title)
+            }
             guard !hasStarted else { return }
             hasStarted = true
             if mode == .voiceFirst {
@@ -137,7 +143,7 @@ struct FastCaptureSessionView: View {
                     .foregroundStyle(OceanTheme.mist)
             }
             .accessibilityLabel(
-                transcriber.isRecording ? "Cancel recording"
+                session.transcriber.isRecording ? "Cancel recording"
                     : isReviewing ? "Close — keeps the capture"
                     : "Close Fast Capture"
             )
@@ -146,26 +152,26 @@ struct FastCaptureSessionView: View {
 
     private var voiceCapture: some View {
         VStack(spacing: 12) {
-            FastCaptureWaveform(level: transcriber.level, active: transcriber.isRecording)
+            FastCaptureWaveform(level: session.transcriber.level, active: session.transcriber.isRecording)
                 .frame(height: 42)
 
             HStack {
-                Text(transcriber.isRecording ? "Listening" : "Whisper held")
+                Text(session.transcriber.isRecording ? "Listening" : "Whisper held")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(OceanTheme.foam)
 
                 Spacer()
 
-                Text(timeString(transcriber.elapsed))
+                Text(timeString(session.transcriber.elapsed))
                     .font(.system(.subheadline, design: .monospaced))
                     .foregroundStyle(OceanTheme.mist)
             }
 
-            if transcriber.isRecording, transcriber.speechAvailability == .live {
+            if session.transcriber.isRecording, session.transcriber.speechAvailability == .live {
                 // The words land while speaking; the note field returns in
                 // the review beat (and stays for the speech-off path).
                 TranscriptEditor(
-                    text: .constant(transcriber.partial),
+                    text: .constant(session.transcriber.partial),
                     isEditable: false,
                     placeholder: "Words appear as you speak…",
                     minHeight: 54,
@@ -228,7 +234,7 @@ struct FastCaptureSessionView: View {
                 TranscriptEditor(
                     text: $transcriptDraft,
                     isEditable: true,
-                    placeholder: transcriber.speechAvailability == .unavailable
+                    placeholder: session.transcriber.speechAvailability == .unavailable
                         ? "Transcription is off — type the words, if you like"
                         : "What did you say?",
                     minHeight: 54,
@@ -302,11 +308,11 @@ struct FastCaptureSessionView: View {
                 Button {
                     Task { await toggleRecording() }
                 } label: {
-                    Label(transcriber.isRecording ? "Stop" : "Record", systemImage: transcriber.isRecording ? "stop.circle.fill" : "mic.circle.fill")
+                    Label(session.transcriber.isRecording ? "Stop" : "Record", systemImage: session.transcriber.isRecording ? "stop.circle.fill" : "mic.circle.fill")
                         .font(.subheadline.weight(.semibold))
                 }
                 .buttonStyle(.bordered)
-                .tint(transcriber.isRecording ? .red.opacity(0.8) : OceanTheme.accent)
+                .tint(session.transcriber.isRecording ? .red.opacity(0.8) : OceanTheme.accent)
             } else {
                 Button {
                     withAnimation(.snappy) { mode = .voiceFirst }
@@ -324,7 +330,9 @@ struct FastCaptureSessionView: View {
             if isReviewing {
                 if autoReleaseTask == nil {
                     // Paused for editing: the only forward action is "keep".
-                    Button(action: finalizeReview) {
+                    Button {
+                        finalizeReview()
+                    } label: {
                         Label("Keep", systemImage: "checkmark.circle.fill")
                             .font(.subheadline.weight(.semibold))
                     }
@@ -374,14 +382,14 @@ struct FastCaptureSessionView: View {
     }
 
     private var canSave: Bool {
-        transcriber.isRecording
+        session.transcriber.isRecording
         || isReviewing
         || !text.trimmed.isEmpty
         || imageData != nil
     }
 
     private func toggleRecording() async {
-        if transcriber.isRecording {
+        if session.transcriber.isRecording {
             await captureNow()
         } else {
             await startRecording()
@@ -389,25 +397,20 @@ struct FastCaptureSessionView: View {
     }
 
     private func startRecording() async {
-        guard !transcriber.isRecording else { return }
-        guard await transcriber.requestMicPermission() else {
-            await MainActor.run { fallBackToTyping() }
-            return
-        }
-        let url = AudioRecorder.url(for: "drift-\(UUID().uuidString).m4a")
+        guard !session.transcriber.isRecording else { return }
         await MainActor.run {
             recordedURL = nil
             recordedAudioData = nil
             transcriptDraft = ""
             savedNodeID = nil
             isReviewing = false
-            // System interruptions end the take like a tap on Stop: capture
-            // what was caught and show the review, never a stuck "Listening".
-            transcriber.onInterruption = { [self] in
-                Task { await captureNow() }
-            }
         }
-        if !(await transcriber.start(writingTo: url)) {
+        // System interruptions end the take like a tap on Stop: capture
+        // what was caught and show the review, never a stuck "Listening".
+        let started = await session.startRecording(onInterruption: { [self] in
+            Task { await captureNow() }
+        })
+        if started != .started {
             await MainActor.run { fallBackToTyping() }
         }
     }
@@ -425,8 +428,8 @@ struct FastCaptureSessionView: View {
     @MainActor
     private func captureNow() async {
         guard !isSaving, savedNodeID == nil else { return }
-        let elapsed = transcriber.elapsed
-        let (url, transcript) = await transcriber.stop()
+        let elapsed = session.transcriber.elapsed
+        let (url, transcript) = await session.stopRecording()
         let trimmedNote = text.trimmed
         let trimmedTranscript = transcript.trimmed
 
@@ -437,22 +440,28 @@ struct FastCaptureSessionView: View {
         }
 
         recordedURL = url
-        recordedAudioData = url.flatMap { try? Data(contentsOf: $0) }
-        let node = NodeComposer.make(
+        recordedAudioData = CaptureSession.readAudio(url)
+        transcriptDraft = trimmedTranscript
+        let draft = CaptureDraft(
             kind: .voice,
             text: trimmedNote,
-            transcription: trimmedTranscript.isEmpty ? nil : trimmedTranscript,
+            transcript: trimmedTranscript,
             audioData: recordedAudioData,
-            imageData: imageData,
-            detectThemes: !trimmedNote.isEmpty || !trimmedTranscript.isEmpty
+            audioTempURL: url,
+            imageData: imageData
         )
-        context.insert(node)
-        try? context.save()
 
-        savedNodeID = node.id
-        transcriptDraft = trimmedTranscript
-        withAnimation(.snappy) { isReviewing = true }
-        scheduleAutoRelease()
+        if let nodeID = session.release(draft) {
+            savedNodeID = nodeID
+            withAnimation(.snappy) { isReviewing = true }
+            scheduleAutoRelease()
+        } else {
+            // The store refused the save: hold the words, paused — Keep
+            // retries the release. Never a silent loss.
+            savedNodeID = nil
+            message = "Couldn't save yet — Keep tries again."
+            withAnimation(.snappy) { isReviewing = true }
+        }
     }
 
     private func scheduleAutoRelease() {
@@ -476,47 +485,37 @@ struct FastCaptureSessionView: View {
         }
     }
 
-    /// The review resolves: apply any edits to the saved node, then let
-    /// understanding run on the words the user actually kept.
+    /// The review resolves: apply any edits to the saved node (or release a
+    /// restored draft), then let understanding run on the words the user kept.
     @MainActor
     private func finalizeReview() {
-        guard !isSaving, let nodeID = savedNodeID else { return }
-        isSaving = true
+        guard !isSaving else { return }
         autoReleaseTask?.cancel()
         autoReleaseTask = nil
 
-        let descriptor = FetchDescriptor<Node>(predicate: #Predicate { $0.id == nodeID })
-        guard let node = try? context.fetch(descriptor).first else {
-            isSaving = false
-            onFinish()
-            return
-        }
-
-        let editedTranscript = transcriptDraft.trimmed
-        if editedTranscript != (node.transcription ?? "") {
-            node.transcription = editedTranscript.isEmpty ? nil : editedTranscript
-            node.transcriptEditedByUser = true
-        }
-        let editedNote = text.trimmed
-        if editedNote != node.text {
-            node.text = editedNote
-        }
-        node.updatedAt = .now
-        try? context.save()
-
-        if !(node.transcription ?? "").isEmpty {
-            // A confirmed transcript wins — no post-hoc re-transcription.
-            if let recordedURL { try? FileManager.default.removeItem(at: recordedURL) }
-            if !node.rawContent.isEmpty {
-                Task { await generateTitle(nodeID: nodeID) }
+        let nodeID: UUID
+        if let existing = savedNodeID {
+            session.applyReviewEdits(nodeID: existing, transcript: transcriptDraft, note: text)
+            nodeID = existing
+        } else {
+            // A restored (undone) or save-failed draft — release it now.
+            let draft = CaptureDraft(
+                kind: .voice,
+                text: text.trimmed,
+                transcript: transcriptDraft.trimmed,
+                audioData: recordedAudioData,
+                audioTempURL: recordedURL
+            )
+            guard let id = session.release(draft) else {
+                message = "Couldn't save yet — Keep tries again."
+                return
             }
-        } else if let recordedURL {
-            // Speech was off and nothing typed: the post-hoc pass is the
-            // fallback; it reclaims the temp file.
-            Task { await transcribeAndEnrich(nodeID: nodeID, url: recordedURL) }
-        } else if !node.rawContent.isEmpty {
-            Task { await generateTitle(nodeID: nodeID) }
+            nodeID = id
         }
+        isSaving = true
+        message = nil
+
+        session.beginUnderstanding(nodeID: nodeID)
 
         textFocused = false
         transcriptFocused = false
@@ -524,13 +523,32 @@ struct FastCaptureSessionView: View {
             isReviewing = false
             moment = .received(for: nodeID)
         }
-        scheduleFinish(after: 1.2)
+        // The moment is also the undo window; linger a touch longer than the
+        // old flash so a late tap can land.
+        scheduleFinish(after: 2.4)
+    }
+
+    /// A late Undo from the moment: the thought comes back into the review,
+    /// held — the overlay stays up so nothing the user said is lost.
+    private func undoFromMoment() {
+        fadeTask?.cancel()
+        guard let draft = session.undoLastRelease() else { return }
+        isSaving = false
+        savedNodeID = nil
+        transcriptDraft = draft.transcript
+        text = draft.text
+        recordedAudioData = draft.audioData
+        recordedURL = nil
+        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
+            moment = nil
+            isReviewing = true
+        }
     }
 
     /// The prominent Release button: while recording it stops *and* releases
     /// in one gesture; in typing mode it saves the typed thought as before.
     private func releaseNow() {
-        if transcriber.isRecording {
+        if session.transcriber.isRecording {
             Task {
                 await captureNow()
                 await MainActor.run { finalizeReview() }
@@ -544,27 +562,26 @@ struct FastCaptureSessionView: View {
 
     private func saveTyped() {
         guard !isSaving, canSave else { return }
-        isSaving = true
 
         let trimmed = text.trimmed
         let kind: NodeKind = (imageData != nil && trimmed.isEmpty) ? .image : .text
-        let node = NodeComposer.make(kind: kind, text: trimmed, imageData: imageData)
-        context.insert(node)
-        try? context.save()
-
-        let nodeID = node.id
-        if !node.rawContent.isEmpty {
-            Task { await generateTitle(nodeID: nodeID) }
+        let draft = CaptureDraft(kind: kind, text: trimmed, imageData: imageData)
+        guard let nodeID = session.release(draft) else {
+            message = "Couldn't save yet — Release tries again."
+            return
         }
+        isSaving = true
+        session.beginUnderstanding(nodeID: nodeID)
 
         // Received. If the interpreted title lands quickly (the common case for
         // text), the card morphs into the understanding moment and lingers
-        // briefly; otherwise it dismisses almost as fast as before.
+        // briefly; otherwise it dismisses almost as fast as before. The moment
+        // is also the undo window.
         textFocused = false
         withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
             moment = .received(for: nodeID)
         }
-        scheduleFinish(after: 1.2)
+        scheduleFinish(after: 2.4)
     }
 
     // MARK: Understanding moment
@@ -621,8 +638,8 @@ struct FastCaptureSessionView: View {
             onFinish()
             return
         }
-        if transcriber.isRecording {
-            Task { await transcriber.cancel() }
+        if session.transcriber.isRecording {
+            Task { await session.transcriber.cancel() }
             onFinish()
             return
         }
@@ -644,19 +661,16 @@ struct FastCaptureSessionView: View {
         autoReleaseTask?.cancel()
         autoReleaseTask = nil
         fadeTask?.cancel()
-        if let nodeID = savedNodeID {
-            let descriptor = FetchDescriptor<Node>(predicate: #Predicate { $0.id == nodeID })
-            if let node = try? context.fetch(descriptor).first {
-                context.delete(node)
-                try? context.save()
-            }
+        if savedNodeID != nil {
+            _ = session.undoLastRelease()
+        } else if let recordedURL {
+            try? FileManager.default.removeItem(at: recordedURL)
         }
-        if let recordedURL { try? FileManager.default.removeItem(at: recordedURL) }
         onFinish()
     }
 
     private func finishInterruptedCapture() {
-        if transcriber.isRecording {
+        if session.transcriber.isRecording {
             // The overlay is going away — capture what we have and release;
             // no review beat to show.
             Task {
@@ -667,48 +681,6 @@ struct FastCaptureSessionView: View {
             // Backgrounded mid-review — paused or not, the thought is already
             // safe and any edits made so far go with it.
             finalizeReview()
-        }
-    }
-
-    private func transcribeAndEnrich(nodeID: UUID, url: URL) async {
-        // Audio already lives in the node; the temp file is only for on-device
-        // transcription, so reclaim it on every exit path.
-        defer { try? FileManager.default.removeItem(at: url) }
-        guard let transcript = await ai.transcribe(audioURL: url) else { return }
-        let combined: String = await MainActor.run {
-            let descriptor = FetchDescriptor<Node>(predicate: #Predicate { $0.id == nodeID })
-            guard let node = try? context.fetch(descriptor).first else { return transcript }
-            // Ownership: never overwrite words the user has touched.
-            guard !node.transcriptEditedByUser else { return node.rawContent }
-            node.transcription = transcript
-            node.updatedAt = .now
-            try? context.save()
-            return [node.text, transcript].filter { !$0.isEmpty }.joined(separator: "\n")
-        }
-
-        let understanding = await ai.understand(combined)
-        await MainActor.run {
-            let descriptor = FetchDescriptor<Node>(predicate: #Predicate { $0.id == nodeID })
-            guard let node = try? context.fetch(descriptor).first else { return }
-            NodeComposer.applyUnderstanding(understanding, to: node)
-            try? context.save()
-            advanceMoment(nodeID: nodeID, title: understanding.essence)
-        }
-    }
-
-    private func generateTitle(nodeID: UUID) async {
-        let raw: String = await MainActor.run {
-            let descriptor = FetchDescriptor<Node>(predicate: #Predicate { $0.id == nodeID })
-            return (try? context.fetch(descriptor).first)?.rawContent ?? ""
-        }
-        guard !raw.isEmpty else { return }
-        let understanding = await ai.understand(raw)
-        await MainActor.run {
-            let descriptor = FetchDescriptor<Node>(predicate: #Predicate { $0.id == nodeID })
-            guard let node = try? context.fetch(descriptor).first else { return }
-            NodeComposer.applyUnderstanding(understanding, to: node)
-            try? context.save()
-            advanceMoment(nodeID: nodeID, title: understanding.essence)
         }
     }
 
