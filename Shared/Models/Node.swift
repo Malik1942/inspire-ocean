@@ -48,6 +48,24 @@ final class Node {
     var isArchived: Bool = false
     var lastResurfacedAt: Date?
 
+    /// Ownership contract: the system may fill fields the user never touched,
+    /// and must never overwrite ones they did. Set the moment an edit sheet
+    /// save changes the corresponding field; checked by every understanding /
+    /// regeneration pass (`NodeComposer.applyUnderstanding`).
+    var titleEditedByUser: Bool = false
+    var themesEditedByUser: Bool = false
+    var transcriptEditedByUser: Bool = false
+    /// When true, async understanding keeps the node's field anchor in place.
+    var positionPinnedByUser: Bool = false
+
+    /// Spatial anchoring (drift vs. anchor ontology): fresh nodes drift to the
+    /// current of their primary theme; once the user edits a node, it stays in
+    /// the current it lived in — this records that current's theme key. The
+    /// Ocean layout groups by `anchorThemeKey ?? themes.first`, so later theme
+    /// edits change the chips without relocating the thought. A future
+    /// "Move to new current" action clears this.
+    var anchorThemeKey: String?
+
     /// The branch relationship this node represents relative to its parent.
     var branchTypeRaw: String?
 
@@ -154,5 +172,13 @@ extension Node {
         if !text.isEmpty { return text }
         if let transcription, !transcription.isEmpty { return transcription }
         return linkURLString ?? ""
+    }
+
+    /// Freezes the node's place in the Ocean before a user edit changes its
+    /// meaning fields: fresh nodes drift by semantic current; edited nodes
+    /// keep their spatial anchor. (Themeless floaters simply stay floaters.)
+    func anchorInPlace() {
+        if anchorThemeKey == nil { anchorThemeKey = themes.first }
+        positionPinnedByUser = true
     }
 }

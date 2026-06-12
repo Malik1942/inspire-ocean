@@ -17,8 +17,11 @@ struct ClusterStreamView: View {
 
     private var members: [Node] {
         theme == OceanLayoutEngine.adriftKey
-            ? allNodes.filter { $0.themes.isEmpty }
-            : allNodes.filter { $0.themes.contains(theme) }
+            ? allNodes.filter { $0.themes.isEmpty && $0.anchorThemeKey == nil }
+            // Meaning match, plus thoughts spatially anchored here — an edited
+            // thought stays in its current even when its chips moved on, and
+            // the stream must agree with what the field shows.
+            : allNodes.filter { $0.themes.contains(theme) || $0.anchorThemeKey == theme }
     }
 
     var body: some View {

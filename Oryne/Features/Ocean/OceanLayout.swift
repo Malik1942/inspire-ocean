@@ -71,11 +71,18 @@ enum OceanLayoutEngine {
         Double(NodeComposer.stableHash(key + salt) % 1000) / 1000
     }
 
+    /// The current a node belongs to. Fresh nodes drift by semantic current
+    /// (primary theme); a user-edited node keeps the current it lived in
+    /// (`anchorThemeKey`), so changing its chips never relocates it.
+    static func currentKey(for node: Node) -> String? {
+        node.anchorThemeKey ?? node.themes.first
+    }
+
     static func signature(nodes: [Node], size: CGSize, resurfacingID: UUID?) -> String {
-        // Primary theme is part of the signature: when async understanding
+        // The current key is part of the signature: when async understanding
         // lands on a fresh capture, its cluster changes and the field must
         // recompute — ids alone wouldn't notice.
-        let ids = nodes.map { $0.id.uuidString + "·" + ($0.themes.first ?? "") }
+        let ids = nodes.map { $0.id.uuidString + "·" + (currentKey(for: $0) ?? "") }
             .sorted().joined(separator: ",")
         return "\(ids)|\(Int(size.width))x\(Int(size.height))|\(resurfacingID?.uuidString ?? "-")"
     }
@@ -96,7 +103,7 @@ enum OceanLayoutEngine {
         var groups: [String: [Node]] = [:]
         var floaters: [Node] = []
         for node in nodes {
-            if let theme = node.themes.first {
+            if let theme = currentKey(for: node) {
                 groups[theme, default: []].append(node)
             } else {
                 floaters.append(node)

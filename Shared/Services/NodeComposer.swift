@@ -56,22 +56,30 @@ enum NodeComposer {
     /// how `make` composes one: title, themes, mood, and the theme-derived
     /// hue and field anchor, so the fragment regroups with its concept.
     /// `preserveTitle` keeps an existing title (re-theming migrations).
+    ///
+    /// Ownership contract: the system fills what the user hasn't touched and
+    /// never touches what they have. A user-edited title or theme set is
+    /// final until the user explicitly asks to re-derive; a pinned node keeps
+    /// its field anchor even when its themes regroup.
     static func applyUnderstanding(
         _ understanding: ThoughtUnderstanding,
         to node: Node,
         preserveTitle: Bool = false
     ) {
-        if !preserveTitle || node.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        if !node.titleEditedByUser,
+           !preserveTitle || node.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             node.title = understanding.essence
         }
-        if !understanding.themes.isEmpty {
+        if !node.themesEditedByUser, !understanding.themes.isEmpty {
             node.themes = understanding.themes
             if let mood = understanding.mood { node.mood = mood }
             let key = understanding.themes.first ?? ""
             node.hue = hue(for: key.isEmpty ? node.id.uuidString : key)
-            let anchor = fieldAnchor(themeKey: key, jitterKey: node.id.uuidString)
-            node.fieldX = anchor.x
-            node.fieldY = anchor.y
+            if !node.positionPinnedByUser {
+                let anchor = fieldAnchor(themeKey: key, jitterKey: node.id.uuidString)
+                node.fieldX = anchor.x
+                node.fieldY = anchor.y
+            }
         }
         node.updatedAt = .now
     }
