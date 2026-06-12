@@ -35,6 +35,12 @@ crash".
   the capsule shows. Untouched → it must have released (node present,
   understanding runs). Paused mid-edit → the edits made so far must be on the
   node, not lost.
+- [ ] **Undo window** — after a capture releases, Undo must stay reachable
+  for ~10 seconds: in the capsule, through the post-capture moment, and via
+  the quiet Undo pill that outlives the moment (both Capture tab and Fast
+  Capture — Fast Capture's overlay shrinks to the pill, backdrop gone, before
+  closing). A late Undo within the window deletes the node AND restores the
+  words/recording to the surface.
 
 ## Sync & data
 

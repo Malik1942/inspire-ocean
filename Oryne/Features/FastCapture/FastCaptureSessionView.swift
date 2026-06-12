@@ -25,6 +25,10 @@ struct FastCaptureSessionView: View {
     @State private var savedNodeID: UUID?
     @State private var isReviewing = false
     @State private var autoReleaseTask: Task<Void, Never>?
+    /// The card's work is done but the way back is still open: the overlay
+    /// shrinks to a quiet Undo pill (backdrop gone) until the session's undo
+    /// window (~10 s after save) closes, then finishes for real.
+    @State private var lingeringUndo = false
     @State private var message: String?
     @State private var isSaving = false
     @State private var hasStarted = false
@@ -49,10 +53,53 @@ struct FastCaptureSessionView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color.black.opacity(0.24)
+            Color.black.opacity(lingeringUndo ? 0 : 0.24)
                 .ignoresSafeArea()
+                .allowsHitTesting(!lingeringUndo)
 
-            GlassCard(padding: 16) {
+            if lingeringUndo {
+                Button(action: undoFromMoment) {
+                    Label("Undo", systemImage: "arrow.uturn.backward")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(OceanTheme.mist)
+                        .padding(.horizontal, 14).padding(.vertical, 8)
+                        .background(.ultraThinMaterial, in: Capsule())
+                }
+                .accessibilityLabel("Undo capture")
+                .padding(.bottom, 24)
+                .transition(.opacity)
+            } else {
+                fastCaptureCard
+            }
+        }
+        .task {
+            session.configure(context: context, ai: ai)
+            session.onUnderstood = { nodeID, title in
+                advanceMoment(nodeID: nodeID, title: title)
+            }
+            guard !hasStarted else { return }
+            hasStarted = true
+            if mode == .voiceFirst {
+                await startRecording()
+            } else {
+                textFocused = true
+            }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase != .active else { return }
+            finishInterruptedCapture()
+        }
+        .sheet(item: $questionTarget, onDismiss: { onFinish() }) { parent in
+            BranchComposer(
+                parent: parent,
+                prefill: moment?.title ?? "",
+                prefillType: .question
+            )
+        }
+    }
+
+    private var fastCaptureCard: some View {
+        GlassCard(padding: 16) {
                 VStack(alignment: .leading, spacing: 14) {
                     header
 
@@ -88,34 +135,9 @@ struct FastCaptureSessionView: View {
                         controls
                     }
                 }
-            }
-            .padding(.horizontal, 14)
-            .padding(.bottom, 12)
         }
-        .task {
-            session.configure(context: context, ai: ai)
-            session.onUnderstood = { nodeID, title in
-                advanceMoment(nodeID: nodeID, title: title)
-            }
-            guard !hasStarted else { return }
-            hasStarted = true
-            if mode == .voiceFirst {
-                await startRecording()
-            } else {
-                textFocused = true
-            }
-        }
-        .onChange(of: scenePhase) { _, phase in
-            guard phase != .active else { return }
-            finishInterruptedCapture()
-        }
-        .sheet(item: $questionTarget, onDismiss: { onFinish() }) { parent in
-            BranchComposer(
-                parent: parent,
-                prefill: moment?.title ?? "",
-                prefillType: .question
-            )
-        }
+        .padding(.horizontal, 14)
+        .padding(.bottom, 12)
     }
 
     private var header: some View {
@@ -476,13 +498,10 @@ struct FastCaptureSessionView: View {
     private func pauseAutoRelease(focus: Bool) {
         autoReleaseTask?.cancel()
         autoReleaseTask = nil
-        if focus {
-            // Focus lands after the editable editor exists in the hierarchy.
-            Task {
-                try? await Task.sleep(for: .milliseconds(350))
-                transcriptFocused = true
-            }
-        }
+        // Deliberately no auto-focus even when asked: the keyboard
+        // transaction can eat the next tap (Keep, Listen). The editor is
+        // editable the moment the pause lands — tapping it focuses natively.
+        _ = focus
     }
 
     /// The review resolves: apply any edits to the saved node (or release a
@@ -528,18 +547,23 @@ struct FastCaptureSessionView: View {
         scheduleFinish(after: 2.4)
     }
 
-    /// A late Undo from the moment: the thought comes back into the review,
-    /// held — the overlay stays up so nothing the user said is lost.
+    /// A late Undo from the moment (or its lingering pill): the thought comes
+    /// back into the review, held — the overlay returns so nothing is lost.
     private func undoFromMoment() {
         fadeTask?.cancel()
-        guard let draft = session.undoLastRelease() else { return }
+        guard let draft = session.undoLastRelease() else {
+            if lingeringUndo { onFinish() }
+            return
+        }
         isSaving = false
         savedNodeID = nil
         transcriptDraft = draft.transcript
         text = draft.text
         recordedAudioData = draft.audioData
         recordedURL = nil
+        imageData = draft.imageData   // a staged screenshot comes back too
         withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
+            lingeringUndo = false
             moment = nil
             isReviewing = true
         }
@@ -607,6 +631,29 @@ struct FastCaptureSessionView: View {
         fadeTask?.cancel()
         fadeTask = Task {
             try? await Task.sleep(for: .seconds(seconds))
+            guard !Task.isCancelled else { return }
+            await MainActor.run { finishOrLinger() }
+        }
+    }
+
+    /// The card's beat is over — but if the thought can still be taken back,
+    /// the overlay shrinks to a quiet Undo pill (backdrop gone) and finishes
+    /// only when the undo window actually closes.
+    @MainActor
+    private func finishOrLinger() {
+        guard let nodeID = moment?.id ?? savedNodeID,
+              session.undoAvailable(for: nodeID) else {
+            onFinish()
+            return
+        }
+        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
+            lingeringUndo = true
+            moment = nil
+        }
+        fadeTask = Task {
+            while !Task.isCancelled, session.undoAvailable(for: nodeID) {
+                try? await Task.sleep(for: .seconds(0.5))
+            }
             guard !Task.isCancelled else { return }
             await MainActor.run { onFinish() }
         }

@@ -49,10 +49,15 @@ final class CaptureSession {
     private var context: ModelContext?
     private var ai: (any OceanAIService)?
 
+    /// How long a released thought can be taken back. The moment may fade
+    /// sooner — the surfaces keep a quiet Undo pill alive until this expires.
+    static let undoWindow: TimeInterval = 10
+
     /// The last release, held as the undo window — cleared by the next
-    /// recording or release, not by a timer: the *surface* decides how long
-    /// to offer undo (its moment), the session just honors it.
-    private(set) var lastReleased: (nodeID: UUID, draft: CaptureDraft)?
+    /// recording or release. `at` stamps the save (refreshed when a review
+    /// commits edits), so "undo within ~10 seconds" means seconds the user
+    /// actually had.
+    private(set) var lastReleased: (nodeID: UUID, draft: CaptureDraft, at: Date)?
     private var understandingTask: Task<Void, Never>?
 
     /// The interpreted title landed — the surface advances its moment.
@@ -117,12 +122,14 @@ final class CaptureSession {
             context.delete(node)
             return nil
         }
-        lastReleased = (node.id, draft)
+        lastReleased = (node.id, draft, .now)
         return node.id
     }
 
     /// Applies review-capsule edits to the saved node, marking ownership only
-    /// for words the user actually changed.
+    /// for words the user actually changed. Also refreshes the undo draft and
+    /// clock: a thought committed after editing restores *as edited*, and the
+    /// undo seconds count from the moment it left the user's hands.
     func applyReviewEdits(nodeID: UUID, transcript: String, note: String? = nil) {
         guard let node = fetch(nodeID) else { return }
         var changed = false
@@ -139,6 +146,11 @@ final class CaptureSession {
         if changed {
             node.updatedAt = .now
             try? context?.save()
+        }
+        if lastReleased?.nodeID == nodeID {
+            lastReleased?.draft.transcript = edited
+            if let note { lastReleased?.draft.text = note.trimmed }
+            lastReleased?.at = .now
         }
     }
 
@@ -201,15 +213,19 @@ final class CaptureSession {
 
     // MARK: Undo
 
+    /// Whether the quiet Undo affordance should still be offered — within the
+    /// window, for the surface's own release. (A review's header Undo doesn't
+    /// go through this: while the review is open, taking back is always fair.)
     func undoAvailable(for nodeID: UUID) -> Bool {
-        lastReleased?.nodeID == nodeID
+        guard let last = lastReleased, last.nodeID == nodeID else { return false }
+        return Date.now.timeIntervalSince(last.at) < Self.undoWindow
     }
 
     /// Take the released thought back. Returns the draft so the surface can
     /// restore it — the thought isn't lost, it just never entered the Ocean.
     @discardableResult
     func undoLastRelease() -> CaptureDraft? {
-        guard let context, let (nodeID, draft) = lastReleased else { return nil }
+        guard let context, let (nodeID, draft, _) = lastReleased else { return nil }
         understandingTask?.cancel()
         if let node = fetch(nodeID) {
             context.delete(node)

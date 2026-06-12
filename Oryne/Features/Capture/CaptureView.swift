@@ -38,6 +38,10 @@ struct CaptureView: View {
 
     @State private var moment: PostCaptureMoment?
     @State private var fadeTask: Task<Void, Never>?
+    /// The moment fades light and early; this keeps a quiet Undo pill behind
+    /// it until the session's undo window (~10 s after save) actually closes.
+    @State private var lingeringUndoID: UUID?
+    @State private var lingeringTask: Task<Void, Never>?
     @State private var questionTarget: Node?
     @State private var showFastCaptureSettings = false
     @FocusState private var textFocused: Bool
@@ -60,6 +64,21 @@ struct CaptureView: View {
                         .padding(.bottom, 40)
                     }
                     .transition(.scale.combined(with: .opacity))
+                } else if let id = lingeringUndoID, session.undoAvailable(for: id) {
+                    // The moment is gone but the thought can still come back.
+                    VStack {
+                        Spacer()
+                        Button(action: undoFromMoment) {
+                            Label("Undo", systemImage: "arrow.uturn.backward")
+                                .font(.caption.weight(.medium))
+                                .foregroundStyle(OceanTheme.mist)
+                                .padding(.horizontal, 14).padding(.vertical, 8)
+                                .background(.ultraThinMaterial, in: Capsule())
+                        }
+                        .accessibilityLabel("Undo capture")
+                        .padding(.bottom, 40)
+                    }
+                    .transition(.opacity)
                 }
             }
             .navigationTitle("Capture")
@@ -433,11 +452,9 @@ struct CaptureView: View {
         autoReleaseTask?.cancel()
         autoReleaseTask = nil
         withAnimation(.snappy) { reviewPaused = true }
-        // Focus lands after the editable editor exists in the hierarchy.
-        Task {
-            try? await Task.sleep(for: .milliseconds(350))
-            reviewFocused = true
-        }
+        // Deliberately no auto-focus: the keyboard transaction it triggers
+        // can eat the very next tap (Keep, Listen) — a second tap on the now-
+        // editable words focuses natively when the user actually wants to type.
     }
 
     /// The capsule resolves: apply any edits to the saved node (or release a
@@ -463,9 +480,25 @@ struct CaptureView: View {
         session.beginUnderstanding(nodeID: nodeID)
 
         withAnimation(.spring) { moment = .received(for: nodeID) }
-        // The moment is also the undo window — give a late tap time to land.
         scheduleFade(after: 4.0)
+        keepUndoReachable(for: nodeID)
         resetReview()
+    }
+
+    /// The moment fades on its own rhythm; the way back stays open until the
+    /// session's undo window closes.
+    private func keepUndoReachable(for nodeID: UUID) {
+        lingeringUndoID = nodeID
+        lingeringTask?.cancel()
+        lingeringTask = Task {
+            try? await Task.sleep(for: .seconds(CaptureSession.undoWindow + 0.5))
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                if lingeringUndoID == nodeID {
+                    withAnimation { lingeringUndoID = nil }
+                }
+            }
+        }
     }
 
     private func discardCapture() {
@@ -480,9 +513,11 @@ struct CaptureView: View {
         resetReview()
     }
 
-    /// A late Undo from the moment: the thought comes back to the surface,
-    /// held — words, recording and all — not hurried back out.
+    /// A late Undo from the moment (or its lingering pill): the thought comes
+    /// back to the surface, held — words, recording and all.
     private func undoFromMoment() {
+        lingeringTask?.cancel()
+        lingeringUndoID = nil
         guard let draft = session.undoLastRelease() else {
             dismissMoment()
             return
@@ -494,6 +529,7 @@ struct CaptureView: View {
             reviewText = draft.transcript
             recordedAudioData = draft.audioData
             recordedURL = nil
+            imageData = draft.imageData   // an attached image comes back too
             reviewPaused = true
             withAnimation(.snappy) { whisperPhase = .reviewing }
         } else {
@@ -523,9 +559,9 @@ struct CaptureView: View {
         session.beginUnderstanding(nodeID: nodeID)
 
         // Phase 1: received — visually identical to the old confirmation.
-        // The moment is also the undo window — give a late tap time to land.
         withAnimation(.spring) { moment = .received(for: nodeID) }
         scheduleFade(after: 4.0)
+        keepUndoReachable(for: nodeID)
         reset()
     }
 
