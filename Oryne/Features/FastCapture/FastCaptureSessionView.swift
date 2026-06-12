@@ -15,8 +15,15 @@ struct FastCaptureSessionView: View {
     @State private var mode: FastCaptureInputPreference
     @State private var text: String
     @State private var imageData: Data?
-    @State private var recorder = AudioRecorder()
-    @State private var lastRecordedFile: String?
+    @State private var transcriber = LiveTranscriber()
+    @State private var recordedURL: URL?
+    @State private var recordedAudioData: Data?
+    @State private var transcriptDraft: String = ""
+    /// Post-stop review: the transcript sits visible for a beat before the
+    /// fragment auto-releases — Fast Capture stays zero-friction unless the
+    /// user reaches for Edit.
+    @State private var isReviewing = false
+    @State private var autoReleaseTask: Task<Void, Never>?
     @State private var message: String?
     @State private var isSaving = false
     @State private var hasStarted = false
@@ -24,6 +31,7 @@ struct FastCaptureSessionView: View {
     @State private var fadeTask: Task<Void, Never>?
     @State private var questionTarget: Node?
     @FocusState private var textFocused: Bool
+    @FocusState private var transcriptFocused: Bool
 
     init(
         request: FastCaptureRequest,
@@ -60,7 +68,9 @@ struct FastCaptureSessionView: View {
                             screenshotPreview(uiImage)
                         }
 
-                        if mode == .voiceFirst {
+                        if isReviewing {
+                            reviewCapture
+                        } else if mode == .voiceFirst {
                             voiceCapture
                         } else {
                             typingCapture
@@ -131,39 +141,91 @@ struct FastCaptureSessionView: View {
 
     private var voiceCapture: some View {
         VStack(spacing: 12) {
-            FastCaptureWaveform(level: recorder.level, active: recorder.isRecording)
+            FastCaptureWaveform(level: transcriber.level, active: transcriber.isRecording)
                 .frame(height: 42)
 
             HStack {
-                Text(recorder.isRecording ? "Listening" : "Whisper held")
+                Text(transcriber.isRecording ? "Listening" : "Whisper held")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(OceanTheme.foam)
 
                 Spacer()
 
-                Text(timeString(recorder.elapsed))
+                Text(timeString(transcriber.elapsed))
                     .font(.system(.subheadline, design: .monospaced))
                     .foregroundStyle(OceanTheme.mist)
             }
 
-            TextEditor(text: $text)
-                .scrollContentBackground(.hidden)
-                .frame(minHeight: 54, maxHeight: 88)
-                .focused($textFocused)
-                .foregroundStyle(OceanTheme.foam)
-                .overlay(alignment: .topLeading) {
-                    if text.trimmed.isEmpty {
-                        Text("A few words, if needed")
-                            .font(.subheadline)
-                            .foregroundStyle(OceanTheme.faint)
-                            .padding(.top, 8)
-                            .padding(.leading, 5)
-                            .allowsHitTesting(false)
-                    }
+            if transcriber.isRecording, transcriber.speechAvailability == .live {
+                // The words land while speaking; the note field returns in
+                // the review beat (and stays for the speech-off path).
+                TranscriptEditor(
+                    text: .constant(transcriber.partial),
+                    isEditable: false,
+                    placeholder: "Words appear as you speak…",
+                    minHeight: 54,
+                    maxHeight: 88
+                )
+            } else {
+                noteEditor
+            }
+        }
+    }
+
+    private var noteEditor: some View {
+        TextEditor(text: $text)
+            .scrollContentBackground(.hidden)
+            .frame(minHeight: 54, maxHeight: 88)
+            .focused($textFocused)
+            .foregroundStyle(OceanTheme.foam)
+            .overlay(alignment: .topLeading) {
+                if text.trimmed.isEmpty {
+                    Text("A few words, if needed")
+                        .font(.subheadline)
+                        .foregroundStyle(OceanTheme.faint)
+                        .padding(.top, 8)
+                        .padding(.leading, 5)
+                        .allowsHitTesting(false)
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    /// The brief post-stop beat: transcript visible and correctable, the
+    /// recording audible. Untouched, it releases on its own.
+    private var reviewCapture: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("Caught", systemImage: "waveform")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(OceanTheme.foam)
+                Spacer()
+                if autoReleaseTask != nil {
+                    Text("Releasing…")
+                        .font(.caption)
+                        .foregroundStyle(OceanTheme.mist)
+                }
+            }
+
+            TranscriptEditor(
+                text: $transcriptDraft,
+                isEditable: true,
+                placeholder: transcriber.speechAvailability == .unavailable
+                    ? "Transcription is off — type the words, if you like"
+                    : "What did you say?",
+                minHeight: 54,
+                maxHeight: 110,
+                focus: $transcriptFocused
+            )
+
+            if let recordedAudioData {
+                AudioPlayerView(data: recordedAudioData)
+            }
+        }
+        .onChange(of: transcriptFocused) { _, focused in
+            if focused { pauseAutoRelease(focus: false) }
         }
     }
 
@@ -190,15 +252,28 @@ struct FastCaptureSessionView: View {
 
     private var controls: some View {
         HStack(spacing: 10) {
-            if mode == .voiceFirst {
+            if isReviewing {
+                if autoReleaseTask != nil {
+                    // The pause on Fast Capture's zero-friction path: tap to
+                    // hold the fragment back and fix the words.
+                    Button {
+                        pauseAutoRelease(focus: true)
+                    } label: {
+                        Label("Edit", systemImage: "pencil")
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(OceanTheme.accent)
+                }
+            } else if mode == .voiceFirst {
                 Button {
                     Task { await toggleRecording() }
                 } label: {
-                    Label(recorder.isRecording ? "Stop" : "Record", systemImage: recorder.isRecording ? "stop.circle.fill" : "mic.circle.fill")
+                    Label(transcriber.isRecording ? "Stop" : "Record", systemImage: transcriber.isRecording ? "stop.circle.fill" : "mic.circle.fill")
                         .font(.subheadline.weight(.semibold))
                 }
                 .buttonStyle(.bordered)
-                .tint(recorder.isRecording ? .red.opacity(0.8) : OceanTheme.accent)
+                .tint(transcriber.isRecording ? .red.opacity(0.8) : OceanTheme.accent)
             } else {
                 Button {
                     withAnimation(.snappy) { mode = .voiceFirst }
@@ -252,83 +327,110 @@ struct FastCaptureSessionView: View {
     }
 
     private var canSave: Bool {
-        recorder.isRecording
-        || lastRecordedFile != nil
+        transcriber.isRecording
+        || recordedAudioData != nil
         || !text.trimmed.isEmpty
+        || !transcriptDraft.trimmed.isEmpty
         || imageData != nil
     }
 
     private func toggleRecording() async {
-        if recorder.isRecording {
-            lastRecordedFile = recorder.stop()
+        if transcriber.isRecording {
+            let (url, transcript) = await transcriber.stop()
+            enterReview(url: url, transcript: transcript)
         } else {
             await startRecording()
         }
     }
 
     private func startRecording() async {
-        guard !recorder.isRecording else { return }
-        guard await recorder.requestPermission() else {
-            await MainActor.run {
-                withAnimation(.snappy) {
-                    mode = .typingFirst
-                    message = "Typing is ready."
-                }
-                textFocused = true
-            }
+        guard !transcriber.isRecording else { return }
+        guard await transcriber.requestMicPermission() else {
+            await MainActor.run { fallBackToTyping() }
             return
         }
+        let url = AudioRecorder.url(for: "drift-\(UUID().uuidString).m4a")
         await MainActor.run {
-            lastRecordedFile = nil
-            if !recorder.start() {
-                withAnimation(.snappy) {
-                    mode = .typingFirst
-                    message = "Typing is ready."
-                }
-                textFocused = true
-            }
+            recordedURL = nil
+            recordedAudioData = nil
+            transcriptDraft = ""
+            isReviewing = false
         }
+        if !(await transcriber.start(writingTo: url)) {
+            await MainActor.run { fallBackToTyping() }
+        }
+    }
+
+    private func fallBackToTyping() {
+        withAnimation(.snappy) {
+            mode = .typingFirst
+            message = "Typing is ready."
+        }
+        textFocused = true
+    }
+
+    /// Stop landed: hold the fragment for a beat with the transcript visible.
+    /// Untouched, it releases on its own — Fast Capture keeps its rhythm.
+    @MainActor
+    private func enterReview(url: URL?, transcript: String) {
+        recordedURL = url
+        recordedAudioData = url.flatMap { try? Data(contentsOf: $0) }
+        transcriptDraft = transcript
+        withAnimation(.snappy) { isReviewing = true }
+        autoReleaseTask = Task {
+            try? await Task.sleep(for: .seconds(3))
+            guard !Task.isCancelled else { return }
+            await MainActor.run { save() }
+        }
+    }
+
+    private func pauseAutoRelease(focus: Bool) {
+        autoReleaseTask?.cancel()
+        autoReleaseTask = nil
+        if focus { transcriptFocused = true }
     }
 
     private func save() {
         guard !isSaving, canSave else { return }
         isSaving = true
-
-        if recorder.isRecording {
-            lastRecordedFile = recorder.stop()
-        }
+        autoReleaseTask?.cancel()
+        autoReleaseTask = nil
 
         let trimmed = text.trimmed
+        let transcript = transcriptDraft.trimmed
         let kind: NodeKind
-        if lastRecordedFile != nil {
+        if recordedAudioData != nil {
             kind = .voice
-        } else if imageData != nil && trimmed.isEmpty {
+        } else if imageData != nil && trimmed.isEmpty && transcript.isEmpty {
             kind = .image
         } else {
             kind = .text
         }
 
-        // Audio is read into the model so it syncs through CloudKit; the temp
-        // file is reclaimed after transcription (which still needs a file URL).
-        let audioData = lastRecordedFile
-            .map { AudioRecorder.url(for: $0) }
-            .flatMap { try? Data(contentsOf: $0) }
+        // The confirmed transcript is the node's basis — themes derive from
+        // what the user saw (and possibly fixed), not raw recognizer output.
+        // Audio bytes live in the model so they sync through CloudKit.
         let node = NodeComposer.make(
             kind: kind,
             text: trimmed,
-            audioData: audioData,
+            transcription: (kind == .voice && !transcript.isEmpty) ? transcript : nil,
+            audioData: recordedAudioData,
             imageData: imageData,
-            detectThemes: kind != .voice || !trimmed.isEmpty
+            detectThemes: kind != .voice || !trimmed.isEmpty || !transcript.isEmpty
         )
         context.insert(node)
         try? context.save()
 
         let nodeID = node.id
-        if let file = lastRecordedFile {
-            let url = AudioRecorder.url(for: file)
-            Task { await transcribeAndEnrich(nodeID: nodeID, url: url) }
-        } else if !node.rawContent.isEmpty {
-            Task { await generateTitle(nodeID: nodeID) }
+        if kind == .voice, transcript.isEmpty, let recordedURL {
+            // No live transcript (speech off): post-hoc transcription is the
+            // fallback; it reclaims the temp file.
+            Task { await transcribeAndEnrich(nodeID: nodeID, url: recordedURL) }
+        } else {
+            if let recordedURL { try? FileManager.default.removeItem(at: recordedURL) }
+            if !node.rawContent.isEmpty {
+                Task { await generateTitle(nodeID: nodeID) }
+            }
         }
 
         // Received. If the interpreted title lands quickly (the common case for
@@ -385,23 +487,33 @@ struct FastCaptureSessionView: View {
 
     private func cancel() {
         fadeTask?.cancel()
+        autoReleaseTask?.cancel()
         if moment != nil {
             // Post-release: the fragment is already saved — just close.
             onFinish()
             return
         }
-        if recorder.isRecording {
-            recorder.cancel()
-        } else if let lastRecordedFile {
-            try? FileManager.default.removeItem(at: AudioRecorder.url(for: lastRecordedFile))
+        if transcriber.isRecording {
+            Task { await transcriber.cancel() }
+        } else if let recordedURL {
+            try? FileManager.default.removeItem(at: recordedURL)
         }
         onFinish()
     }
 
     private func finishInterruptedCapture() {
-        guard recorder.isRecording else { return }
-        lastRecordedFile = recorder.stop()
-        if canSave {
+        if transcriber.isRecording {
+            // The overlay is going away — catch what we have and release;
+            // no review beat to show.
+            Task {
+                let (url, transcript) = await transcriber.stop()
+                recordedURL = url
+                recordedAudioData = url.flatMap { try? Data(contentsOf: $0) }
+                transcriptDraft = transcript
+                if canSave { save() }
+            }
+        } else if isReviewing, moment == nil {
+            // Backgrounded mid-review: untouched means release, as always.
             save()
         }
     }

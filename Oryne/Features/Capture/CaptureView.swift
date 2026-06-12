@@ -17,10 +17,19 @@ struct CaptureView: View {
     @State private var linkText: String = ""
     @State private var showLinkField = false
 
-    @State private var recorder = AudioRecorder()
+    @State private var transcriber = LiveTranscriber()
     @State private var photoItem: PhotosPickerItem?
     @State private var imageData: Data?
-    @State private var lastRecordedFile: String?
+
+    /// Whisper flow: record (watching the words land) → review (correct the
+    /// transcript, listen back) → release. The transcript is editable; the
+    /// audio is the immutable source of truth.
+    private enum WhisperPhase { case idle, recording, reviewing }
+    @State private var whisperPhase: WhisperPhase = .idle
+    @State private var reviewText: String = ""
+    @State private var recordedAudioData: Data?
+    @State private var recordedURL: URL?
+    @FocusState private var reviewFocused: Bool
 
     @State private var moment: PostCaptureMoment?
     @State private var fadeTask: Task<Void, Never>?
@@ -143,21 +152,10 @@ struct CaptureView: View {
 
     private var whisperCapture: some View {
         VStack(spacing: 16) {
-            Text(recorder.isRecording ? "Listening…" : "Catch a whisper")
-                .font(.subheadline).foregroundStyle(OceanTheme.mist)
-
-            WaveformView(level: recorder.level, active: recorder.isRecording)
-                .frame(height: 56)
-
-            Text(timeString(recorder.elapsed))
-                .font(.system(.title3, design: .monospaced))
-                .foregroundStyle(OceanTheme.foam)
-
-            Button { Task { await toggleRecording() } } label: {
-                Image(systemName: recorder.isRecording ? "stop.circle.fill" : "mic.circle.fill")
-                    .font(.system(size: 58))
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(recorder.isRecording ? .red : OceanTheme.accent)
+            if whisperPhase == .reviewing {
+                whisperReview
+            } else {
+                whisperRecording
             }
 
             if let imageData, let ui = UIImage(data: imageData) {
@@ -169,6 +167,74 @@ struct CaptureView: View {
         }
         .frame(maxWidth: .infinity)
         .frame(minHeight: 220)
+        .animation(.snappy, value: whisperPhase)
+    }
+
+    private var whisperRecording: some View {
+        VStack(spacing: 16) {
+            Text(whisperPhase == .recording ? "Listening…" : "Catch a whisper")
+                .font(.subheadline).foregroundStyle(OceanTheme.mist)
+
+            WaveformView(level: transcriber.level, active: whisperPhase == .recording)
+                .frame(height: 56)
+
+            Text(timeString(transcriber.elapsed))
+                .font(.system(.title3, design: .monospaced))
+                .foregroundStyle(OceanTheme.foam)
+
+            // The words land as they're spoken — the whole point of looking
+            // at the card while whispering.
+            if whisperPhase == .recording, transcriber.speechAvailability == .live {
+                TranscriptEditor(
+                    text: .constant(transcriber.partial),
+                    isEditable: false,
+                    placeholder: "Words appear as you speak…",
+                    minHeight: 60,
+                    maxHeight: 120
+                )
+            }
+
+            Button { Task { await toggleRecording() } } label: {
+                Image(systemName: whisperPhase == .recording ? "stop.circle.fill" : "mic.circle.fill")
+                    .font(.system(size: 58))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(whisperPhase == .recording ? .red : OceanTheme.accent)
+            }
+        }
+    }
+
+    /// After stopping: the transcript is correctable and the recording
+    /// audible before anything enters the Ocean.
+    private var whisperReview: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Review the whisper", systemImage: "waveform")
+                .font(.caption).foregroundStyle(OceanTheme.mist)
+
+            TranscriptEditor(
+                text: $reviewText,
+                isEditable: true,
+                placeholder: "What did you say?",
+                minHeight: 96,
+                maxHeight: 180,
+                focus: $reviewFocused
+            )
+
+            if transcriber.speechAvailability == .unavailable, reviewText.trimmed.isEmpty {
+                Text("Live transcription is off — type the words, or release the audio as it is.")
+                    .font(.caption2).foregroundStyle(OceanTheme.faint)
+            }
+
+            if let recordedAudioData {
+                AudioPlayerView(data: recordedAudioData)
+            }
+
+            Button(role: .destructive, action: discardRecording) {
+                Label("Discard", systemImage: "xmark.circle")
+                    .font(.caption.weight(.medium))
+            }
+            .foregroundStyle(OceanTheme.mist)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: Shared attachment views
@@ -231,7 +297,9 @@ struct CaptureView: View {
     private var canSave: Bool {
         switch kind {
         case .voice:
-            return recorder.isRecording || lastRecordedFile != nil || imageData != nil
+            // Release confirms the review — stopping comes first.
+            return whisperPhase == .reviewing
+                && (recordedAudioData != nil || !reviewText.trimmed.isEmpty || imageData != nil)
         default:
             return !text.trimmed.isEmpty || imageData != nil || !linkText.trimmed.isEmpty
         }
@@ -240,30 +308,44 @@ struct CaptureView: View {
     // MARK: Actions
 
     private func toggleRecording() async {
-        if recorder.isRecording {
-            lastRecordedFile = recorder.stop()
+        if transcriber.isRecording {
+            let (url, transcript) = await transcriber.stop()
+            recordedURL = url
+            recordedAudioData = url.flatMap { try? Data(contentsOf: $0) }
+            reviewText = transcript
+            whisperPhase = .reviewing
         } else {
-            guard await recorder.requestPermission() else { return }
-            lastRecordedFile = nil
-            recorder.start()
+            guard await transcriber.requestMicPermission() else { return }
+            let url = AudioRecorder.url(for: "drift-\(UUID().uuidString).m4a")
+            if await transcriber.start(writingTo: url) {
+                whisperPhase = .recording
+            }
         }
     }
 
-    private func save() {
-        if recorder.isRecording { lastRecordedFile = recorder.stop() }
+    private func discardRecording() {
+        if let recordedURL { try? FileManager.default.removeItem(at: recordedURL) }
+        recordedURL = nil
+        recordedAudioData = nil
+        reviewText = ""
+        whisperPhase = .idle
+    }
 
+    private func save() {
         let link = linkText.trimmed.isEmpty ? nil : normalizedLink
         let node: Node
+        let transcript = reviewText.trimmed
         switch kind {
         case .voice:
-            // Audio now lives in the model (it syncs through CloudKit; a loose
-            // file would not). The temp recording is read into bytes here and
-            // deleted once transcription — which still needs a file URL — is done.
-            let audioData = lastRecordedFile
-                .map { AudioRecorder.url(for: $0) }
-                .flatMap { try? Data(contentsOf: $0) }
-            node = NodeComposer.make(kind: .voice, audioData: audioData,
-                                     imageData: imageData, detectThemes: false)
+            // The (possibly corrected) transcript is the node's text basis —
+            // themes derive from what the user confirmed, not from whatever
+            // the recognizer misheard. Audio bytes live in the model so they
+            // sync through CloudKit.
+            node = NodeComposer.make(kind: .voice,
+                                     transcription: transcript.isEmpty ? nil : transcript,
+                                     audioData: recordedAudioData,
+                                     imageData: imageData,
+                                     detectThemes: !transcript.isEmpty)
         default:
             node = NodeComposer.make(kind: .text, text: text.trimmed,
                                      linkURLString: link, imageData: imageData)
@@ -273,10 +355,13 @@ struct CaptureView: View {
         try? context.save()
 
         let nodeID = node.id
-        if kind == .voice, let file = lastRecordedFile {
-            let url = AudioRecorder.url(for: file)
-            Task { await transcribeAndEnrich(nodeID: nodeID, url: url) }
+        if kind == .voice, transcript.isEmpty, let recordedURL {
+            // No live transcript (speech off, or nothing recognized): the
+            // post-hoc pass is the fallback; it reclaims the temp file.
+            Task { await transcribeAndEnrich(nodeID: nodeID, url: recordedURL) }
         } else {
+            // A user-confirmed transcript wins — skip re-transcription.
+            if let recordedURL { try? FileManager.default.removeItem(at: recordedURL) }
             Task { await generateTitle(nodeID: nodeID) }
         }
 
@@ -375,7 +460,10 @@ struct CaptureView: View {
         showLinkField = false
         imageData = nil
         photoItem = nil
-        lastRecordedFile = nil
+        reviewText = ""
+        recordedAudioData = nil
+        recordedURL = nil
+        whisperPhase = .idle
     }
 
     private var normalizedLink: String {
