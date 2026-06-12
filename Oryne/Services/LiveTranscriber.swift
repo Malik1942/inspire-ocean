@@ -167,7 +167,11 @@ final class LiveTranscriber {
         engine.stop()
         isRecording = false
         level = 0
-        file = nil   // releasing the AVAudioFile finalizes the container
+        // Close explicitly: the m4a header is finalized on close, and callers
+        // read the bytes immediately after stop() — deallocation alone races
+        // with that read and yields an unplayable container.
+        file?.close()
+        file = nil
 
         if let request {
             request.endAudio()
@@ -202,7 +206,10 @@ final class LiveTranscriber {
     @MainActor
     private func handle(result: SFSpeechRecognitionResult?, error: Error?) {
         if let result {
-            latestTranscription = result.bestTranscription.formattedString
+            let text = result.bestTranscription.formattedString
+            // The final pass can return an empty hypothesis for faint audio —
+            // never let it erase words the partials already heard.
+            if !text.isEmpty { latestTranscription = text }
             if isRecording { partial = latestTranscription }
             if result.isFinal { resolveFinal() }
         }

@@ -178,7 +178,8 @@ struct CaptureView: View {
             WaveformView(level: transcriber.level, active: whisperPhase == .recording)
                 .frame(height: 56)
 
-            Text(timeString(transcriber.elapsed))
+            // elapsed survives stop() — show it only while it's this take's.
+            Text(timeString(whisperPhase == .recording ? transcriber.elapsed : 0))
                 .font(.system(.title3, design: .monospaced))
                 .foregroundStyle(OceanTheme.foam)
 

@@ -26,9 +26,8 @@ final class AudioPlayback: NSObject, AVAudioPlayerDelegate {
         }
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
         try? AVAudioSession.sharedInstance().setActive(true)
-        player?.play()
-        isPlaying = true
-        startTimer()
+        isPlaying = player?.play() == true
+        if isPlaying { startTimer() }
     }
 
     func pause() {
