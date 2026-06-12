@@ -33,6 +33,8 @@ struct NodeDetailContent: View {
 
     @State private var showBranchComposer = false
     @State private var showDeleteConfirm = false
+    @State private var showEditSheet = false
+    @State private var editFocusesBody = false
     @State private var relatedIDs: [UUID] = []
 
     private var related: [Node] {
@@ -69,6 +71,15 @@ struct NodeDetailContent: View {
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    editFocusesBody = false
+                    showEditSheet = true
+                } label: {
+                    Image(systemName: "pencil")
+                }
+                .accessibilityLabel("Edit thought")
+            }
+            ToolbarItem(placement: .topBarTrailing) {
                 Button(role: .destructive) {
                     showDeleteConfirm = true
                 } label: {
@@ -88,6 +99,9 @@ struct NodeDetailContent: View {
         }
         .sheet(isPresented: $showBranchComposer) {
             BranchComposer(parent: node)
+        }
+        .sheet(isPresented: $showEditSheet) {
+            NodeEditSheet(node: node, focusBodyOnAppear: editFocusesBody)
         }
         .task(id: node.id) {
             relatedIDs = ai.relatedNodeIDs(to: node, among: allNodes, limit: 4)
@@ -130,8 +144,19 @@ struct NodeDetailContent: View {
                             .font(.callout).lineLimit(1)
                     }
                 }
+                if let data = node.audioData, !data.isEmpty {
+                    AudioPlayerView(data: data)
+                        .padding(.top, 2)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        // Tapping the words themselves is how corrections will actually be
+        // discovered — same sheet as the toolbar pencil, text focused.
+        .onTapGesture {
+            editFocusesBody = true
+            showEditSheet = true
         }
     }
 
