@@ -106,9 +106,14 @@ struct CaptureView: View {
             }
             .onChange(of: photoItem) { _, newItem in
                 Task {
-                    if let data = try? await newItem?.loadTransferable(type: Data.self) {
-                        imageData = data
-                    }
+                    guard let data = try? await newItem?.loadTransferable(type: Data.self) else { return }
+                    // Downsample off the main actor so a large photo never stores
+                    // full-res (and never janks capture); keep the original only
+                    // if it can't be decoded as an image.
+                    let sized = await Task.detached {
+                        ImageDownsampler.downsample(data, maxPixel: ImageDownsampler.Size.attachment) ?? data
+                    }.value
+                    imageData = sized
                 }
             }
             .onAppear {
@@ -557,6 +562,11 @@ struct CaptureView: View {
                                  imageData: imageData, linkURLString: link)
         guard let nodeID = session.release(draft) else { return }   // draft stays on the surface
         session.beginUnderstanding(nodeID: nodeID)
+        // A link drifts in bare; enrichment makes it a rich card and folds what
+        // it's about into the understanding pipeline (best-effort, async).
+        if link != nil {
+            LinkEnrichmentService.shared.enrich(nodeID: nodeID, context: context, ai: ai)
+        }
 
         // Phase 1: received — visually identical to the old confirmation.
         withAnimation(.spring) { moment = .received(for: nodeID) }

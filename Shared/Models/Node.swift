@@ -24,6 +24,34 @@ final class Node {
     var transcription: String?
     var linkURLString: String?
 
+    // MARK: Link enrichment
+    //
+    // When a link is attached, a best-effort pipeline fills these so the link
+    // renders as a rich card and — crucially — so what the link is *about*
+    // enters the understanding layer. `linkURLString` above stays the source of
+    // truth; everything here is derived and disposable (cleared and re-derived
+    // on demand). All optional / defaulted so existing stores migrate
+    // lightly and CloudKit can materialize a record partially.
+
+    /// Open Graph / page title (Stage A).
+    var linkTitle: String? = nil
+    /// Open Graph / meta description (Stage A) — the context input on devices
+    /// without on-device summarization.
+    var linkDescription: String? = nil
+    /// The device-generated (Foundation Models) summary of the page's
+    /// substance (Stage C) — preferred over `linkDescription` as context.
+    var linkSummary: String? = nil
+    /// Thumbnail, stored externally and synced exactly like `imageData`.
+    @Attribute(.externalStorage) var linkImageData: Data? = nil
+
+    /// Backing for `linkEnrichmentState` (the reason lives in the note).
+    /// Defaulted so existing records migrate to `.notStarted`.
+    var linkEnrichmentStateRaw: String = "notStarted"
+    /// Why the link is in its current state: the failure reason, or which path
+    /// produced (or skipped) the summary. Persisted for trust — it explains
+    /// why a given link has, or lacks, a summary.
+    var linkEnrichmentNote: String? = nil
+
     /// Legacy: voice drifts used to live as `.m4a` files in Application Support
     /// with only the file name stored here. Kept for one release as the source
     /// of the one-time migration into `audioData` (see `migrateLegacyAudio`);
@@ -131,6 +159,59 @@ extension Node {
         return URL(string: linkURLString)
     }
 
+    /// The link's display host, stripped of a leading `www.` (e.g. "nytimes.com").
+    var linkDomain: String? {
+        guard let host = linkURL?.host else { return nil }
+        return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
+    }
+
+    var linkEnrichmentState: LinkEnrichmentState {
+        get {
+            switch linkEnrichmentStateRaw {
+            case "fetchingMeta":    return .fetchingMeta
+            case "fetchingContent": return .fetchingContent
+            case "summarizing":     return .summarizing
+            case "enriched":        return .enriched
+            case "failed":          return .failed(reason: linkEnrichmentNote ?? "Couldn't enrich this link.")
+            default:                return .notStarted
+            }
+        }
+        set {
+            linkEnrichmentStateRaw = newValue.persistedKey
+            if case let .failed(reason) = newValue { linkEnrichmentNote = reason }
+        }
+    }
+
+    /// Enough metadata arrived to render a rich card rather than a bare URL.
+    var hasRichLink: Bool {
+        linkURL != nil && (linkTitle?.isEmpty == false || linkImageData != nil)
+    }
+
+    /// What the link is about, for the understanding pipeline: its title plus
+    /// the device summary when present, else the page description. Empty when
+    /// nothing has been derived yet (so a fresh link doesn't pollute meaning
+    /// with a bare URL).
+    var linkContext: String {
+        guard linkURL != nil else { return "" }
+        let body = linkSummary ?? linkDescription
+        return [linkTitle, body]
+            .compactMap { $0 }
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: ". ")
+    }
+
+    /// Resets all derived link fields back to "never enriched" — used when the
+    /// URL changes or is removed, so a stale card/summary never lingers.
+    func clearLinkEnrichment() {
+        linkTitle = nil
+        linkDescription = nil
+        linkSummary = nil
+        linkImageData = nil
+        linkEnrichmentNote = nil
+        linkEnrichmentStateRaw = "notStarted"
+    }
+
     var isBranch: Bool { parent != nil }
 
     /// A short, human-friendly display title, derived from content when empty.
@@ -138,7 +219,7 @@ extension Node {
         if !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return title
         }
-        let source = !text.isEmpty ? text : (transcription ?? linkURLString ?? kind.label)
+        let source = !text.isEmpty ? text : (transcription ?? linkTitle ?? linkURLString ?? kind.label)
         let firstLine = source
             .split(whereSeparator: \.isNewline)
             .first
@@ -146,31 +227,39 @@ extension Node {
         return String(firstLine.prefix(80))
     }
 
-    /// The text used for semantic similarity and theme detection.
+    /// The text used for semantic similarity and theme detection. A link's
+    /// enriched context joins in so link drifts cluster and surface by what
+    /// they're actually about, not by their URL.
     var searchableText: String {
-        [title, text, transcription ?? "", themes.joined(separator: " ")]
+        [title, text, transcription ?? "", linkContext, themes.joined(separator: " ")]
             .filter { !$0.isEmpty }
             .joined(separator: " ")
     }
 
     /// The thought's own content (interpreted essence + raw text, no theme
     /// labels) — used for meaning-level similarity where themes are weighed
-    /// separately, so a shared theme isn't counted twice.
+    /// separately, so a shared theme isn't counted twice. A link contributes
+    /// its enriched context (what it's about), never its bare URL.
     var meaningText: String {
-        [title, text, transcription ?? ""]
+        [title, text, transcription ?? "", linkContext]
             .filter { !$0.isEmpty }
             .joined(separator: " ")
     }
 
     var snippet: String {
-        let source = !text.isEmpty ? text : (transcription ?? linkURLString ?? "")
+        let source = !text.isEmpty
+            ? text
+            : (transcription ?? linkSummary ?? linkDescription ?? linkURLString ?? "")
         return String(source.prefix(140))
     }
 
-    /// The raw content used to interpret a concise title from.
+    /// The raw content used to interpret a concise title from. For a link, that
+    /// is what enrichment learned about it (title + summary/description); a bare
+    /// URL only as a last resort.
     var rawContent: String {
         if !text.isEmpty { return text }
         if let transcription, !transcription.isEmpty { return transcription }
+        if !linkContext.isEmpty { return linkContext }
         return linkURLString ?? ""
     }
 

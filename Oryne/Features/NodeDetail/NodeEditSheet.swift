@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import PhotosUI
 
 /// Corrects a captured fragment: title, body (or voice transcript), themes.
 /// The audio, when present, is a temporary substrate for understanding —
@@ -23,13 +24,22 @@ struct NodeEditSheet: View {
     @State private var bodyDraft = ""
     @State private var noteDraft = ""
     @State private var themesDraft: [String] = []
+    @State private var linkDraft = ""
     @State private var newTheme = ""
     @State private var themeInputNotice: String?
+
+    // Image attachment edited on a draft (like the link), so Cancel is a true
+    // no-op. `imageChanged` is the dirty flag — cheaper than comparing the bytes
+    // every render, and it treats any add/remove as a change.
+    @State private var photoItem: PhotosPickerItem?
+    @State private var imageDraft: Data?
+    @State private var imageChanged = false
 
     @State private var originalTitle = ""
     @State private var originalBody = ""
     @State private var originalNote = ""
     @State private var originalThemes: [String] = []
+    @State private var originalLink = ""
 
     @State private var isTranscribing = false
     @State private var retranscribeFailed = false
@@ -57,6 +67,17 @@ struct NodeEditSheet: View {
             || bodyDraft != originalBody
             || noteDraft != originalNote
             || themesDraft != originalThemes
+            || normalizedLinkDraft != originalLink
+            || imageChanged
+    }
+
+    /// The typed link, normalized the same way capture does (bare host → https),
+    /// or "" when cleared. Compared against `originalLink` to detect a change.
+    private var normalizedLinkDraft: String {
+        let t = linkDraft.trimmed
+        guard !t.isEmpty else { return "" }
+        if t.hasPrefix("http://") || t.hasPrefix("https://") { return t }
+        return "https://" + t
     }
 
     var body: some View {
@@ -71,6 +92,10 @@ struct NodeEditSheet: View {
                     }
                     themesSection
                     rederiveSection
+                    // Attachments live at the bottom, matching the read view's
+                    // "Reference" grouping (below the thought's own fields).
+                    imageSection
+                    linkSection
                     AmbientHint(hint: .ownership)
                 }
                 .padding()
@@ -212,6 +237,79 @@ struct NodeEditSheet: View {
         }
     }
 
+    /// Add / remove the image on a draft (downsampled through the shared path,
+    /// like capture), so Cancel is a true no-op. Pre-populated from the node's
+    /// existing image.
+    private var imageSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionTitle("Image")
+            if let data = imageDraft, let ui = UIImage(data: data) {
+                HStack(spacing: 12) {
+                    Image(uiImage: ui)
+                        .resizable().scaledToFill()
+                        .frame(width: 72, height: 72)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    Button {
+                        withAnimation { imageDraft = nil; photoItem = nil; imageChanged = true }
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .symbolRenderingMode(.hierarchical)
+                            .font(.title3)
+                            .foregroundStyle(OceanTheme.mist)
+                    }
+                    .accessibilityLabel("Remove image")
+                    Spacer()
+                }
+            } else {
+                PhotosPicker(selection: $photoItem, matching: .images) {
+                    Label("Add image", systemImage: "photo")
+                        .font(.caption.weight(.medium))
+                        .padding(.horizontal, 12).padding(.vertical, 8)
+                        .background(Color.white.opacity(0.08), in: Capsule())
+                        .foregroundStyle(OceanTheme.foam)
+                }
+            }
+        }
+        .onChange(of: photoItem) { _, newItem in
+            Task {
+                guard let data = try? await newItem?.loadTransferable(type: Data.self) else { return }
+                // Same shared downsampler + size as the capture path (off-main).
+                let sized = await Task.detached {
+                    ImageDownsampler.downsample(data, maxPixel: ImageDownsampler.Size.attachment) ?? data
+                }.value
+                imageDraft = sized
+                imageChanged = true
+            }
+        }
+    }
+
+    /// Add / replace / remove a link on a draft, so Cancel is a true no-op.
+    /// Enrichment only fires on Save (against the committed node) — never from
+    /// inside the draft.
+    private var linkSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionTitle("Link")
+            if node.linkURLString != nil, normalizedLinkDraft == originalLink, !originalLink.isEmpty {
+                // The committed link, untouched — show it as the rich card it is,
+                // with a control to drift it off the thought.
+                LinkCard(node: node, onRemove: { withAnimation { linkDraft = "" } })
+            } else {
+                TextField("https://…", text: $linkDraft)
+                    .textFieldStyle(.plain)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .keyboardType(.URL)
+                    .foregroundStyle(OceanTheme.foam)
+                    .padding(.vertical, 10).padding(.horizontal, 12)
+                    .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                if !normalizedLinkDraft.isEmpty, normalizedLinkDraft != originalLink {
+                    Text("Saved links are read and summarized on-device for context.")
+                        .font(.caption2).foregroundStyle(OceanTheme.faint)
+                }
+            }
+        }
+    }
+
     private var themesSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             sectionTitle("Themes")
@@ -304,10 +402,14 @@ struct NodeEditSheet: View {
         bodyDraft = isVoice ? (node.transcription ?? "") : node.text
         noteDraft = hasNote ? node.text : ""
         themesDraft = node.themes
+        linkDraft = node.linkURLString ?? ""
+        imageDraft = node.imageData
+        imageChanged = false
         originalTitle = titleDraft
         originalBody = bodyDraft
         originalNote = noteDraft
         originalThemes = themesDraft
+        originalLink = node.linkURLString ?? ""
         if focusBodyOnAppear {
             // Focus can only land once the editor exists in the hierarchy.
             Task {
@@ -379,7 +481,8 @@ struct NodeEditSheet: View {
         let bodyChanged = bodyDraft != originalBody
         let noteChanged = noteDraft != originalNote
         let themesChanged = themesDraft != originalThemes
-        guard titleChanged || bodyChanged || noteChanged || themesChanged else {
+        let linkChanged = normalizedLinkDraft != originalLink
+        guard titleChanged || bodyChanged || noteChanged || themesChanged || linkChanged || imageChanged else {
             dismiss()
             return
         }
@@ -404,11 +507,24 @@ struct NodeEditSheet: View {
             node.themes = themesDraft
             node.themesEditedByUser = true
         }
+        if linkChanged {
+            // The URL is the source of truth; a changed (or removed) link drops
+            // any stale card/summary so enrichment starts clean.
+            node.linkURLString = normalizedLinkDraft.isEmpty ? nil : normalizedLinkDraft
+            node.clearLinkEnrichment()
+        }
+        if imageChanged {
+            node.imageData = imageDraft   // already downsampled on pick
+        }
         // An edited thought keeps its place: corrections change meaning
         // fields, never the spot in the Ocean the user knows it by.
         node.anchorInPlace()
         node.updatedAt = .now
         try? context.save()
+        // Enrich the committed node (never the draft), now that the link is saved.
+        if linkChanged, node.linkURLString != nil {
+            LinkEnrichmentService.shared.enrich(nodeID: node.id, context: context, ai: ai)
+        }
         dismiss()
     }
 }

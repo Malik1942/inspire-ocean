@@ -54,6 +54,7 @@ struct NodeDetailContent: View {
                 if !node.themes.isEmpty { themesSection }
                 if !children.isEmpty { branchesSection }
                 relatedSection
+                if node.linkURL != nil { referenceSection }
                 actions
             }
             .padding()
@@ -113,6 +114,13 @@ struct NodeDetailContent: View {
         }
         .task(id: node.id) {
             relatedIDs = ai.relatedNodeIDs(to: node, among: allNodes, limit: 4)
+            // Safety net for links that never got a first pass — legacy nodes and
+            // share-extension captures (the extension doesn't enrich). Only the
+            // never-attempted case auto-runs; a prior failure waits for the
+            // card's explicit retry, so opening detail doesn't re-hammer it.
+            if node.linkURL != nil, node.linkEnrichmentState == .notStarted {
+                LinkEnrichmentService.shared.enrich(nodeID: node.id, context: context, ai: ai)
+            }
         }
     }
 
@@ -172,11 +180,12 @@ struct NodeDetailContent: View {
                     Text(node.text)
                         .font(.body).foregroundStyle(OceanTheme.foam)
                 }
-                if let url = node.linkURL {
-                    Link(destination: url) {
-                        Label(url.absoluteString, systemImage: "link")
-                            .font(.callout).lineLimit(1)
-                    }
+                // A pure-link node has no words of its own — lead with what the
+                // link is about (the AI-derived title + summary/description) so
+                // the top never reads blank. The link itself is demoted to the
+                // "Reference" section at the bottom.
+                if !hasOwnContent, node.linkURL != nil {
+                    linkLead
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -187,6 +196,45 @@ struct NodeDetailContent: View {
         .onTapGesture {
             editFocusesBody = true
             showEditSheet = true
+        }
+    }
+
+    /// Whether the fragment carries content of its own (an image or words), as
+    /// opposed to a bare link whose meaning lives entirely in its enrichment.
+    private var hasOwnContent: Bool {
+        node.imageData != nil
+            || node.kind == .voice
+            || node.transcription?.isEmpty == false
+            || !node.text.isEmpty
+    }
+
+    /// Leading content for a pure-link node: what the link is about, drawn from
+    /// enrichment — the AI-derived title and the summary (or description). Falls
+    /// back to the URL so the top is never blank before enrichment lands.
+    @ViewBuilder
+    private var linkLead: some View {
+        if !node.title.isEmpty {
+            Text(node.title)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(OceanTheme.foam)
+        }
+        if let body = node.linkSummary ?? node.linkDescription, !body.isEmpty {
+            Text(body)
+                .font(.body).foregroundStyle(OceanTheme.foam)
+                .fixedSize(horizontal: false, vertical: true)
+        } else if node.title.isEmpty {
+            Text(node.linkURL?.absoluteString ?? "")
+                .font(.callout).foregroundStyle(OceanTheme.mist).lineLimit(2)
+        }
+    }
+
+    /// The link, demoted to a bottom reference. The same rich card — only its
+    /// position changes. Its summary block shows only when the node has its own
+    /// content above (otherwise that summary already leads the view).
+    private var referenceSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionTitle("Reference")
+            LinkCard(node: node, showSummary: hasOwnContent)
         }
     }
 
