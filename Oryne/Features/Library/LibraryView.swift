@@ -66,6 +66,9 @@ struct LibraryView: View {
             .navigationDestination(for: Node.self) { node in
                 NodeDetailContent(node: node)
             }
+            // The original system confirmation (the chat-bubble popover). Swap
+            // for `.oceanConfirmationDialog` (OceanConfirmationDialog.swift) to
+            // use the kept Liquid Glass alternative.
             .confirmationDialog(
                 "Delete this thought?",
                 isPresented: Binding(
@@ -181,7 +184,8 @@ struct LibraryView: View {
     }
 
     private func delete(_ node: Node) {
-        context.delete(node)
-        try? context.save()
+        // Archive-then-detach (see deleteNodeSafely): a direct delete of a node
+        // with branches cascades and faults a row still rendering a child.
+        context.deleteNodeSafely(node)
     }
 }
