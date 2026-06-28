@@ -87,6 +87,14 @@ struct NodeDetailContent: View {
                 }
             }
         }
+        // The original system confirmation (the chat-bubble popover). A Liquid
+        // Glass alternative is kept in OceanConfirmationDialog.swift — to switch,
+        // replace this whole modifier with:
+        //   .oceanConfirmationDialog(
+        //       isPresented: $showDeleteConfirm,
+        //       title: "Delete this thought?",
+        //       message: "This drifts out of the Ocean for good.",
+        //       confirmTitle: "Delete", onConfirm: deleteNode)
         .confirmationDialog(
             "Delete this thought?",
             isPresented: $showDeleteConfirm,
@@ -109,11 +117,13 @@ struct NodeDetailContent: View {
     }
 
     /// Removes the fragment and leaves this view (pops if pushed, dismisses the
-    /// sheet if presented). Matches Library's hard-delete semantics.
+    /// sheet if presented). `deleteNodeSafely` archives the subtree out of every
+    /// query before detaching it, so neither this view nor a Library row / Ocean
+    /// mote faults on a deleted node (see its doc); dismissing alongside is then
+    /// purely cosmetic.
     private func deleteNode() {
+        context.deleteNodeSafely(node)
         dismiss()
-        context.delete(node)
-        try? context.save()
     }
 
     // MARK: Sections

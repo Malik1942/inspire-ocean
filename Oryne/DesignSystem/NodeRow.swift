@@ -5,6 +5,20 @@ struct NodeRow: View {
     let node: Node
 
     var body: some View {
+        // A just-deleted node can linger for one render pass before its @Query
+        // drops the row — and deleting a node with branches cascades, which
+        // re-renders a child row mid-deletion. Reading any \Node attribute on a
+        // detached object faults ("backing data was detached … \Node.themes"),
+        // so render nothing until the row goes away. `modelContext` is metadata,
+        // not backing-store data, so it stays safe to read once detached.
+        if node.modelContext == nil {
+            Color.clear.frame(width: 0, height: 0)
+        } else {
+            row
+        }
+    }
+
+    private var row: some View {
         HStack(spacing: 12) {
             ZStack {
                 Circle()
