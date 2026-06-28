@@ -31,6 +31,11 @@ targets:
         embed: true
       - target: OceanWidgets
         embed: true
+      # Embed the watchOS companion so it installs alongside the phone app.
+      - target: OryneWatch
+        embed: true
+      # The phone owns sync; it receives watch captures over WatchConnectivity.
+      - sdk: WatchConnectivity.framework
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.inspireocean.app
@@ -118,7 +123,6 @@ targets:
     sources:
       - path: Shared
       - path: OceanWidgets
-      - path: Oryne/DesignSystem/OceanTheme.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.inspireocean.app.widgets
@@ -133,3 +137,39 @@ targets:
         CFBundleDisplayName: Oryne
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
+
+  # watchOS companion: one-press wrist capture. Single-target SwiftUI watch app
+  # (watchOS 9+ model — no separate WatchKit extension). It records and queues
+  # only; the phone owns transcription, organization, and CloudKit sync. Kept
+  # lean: it sources just the shared design tokens (+ ConnectivityKeys later),
+  # not the SwiftData models or AI services. watchOS 11 floor so the shared
+  # OceanTheme (MeshGradient, @Entry) compiles.
+  OryneWatch:
+    type: application
+    platform: watchOS
+    deploymentTarget: "11.0"
+    sources:
+      - path: Shared/DesignSystem
+      - path: OryneWatch
+    dependencies:
+      - sdk: WatchConnectivity.framework
+    # Generate the scheme so CLI builds (-scheme OryneWatch) survive a regen.
+    scheme:
+      configVariants: []
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.inspireocean.app.watchkitapp
+    entitlements:
+      path: OryneWatch/OryneWatch.entitlements
+      properties:
+        # Frozen App Group (see options header): the watch writes pending
+        # captures into the same shared container the phone reads.
+        com.apple.security.application-groups:
+          - group.com.inspireocean.shared
+    info:
+      path: OryneWatch/Info.plist
+      properties:
+        CFBundleDisplayName: Oryne
+        WKApplication: true
+        WKCompanionAppBundleIdentifier: com.inspireocean.app
+        NSMicrophoneUsageDescription: "Oryne uses the microphone to catch a whisper from your wrist before it disappears."

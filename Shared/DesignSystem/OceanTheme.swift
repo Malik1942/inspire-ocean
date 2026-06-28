@@ -10,9 +10,9 @@ import SwiftUI
 /// strain doesn't. The system Reduce Motion setting stills the water too,
 /// independently of this switch.
 ///
-/// Lives here (not its own file) because the widget target compiles exactly
-/// this one DesignSystem file — `OceanBackground` below reads the key, so the
-/// key must travel with it.
+/// Lives here (not its own file) because the widget and watch targets compile
+/// exactly this one DesignSystem file — `OceanBackground` below reads the key,
+/// so the key must travel with it.
 enum CalmAccessibility {
     /// App-Group-backed so every surface agrees.
     static let key = "ocean.calmAccessibilityMode"
