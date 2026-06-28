@@ -160,6 +160,9 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.inspireocean.app.watchkitapp
+        # App Store validation requires the watch app to ship an icon and a
+        # CFBundleIconName; actool writes that key from this asset catalog.
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     entitlements:
       path: OryneWatch/OryneWatch.entitlements
       properties:
@@ -173,4 +176,8 @@ targets:
         CFBundleDisplayName: Oryne
         WKApplication: true
         WKCompanionAppBundleIdentifier: com.inspireocean.app
+        # actool writes the nested CFBundleIcons for watchOS but not the
+        # top-level CFBundleIconName that App Store validation (error 90713)
+        # requires on the watch bundle; set it explicitly to match AppIcon.
+        CFBundleIconName: AppIcon
         NSMicrophoneUsageDescription: "Oryne uses the microphone to catch a whisper from your wrist before it disappears."
