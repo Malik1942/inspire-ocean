@@ -150,6 +150,7 @@ targets:
     deploymentTarget: "11.0"
     sources:
       - path: Shared/DesignSystem
+      - path: Shared/AppGroup.swift
       - path: OryneWatch
     dependencies:
       - sdk: WatchConnectivity.framework

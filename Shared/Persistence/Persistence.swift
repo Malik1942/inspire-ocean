@@ -9,7 +9,9 @@ import SwiftData
 enum Persistence {
     // Frozen pre-rebrand (Inspire Ocean) identifiers: renaming the App Group,
     // store file, or CloudKit container would orphan every existing user's data.
-    static let appGroupID = "group.com.inspireocean.shared"
+    // The App Group lives in `AppGroup` so the watch (which doesn't compile this
+    // file) shares one definition rather than a copied literal.
+    static let appGroupID = AppGroup.identifier
     static let cloudKitContainerID = "iCloud.com.inspireocean.app"
     private static let storeName = "InspireOcean.store"
 
