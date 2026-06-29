@@ -20,16 +20,27 @@ struct NodeRow: View {
 
     private var row: some View {
         HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(OceanTheme.color(forHue: node.hue).opacity(0.3))
-                    .frame(width: 40, height: 40)
-                if let data = node.imageData, let ui = UIImage(data: data) {
-                    Image(uiImage: ui).resizable().scaledToFill()
-                        .frame(width: 40, height: 40).clipShape(Circle())
-                } else {
-                    Image(systemName: node.kind.symbol)
-                        .foregroundStyle(OceanTheme.foam)
+            ZStack(alignment: .bottomTrailing) {
+                ZStack {
+                    Circle()
+                        .fill(OceanTheme.color(forHue: node.hue).opacity(0.3))
+                        .frame(width: 40, height: 40)
+                    if let data = node.imageDatas.first, let ui = UIImage(data: data) {
+                        Image(uiImage: ui).resizable().scaledToFill()
+                            .frame(width: 40, height: 40).clipShape(Circle())
+                    } else {
+                        Image(systemName: node.kind.symbol)
+                            .foregroundStyle(OceanTheme.foam)
+                    }
+                }
+                // "+N" when a node carries more than the one shown.
+                if node.imageDatas.count > 1 {
+                    Text(verbatim: "+\(node.imageDatas.count - 1)")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 4).padding(.vertical, 1)
+                        .background(OceanTheme.accent, in: Capsule())
+                        .offset(x: 3, y: 3)
                 }
             }
 

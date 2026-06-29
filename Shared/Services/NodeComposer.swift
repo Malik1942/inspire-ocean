@@ -15,6 +15,7 @@ enum NodeComposer {
         linkURLString: String? = nil,
         audioData: Data? = nil,
         imageData: Data? = nil,
+        imageDatas: [Data] = [],
         branchType: BranchType? = nil,
         parent: Node? = nil,
         detectThemes: Bool = true
@@ -40,7 +41,7 @@ enum NodeComposer {
             transcription: transcription,
             linkURLString: linkURLString,
             audioData: audioData,
-            imageData: imageData,
+            imageData: nil,            // new nodes use the `images` set, never the legacy field
             themes: themes,
             mood: mood,
             hue: hue,
@@ -49,6 +50,15 @@ enum NodeComposer {
             branchType: branchType,
             parent: parent
         )
+
+        // One image path for every caller: multi-image callers pass `imageDatas`;
+        // single-image callers (Fast Capture, intents, share, capture session)
+        // keep passing `imageData` and become a 1-element set. Capped at the limit.
+        let datas = imageDatas.isEmpty ? [imageData].compactMap { $0 } : imageDatas
+        let capped = Array(datas.prefix(Node.maxImages))
+        if !capped.isEmpty {
+            node.images = capped.enumerated().map { NodeImage(data: $1, sortIndex: $0) }
+        }
         return node
     }
 

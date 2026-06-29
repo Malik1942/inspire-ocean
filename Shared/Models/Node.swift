@@ -62,7 +62,16 @@ final class Node {
     /// CloudKit exactly the way `imageData` does — a file on disk would not.
     @Attribute(.externalStorage) var audioData: Data?
 
+    /// Legacy single-image storage. Superseded by the `images` relationship
+    /// (multiple images per node); kept as the source of the one-time back-fill
+    /// `migrateLegacyImages` and as the fallback in `imageDatas` so an image
+    /// never blanks out in the window before migration runs (or for a legacy
+    /// node arriving late over CloudKit). New nodes write `images`, never this.
     @Attribute(.externalStorage) var imageData: Data?
+
+    /// Ordered set of attached images, each its own externally-stored blob.
+    /// Optional + cascade-deleted with the node, mirroring `children`.
+    @Relationship(deleteRule: .cascade) var images: [NodeImage]?
 
     /// Lightweight, AI-detected themes used for clustering and rediscovery.
     var themes: [String] = []
@@ -211,6 +220,30 @@ extension Node {
         linkEnrichmentNote = nil
         linkEnrichmentStateRaw = "notStarted"
     }
+
+    // MARK: Images
+
+    /// Hard cap on attached images per node — enforced in Capture, the edit
+    /// sheet, and the branch composer.
+    static let maxImages = 10
+
+    /// Attached images in display order.
+    var orderedImages: [NodeImage] { (images ?? []).sorted { $0.sortIndex < $1.sortIndex } }
+
+    /// The node's image bytes in order. Prefers the `images` relationship and
+    /// falls back to the legacy single `imageData`, so an image never blanks out
+    /// before `migrateLegacyImages` runs — or for a legacy node arriving late
+    /// over CloudKit. After migration the fallback is moot (legacy field nil).
+    var imageDatas: [Data] {
+        let fromChildren = orderedImages.compactMap(\.data)
+        if !fromChildren.isEmpty { return fromChildren }
+        if let imageData { return [imageData] }
+        return []
+    }
+
+    /// Whether the node carries any image (the new set, or a not-yet-migrated
+    /// legacy single image).
+    var hasImages: Bool { !(images?.isEmpty ?? true) || imageData != nil }
 
     var isBranch: Bool { parent != nil }
 

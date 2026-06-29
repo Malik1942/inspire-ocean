@@ -18,8 +18,10 @@ struct CaptureView: View {
     @State private var showLinkField = false
 
     @State private var session = CaptureSession()
-    @State private var photoItem: PhotosPickerItem?
-    @State private var imageData: Data?
+    @State private var photoItems: [PhotosPickerItem] = []
+    @State private var imageDatas: [Data] = []
+    /// Brief "only added N — 10 max" note when a batch would overflow the cap.
+    @State private var imageNotice: String?
 
     /// Whisper flow: record (watching the words land) → stop = captured.
     /// The node is saved the moment recording ends; the review capsule that
@@ -104,17 +106,9 @@ struct CaptureView: View {
                     prefillType: .question
                 )
             }
-            .onChange(of: photoItem) { _, newItem in
-                Task {
-                    guard let data = try? await newItem?.loadTransferable(type: Data.self) else { return }
-                    // Downsample off the main actor so a large photo never stores
-                    // full-res (and never janks capture); keep the original only
-                    // if it can't be decoded as an image.
-                    let sized = await Task.detached {
-                        ImageDownsampler.downsample(data, maxPixel: ImageDownsampler.Size.attachment) ?? data
-                    }.value
-                    imageData = sized
-                }
+            .onChange(of: photoItems) { _, newItems in
+                guard !newItems.isEmpty else { return }
+                Task { await addPickedImages(newItems) }
             }
             .onAppear {
                 session.configure(context: context, ai: ai)
@@ -177,16 +171,20 @@ struct CaptureView: View {
                         .onTapGesture { textFocused.toggle() }
                 }
 
-            if let imageData, let ui = UIImage(data: imageData) {
-                imagePreview(ui)
-            }
+            if !imageDatas.isEmpty { imageRow }
 
             HStack(spacing: 10) {
-                PhotosPicker(selection: $photoItem, matching: .images) {
-                    attachLabel(imageData == nil
-                                ? String(localized: "Image")
-                                : String(localized: "Replace"),
-                                system: "photo")
+                if imageDatas.count < Node.maxImages {
+                    PhotosPicker(
+                        selection: $photoItems,
+                        maxSelectionCount: Node.maxImages - imageDatas.count,
+                        matching: .images
+                    ) {
+                        attachLabel(imageDatas.isEmpty
+                                    ? String(localized: "Image")
+                                    : String(localized: "Add image"),
+                                    system: "photo")
+                    }
                 }
                 Button { withAnimation { showLinkField.toggle() } } label: {
                     attachLabel(linkText.trimmed.isEmpty
@@ -195,6 +193,10 @@ struct CaptureView: View {
                                 system: "link")
                 }
                 Spacer()
+            }
+
+            if let imageNotice {
+                Text(imageNotice).font(.caption2).foregroundStyle(OceanTheme.faint)
             }
 
             if showLinkField || !linkText.trimmed.isEmpty {
@@ -213,14 +215,21 @@ struct CaptureView: View {
             } else {
                 whisperRecording
 
-                if let imageData, let ui = UIImage(data: imageData) {
-                    imagePreview(ui)
+                if !imageDatas.isEmpty { imageRow }
+                if imageDatas.count < Node.maxImages {
+                    PhotosPicker(
+                        selection: $photoItems,
+                        maxSelectionCount: Node.maxImages - imageDatas.count,
+                        matching: .images
+                    ) {
+                        attachLabel(imageDatas.isEmpty
+                                    ? String(localized: "Add image")
+                                    : String(localized: "Add image"),
+                                    system: "photo")
+                    }
                 }
-                PhotosPicker(selection: $photoItem, matching: .images) {
-                    attachLabel(imageData == nil
-                                ? String(localized: "Add image")
-                                : String(localized: "Replace image"),
-                                system: "photo")
+                if let imageNotice {
+                    Text(imageNotice).font(.caption2).foregroundStyle(OceanTheme.faint)
                 }
             }
         }
@@ -336,22 +345,54 @@ struct CaptureView: View {
 
     // MARK: Shared attachment views
 
-    private func imagePreview(_ ui: UIImage) -> some View {
-        ZStack(alignment: .topTrailing) {
-            Image(uiImage: ui)
-                .resizable().scaledToFit()
-                .frame(maxHeight: 180)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            Button {
-                imageData = nil
-                photoItem = nil
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.title3).symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(.white)
-                    .padding(6)
+    /// Horizontal row of attached-image thumbnails, each removable. Shared by
+    /// the Thought and Whisper capture paths.
+    private var imageRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(Array(imageDatas.enumerated()), id: \.offset) { index, data in
+                    if let ui = UIImage(data: data) {
+                        ZStack(alignment: .topTrailing) {
+                            Image(uiImage: ui)
+                                .resizable().scaledToFill()
+                                .frame(width: 96, height: 96)
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            Button {
+                                withAnimation { removeImage(at: index) }
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.title3).symbolRenderingMode(.hierarchical)
+                                    .foregroundStyle(.white)
+                                    .padding(4)
+                            }
+                            .accessibilityLabel("Remove image")
+                        }
+                    }
+                }
             }
         }
+    }
+
+    /// Load picked items through the one shared downsample path, clamped to the
+    /// per-node cap; tell the user if a batch overflowed rather than dropping
+    /// silently. Clears the picker selection so the next pick fires `onChange`.
+    private func addPickedImages(_ items: [PhotosPickerItem]) async {
+        let loaded = await ImageDownsampler.attachmentData(from: items)
+        await MainActor.run {
+            let room = Node.maxImages - imageDatas.count
+            let accepted = Array(loaded.prefix(max(0, room)))
+            imageDatas.append(contentsOf: accepted)
+            imageNotice = loaded.count > accepted.count
+                ? String(localized: "Only added \(accepted.count), \(Node.maxImages) images max.")
+                : nil
+            photoItems = []
+        }
+    }
+
+    private func removeImage(at index: Int) {
+        guard imageDatas.indices.contains(index) else { return }
+        imageDatas.remove(at: index)
+        imageNotice = nil
     }
 
     private var linkField: some View {
@@ -394,7 +435,7 @@ struct CaptureView: View {
     private var canSave: Bool {
         // Whispers save themselves on stop; the button belongs to thoughts.
         guard kind != .voice else { return false }
-        return !text.trimmed.isEmpty || imageData != nil || !linkText.trimmed.isEmpty
+        return !text.trimmed.isEmpty || !imageDatas.isEmpty || !linkText.trimmed.isEmpty
     }
 
     // MARK: Whisper actions
@@ -422,7 +463,7 @@ struct CaptureView: View {
         let trimmed = transcript.trimmed
 
         // A reflexive double-tap shouldn't mint an empty thought.
-        if trimmed.isEmpty, elapsed < 1, imageData == nil {
+        if trimmed.isEmpty, elapsed < 1, imageDatas.isEmpty {
             if let url { try? FileManager.default.removeItem(at: url) }
             whisperPhase = .idle
             return
@@ -434,10 +475,11 @@ struct CaptureView: View {
                                  transcript: trimmed,
                                  audioData: recordedAudioData,
                                  audioTempURL: url,
-                                 imageData: imageData)
+                                 imageDatas: imageDatas)
         reviewText = trimmed
-        imageData = nil
-        photoItem = nil
+        imageDatas = []
+        photoItems = []
+        imageNotice = nil
 
         if let nodeID = session.release(draft) {
             reviewNodeID = nodeID
@@ -543,13 +585,13 @@ struct CaptureView: View {
             reviewText = draft.transcript
             recordedAudioData = draft.audioData
             recordedURL = nil
-            imageData = draft.imageData   // an attached image comes back too
+            imageDatas = draft.imageDatas   // attached images come back too
             reviewPaused = true
             withAnimation(.snappy) { whisperPhase = .reviewing }
         } else {
             kind = .text
             text = draft.text
-            imageData = draft.imageData
+            imageDatas = draft.imageDatas
             linkText = draft.linkURLString ?? ""
         }
     }
@@ -568,7 +610,7 @@ struct CaptureView: View {
     private func save() {
         let link = linkText.trimmed.isEmpty ? nil : normalizedLink
         let draft = CaptureDraft(kind: .text, text: text.trimmed,
-                                 imageData: imageData, linkURLString: link)
+                                 imageDatas: imageDatas, linkURLString: link)
         guard let nodeID = session.release(draft) else { return }   // draft stays on the surface
         session.beginUnderstanding(nodeID: nodeID)
         // A link drifts in bare; enrichment makes it a rich card and folds what
@@ -638,8 +680,9 @@ struct CaptureView: View {
         text = ""
         linkText = ""
         showLinkField = false
-        imageData = nil
-        photoItem = nil
+        imageDatas = []
+        photoItems = []
+        imageNotice = nil
     }
 
     private var normalizedLink: String {

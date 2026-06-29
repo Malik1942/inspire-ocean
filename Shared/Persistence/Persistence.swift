@@ -15,6 +15,7 @@ enum Persistence {
 
     static let schema = Schema([
         Node.self,
+        NodeImage.self,
         Conversation.self,
         ChatMessage.self
     ])

@@ -17,8 +17,9 @@ struct BranchComposer: View {
     @State private var type: BranchType = .concept
     @State private var text: String = ""
     @State private var linkText: String = ""
-    @State private var photoItem: PhotosPickerItem?
-    @State private var imageData: Data?
+    @State private var photoItems: [PhotosPickerItem] = []
+    @State private var imageDatas: [Data] = []
+    @State private var imageNotice: String?
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -68,31 +69,51 @@ struct BranchComposer: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Image (optional)").font(.subheadline).foregroundStyle(OceanTheme.mist)
-                        if let data = imageData, let ui = UIImage(data: data) {
-                            HStack(spacing: 12) {
-                                Image(uiImage: ui)
-                                    .resizable().scaledToFill()
-                                    .frame(width: 72, height: 72)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                Button {
-                                    withAnimation { imageData = nil; photoItem = nil }
-                                } label: {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .symbolRenderingMode(.hierarchical)
-                                        .font(.title3)
-                                        .foregroundStyle(OceanTheme.mist)
+                        if !imageDatas.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 10) {
+                                    ForEach(Array(imageDatas.enumerated()), id: \.offset) { index, data in
+                                        if let ui = UIImage(data: data) {
+                                            ZStack(alignment: .topTrailing) {
+                                                Image(uiImage: ui)
+                                                    .resizable().scaledToFill()
+                                                    .frame(width: 84, height: 84)
+                                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                                Button {
+                                                    withAnimation {
+                                                        guard imageDatas.indices.contains(index) else { return }
+                                                        imageDatas.remove(at: index)
+                                                        imageNotice = nil
+                                                    }
+                                                } label: {
+                                                    Image(systemName: "xmark.circle.fill")
+                                                        .symbolRenderingMode(.hierarchical)
+                                                        .font(.title3)
+                                                        .foregroundStyle(.white)
+                                                        .padding(3)
+                                                }
+                                                .accessibilityLabel("Remove image")
+                                            }
+                                        }
+                                    }
                                 }
-                                .accessibilityLabel("Remove image")
-                                Spacer()
                             }
-                        } else {
-                            PhotosPicker(selection: $photoItem, matching: .images) {
+                        }
+                        if imageDatas.count < Node.maxImages {
+                            PhotosPicker(
+                                selection: $photoItems,
+                                maxSelectionCount: Node.maxImages - imageDatas.count,
+                                matching: .images
+                            ) {
                                 Label("Add image", systemImage: "photo")
                                     .font(.caption.weight(.medium))
                                     .padding(.horizontal, 12).padding(.vertical, 8)
                                     .background(Color.white.opacity(0.08), in: Capsule())
                                     .foregroundStyle(OceanTheme.foam)
                             }
+                        }
+                        if let imageNotice {
+                            Text(imageNotice).font(.caption2).foregroundStyle(OceanTheme.faint)
                         }
                     }
                 }
@@ -111,21 +132,27 @@ struct BranchComposer: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Grow") { grow() }
-                        .disabled(text.trimmed.isEmpty && linkText.trimmed.isEmpty && imageData == nil)
+                        .disabled(text.trimmed.isEmpty && linkText.trimmed.isEmpty && imageDatas.isEmpty)
                 }
             }
             .onAppear {
                 if !prefill.isEmpty { text = prefill; type = prefillType }
                 focused = true
             }
-            .onChange(of: photoItem) { _, newItem in
+            .onChange(of: photoItems) { _, newItems in
+                guard !newItems.isEmpty else { return }
                 Task {
-                    guard let data = try? await newItem?.loadTransferable(type: Data.self) else { return }
-                    // Same shared downsampler + size as capture (off-main).
-                    let sized = await Task.detached {
-                        ImageDownsampler.downsample(data, maxPixel: ImageDownsampler.Size.attachment) ?? data
-                    }.value
-                    imageData = sized
+                    // Same shared downsample path as capture (1600px, off-main).
+                    let loaded = await ImageDownsampler.attachmentData(from: newItems)
+                    await MainActor.run {
+                        let room = Node.maxImages - imageDatas.count
+                        let accepted = Array(loaded.prefix(max(0, room)))
+                        imageDatas.append(contentsOf: accepted)
+                        imageNotice = loaded.count > accepted.count
+                            ? String(localized: "Only added \(accepted.count), \(Node.maxImages) images max.")
+                            : nil
+                        photoItems = []
+                    }
                 }
             }
         }
@@ -148,7 +175,7 @@ struct BranchComposer: View {
         let link = linkText.trimmed.isEmpty ? nil : normalizedLink
         let kind: NodeKind = {
             if !text.trimmed.isEmpty { return .text }
-            if imageData != nil { return .image }
+            if !imageDatas.isEmpty { return .image }
             if link != nil { return .link }
             return .text
         }()
@@ -156,7 +183,7 @@ struct BranchComposer: View {
             kind: kind,
             text: text.trimmed,
             linkURLString: link,
-            imageData: imageData,   // already downsampled on pick
+            imageDatas: imageDatas,   // already downsampled on pick
             branchType: type,
             parent: parent
         )

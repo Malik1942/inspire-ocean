@@ -1,5 +1,7 @@
 import UIKit
 import ImageIO
+import SwiftUI
+import PhotosUI
 
 /// The one place image bytes are shrunk before they're persisted onto a `Node`.
 ///
@@ -32,5 +34,22 @@ enum ImageDownsampler {
             return nil
         }
         return UIImage(cgImage: cg).jpegData(compressionQuality: quality)
+    }
+
+    /// The single path every multi-image surface (Capture, edit sheet, branch
+    /// composer) uses to turn picked items into stored bytes: load each item and
+    /// downsample it through the attachment (1600px) path off the main actor, so
+    /// whether the user picks 1 or 10, no full-resolution original is ever stored.
+    /// Order is preserved; undecodable items are skipped.
+    static func attachmentData(from items: [PhotosPickerItem]) async -> [Data] {
+        var result: [Data] = []
+        for item in items {
+            guard let data = try? await item.loadTransferable(type: Data.self) else { continue }
+            let sized = await Task.detached {
+                ImageDownsampler.downsample(data, maxPixel: Size.attachment) ?? data
+            }.value
+            result.append(sized)
+        }
+        return result
     }
 }

@@ -28,12 +28,13 @@ struct NodeEditSheet: View {
     @State private var newTheme = ""
     @State private var themeInputNotice: String?
 
-    // Image attachment edited on a draft (like the link), so Cancel is a true
-    // no-op. `imageChanged` is the dirty flag — cheaper than comparing the bytes
-    // every render, and it treats any add/remove as a change.
-    @State private var photoItem: PhotosPickerItem?
-    @State private var imageDraft: Data?
+    // Images edited on a draft array (like the link), so Cancel is a true no-op.
+    // `imageChanged` is the dirty flag — any add/remove flips it; Save replaces
+    // the node's image set only when it's set.
+    @State private var photoItems: [PhotosPickerItem] = []
+    @State private var imageDrafts: [Data] = []
     @State private var imageChanged = false
+    @State private var imageNotice: String?
 
     @State private var originalTitle = ""
     @State private var originalBody = ""
@@ -242,26 +243,44 @@ struct NodeEditSheet: View {
     /// existing image.
     private var imageSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            sectionTitle("Image")
-            if let data = imageDraft, let ui = UIImage(data: data) {
-                HStack(spacing: 12) {
-                    Image(uiImage: ui)
-                        .resizable().scaledToFill()
-                        .frame(width: 72, height: 72)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    Button {
-                        withAnimation { imageDraft = nil; photoItem = nil; imageChanged = true }
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .symbolRenderingMode(.hierarchical)
-                            .font(.title3)
-                            .foregroundStyle(OceanTheme.mist)
+            sectionTitle("Images")
+            if !imageDrafts.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        ForEach(Array(imageDrafts.enumerated()), id: \.offset) { index, data in
+                            if let ui = UIImage(data: data) {
+                                ZStack(alignment: .topTrailing) {
+                                    Image(uiImage: ui)
+                                        .resizable().scaledToFill()
+                                        .frame(width: 84, height: 84)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                    Button {
+                                        withAnimation {
+                                            guard imageDrafts.indices.contains(index) else { return }
+                                            imageDrafts.remove(at: index)
+                                            imageChanged = true
+                                            imageNotice = nil
+                                        }
+                                    } label: {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .symbolRenderingMode(.hierarchical)
+                                            .font(.title3)
+                                            .foregroundStyle(.white)
+                                            .padding(3)
+                                    }
+                                    .accessibilityLabel("Remove image")
+                                }
+                            }
+                        }
                     }
-                    .accessibilityLabel("Remove image")
-                    Spacer()
                 }
-            } else {
-                PhotosPicker(selection: $photoItem, matching: .images) {
+            }
+            if imageDrafts.count < Node.maxImages {
+                PhotosPicker(
+                    selection: $photoItems,
+                    maxSelectionCount: Node.maxImages - imageDrafts.count,
+                    matching: .images
+                ) {
                     Label("Add image", systemImage: "photo")
                         .font(.caption.weight(.medium))
                         .padding(.horizontal, 12).padding(.vertical, 8)
@@ -269,16 +288,25 @@ struct NodeEditSheet: View {
                         .foregroundStyle(OceanTheme.foam)
                 }
             }
+            if let imageNotice {
+                Text(imageNotice).font(.caption2).foregroundStyle(OceanTheme.faint)
+            }
         }
-        .onChange(of: photoItem) { _, newItem in
+        .onChange(of: photoItems) { _, newItems in
+            guard !newItems.isEmpty else { return }
             Task {
-                guard let data = try? await newItem?.loadTransferable(type: Data.self) else { return }
-                // Same shared downsampler + size as the capture path (off-main).
-                let sized = await Task.detached {
-                    ImageDownsampler.downsample(data, maxPixel: ImageDownsampler.Size.attachment) ?? data
-                }.value
-                imageDraft = sized
-                imageChanged = true
+                // Same shared downsample path as capture (1600px, off-main).
+                let loaded = await ImageDownsampler.attachmentData(from: newItems)
+                await MainActor.run {
+                    let room = Node.maxImages - imageDrafts.count
+                    let accepted = Array(loaded.prefix(max(0, room)))
+                    imageDrafts.append(contentsOf: accepted)
+                    imageChanged = true
+                    imageNotice = loaded.count > accepted.count
+                        ? String(localized: "Only added \(accepted.count), \(Node.maxImages) images max.")
+                        : nil
+                    photoItems = []
+                }
             }
         }
     }
@@ -403,7 +431,7 @@ struct NodeEditSheet: View {
         noteDraft = hasNote ? node.text : ""
         themesDraft = node.themes
         linkDraft = node.linkURLString ?? ""
-        imageDraft = node.imageData
+        imageDrafts = node.imageDatas
         imageChanged = false
         originalTitle = titleDraft
         originalBody = bodyDraft
@@ -514,7 +542,12 @@ struct NodeEditSheet: View {
             node.clearLinkEnrichment()
         }
         if imageChanged {
-            node.imageData = imageDraft   // already downsampled on pick
+            // Replace the whole set: drop the old image children, write the draft
+            // in order (already downsampled on pick), and clear the legacy field
+            // so `images` is the single source of truth.
+            node.orderedImages.forEach { context.delete($0) }
+            node.images = imageDrafts.enumerated().map { NodeImage(data: $1, sortIndex: $0) }
+            node.imageData = nil
         }
         // An edited thought keeps its place: corrections change meaning
         // fields, never the spot in the Ocean the user knows it by.

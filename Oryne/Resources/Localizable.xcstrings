@@ -2516,7 +2516,27 @@
         }
       }
     },
-    "· %@": {}
+    "· %@": {},
+    "Images": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "图片"
+          }
+        }
+      }
+    },
+    "Only added %lld, %lld images max.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅添加了 %lld 张，最多 %lld 张图片。"
+          }
+        }
+      }
+    }
   },
   "version": "1.0"
 }

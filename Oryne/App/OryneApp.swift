@@ -21,6 +21,7 @@ struct OryneApp: App {
                 .task {
                     SeedData.seedIfNeeded(container.mainContext)
                     Self.migrateLegacyAudio(context: container.mainContext)
+                    Self.migrateLegacyImages(context: container.mainContext)
                     Self.expireConfirmedAudio(context: container.mainContext)
                 }
         }
@@ -51,6 +52,30 @@ struct OryneApp: App {
             node.audioFileName = nil
         }
         try? context.save()
+    }
+
+    /// One-time: fold the legacy single `imageData` into the `images`
+    /// relationship (as the first image) so old nodes display under the
+    /// multi-image model. Mirrors `migrateLegacyAudio`. Idempotent: a migrated
+    /// node clears `imageData`, so it no longer matches on the next launch; and
+    /// `Node.imageDatas` falls back to `imageData` for the window before this
+    /// runs (or a legacy node arriving late over CloudKit), so no image blanks.
+    ///
+    /// `imageData` is `.externalStorage`, which can't be filtered in a predicate,
+    /// so we fetch and filter in memory (as `expireConfirmedAudio` does for
+    /// `audioData`). The store is small; this is cheap.
+    @MainActor
+    static func migrateLegacyImages(context: ModelContext) {
+        guard let nodes = try? context.fetch(FetchDescriptor<Node>()) else { return }
+        var migrated = false
+        for node in nodes where node.imageData != nil {
+            if node.images?.isEmpty ?? true {
+                node.images = [NodeImage(data: node.imageData, sortIndex: 0)]
+            }
+            node.imageData = nil   // converge: stop matching on the next launch
+            migrated = true
+        }
+        if migrated { try? context.save() }
     }
 
     /// Audio is a temporary substrate for understanding, not a long-term

@@ -36,6 +36,8 @@ struct NodeDetailContent: View {
     @State private var showEditSheet = false
     @State private var editFocusesBody = false
     @State private var relatedIDs: [UUID] = []
+    @State private var showImageViewer = false
+    @State private var viewerIndex = 0
 
     private var related: [Node] {
         let byID = Dictionary(uniqueKeysWithValues: allNodes.map { ($0.id, $0) })
@@ -112,6 +114,9 @@ struct NodeDetailContent: View {
         .sheet(isPresented: $showEditSheet) {
             NodeEditSheet(node: node, focusBodyOnAppear: editFocusesBody)
         }
+        .fullScreenCover(isPresented: $showImageViewer) {
+            ImageViewer(datas: node.imageDatas, index: $viewerIndex)
+        }
         .task(id: node.id) {
             relatedIDs = ai.relatedNodeIDs(to: node, among: allNodes, limit: 4)
             // Safety net for links that never got a first pass — legacy nodes and
@@ -139,11 +144,7 @@ struct NodeDetailContent: View {
     private var contentCard: some View {
         GlassCard {
             VStack(alignment: .leading, spacing: 12) {
-                if let data = node.imageData, let ui = UIImage(data: data) {
-                    Image(uiImage: ui)
-                        .resizable().scaledToFit()
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                }
+                imageContent
                 if let transcription = node.transcription, !transcription.isEmpty {
                     HStack {
                         Label("Transcript", systemImage: "waveform")
@@ -199,10 +200,38 @@ struct NodeDetailContent: View {
         }
     }
 
+    /// All of the node's images. A single image renders large (fit); several
+    /// render as a horizontal strip of square thumbnails. Any is tappable to a
+    /// full-screen, paged viewer.
+    @ViewBuilder
+    private var imageContent: some View {
+        let datas = node.imageDatas
+        if datas.count == 1, let ui = UIImage(data: datas[0]) {
+            Image(uiImage: ui)
+                .resizable().scaledToFit()
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .onTapGesture { viewerIndex = 0; showImageViewer = true }
+        } else if datas.count > 1 {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(Array(datas.enumerated()), id: \.offset) { index, data in
+                        if let ui = UIImage(data: data) {
+                            Image(uiImage: ui)
+                                .resizable().scaledToFill()
+                                .frame(width: 150, height: 150)
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .onTapGesture { viewerIndex = index; showImageViewer = true }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     /// Whether the fragment carries content of its own (an image or words), as
     /// opposed to a bare link whose meaning lives entirely in its enrichment.
     private var hasOwnContent: Bool {
-        node.imageData != nil
+        node.hasImages
             || node.kind == .voice
             || node.transcription?.isEmpty == false
             || !node.text.isEmpty
@@ -325,5 +354,39 @@ struct NodeDetailContent: View {
     private func sectionTitle(_ text: LocalizedStringKey) -> some View {
         Text(text)
             .font(.headline).foregroundStyle(OceanTheme.foam)
+    }
+}
+
+/// Full-screen, paged viewer for a node's images, opened by tapping one in the
+/// detail view. Paging only shows when there's more than one.
+private struct ImageViewer: View {
+    let datas: [Data]
+    @Binding var index: Int
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Color.black.ignoresSafeArea()
+            TabView(selection: $index) {
+                ForEach(Array(datas.enumerated()), id: \.offset) { i, data in
+                    if let ui = UIImage(data: data) {
+                        Image(uiImage: ui)
+                            .resizable().scaledToFit()
+                            .tag(i)
+                    }
+                }
+            }
+            .tabViewStyle(.page(indexDisplayMode: datas.count > 1 ? .automatic : .never))
+            .ignoresSafeArea()
+
+            Button { dismiss() } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.white)
+                    .padding()
+            }
+            .accessibilityLabel("Close")
+        }
     }
 }
