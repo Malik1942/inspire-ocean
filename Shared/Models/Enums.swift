@@ -11,10 +11,10 @@ enum NodeKind: String, CaseIterable, Codable, Identifiable {
 
     var label: String {
         switch self {
-        case .text: return "Thought"
-        case .voice: return "Whisper"
-        case .image: return "Image"
-        case .link: return "Link"
+        case .text: return String(localized: "Thought")
+        case .voice: return String(localized: "Whisper")
+        case .image: return String(localized: "Image")
+        case .link: return String(localized: "Link")
         }
     }
 
@@ -39,10 +39,10 @@ enum BranchType: String, CaseIterable, Codable, Identifiable {
 
     var label: String {
         switch self {
-        case .question: return "Question"
-        case .concept: return "Concept"
-        case .research: return "Research"
-        case .project: return "Project"
+        case .question: return String(localized: "Question")
+        case .concept: return String(localized: "Concept")
+        case .research: return String(localized: "Research")
+        case .project: return String(localized: "Project")
         }
     }
 
@@ -57,10 +57,10 @@ enum BranchType: String, CaseIterable, Codable, Identifiable {
 
     var prompt: String {
         switch self {
-        case .question: return "What question does this open up?"
-        case .concept: return "What concept could grow from this?"
-        case .research: return "What would you want to research?"
-        case .project: return "What could this become?"
+        case .question: return String(localized: "What question does this open up?")
+        case .concept: return String(localized: "What concept could grow from this?")
+        case .research: return String(localized: "What would you want to research?")
+        case .project: return String(localized: "What could this become?")
         }
     }
 }
@@ -76,10 +76,10 @@ enum DialogueMode: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .search: return "Search"
-        case .synthesis: return "Synthesis"
-        case .expansion: return "Expansion"
-        case .research: return "Research"
+        case .search: return String(localized: "Search")
+        case .synthesis: return String(localized: "Synthesis")
+        case .expansion: return String(localized: "Expansion")
+        case .research: return String(localized: "Research")
         }
     }
 
@@ -94,10 +94,10 @@ enum DialogueMode: String, CaseIterable, Identifiable {
 
     var placeholder: String {
         switch self {
-        case .search: return "Find a fragment in the Ocean…"
-        case .synthesis: return "What patterns are forming?"
-        case .expansion: return "Help me grow an idea…"
-        case .research: return "What should I explore next?"
+        case .search: return String(localized: "Find a fragment in the Ocean…")
+        case .synthesis: return String(localized: "What patterns are forming?")
+        case .expansion: return String(localized: "Help me grow an idea…")
+        case .research: return String(localized: "What should I explore next?")
         }
     }
 
@@ -105,10 +105,10 @@ enum DialogueMode: String, CaseIterable, Identifiable {
     /// picker so each mode reads as a different way of looking, not a tone.
     var lens: String {
         switch self {
-        case .search: return "Find what you've captured"
-        case .synthesis: return "See the thread running through"
-        case .expansion: return "Grow it somewhere unexpected"
-        case .research: return "Look beyond your Ocean"
+        case .search: return String(localized: "Find what you've captured")
+        case .synthesis: return String(localized: "See the thread running through")
+        case .expansion: return String(localized: "Grow it somewhere unexpected")
+        case .research: return String(localized: "Look beyond your Ocean")
         }
     }
 
@@ -116,10 +116,10 @@ enum DialogueMode: String, CaseIterable, Identifiable {
     /// differently, so each waits differently.
     var searching: String {
         switch self {
-        case .search: return "Searching your Ocean…"
-        case .synthesis: return "Reading across your currents…"
-        case .expansion: return "Drifting out from your thought…"
-        case .research: return "Reading your Ocean, then looking beyond…"
+        case .search: return String(localized: "Searching your Ocean…")
+        case .synthesis: return String(localized: "Reading across your currents…")
+        case .expansion: return String(localized: "Drifting out from your thought…")
+        case .research: return String(localized: "Reading your Ocean, then looking beyond…")
         }
     }
 }

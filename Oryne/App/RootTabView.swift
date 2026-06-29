@@ -98,7 +98,7 @@ struct RootTabView: View {
     /// a TabView-wide `.environment(\.symbolVariants, .none)` does not reach
     /// the items. `water.waves` was never affected because it has no fill
     /// variant, which is why Ocean alone always looked like a stroke.
-    private func tabLabel(_ title: String, systemImage: String) -> some View {
+    private func tabLabel(_ title: LocalizedStringKey, systemImage: String) -> some View {
         Label(title, systemImage: systemImage)
             .environment(\.symbolVariants, .none)
     }

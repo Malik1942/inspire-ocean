@@ -183,10 +183,16 @@ struct CaptureView: View {
 
             HStack(spacing: 10) {
                 PhotosPicker(selection: $photoItem, matching: .images) {
-                    attachLabel(imageData == nil ? "Image" : "Replace", system: "photo")
+                    attachLabel(imageData == nil
+                                ? String(localized: "Image")
+                                : String(localized: "Replace"),
+                                system: "photo")
                 }
                 Button { withAnimation { showLinkField.toggle() } } label: {
-                    attachLabel(linkText.trimmed.isEmpty ? "Link" : "Edit link", system: "link")
+                    attachLabel(linkText.trimmed.isEmpty
+                                ? String(localized: "Link")
+                                : String(localized: "Edit link"),
+                                system: "link")
                 }
                 Spacer()
             }
@@ -211,7 +217,10 @@ struct CaptureView: View {
                     imagePreview(ui)
                 }
                 PhotosPicker(selection: $photoItem, matching: .images) {
-                    attachLabel(imageData == nil ? "Add image" : "Replace image", system: "photo")
+                    attachLabel(imageData == nil
+                                ? String(localized: "Add image")
+                                : String(localized: "Replace image"),
+                                system: "photo")
                 }
             }
         }
@@ -222,7 +231,7 @@ struct CaptureView: View {
 
     private var whisperRecording: some View {
         VStack(spacing: 16) {
-            Text(whisperPhase == .recording ? "Listening…" : "Catch a whisper")
+            Text((whisperPhase == .recording ? "Listening…" : "Catch a whisper") as LocalizedStringKey)
                 .font(.subheadline).foregroundStyle(OceanTheme.mist)
 
             WaveformView(level: session.transcriber.level, active: whisperPhase == .recording)

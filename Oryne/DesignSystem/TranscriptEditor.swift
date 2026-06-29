@@ -9,7 +9,7 @@ import SwiftUI
 struct TranscriptEditor: View {
     @Binding var text: String
     var isEditable: Bool = true
-    var placeholder: String = ""
+    var placeholder: LocalizedStringKey = ""
     var minHeight: CGFloat = 96
     var maxHeight: CGFloat = 200
     var focus: FocusState<Bool>.Binding? = nil
@@ -28,7 +28,7 @@ struct TranscriptEditor: View {
     /// still forming.
     private var livePreview: some View {
         ScrollView {
-            Text(text.isEmpty ? placeholder : text)
+            (text.isEmpty ? Text(placeholder) : Text(text))
                 .font(.callout)
                 .foregroundStyle(text.isEmpty ? OceanTheme.faint : OceanTheme.mist)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -60,7 +60,7 @@ struct TranscriptEditor: View {
             .scrollContentBackground(.hidden)
             .foregroundStyle(OceanTheme.foam)
             .overlay(alignment: .topLeading) {
-                if text.trimmed.isEmpty, !placeholder.isEmpty {
+                if text.trimmed.isEmpty {
                     Text(placeholder)
                         .font(.subheadline)
                         .foregroundStyle(OceanTheme.faint)

@@ -31,7 +31,9 @@ struct LibraryView: View {
             else if let days = cal.dateComponents([.day], from: node.createdAt, to: .now).day, days < 7 { week.append(node) }
             else { earlier.append(node) }
         }
-        return [("Today", today), ("This week", week), ("Earlier", earlier)].filter { !$0.nodes.isEmpty }
+        return [(String(localized: "Today"), today),
+                (String(localized: "This week"), week),
+                (String(localized: "Earlier"), earlier)].filter { !$0.nodes.isEmpty }
     }
 
     var body: some View {
@@ -151,7 +153,7 @@ struct LibraryView: View {
                             // takes that slot; deletion always asks first —
                             // the same care the detail view's trash shows.
                             Button { archive(node) } label: {
-                                Label(node.isArchived ? "Restore" : "Archive",
+                                Label((node.isArchived ? "Restore" : "Archive") as LocalizedStringKey,
                                       systemImage: node.isArchived ? "arrow.up.bin" : "archivebox")
                             }.tint(OceanTheme.surface)
                             Button(role: .destructive) { pendingDelete = node } label: {
@@ -172,7 +174,7 @@ struct LibraryView: View {
         VStack(spacing: 12) {
             Image(systemName: "square.stack.3d.up.slash")
                 .font(.system(size: 48)).foregroundStyle(OceanTheme.surface)
-            Text(search.isEmpty ? "Nothing here yet" : "No fragments match")
+            Text((search.isEmpty ? "Nothing here yet" : "No fragments match") as LocalizedStringKey)
                 .font(.title3.weight(.semibold)).foregroundStyle(OceanTheme.foam)
         }
     }

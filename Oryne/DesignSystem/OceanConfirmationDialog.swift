@@ -13,9 +13,9 @@ import SwiftUI
 /// translucent over the Ocean behind it, rather than flattening into an opaque
 /// modal card. Falls back to `.ultraThinMaterial` on iOS 18–25.
 struct OceanConfirmationOverlay: View {
-    let title: String
-    let message: String
-    let confirmTitle: String
+    let title: LocalizedStringKey
+    let message: LocalizedStringKey
+    let confirmTitle: LocalizedStringKey
     let onConfirm: () -> Void
     let onCancel: () -> Void
 
@@ -130,9 +130,9 @@ extension View {
     /// callers can still read any pending selection.
     func oceanConfirmationDialog(
         isPresented: Binding<Bool>,
-        title: String,
-        message: String,
-        confirmTitle: String = "Delete",
+        title: LocalizedStringKey,
+        message: LocalizedStringKey,
+        confirmTitle: LocalizedStringKey = "Delete",
         onConfirm: @escaping () -> Void
     ) -> some View {
         overlay {

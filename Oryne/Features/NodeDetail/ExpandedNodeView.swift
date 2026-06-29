@@ -162,7 +162,7 @@ struct NodeDetailContent: View {
                         // can plausibly still be running; after that, the words
                         // are simply missing and the recovery is one tap away.
                         Label(
-                            node.createdAt.timeIntervalSinceNow > -120 ? "Transcribing…" : "No words yet",
+                            (node.createdAt.timeIntervalSinceNow > -120 ? "Transcribing…" : "No words yet") as LocalizedStringKey,
                             systemImage: "waveform"
                         )
                         .font(.caption).foregroundStyle(OceanTheme.mist)
@@ -322,7 +322,7 @@ struct NodeDetailContent: View {
         }
     }
 
-    private func sectionTitle(_ text: String) -> some View {
+    private func sectionTitle(_ text: LocalizedStringKey) -> some View {
         Text(text)
             .font(.headline).foregroundStyle(OceanTheme.foam)
     }

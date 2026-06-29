@@ -57,7 +57,7 @@ struct ClusterStreamView: View {
             Text(OceanLayoutEngine.displayLabel(for: theme))
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(OceanTheme.foam)
-            Text("\(members.count) thought\(members.count == 1 ? "" : "s") drift here")
+            Text("\(members.count) thoughts drift here")
                 .font(.caption)
                 .foregroundStyle(OceanTheme.mist)
         }

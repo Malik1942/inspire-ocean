@@ -12,9 +12,9 @@ enum TrustHint: String {
     var message: String {
         switch self {
         case .ownership:
-            return "Edited fields stay yours. Oryne won't overwrite them."
+            return String(localized: "Edited fields stay yours. Oryne won't overwrite them.")
         case .semanticDrift:
-            return "Themes shape where thoughts drift in the Ocean."
+            return String(localized: "Themes shape where thoughts drift in the Ocean.")
         }
     }
 

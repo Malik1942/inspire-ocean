@@ -388,7 +388,7 @@ struct NodeEditSheet: View {
         .overlay(Capsule().strokeBorder(OceanTheme.color(forHue: node.hue).opacity(0.30), lineWidth: 0.5))
     }
 
-    private func sectionTitle(_ text: String) -> some View {
+    private func sectionTitle(_ text: LocalizedStringKey) -> some View {
         Text(text)
             .font(.headline).foregroundStyle(OceanTheme.foam)
     }

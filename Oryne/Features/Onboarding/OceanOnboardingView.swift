@@ -94,7 +94,7 @@ struct OceanOnboardingView: View {
                     withAnimation(.snappy) { page += 1 }
                 }
             } label: {
-                Label(isLastPage ? "Enter the Ocean" : "Continue",
+                Label((isLastPage ? "Enter the Ocean" : "Continue") as LocalizedStringKey,
                       systemImage: isLastPage ? "water.waves" : "arrow.right.circle.fill")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
@@ -115,8 +115,8 @@ struct OceanOnboardingView: View {
 
 private struct OceanOnboardingPage {
     var visual: OceanOnboardingVisual.Variant
-    var title: String
-    var text: String
+    var title: LocalizedStringKey
+    var text: LocalizedStringKey
 
     /// The mental model, in five quiet steps.
     static let pages: [OceanOnboardingPage] = [

@@ -79,7 +79,7 @@ struct FastCaptureSettingsView: View {
         GlassCard(padding: 16) {
             VStack(alignment: .leading, spacing: 14) {
                 settingsHeader(
-                    title: "Shortcut",
+                    title: String(localized: "Shortcut"),
                     subtitle: "One press, one drift.",
                     systemImage: "bolt.circle.fill"
                 )
@@ -99,7 +99,7 @@ struct FastCaptureSettingsView: View {
         GlassCard(padding: 16) {
             VStack(alignment: .leading, spacing: 14) {
                 settingsHeader(
-                    title: "Capture",
+                    title: String(localized: "Capture"),
                     subtitle: "Begin with the least resistance.",
                     systemImage: "waveform.circle.fill"
                 )
@@ -150,7 +150,7 @@ struct FastCaptureSettingsView: View {
         }
     }
 
-    private func settingsHeader(title: String, subtitle: String, systemImage: String) -> some View {
+    private func settingsHeader(title: String, subtitle: LocalizedStringKey, systemImage: String) -> some View {
         HStack(spacing: 10) {
             Image(systemName: systemImage)
                 .font(.title3)

@@ -77,12 +77,12 @@ final class LinkEnrichmentService {
             case .unavailable(let reason):
                 return .unavailable(reason: describe(reason))
             @unknown default:
-                return .unavailable(reason: "the on-device model is unavailable")
+                return .unavailable(reason: String(localized: "the on-device model is unavailable"))
             }
         }
-        return .unavailable(reason: "this device runs an earlier iOS")
+        return .unavailable(reason: String(localized: "this device runs an earlier iOS"))
         #else
-        return .unavailable(reason: "Foundation Models isn't in this build")
+        return .unavailable(reason: String(localized: "Foundation Models isn't in this build"))
         #endif
     }
 
@@ -90,10 +90,10 @@ final class LinkEnrichmentService {
     @available(iOS 26, *)
     private static func describe(_ reason: SystemLanguageModel.Availability.UnavailableReason) -> String {
         switch reason {
-        case .deviceNotEligible:           return "this device isn't eligible for Apple Intelligence"
-        case .appleIntelligenceNotEnabled: return "Apple Intelligence is turned off"
-        case .modelNotReady:               return "the on-device model is still downloading"
-        @unknown default:                  return "Apple Intelligence is unavailable"
+        case .deviceNotEligible:           return String(localized: "this device isn't eligible for Apple Intelligence")
+        case .appleIntelligenceNotEnabled: return String(localized: "Apple Intelligence is turned off")
+        case .modelNotReady:               return String(localized: "the on-device model is still downloading")
+        @unknown default:                  return String(localized: "Apple Intelligence is unavailable")
         }
     }
     #endif
@@ -162,8 +162,8 @@ final class LinkEnrichmentService {
             await fail(
                 nodeID: nodeID,
                 reason: gotMeta
-                    ? "Couldn't read the page to summarize. Tap to retry."
-                    : "Couldn't reach this link. Tap to retry.",
+                    ? String(localized: "Couldn't read the page to summarize. Tap to retry.")
+                    : String(localized: "Couldn't reach this link. Tap to retry."),
                 deriveContext: gotMeta, context: context, ai: ai
             )
             return
@@ -177,7 +177,7 @@ final class LinkEnrichmentService {
             Self.log("Stage C — summarized (\(summary.count) chars) → enriched, re-deriving context")
             if let node = Self.fetch(nodeID, in: context) {
                 node.linkSummary = summary
-                node.linkEnrichmentNote = "Summarized on-device."
+                node.linkEnrichmentNote = String(localized: "Summarized on-device.")
                 node.linkEnrichmentState = .enriched
                 try? context.save()
             }
@@ -190,7 +190,7 @@ final class LinkEnrichmentService {
             // description, and offer a retry for the summary itself.
             await fail(
                 nodeID: nodeID,
-                reason: "Couldn't summarize this on-device. Tap to retry.",
+                reason: String(localized: "Couldn't summarize this on-device. Tap to retry."),
                 deriveContext: true, context: context, ai: ai
             )
         }
@@ -205,13 +205,13 @@ final class LinkEnrichmentService {
         guard let node = Self.fetch(nodeID, in: context) else { return }
         if gotMeta {
             Self.log("metadata-only → enriched (no summary); context from description. reason: \(reason)")
-            node.linkEnrichmentNote = "Apple Intelligence unavailable (\(reason)) — using the page description for context."
+            node.linkEnrichmentNote = String(localized: "Apple Intelligence unavailable (\(reason)) — using the page description for context.")
             node.linkEnrichmentState = .enriched
             try? context.save()
             await rederiveContext(nodeID: nodeID, context: context, ai: ai)
         } else {
             Self.log("metadata-only → no metadata reached → failed+retry")
-            node.linkEnrichmentState = .failed(reason: "Couldn't reach this link. Tap to retry.")
+            node.linkEnrichmentState = .failed(reason: String(localized: "Couldn't reach this link. Tap to retry."))
             try? context.save()
         }
     }

@@ -165,8 +165,8 @@ struct AskView: View {
     /// actually came from the device, or a reply with nothing nearby behind it.
     private func provenanceNote(_ message: ChatMessage) -> String? {
         switch message.provenanceRaw.flatMap(ResponseProvenance.init(rawValue:)) {
-        case .offlineFallback: "Composed offline"
-        case .noSources: "Nothing drifts near this yet — answered from open water"
+        case .offlineFallback: String(localized: "Composed offline")
+        case .noSources: String(localized: "Nothing drifts near this yet — answered from open water")
         case .cloud, .onDevice, nil: nil
         }
     }
@@ -262,9 +262,9 @@ struct AskView: View {
 
     private func foundLabel(_ count: Int) -> String {
         switch count {
-        case 0:  "Nothing drifts near this yet"
-        case 1:  "Found one fragment that drifts near this"
-        default: "Found \(count) fragments that drift near this"
+        case 0:  String(localized: "Nothing drifts near this yet")
+        case 1:  String(localized: "Found one fragment that drifts near this")
+        default: String(localized: "Found \(count) fragments that drift near this")
         }
     }
 
@@ -295,13 +295,21 @@ struct AskView: View {
     private var samplePrompts: [String] {
         switch mode {
         case .search:
-            ["That idea I had about water", "What did I capture last week?", "Find my thought about beginnings"]
+            return [String(localized: "That idea I had about water"),
+                    String(localized: "What did I capture last week?"),
+                    String(localized: "Find my thought about beginnings")]
         case .synthesis:
-            ["What patterns keep resurfacing?", "How has my thinking drifted lately?", "What tension am I circling?"]
+            return [String(localized: "What patterns keep resurfacing?"),
+                    String(localized: "How has my thinking drifted lately?"),
+                    String(localized: "What tension am I circling?")]
         case .expansion:
-            ["Help me grow my newest idea", "Collide two of my thoughts", "What could this become physically?"]
+            return [String(localized: "Help me grow my newest idea"),
+                    String(localized: "Collide two of my thoughts"),
+                    String(localized: "What could this become physically?")]
         case .research:
-            ["What should I explore next?", "Who thinks about what I think about?", "What field sits next to my obsessions?"]
+            return [String(localized: "What should I explore next?"),
+                    String(localized: "Who thinks about what I think about?"),
+                    String(localized: "What field sits next to my obsessions?")]
         }
     }
 

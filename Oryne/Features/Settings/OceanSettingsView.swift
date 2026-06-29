@@ -4,6 +4,11 @@ import SwiftUI
 /// Accessibility Mode; anything that earns a place here later should pass the
 /// same bar: a real choice about how the Ocean treats the user, never a
 /// preference for its own sake.
+///
+/// Language is intentionally *not* here: Oryne ships English + 简体中文 and
+/// follows the standard per-app language control in iOS Settings (Settings ›
+/// Oryne › Language), so the device, not a bespoke in-app toggle, is the single
+/// place a user changes it.
 struct OceanSettingsView: View {
     @Environment(\.dismiss) private var dismiss
 

@@ -165,9 +165,9 @@ struct FastCaptureSessionView: View {
                     .foregroundStyle(OceanTheme.mist)
             }
             .accessibilityLabel(
-                session.transcriber.isRecording ? "Cancel recording"
-                    : isReviewing ? "Close — keeps the capture"
-                    : "Close Fast Capture"
+                session.transcriber.isRecording ? Text("Cancel recording")
+                    : isReviewing ? Text("Close — keeps the capture")
+                    : Text("Close Fast Capture")
             )
         }
     }
@@ -178,7 +178,7 @@ struct FastCaptureSessionView: View {
                 .frame(height: 42)
 
             HStack {
-                Text(session.transcriber.isRecording ? "Listening" : "Whisper held")
+                Text((session.transcriber.isRecording ? "Listening" : "Whisper held") as LocalizedStringKey)
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(OceanTheme.foam)
 
@@ -330,7 +330,7 @@ struct FastCaptureSessionView: View {
                 Button {
                     Task { await toggleRecording() }
                 } label: {
-                    Label(session.transcriber.isRecording ? "Stop" : "Record", systemImage: session.transcriber.isRecording ? "stop.circle.fill" : "mic.circle.fill")
+                    Label((session.transcriber.isRecording ? "Stop" : "Record") as LocalizedStringKey, systemImage: session.transcriber.isRecording ? "stop.circle.fill" : "mic.circle.fill")
                         .font(.subheadline.weight(.semibold))
                 }
                 .buttonStyle(.bordered)
@@ -440,7 +440,7 @@ struct FastCaptureSessionView: View {
     private func fallBackToTyping() {
         withAnimation(.snappy) {
             mode = .typingFirst
-            message = "Typing is ready."
+            message = String(localized: "Typing is ready.")
         }
         textFocused = true
     }
@@ -481,7 +481,7 @@ struct FastCaptureSessionView: View {
             // The store refused the save: hold the words, paused — Keep
             // retries the release. Never a silent loss.
             savedNodeID = nil
-            message = "Couldn't save yet — Keep tries again."
+            message = String(localized: "Couldn't save yet — Keep tries again.")
             withAnimation(.snappy) { isReviewing = true }
         }
     }
@@ -526,7 +526,7 @@ struct FastCaptureSessionView: View {
                 audioTempURL: recordedURL
             )
             guard let id = session.release(draft) else {
-                message = "Couldn't save yet — Keep tries again."
+                message = String(localized: "Couldn't save yet — Keep tries again.")
                 return
             }
             nodeID = id
@@ -591,7 +591,7 @@ struct FastCaptureSessionView: View {
         let kind: NodeKind = (imageData != nil && trimmed.isEmpty) ? .image : .text
         let draft = CaptureDraft(kind: kind, text: trimmed, imageData: imageData)
         guard let nodeID = session.release(draft) else {
-            message = "Couldn't save yet — Release tries again."
+            message = String(localized: "Couldn't save yet — Release tries again.")
             return
         }
         isSaving = true

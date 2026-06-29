@@ -8,8 +8,8 @@ enum FastCaptureTrigger: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .actionButton: return "Action Button"
-        case .cameraControl: return "Camera Control"
+        case .actionButton: return String(localized: "Action Button")
+        case .cameraControl: return String(localized: "Camera Control")
         }
     }
 
@@ -24,17 +24,17 @@ enum FastCaptureTrigger: String, CaseIterable, Identifiable {
         switch self {
         case .actionButton:
             return [
-                "Settings",
-                "Action Button",
-                "Shortcut",
-                "Start Fast Capture"
+                String(localized: "Settings"),
+                String(localized: "Action Button"),
+                String(localized: "Shortcut"),
+                String(localized: "Start Fast Capture")
             ]
         case .cameraControl:
             return [
-                "Shortcuts",
-                "Take Screenshot",
-                "Start Context Capture",
-                "Assign where available"
+                String(localized: "Shortcuts"),
+                String(localized: "Take Screenshot"),
+                String(localized: "Start Context Capture"),
+                String(localized: "Assign where available")
             ]
         }
     }
@@ -48,8 +48,8 @@ enum FastCaptureInputPreference: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .voiceFirst: return "Voice First"
-        case .typingFirst: return "Typing First"
+        case .voiceFirst: return String(localized: "Voice First")
+        case .typingFirst: return String(localized: "Typing First")
         }
     }
 
@@ -72,13 +72,13 @@ enum FastCaptureLaunchSource: String, Codable {
 
     var label: String {
         switch self {
-        case .actionButton: return "Action Button"
-        case .cameraControl: return "Camera Control"
-        case .shortcut: return "Shortcut"
-        case .onboarding: return "First capture"
-        case .inApp: return "Fast Capture"
-        case .widget: return "Widget"
-        case .controlCenter: return "Control Center"
+        case .actionButton: return String(localized: "Action Button")
+        case .cameraControl: return String(localized: "Camera Control")
+        case .shortcut: return String(localized: "Shortcut")
+        case .onboarding: return String(localized: "First capture")
+        case .inApp: return String(localized: "Fast Capture")
+        case .widget: return String(localized: "Widget")
+        case .controlCenter: return String(localized: "Control Center")
         }
     }
 }

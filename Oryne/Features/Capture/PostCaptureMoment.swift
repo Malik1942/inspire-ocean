@@ -22,12 +22,21 @@ struct PostCaptureMoment: Identifiable, Equatable {
         let title: String
     }
 
-    static let receivedPhrases = [
-        "Drifted into the Ocean", "Carried out to sea", "The Ocean caught it", "Released"
-    ]
+    static var receivedPhrases: [String] {
+        [
+            String(localized: "Drifted into the Ocean"),
+            String(localized: "Carried out to sea"),
+            String(localized: "The Ocean caught it"),
+            String(localized: "Released")
+        ]
+    }
 
     static func received(for nodeID: UUID) -> PostCaptureMoment {
-        PostCaptureMoment(id: nodeID, phrase: receivedPhrases.randomElement() ?? "Released")
+        PostCaptureMoment(
+            id: nodeID,
+            phrase: receivedPhrases.randomElement()
+                ?? String(localized: "Released")
+        )
     }
 
     /// One *strong* nearby fragment for the freshly captured node, or nil.
@@ -150,7 +159,7 @@ struct PostCaptureMomentView: View {
         )
     }
 
-    private func quietAction(_ title: String, system: String, action: @escaping () -> Void) -> some View {
+    private func quietAction(_ title: LocalizedStringKey, system: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Label(title, systemImage: system)
                 .font(.caption)

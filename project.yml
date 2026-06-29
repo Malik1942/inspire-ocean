@@ -54,6 +54,12 @@ targets:
       path: Oryne/Info.plist
       properties:
         CFBundleDisplayName: Oryne
+        # Declaring the shipped localizations is what surfaces the standard
+        # per-app Language control in iOS Settings (Settings › Oryne › Language).
+        # Language is chosen there, not in-app; the base is English.
+        CFBundleLocalizations:
+          - en
+          - zh-Hans
         CFBundleURLTypes:
           - CFBundleURLName: com.inspireocean.app
             CFBundleURLSchemes:

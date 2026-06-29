@@ -65,13 +65,13 @@ struct ListenChip: View {
         Button {
             AudioPlayback.shared.toggle(data: data)
         } label: {
-            Label(playing ? "Pause" : "Listen", systemImage: playing ? "pause.fill" : "play.fill")
+            Label((playing ? "Pause" : "Listen") as LocalizedStringKey, systemImage: playing ? "pause.fill" : "play.fill")
                 .font(.caption2.weight(.medium))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
                 .background(Color.white.opacity(0.08), in: Capsule())
                 .foregroundStyle(OceanTheme.mist)
         }
-        .accessibilityLabel(playing ? "Pause recording" : "Listen to recording")
+        .accessibilityLabel((playing ? "Pause recording" : "Listen to recording") as LocalizedStringKey)
     }
 }

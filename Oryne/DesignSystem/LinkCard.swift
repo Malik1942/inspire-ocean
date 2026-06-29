@@ -46,7 +46,7 @@ struct LinkCard: View {
                 HStack(spacing: 12) {
                     thumbnail
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(node.linkTitle ?? node.linkURL?.absoluteString ?? "Link")
+                        Text(node.linkTitle ?? node.linkURL?.absoluteString ?? String(localized: "Link"))
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(OceanTheme.foam)
                             .multilineTextAlignment(.leading)
@@ -122,7 +122,7 @@ struct LinkCard: View {
         }
     }
 
-    private func progressTag(_ text: String) -> some View {
+    private func progressTag(_ text: LocalizedStringKey) -> some View {
         HStack(spacing: 4) {
             ProgressView().controlSize(.mini).tint(OceanTheme.mist)
             Text(text).font(.caption2).foregroundStyle(OceanTheme.faint)
@@ -137,7 +137,7 @@ struct LinkCard: View {
                 HStack(spacing: 8) {
                     Image(systemName: "link").font(.callout).foregroundStyle(OceanTheme.mist)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(node.linkURL?.absoluteString ?? "Link")
+                        Text(node.linkURL?.absoluteString ?? String(localized: "Link"))
                             .font(.callout).foregroundStyle(OceanTheme.foam).lineLimit(1)
                         if case .failed(let reason) = state {
                             Text(reason).font(.caption2).foregroundStyle(OceanTheme.faint).lineLimit(1)
