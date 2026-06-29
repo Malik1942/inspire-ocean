@@ -134,12 +134,12 @@
         }
       }
     },
-    "Apple Intelligence unavailable (%@) — using the page description for context.": {
+    "Apple Intelligence unavailable (%@): using the page description for context.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apple 智能不可用（%@）——改用页面描述作为背景。"
+            "value": "Apple Intelligence 不可用（%@），改用页面描述作为背景。"
           }
         }
       }
@@ -444,12 +444,12 @@
         }
       }
     },
-    "Close — keeps the capture": {
+    "Close: keeps the capture": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "关闭——保留这次捕捉"
+            "value": "关闭，保留这次捕捉"
           }
         }
       }
@@ -514,12 +514,12 @@
         }
       }
     },
-    "Couldn't hear it again — your words stay as they are.": {
+    "Couldn't hear it again. Your words stay as they are.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "没能再次听清——你的文字保持原样。"
+            "value": "没能再次听清，你的文字保持原样。"
           }
         }
       }
@@ -544,22 +544,22 @@
         }
       }
     },
-    "Couldn't save yet — Keep tries again.": {
+    "Couldn't save yet. Keep tries again.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "暂时没能保存——「保留」会再试一次。"
+            "value": "暂时没能保存，「保留」会再试一次。"
           }
         }
       }
     },
-    "Couldn't save yet — Release tries again.": {
+    "Couldn't save yet. Release tries again.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "暂时没能保存——「汇入」会再试一次。"
+            "value": "暂时没能保存，「汇入」会再试一次。"
           }
         }
       }
@@ -724,7 +724,7 @@
         }
       }
     },
-    "Edited transcript — the original words stay yours.": {
+    "Edited transcript: the original words stay yours.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
@@ -914,12 +914,12 @@
         }
       }
     },
-    "Holds the water still, brightens the words that carry meaning, and widens every touch target. Nothing about your Ocean changes — only how it moves. The system Reduce Motion setting stills the water too.": {
+    "Holds the water still, brightens the words that carry meaning, and widens every touch target. Nothing about your Ocean changes, only how it moves. The system Reduce Motion setting stills the water too.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "让水面静止，点亮承载意义的文字，并加大每个可点按区域。海洋本身不会变——变的只是它流动的方式。系统的「减弱动态效果」设置同样会让水面静止。"
+            "value": "让水面静止，点亮承载意义的文字，并加大每个可点按区域。海洋本身不会变，变的只是它流动的方式。系统的「减弱动态效果」设置同样会让水面静止。"
           }
         }
       }
@@ -1114,12 +1114,12 @@
         }
       }
     },
-    "Live transcription is off — type the words, or keep just the audio.": {
+    "Live transcription is off: type the words, or keep just the audio.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "实时转写已关闭——可以输入文字，或仅保留音频。"
+            "value": "实时转写已关闭：可以输入文字，或仅保留音频。"
           }
         }
       }
@@ -1164,12 +1164,12 @@
         }
       }
     },
-    "No words caught — tap to add them": {
+    "No words caught, tap to add them": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "没记下文字——点按补充"
+            "value": "没记下文字，点按补充"
           }
         }
       }
@@ -1214,12 +1214,12 @@
         }
       }
     },
-    "Nothing drifts near this yet — answered from open water": {
+    "Nothing drifts near this yet, answered from open water": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "这附近还没有相关的灵感——答案来自更广的海洋"
+            "value": "这附近还没有相关的灵感，答案来自更广的海洋"
           }
         }
       }
@@ -1985,12 +1985,12 @@
         }
       }
     },
-    "The Action Button and Camera Control shortcuts live in Fast Capture settings — the bolt on Capture.": {
+    "The Action Button and Camera Control shortcuts live in Fast Capture settings, the bolt on Capture.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "操作按钮与相机控制的快捷指令都在「快速捕捉」设置里——也就是「捕捉」上的那个闪电图标。"
+            "value": "操作按钮与相机控制的快捷指令都在「快速捕捉」设置里，也就是「捕捉」上的那个闪电图标。"
           }
         }
       }
@@ -2125,12 +2125,12 @@
         }
       }
     },
-    "Transcription is off — type the words, if you like": {
+    "Transcription is off: type the words, if you like": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "转写已关闭——也可以直接输入文字"
+            "value": "转写已关闭：也可以直接输入文字"
           }
         }
       }

@@ -159,7 +159,7 @@ struct NodeEditSheet: View {
                 focus: $bodyFocused
             )
             if transcriptDiverged {
-                Label("Edited transcript — the original words stay yours.", systemImage: "waveform")
+                Label("Edited transcript: the original words stay yours.", systemImage: "waveform")
                     .font(.caption2).foregroundStyle(OceanTheme.faint)
             }
         }
@@ -217,7 +217,7 @@ struct NodeEditSheet: View {
             }
 
             if retranscribeFailed {
-                Text("Couldn't hear it again — your words stay as they are.")
+                Text("Couldn't hear it again. Your words stay as they are.")
                     .font(.caption2).foregroundStyle(OceanTheme.faint)
             }
 
@@ -454,7 +454,7 @@ struct NodeEditSheet: View {
         guard !raw.isEmpty else { return }
         let tidied = SemanticThemes.tidyThemeList(raw)
         guard !tidied.isEmpty else {
-            themeInputNotice = "Themes are a few short words — try something briefer."
+            themeInputNotice = "Themes are a few short words. Try something briefer."
             return
         }
         themeInputNotice = nil

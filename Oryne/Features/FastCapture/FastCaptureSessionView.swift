@@ -166,7 +166,7 @@ struct FastCaptureSessionView: View {
             }
             .accessibilityLabel(
                 session.transcriber.isRecording ? Text("Cancel recording")
-                    : isReviewing ? Text("Close — keeps the capture")
+                    : isReviewing ? Text("Close: keeps the capture")
                     : Text("Close Fast Capture")
             )
         }
@@ -257,7 +257,7 @@ struct FastCaptureSessionView: View {
                     text: $transcriptDraft,
                     isEditable: true,
                     placeholder: session.transcriber.speechAvailability == .unavailable
-                        ? "Transcription is off — type the words, if you like"
+                        ? "Transcription is off: type the words, if you like"
                         : "What did you say?",
                     minHeight: 54,
                     maxHeight: 110,
@@ -267,7 +267,7 @@ struct FastCaptureSessionView: View {
                 TranscriptEditor(
                     text: .constant(transcriptDraft),
                     isEditable: false,
-                    placeholder: "No words caught — tap to add them",
+                    placeholder: "No words caught, tap to add them",
                     minHeight: 54,
                     maxHeight: 110
                 )
@@ -481,7 +481,7 @@ struct FastCaptureSessionView: View {
             // The store refused the save: hold the words, paused — Keep
             // retries the release. Never a silent loss.
             savedNodeID = nil
-            message = String(localized: "Couldn't save yet — Keep tries again.")
+            message = String(localized: "Couldn't save yet. Keep tries again.")
             withAnimation(.snappy) { isReviewing = true }
         }
     }
@@ -526,7 +526,7 @@ struct FastCaptureSessionView: View {
                 audioTempURL: recordedURL
             )
             guard let id = session.release(draft) else {
-                message = String(localized: "Couldn't save yet — Keep tries again.")
+                message = String(localized: "Couldn't save yet. Keep tries again.")
                 return
             }
             nodeID = id
@@ -591,7 +591,7 @@ struct FastCaptureSessionView: View {
         let kind: NodeKind = (imageData != nil && trimmed.isEmpty) ? .image : .text
         let draft = CaptureDraft(kind: kind, text: trimmed, imageData: imageData)
         guard let nodeID = session.release(draft) else {
-            message = String(localized: "Couldn't save yet — Release tries again.")
+            message = String(localized: "Couldn't save yet. Release tries again.")
             return
         }
         isSaving = true

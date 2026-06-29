@@ -166,7 +166,7 @@ struct AskView: View {
     private func provenanceNote(_ message: ChatMessage) -> String? {
         switch message.provenanceRaw.flatMap(ResponseProvenance.init(rawValue:)) {
         case .offlineFallback: String(localized: "Composed offline")
-        case .noSources: String(localized: "Nothing drifts near this yet — answered from open water")
+        case .noSources: String(localized: "Nothing drifts near this yet, answered from open water")
         case .cloud, .onDevice, nil: nil
         }
     }

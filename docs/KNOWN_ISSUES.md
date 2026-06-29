@@ -3,6 +3,28 @@
 Deliberate trade-offs and deferred follow-ups. Each entry is dated; remove an
 entry when it's resolved or no longer relevant.
 
+## 2026-06-29 — UI copy: no em/en dashes (style rule, enforced)
+
+Standing rule: **no em or en dashes (— –) in user-facing UI copy** — use a comma,
+colon, or period instead. Applies retroactively, and to copy only (not to these
+dev docs). Because the String Catalog (`Oryne/Resources/Localizable.xcstrings`) is
+value-as-key, the English source string *is* the key: rewording the English
+renames the key, so the Swift literal and the catalog entry must move together,
+and both code sites must change for any string used in more than one place. In
+`zh-Hans`, the matching change is dropping 「——」 for a full-width comma 「，」 or
+colon 「：」 (per `docs/localization-glossary.md`).
+
+The 12 pre-existing localized strings + 2 non-localized strings (`themeInputNotice`
+in `NodeEditSheet.swift`, the "Ask Ocean" prefill in `ExpandedNodeView.swift`) that
+predated the rule were **cleaned on `claude/dazzling-vaughan-8aa530`**.
+
+**Deliberately retained (not UI copy — do not "fix"):** sample thought bodies in
+`App/SeedData.swift`; model-facing prompt strings and AI-generated answer text in
+`Services/LocalOceanAIService.swift` (AI-derived copy isn't localized, per the
+glossary); the `#if DEBUG` stage logs in `LinkEnrichmentService.swift`; and the
+literal `"—"`/`"–"` characters in `Services/PageContent.swift` (parser tokens, not
+copy).
+
 ## 2026-06-28 — Link enrichment + node editing
 
 - **DEBUG hook `ORYNE_FORCE_SUMMARIZATION` + stage logging (`#if DEBUG`) — KEPT

@@ -339,7 +339,7 @@ struct NodeDetailContent: View {
             .foregroundStyle(OceanTheme.abyss)
 
             Button {
-                appState.ask("About “\(node.displayTitle)” — ")
+                appState.ask("About “\(node.displayTitle)”: ")
                 dismiss()
             } label: {
                 Label("Ask Ocean", systemImage: "quote.bubble")

@@ -242,7 +242,7 @@ private struct FastCaptureSetupPage: View {
                         }
                         .tint(OceanTheme.accent)
 
-                        Text("The Action Button and Camera Control shortcuts live in Fast Capture settings — the bolt on Capture.")
+                        Text("The Action Button and Camera Control shortcuts live in Fast Capture settings, the bolt on Capture.")
                             .font(.caption)
                             .foregroundStyle(OceanTheme.faint)
                             .fixedSize(horizontal: false, vertical: true)

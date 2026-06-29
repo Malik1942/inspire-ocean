@@ -309,7 +309,7 @@ struct CaptureView: View {
                 )
 
                 if session.transcriber.speechAvailability == .unavailable, reviewText.trimmed.isEmpty {
-                    Text("Live transcription is off — type the words, or keep just the audio.")
+                    Text("Live transcription is off: type the words, or keep just the audio.")
                         .font(.caption2).foregroundStyle(OceanTheme.faint)
                 }
 
@@ -332,7 +332,7 @@ struct CaptureView: View {
                 TranscriptEditor(
                     text: .constant(reviewText),
                     isEditable: false,
-                    placeholder: "No words caught — tap to add them",
+                    placeholder: "No words caught, tap to add them",
                     minHeight: 60,
                     maxHeight: 140
                 )

@@ -205,7 +205,7 @@ final class LinkEnrichmentService {
         guard let node = Self.fetch(nodeID, in: context) else { return }
         if gotMeta {
             Self.log("metadata-only → enriched (no summary); context from description. reason: \(reason)")
-            node.linkEnrichmentNote = String(localized: "Apple Intelligence unavailable (\(reason)) — using the page description for context.")
+            node.linkEnrichmentNote = String(localized: "Apple Intelligence unavailable (\(reason)): using the page description for context.")
             node.linkEnrichmentState = .enriched
             try? context.save()
             await rederiveContext(nodeID: nodeID, context: context, ai: ai)
