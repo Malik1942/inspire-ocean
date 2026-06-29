@@ -25,3 +25,12 @@ entry when it's resolved or no longer relevant.
   a decodable, non-empty recording on the wrist; the denied-microphone-permission
   UI/recovery; and the always-on-display / wrist-down recording lifecycle. See
   `docs/HARDWARE_CHECKLIST.md` for the broader device pass.
+
+## 2026-06-28 — Dev machine: no-passphrase SSH key (deliberate)
+
+- The git push key for this machine — `~/.ssh/id_ed25519` (registered to GitHub
+  as the auth key for `Malik1942/inspire-ocean`, `origin` is now SSH) — was
+  generated **without a passphrase**, on purpose, so pushes are non-interactive.
+  Trade-off: anyone with read access to this machine's `~/.ssh` could push as me.
+  Acceptable for a personal dev machine; revisit if that ever stops being true.
+  To add a passphrase later: `ssh-keygen -p -f ~/.ssh/id_ed25519`.
