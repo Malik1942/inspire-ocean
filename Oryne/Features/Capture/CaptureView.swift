@@ -40,10 +40,6 @@ struct CaptureView: View {
 
     @State private var moment: PostCaptureMoment?
     @State private var fadeTask: Task<Void, Never>?
-    /// The moment fades light and early; this keeps a quiet Undo pill behind
-    /// it until the session's undo window (~10 s after save) actually closes.
-    @State private var lingeringUndoID: UUID?
-    @State private var lingeringTask: Task<Void, Never>?
     @State private var questionTarget: Node?
     @State private var showFastCaptureSettings = false
     @FocusState private var textFocused: Bool
@@ -66,21 +62,6 @@ struct CaptureView: View {
                         .padding(.bottom, 40)
                     }
                     .transition(.scale.combined(with: .opacity))
-                } else if let id = lingeringUndoID, session.undoAvailable(for: id) {
-                    // The moment is gone but the thought can still come back.
-                    VStack {
-                        Spacer()
-                        Button(action: undoFromMoment) {
-                            Label("Undo", systemImage: "arrow.uturn.backward")
-                                .font(.caption.weight(.medium))
-                                .foregroundStyle(OceanTheme.mist)
-                                .padding(.horizontal, 14).padding(.vertical, 8)
-                                .background(.ultraThinMaterial, in: Capsule())
-                        }
-                        .accessibilityLabel("Undo capture")
-                        .padding(.bottom, 40)
-                    }
-                    .transition(.opacity)
                 }
             }
             .navigationTitle("Capture")
@@ -140,9 +121,17 @@ struct CaptureView: View {
         .padding(.top, 8)
         .animation(.snappy, value: kind)
         .onChange(of: kind) { _, _ in
+            // Switching modes is the user moving on — let the moment go early
+            // rather than have it hang over the next capture.
+            dismissMomentIfPresent()
             // Switching modes mid-recording must not leave a hot mic behind:
             // stop = captured, exactly as if the user had tapped stop.
             if session.transcriber.isRecording { Task { await captureWhisper() } }
+        }
+        .onChange(of: textFocused) { _, focused in
+            // Tapping back into the field to write the next thought dismisses
+            // the moment, so it never sits over a fresh composition.
+            if focused { dismissMomentIfPresent() }
         }
         .onDisappear {
             if session.transcriber.isRecording { Task { await captureWhisper() } }
@@ -450,6 +439,8 @@ struct CaptureView: View {
                 Task { await captureWhisper() }
             })
             if started == .started {
+                // Starting another capture retires the previous moment.
+                dismissMomentIfPresent()
                 whisperPhase = .recording
             }
         }
@@ -537,25 +528,8 @@ struct CaptureView: View {
 
         withAnimation(.spring) { moment = .received(for: nodeID) }
         CaptureFeedback.released()
-        scheduleFade(after: 4.0)
-        keepUndoReachable(for: nodeID)
+        scheduleFade(after: Self.momentLinger)
         resetReview()
-    }
-
-    /// The moment fades on its own rhythm; the way back stays open until the
-    /// session's undo window closes.
-    private func keepUndoReachable(for nodeID: UUID) {
-        lingeringUndoID = nodeID
-        lingeringTask?.cancel()
-        lingeringTask = Task {
-            try? await Task.sleep(for: .seconds(CaptureSession.undoWindow + 0.5))
-            guard !Task.isCancelled else { return }
-            await MainActor.run {
-                if lingeringUndoID == nodeID {
-                    withAnimation { lingeringUndoID = nil }
-                }
-            }
-        }
     }
 
     private func discardCapture() {
@@ -570,11 +544,9 @@ struct CaptureView: View {
         resetReview()
     }
 
-    /// A late Undo from the moment (or its lingering pill): the thought comes
-    /// back to the surface, held — words, recording and all.
+    /// A late Undo from the moment: the thought comes back to the surface,
+    /// held — words, recording and all.
     private func undoFromMoment() {
-        lingeringTask?.cancel()
-        lingeringUndoID = nil
         guard let draft = session.undoLastRelease() else {
             dismissMoment()
             return
@@ -623,8 +595,7 @@ struct CaptureView: View {
         // Phase 1: received — visually identical to the old confirmation.
         withAnimation(.spring) { moment = .received(for: nodeID) }
         CaptureFeedback.released()
-        scheduleFade(after: 4.0)
-        keepUndoReachable(for: nodeID)
+        scheduleFade(after: Self.momentLinger)
         reset()
     }
 
@@ -639,16 +610,25 @@ struct CaptureView: View {
         withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
             moment?.title = title
         }
-        scheduleFade(after: 4.0)
+        scheduleFade(after: Self.momentLinger)
 
         if let hint = PostCaptureMoment.strongRelatedHint(for: nodeID, context: context, ai: ai),
            moment?.id == nodeID {
             withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
                 moment?.related = hint
             }
-            scheduleFade(after: 4.5)
+            scheduleFade(after: Self.momentLinger)
         }
     }
+
+    /// How long the post-capture moment lingers before fading on its own,
+    /// re-armed at each phase (received → understood → nearby thought) so the
+    /// window starts fresh the instant "See in Ocean" appears. Long enough to
+    /// read the interpretation and reach the action; it still exits early the
+    /// moment the user starts another capture or returns to the field, so it
+    /// never blocks the surface. Kept just under the undo window (10 s) so the
+    /// moment's own Undo stays valid for its whole life.
+    private static let momentLinger: Double = 8
 
     private func scheduleFade(after seconds: Double) {
         fadeTask?.cancel()
@@ -662,6 +642,13 @@ struct CaptureView: View {
     private func dismissMoment() {
         fadeTask?.cancel()
         withAnimation { moment = nil }
+    }
+
+    /// Retire the moment early when the user moves on, without disturbing the
+    /// surface when there's nothing showing.
+    private func dismissMomentIfPresent() {
+        guard moment != nil else { return }
+        dismissMoment()
     }
 
     private func turnIntoQuestion(_ moment: PostCaptureMoment) {
