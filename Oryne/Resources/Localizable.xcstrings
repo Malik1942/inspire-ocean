@@ -1,2592 +1,2606 @@
 {
-  "sourceLanguage": "en",
-  "strings": {
-    "": {},
-    "%lld": {},
-    "%lld fragments": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld 个碎片"
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    "?" : {
+
+    },
+    "· %@" : {
+
+    },
+    "%lld" : {
+
+    },
+    "%lld fragments" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 个碎片"
           }
         }
       }
     },
-    "%lld thoughts drift here": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "这里聚着 %lld 条灵感"
+    "%lld thoughts drift here" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "这里聚着 %lld 条灵感"
           }
         }
       }
     },
-    "?": {},
-    "A few words it goes by": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "给它起个名字"
+    "A few words it goes by" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "给它起个名字"
           }
         }
       }
     },
-    "A few words, if needed": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "想写几个字也行"
+    "A few words, if needed" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "想写几个字也行"
           }
         }
       }
     },
-    "A fresh transcription will replace the transcript you edited. You can restore it afterwards.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "重新转写会替换你编辑过的文字记录，之后仍可恢复。"
+    "A fresh transcription will replace the transcript you edited. You can restore it afterwards." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新转写会替换你编辑过的文字记录，之后仍可恢复。"
           }
         }
       }
     },
-    "A quiet sign the Ocean received it.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "海洋收到时的轻声回应。"
+    "A quiet sign the Ocean received it." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "海洋收到时的轻声回应。"
           }
         }
       }
     },
-    "A soft chime and a gentle swell when a thought is released. The ring/silent switch quiets the chime.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "灵感入海时,一声轻柔的音效,一阵温和的涌动。拨到静音时,音效也随之安静。"
+    "A soft chime and a gentle swell when a thought is released. The ring/silent switch quiets the chime." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "灵感入海时,一声轻柔的音效,一阵温和的涌动。拨到静音时,音效也随之安静。"
           }
         }
       }
     },
-    "Action Button": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "操作按钮"
+    "Action Button" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "操作按钮"
           }
         }
       }
     },
-    "Add ${text} to Oryne": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "将 ${text} 添加到 Oryne"
+    "Add ${text} to Oryne" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将 ${text} 添加到 Oryne"
           }
         }
       }
     },
-    "Add Inspiration": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "记录灵感"
+    "Add a theme" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加主题"
           }
         }
       }
     },
-    "Add a theme": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "添加主题"
+    "Add image" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加图片"
           }
         }
       }
     },
-    "Add image": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "添加图片"
+    "Add Inspiration" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "记录灵感"
           }
         }
       }
     },
-    "All kinds": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "全部类型"
+    "All kinds" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全部类型"
           }
         }
       }
     },
-    "Apple Intelligence is turned off": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apple 智能已关闭"
+    "Apple Intelligence is turned off" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple 智能已关闭"
           }
         }
       }
     },
-    "Apple Intelligence is unavailable": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apple 智能不可用"
+    "Apple Intelligence is unavailable" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple 智能不可用"
           }
         }
       }
     },
-    "Apple Intelligence unavailable (%@): using the page description for context.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apple Intelligence 不可用（%@），改用页面描述作为背景。"
+    "Apple Intelligence unavailable (%@): using the page description for context." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Intelligence 不可用（%@），改用页面描述作为背景。"
           }
         }
       }
     },
-    "Archive": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "归档"
+    "Archive" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "归档"
           }
         }
       }
     },
-    "Ask": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "提问"
+    "Ask" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "提问"
           }
         }
       }
     },
-    "Ask Ocean": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "提问"
+    "Ask Ocean" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "提问"
           }
         }
       }
     },
-    "Ask questions across your captured fragments. Oryne helps find patterns, connections, and unfinished ideas worth returning to.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "向你捕捉的碎片提问。Oryne 帮你发现其中的脉络、联系，以及值得回头的未竟灵感。"
+    "Ask questions across your captured fragments. Oryne helps find patterns, connections, and unfinished ideas worth returning to." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "向你捕捉的碎片提问。Oryne 帮你发现其中的脉络、联系，以及值得回头的未竟灵感。"
           }
         }
       }
     },
-    "Ask the Ocean": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "提问"
+    "Ask the Ocean" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "提问"
           }
         }
       }
     },
-    "Ask what your Ocean remembers.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "问问海洋记得什么。"
+    "Ask what your Ocean remembers." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "问问海洋记得什么。"
           }
         }
       }
     },
-    "Assign the Fast Capture shortcut.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "指定「快速捕捉」快捷指令。"
+    "Assign the Fast Capture shortcut." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "指定「快速捕捉」快捷指令。"
           }
         }
       }
     },
-    "Assign where available": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在可用处指定"
+    "Assign where available" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在可用处指定"
           }
         }
       }
     },
-    "Auto Screenshot": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "自动截图"
+    "Auto Screenshot" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自动截图"
           }
         }
       }
     },
-    "Begin with the least resistance.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "从最不费力的地方开始。"
+    "Begin with the least resistance." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "从最不费力的地方开始。"
           }
         }
       }
     },
-    "Beyond your Ocean": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "海洋之外"
+    "Beyond your Ocean" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "海洋之外"
           }
         }
       }
     },
-    "Branch type": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "延展类型"
+    "Branch type" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "延展类型"
           }
         }
       }
     },
-    "Branches grown from this": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "由此延展的灵感"
+    "Branches grown from this" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "由此延展的灵感"
           }
         }
       }
     },
-    "Branching from": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "延展自"
+    "Branching from" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "延展自"
           }
         }
       }
     },
-    "Calm Accessibility": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "宁静无障碍"
+    "Calm Accessibility" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "宁静无障碍"
           }
         }
       }
     },
-    "Calm Accessibility Mode": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "宁静无障碍模式"
+    "Calm Accessibility Mode" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "宁静无障碍模式"
           }
         }
       }
     },
-    "Camera Control": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "相机控制"
+    "Camera Control" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "相机控制"
           }
         }
       }
     },
-    "Cancel": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "取消"
+    "Cancel" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消"
           }
         }
       }
     },
-    "Cancel recording": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "取消录音"
+    "Cancel recording" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消录音"
           }
         }
       }
     },
-    "Capture": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "捕捉"
+    "Capture" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "捕捉"
           }
         }
       }
     },
-    "Capture a thought and watch it drift in.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "记下一个灵感，看它汇入海洋。"
+    "Capture a thought and watch it drift in." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "记下一个灵感，看它汇入海洋。"
           }
         }
       }
     },
-    "Capture a thought into Oryne.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "把一个灵感捕捉进 Oryne。"
+    "Capture a thought into Oryne." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "把一个灵感捕捉进 Oryne。"
           }
         }
       }
     },
-    "Capture feedback": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "捕捉反馈"
+    "Capture feedback" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "捕捉反馈"
           }
         }
       }
     },
-    "Captured": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已捕捉"
+    "Captured" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已捕捉"
           }
         }
       }
     },
-    "Carried out to sea": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "随洋流远去"
+    "Carried out to sea" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "随洋流远去"
           }
         }
       }
     },
-    "Catch a whisper": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "记一段语音"
+    "Catch a whisper" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "记一段语音"
           }
         }
       }
     },
-    "Catch fragments before they disappear.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "趁碎片消失前，留住它们。"
+    "Catch fragments before they disappear." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "趁碎片消失前，留住它们。"
           }
         }
       }
     },
-    "Catching a thought that drifted away": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "捕回一个闪过的灵感"
+    "Catching a thought that drifted away" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "捕回一个闪过的灵感"
           }
         }
       }
     },
-    "Choose how you want to catch thoughts quickly.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "选择你快速捕捉灵感的方式。"
+    "Choose how you want to catch thoughts quickly." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择你快速捕捉灵感的方式。"
           }
         }
       }
     },
-    "Close": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "关闭"
+    "Close" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭"
           }
         }
       }
     },
-    "Close Fast Capture": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "关闭快速捕捉"
+    "Close Fast Capture" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭快速捕捉"
           }
         }
       }
     },
-    "Close: keeps the capture": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "关闭，保留这次捕捉"
+    "Close: keeps the capture" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭，保留这次捕捉"
           }
         }
       }
     },
-    "Collide two of my thoughts": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "让我的两条灵感碰撞"
+    "Collide two of my thoughts" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "让我的两条灵感碰撞"
           }
         }
       }
     },
-    "Composed offline": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "离线生成"
+    "Composed offline" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "离线生成"
           }
         }
       }
     },
-    "Concept": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "概念"
+    "Concept" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "概念"
           }
         }
       }
     },
-    "Context Capture": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "情境捕捉"
+    "Context Capture" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "情境捕捉"
           }
         }
       }
     },
-    "Continue": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "继续"
+    "Continue" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "继续"
           }
         }
       }
     },
-    "Control Center": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "控制中心"
+    "Control Center" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "控制中心"
           }
         }
       }
     },
-    "Couldn't hear it again. Your words stay as they are.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "没能再次听清，你的文字保持原样。"
+    "Couldn't hear it again. Your words stay as they are." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没能再次听清，你的文字保持原样。"
           }
         }
       }
     },
-    "Couldn't reach this link. Tap to retry.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法访问此链接，点按重试。"
+    "Couldn't reach this link. Tap to retry." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法访问此链接，点按重试。"
           }
         }
       }
     },
-    "Couldn't read the page to summarize. Tap to retry.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法读取页面生成摘要，点按重试。"
+    "Couldn't read the page to summarize. Tap to retry." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法读取页面生成摘要，点按重试。"
           }
         }
       }
     },
-    "Couldn't save yet. Keep tries again.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "暂时没能保存，「保留」会再试一次。"
+    "Couldn't save yet. Keep tries again." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂时没能保存，「保留」会再试一次。"
           }
         }
       }
     },
-    "Couldn't save yet. Release tries again.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "暂时没能保存，「汇入」会再试一次。"
+    "Couldn't save yet. Release tries again." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂时没能保存，「汇入」会再试一次。"
           }
         }
       }
     },
-    "Couldn't summarize this on-device. Tap to retry.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法在设备上生成摘要，点按重试。"
+    "Couldn't summarize this on-device. Tap to retry." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法在设备上生成摘要，点按重试。"
           }
         }
       }
     },
-    "Delete": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "删除"
+    "Delete" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除"
           }
         }
       }
     },
-    "Delete this thought?": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "删除这条灵感？"
+    "Delete this thought?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除这条灵感？"
           }
         }
       }
     },
-    "Discard": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "舍弃"
+    "Discard" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "舍弃"
           }
         }
       }
     },
-    "Discard changes?": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "舍弃更改？"
+    "Discard changes?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "舍弃更改？"
           }
         }
       }
     },
-    "Done": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "完成"
+    "Done" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完成"
           }
         }
       }
     },
-    "Drawn from": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "取自"
+    "Drawn from" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取自"
           }
         }
       }
     },
-    "Drifted into the Ocean": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "已汇入海洋"
+    "Drifted into the Ocean" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "已汇入海洋"
           }
         }
       }
     },
-    "Drifted into your Ocean.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "已汇入你的海洋。"
+    "Drifted into your Ocean." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "已汇入你的海洋。"
           }
         }
       }
     },
-    "Drifting out from your thought…": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "正从你的灵感漫出…"
+    "Drifting out from your thought…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "正从你的灵感漫出…"
           }
         }
       }
     },
-    "Drifts near “%@”": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "与「%@」相近"
+    "Drifts near “%@”" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "与「%@」相近"
           }
         }
       }
     },
-    "Earlier": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "更早"
+    "Earlier" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更早"
           }
         }
       }
     },
-    "Edit": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "编辑"
+    "Edit" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "编辑"
           }
         }
       }
     },
-    "Edit link": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "编辑链接"
+    "Edit link" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "编辑链接"
           }
         }
       }
     },
-    "Edit thought": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "编辑灵感"
+    "Edit thought" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "编辑灵感"
           }
         }
       }
     },
-    "Edited fields stay yours. Oryne won't overwrite them.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "编辑过的内容归你所有，Oryne 不会覆盖。"
+    "Edited fields stay yours. Oryne won't overwrite them." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "编辑过的内容归你所有，Oryne 不会覆盖。"
           }
         }
       }
     },
-    "Edited transcript: the original words stay yours.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "文字记录已编辑，原始内容仍归你所有。"
+    "Edited transcript: the original words stay yours." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文字记录已编辑，原始内容仍归你所有。"
           }
         }
       }
     },
-    "Enter the Ocean": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "潜入海洋"
+    "Enter the Ocean" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "潜入海洋"
           }
         }
       }
     },
-    "Expansion": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "延展"
+    "Expansion" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "延展"
           }
         }
       }
     },
-    "Fast Capture": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "快速捕捉"
+    "Fast Capture" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "快速捕捉"
           }
         }
       }
     },
-    "Fast Capture is ready.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "快速捕捉已就绪。"
+    "Fast Capture is ready." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "快速捕捉已就绪。"
           }
         }
       }
     },
-    "Fast Capture settings": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "快速捕捉设置"
+    "Fast Capture settings" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "快速捕捉设置"
           }
         }
       }
     },
-    "Find a fragment in the Ocean…": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "在海洋中查找碎片…"
+    "Find a fragment in the Ocean…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在海洋中查找碎片…"
           }
         }
       }
     },
-    "Find my thought about beginnings": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "找找我关于「开端」的那条灵感"
+    "Find my thought about beginnings" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "找找我关于「开端」的那条灵感"
           }
         }
       }
     },
-    "Find what you've captured": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "查找你捕捉过的内容"
+    "Find what you've captured" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "查找你捕捉过的内容"
           }
         }
       }
     },
-    "First capture": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "首次捕捉"
+    "First capture" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "首次捕捉"
           }
         }
       }
     },
-    "Found %lld fragments that drift near this": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "找到 %lld 个相关的碎片"
+    "Found %lld fragments that drift near this" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "找到 %lld 个相关的碎片"
           }
         }
       }
     },
-    "Found one fragment that drifts near this": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "找到 1 个相关的碎片"
+    "Found one fragment that drifts near this" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "找到 1 个相关的碎片"
           }
         }
       }
     },
-    "Fragments drift into the Ocean, where related ideas can gather, connect, and slowly become clearer.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "碎片汇入海洋，相关的灵感在那里聚拢、连接，慢慢变得清晰。"
+    "Fragments drift into the Ocean, where related ideas can gather, connect, and slowly become clearer." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "碎片汇入海洋，相关的灵感在那里聚拢、连接，慢慢变得清晰。"
           }
         }
       }
     },
-    "Grow": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "培育"
+    "Grow" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "培育"
           }
         }
       }
     },
-    "Grow a branch": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "延展一条灵感"
+    "Grow a branch" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "延展一条灵感"
           }
         }
       }
     },
-    "Grow it somewhere unexpected": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "让它延展到意想不到的地方"
+    "Grow it somewhere unexpected" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "让它延展到意想不到的地方"
           }
         }
       }
     },
-    "Haptics": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "触感反馈"
+    "Haptics" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "触感反馈"
           }
         }
       }
     },
-    "Hardware": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "硬件"
+    "Hardware" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "硬件"
           }
         }
       }
     },
-    "Help me grow an idea…": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "帮我培育一个灵感…"
+    "Help me grow an idea…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "帮我培育一个灵感…"
           }
         }
       }
     },
-    "Help me grow my newest idea": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "帮我培育最新的灵感"
+    "Help me grow my newest idea" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "帮我培育最新的灵感"
           }
         }
       }
     },
-    "Holds the water still, brightens the words that carry meaning, and widens every touch target. Nothing about your Ocean changes, only how it moves. The system Reduce Motion setting stills the water too.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "让水面静止，点亮承载意义的文字，并加大每个可点按区域。海洋本身不会变，变的只是它流动的方式。系统的「减弱动态效果」设置同样会让水面静止。"
+    "Holds the water still, brightens the words that carry meaning, and widens every touch target. Nothing about your Ocean changes, only how it moves. The system Reduce Motion setting stills the water too." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "让水面静止，点亮承载意义的文字，并加大每个可点按区域。海洋本身不会变，变的只是它流动的方式。系统的「减弱动态效果」设置同样会让水面静止。"
           }
         }
       }
     },
-    "How has my thinking drifted lately?": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "我的思绪最近漂向了何处？"
+    "How has my thinking drifted lately?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "我的思绪最近漂向了何处？"
           }
         }
       }
     },
-    "I didn't catch anything to capture.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "没有捕捉到任何内容。"
+    "https://…" : {
+
+    },
+    "I didn't catch anything to capture." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有捕捉到任何内容。"
           }
         }
       }
     },
-    "Image": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "图片"
+    "Image" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "图片"
           }
         }
       }
     },
-    "Image (optional)": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "图片（可选）"
+    "Image (optional)" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "图片（可选）"
           }
         }
       }
     },
-    "Input": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "输入"
+    "Images" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "图片"
           }
         }
       }
     },
-    "Inspiration": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "灵感"
+    "Input" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入"
           }
         }
       }
     },
-    "Keep": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "保留"
+    "Inspiration" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "灵感"
           }
         }
       }
     },
-    "Keep editing": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "继续编辑"
+    "Keep" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保留"
           }
         }
       }
     },
-    "Keep my words": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "保留我的文字"
+    "Keep editing" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "继续编辑"
           }
         }
       }
     },
-    "Kind": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "类型"
+    "Keep my words" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保留我的文字"
           }
         }
       }
     },
-    "Let thoughts find their place.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "让灵感各归其位。"
+    "Kind" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "类型"
           }
         }
       }
     },
-    "Library": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "库"
+    "Let thoughts find their place." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "让灵感各归其位。"
           }
         }
       }
     },
-    "Link": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "链接"
+    "Library" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "库"
           }
         }
       }
     },
-    "Link (optional)": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "链接（可选）"
+    "Link" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "链接"
           }
         }
       }
     },
-    "Listen": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "播放"
+    "Link (optional)" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "链接（可选）"
           }
         }
       }
     },
-    "Listen to recording": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "播放录音"
+    "Listen" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "播放"
           }
         }
       }
     },
-    "Listening": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "聆听中"
+    "Listen to recording" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "播放录音"
           }
         }
       }
     },
-    "Listening again…": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "再次聆听…"
+    "Listening" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "聆听中"
           }
         }
       }
     },
-    "Listening…": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "聆听中…"
+    "Listening again…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再次聆听…"
           }
         }
       }
     },
-    "Live transcription is off: type the words, or keep just the audio.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "实时转写已关闭：可以输入文字，或仅保留音频。"
+    "Listening…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "聆听中…"
           }
         }
       }
     },
-    "Look beyond your Ocean": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "望向海洋之外"
+    "Live transcription is off: type the words, or keep just the audio." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "实时转写已关闭：可以输入文字，或仅保留音频。"
           }
         }
       }
     },
-    "Mode": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "模式"
+    "Look beyond your Ocean" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "望向海洋之外"
           }
         }
       }
     },
-    "Nearby thoughts": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "相关灵感"
+    "Mode" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "模式"
           }
         }
       }
     },
-    "No fragments match": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "没有匹配的碎片"
+    "Nearby thoughts" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "相关灵感"
           }
         }
       }
     },
-    "No words caught, tap to add them": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "没记下文字，点按补充"
+    "No fragments match" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有匹配的碎片"
           }
         }
       }
     },
-    "No words yet": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "还没有文字"
+    "No words caught, tap to add them" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "没记下文字，点按补充"
           }
         }
       }
     },
-    "Not another notes app.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "不是又一个笔记应用。"
+    "No words yet" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "还没有文字"
           }
         }
       }
     },
-    "Note": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "备注"
+    "Not another notes app." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "不是又一个笔记应用。"
           }
         }
       }
     },
-    "Nothing drifts near this yet": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "这附近还没有相关的灵感"
+    "Note" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "备注"
           }
         }
       }
     },
-    "Nothing drifts near this yet, answered from open water": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "这附近还没有相关的灵感，答案来自更广的海洋"
+    "Nothing drifts near this yet" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "这附近还没有相关的灵感"
           }
         }
       }
     },
-    "Nothing drifts nearby yet.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "这附近还没有相关的灵感。"
+    "Nothing drifts near this yet, answered from open water" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "这附近还没有相关的灵感，答案来自更广的海洋"
           }
         }
       }
     },
-    "Nothing here yet": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "这里还空空如也"
+    "Nothing drifts nearby yet." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "这附近还没有相关的灵感。"
           }
         }
       }
     },
-    "Ocean": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "海洋"
+    "Nothing here yet" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这里还空空如也"
           }
         }
       }
     },
-    "Ocean settings": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "海洋设置"
+    "Ocean" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "海洋"
           }
         }
       }
     },
-    "One press, one drift.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "一按，一念汇入。"
+    "Ocean settings" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "海洋设置"
           }
         }
       }
     },
-    "Open Fast Capture onboarding": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "打开快速捕捉引导"
+    "One press, one drift." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "一按，一念汇入。"
           }
         }
       }
     },
-    "Open Fast Capture with the current screenshot attached.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "打开快速捕捉，并附上当前截图。"
+    "Only added %lld, %lld images max." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅添加了 %lld 张，最多 %lld 张图片。"
           }
         }
       }
     },
-    "Open Oryne in a lightweight capture state.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "以轻量捕捉状态打开 Oryne。"
+    "Open Fast Capture onboarding" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开快速捕捉引导"
           }
         }
       }
     },
-    "Open Shortcuts": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "打开快捷指令"
+    "Open Fast Capture with the current screenshot attached." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开快速捕捉，并附上当前截图。"
           }
         }
       }
     },
-    "Opening Thought": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "正在打开灵感"
+    "Open Oryne in a lightweight capture state." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "以轻量捕捉状态打开 Oryne。"
           }
         }
       }
     },
-    "Original audio is temporarily preserved to improve understanding.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "原始音频会暂时保留，以便更好地理解。"
+    "Open Shortcuts" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开快捷指令"
           }
         }
       }
     },
-    "Oryne": {},
-    "Oryne is a place for unfinished thoughts, passing signals, and ideas that are not ready to become plans yet.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Oryne 安放那些未竟的灵感、转瞬的信号，以及尚未化为计划的念头。"
+    "Opening Thought" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在打开灵感"
           }
         }
       }
     },
-    "Pause": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "暂停"
+    "Original audio is temporarily preserved to improve understanding." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "原始音频会暂时保留，以便更好地理解。"
           }
         }
       }
+    },
+    "Oryne" : {
+
     },
-    "Pause recording": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "暂停录音"
+    "Oryne is a place for unfinished thoughts, passing signals, and ideas that are not ready to become plans yet." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Oryne 安放那些未竟的灵感、转瞬的信号，以及尚未化为计划的念头。"
           }
         }
       }
     },
-    "Previous": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "上一步"
+    "Pause" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂停"
           }
         }
       }
     },
-    "Project": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "项目"
+    "Pause recording" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂停录音"
           }
         }
       }
     },
-    "Question": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "问题"
+    "Previous" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上一步"
           }
         }
       }
     },
-    "Re-derive title & themes from the words": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "根据文字重新生成标题与主题"
+    "Project" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "项目"
           }
         }
       }
     },
-    "Re-reading…": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "重新读取…"
+    "Question" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "问题"
           }
         }
       }
     },
-    "Re-transcribe": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "重新转写"
+    "Re-derive title & themes from the words" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "根据文字重新生成标题与主题"
           }
         }
       }
     },
-    "Re-transcribe and replace": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "重新转写并替换"
+    "Re-reading…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新读取…"
           }
         }
       }
     },
-    "Reading across your currents…": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "正在你的洋流间穿行…"
+    "Re-transcribe" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新转写"
           }
         }
       }
     },
-    "Reading your Ocean, then looking beyond…": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "先读你的海，再望向更远处…"
+    "Re-transcribe and replace" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新转写并替换"
           }
         }
       }
     },
-    "Reading…": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "读取中…"
+    "Reading across your currents…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "正在你的洋流间穿行…"
           }
         }
       }
     },
-    "Record": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "录音"
+    "Reading your Ocean, then looking beyond…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "先读你的海，再望向更远处…"
           }
         }
       }
     },
-    "Reference": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "参考"
+    "Reading…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "读取中…"
           }
         }
       }
     },
-    "Release": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "汇入"
+    "Record" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "录音"
           }
         }
       }
     },
-    "Release into the Ocean": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "汇入海洋"
+    "Reference" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "参考"
           }
         }
       }
     },
-    "Released": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "已汇入"
+    "Release" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "汇入"
           }
         }
       }
     },
-    "Remove image": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "移除图片"
+    "Release into the Ocean" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "汇入海洋"
           }
         }
       }
     },
-    "Remove link": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "移除链接"
+    "Released" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "已汇入"
           }
         }
       }
     },
-    "Remove screenshot": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "移除截图"
+    "Remove image" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移除图片"
           }
         }
       }
     },
-    "Remove theme %@": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "移除主题 %@"
+    "Remove link" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移除链接"
           }
         }
       }
     },
-    "Replace": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "替换"
+    "Remove screenshot" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移除截图"
           }
         }
       }
     },
-    "Replace image": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "替换图片"
+    "Remove theme %@" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移除主题 %@"
           }
         }
       }
     },
-    "Replace your edited words?": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "替换你编辑过的文字？"
+    "Replace" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "替换"
           }
         }
       }
     },
-    "Research": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "研究"
+    "Replace image" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "替换图片"
           }
         }
       }
     },
-    "Restore": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "恢复"
+    "Replace your edited words?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "替换你编辑过的文字？"
           }
         }
       }
     },
-    "Resurfacing": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "再次浮现"
+    "Research" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "研究"
           }
         }
       }
     },
-    "Retry": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "重试"
+    "Restore" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "恢复"
           }
         }
       }
     },
-    "Retry enrichment": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "重新补充信息"
+    "Resurfacing" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "再次浮现"
           }
         }
       }
     },
-    "Return when something rises.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "有什么浮起时，再回来。"
+    "Retry" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重试"
           }
         }
       }
     },
-    "Save": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "保存"
+    "Retry enrichment" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新补充信息"
           }
         }
       }
     },
-    "Save ${image} to Oryne": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "将 ${image} 保存到 Oryne"
+    "Return when something rises." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "有什么浮起时，再回来。"
           }
         }
       }
     },
-    "Save Image to Oryne": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "将图片保存到 Oryne"
+    "Save" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存"
           }
         }
       }
     },
-    "Save a screenshot or image into Oryne.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "把截图或图片存入 Oryne。"
+    "Save ${image} to Oryne" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将 ${image} 保存到 Oryne"
           }
         }
       }
     },
-    "Save to Ocean": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "存入海洋"
+    "Save a screenshot or image into Oryne." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "把截图或图片存入 Oryne。"
           }
         }
       }
     },
-    "Saved links are read and summarized on-device for context.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "保存的链接会在设备上阅读并生成摘要，作为背景信息。"
+    "Save Image to Oryne" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将图片保存到 Oryne"
           }
         }
       }
     },
-    "Saved to your Ocean.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "已存入你的海洋。"
+    "Save to Ocean" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "存入海洋"
           }
         }
       }
     },
-    "Screenshot": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "截图"
+    "Saved links are read and summarized on-device for context." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存的链接会在设备上阅读并生成摘要，作为背景信息。"
           }
         }
       }
     },
-    "Screenshot + voice": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "截图 + 语音"
+    "Saved to your Ocean." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "已存入你的海洋。"
           }
         }
       }
     },
-    "Search": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "搜索"
+    "Screenshot" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "截图"
           }
         }
       }
     },
-    "Search a fragment, sense a pattern, or grow an idea. Responses come from what you've captured.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "搜寻一片碎片，察觉一种脉络，或培育一个灵感。回应都来自你捕捉过的内容。"
+    "Screenshot + voice" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "截图 + 语音"
           }
         }
       }
     },
-    "Search the Ocean": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "在海洋中搜索"
+    "Search" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜索"
           }
         }
       }
     },
-    "Searching your Ocean…": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "正在搜索你的海洋…"
+    "Search a fragment, sense a pattern, or grow an idea. Responses come from what you've captured." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "搜寻一片碎片，察觉一种脉络，或培育一个灵感。回应都来自你捕捉过的内容。"
           }
         }
       }
     },
-    "See in Ocean": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "在海洋中查看"
+    "Search the Ocean" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在海洋中搜索"
           }
         }
       }
     },
-    "See the thread running through": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "看见贯穿其中的线索"
+    "Searching your Ocean…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "正在搜索你的海洋…"
           }
         }
       }
     },
-    "Set up Fast Capture.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "设置快速捕捉。"
+    "See in Ocean" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在海洋中查看"
           }
         }
       }
     },
-    "Settings": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "设置"
+    "See the thread running through" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "看见贯穿其中的线索"
           }
         }
       }
     },
-    "Shortcut": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "快捷指令"
+    "Set up Fast Capture." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设置快速捕捉。"
           }
         }
       }
     },
-    "Shortcuts": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "快捷指令"
+    "Settings" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设置"
           }
         }
       }
     },
-    "Show archived": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "显示已归档"
+    "Shortcut" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "快捷指令"
           }
         }
       }
     },
-    "Skip": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "跳过"
+    "Shortcuts" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "快捷指令"
           }
         }
       }
     },
-    "Sound": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "声音"
+    "Show archived" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示已归档"
           }
         }
       }
     },
-    "Speak, type, or capture from anywhere. The Ocean receives the thought without asking you to organize it first.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "随时随地说出、输入或捕捉。海洋会接住这条灵感，无需你先整理。"
+    "Skip" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "跳过"
           }
         }
       }
     },
-    "Start Context Capture": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "开始情境捕捉"
+    "Sound" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "声音"
           }
         }
       }
     },
-    "Start Context Capture with ${screenshot}": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "用 ${screenshot} 开始情境捕捉"
+    "Speak, type, or capture from anywhere. The Ocean receives the thought without asking you to organize it first." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "随时随地说出、输入或捕捉。海洋会接住这条灵感，无需你先整理。"
           }
         }
       }
     },
-    "Start Fast Capture": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "开始快速捕捉"
+    "Start Context Capture" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开始情境捕捉"
           }
         }
       }
     },
-    "Stop": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "停止"
+    "Start Context Capture with ${screenshot}" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用 ${screenshot} 开始情境捕捉"
           }
         }
       }
     },
-    "Summarized on-device.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已在设备上生成摘要。"
+    "Start Fast Capture" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开始快速捕捉"
           }
         }
       }
     },
-    "Summarizing…": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "摘要中…"
+    "Stop" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "停止"
           }
         }
       }
     },
-    "Summary": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "摘要"
+    "Summarized on-device." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已在设备上生成摘要。"
           }
         }
       }
     },
-    "Synthesis": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "综合"
+    "Summarizing…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "摘要中…"
           }
         }
       }
     },
-    "Take Screenshot": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "截屏"
+    "Summary" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "摘要"
           }
         }
       }
     },
-    "Tap to type the words or re-transcribe.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "点按以输入文字，或重新转写。"
+    "Synthesis" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "综合"
           }
         }
       }
     },
-    "Tap words to keep editing": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "点按文字继续编辑"
+    "Take Screenshot" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "截屏"
           }
         }
       }
     },
-    "That idea I had about water": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "我那个关于水的灵感"
+    "Tap to type the words or re-transcribe." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点按以输入文字，或重新转写。"
           }
         }
       }
     },
-    "The Action Button and Camera Control shortcuts live in Fast Capture settings, the bolt on Capture.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "操作按钮与相机控制的快捷指令都在「快速捕捉」设置里，也就是「捕捉」上的那个闪电图标。"
+    "Tap words to keep editing" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "点按文字继续编辑"
           }
         }
       }
     },
-    "The Ocean can bring back a thought when it feels connected to what you are exploring now.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "当一条灵感与你此刻所探索的有所关联时，海洋会把它带回来。"
+    "That idea I had about water" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "我那个关于水的灵感"
           }
         }
       }
     },
-    "The Ocean caught it": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "海洋接住了它"
+    "The Action Button and Camera Control shortcuts live in Fast Capture settings, the bolt on Capture." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "操作按钮与相机控制的快捷指令都在「快速捕捉」设置里，也就是「捕捉」上的那个闪电图标。"
           }
         }
       }
     },
-    "The Ocean is still": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "海面归于平静"
+    "The Ocean can bring back a thought when it feels connected to what you are exploring now." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "当一条灵感与你此刻所探索的有所关联时，海洋会把它带回来。"
           }
         }
       }
     },
-    "The same Ocean, stilled.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "还是这片海，归于平静。"
+    "The Ocean caught it" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "海洋接住了它"
           }
         }
       }
     },
-    "Themes": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "主题"
+    "The Ocean is still" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "海面归于平静"
           }
         }
       }
     },
-    "Themes shape where thoughts drift in the Ocean.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "主题牵引灵感在海洋中的去向。"
+    "the on-device model is still downloading" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设备端模型仍在下载"
           }
         }
       }
     },
-    "This drifts out of the Ocean for good.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "这条灵感将永远离开海洋。"
+    "the on-device model is unavailable" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设备端模型不可用"
           }
         }
       }
     },
-    "This week": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "本周"
+    "The same Ocean, stilled." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "还是这片海，归于平静。"
           }
         }
       }
     },
-    "Thought": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "灵感"
+    "Themes" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "主题"
           }
         }
       }
     },
-    "Title": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "标题"
+    "Themes shape where thoughts drift in the Ocean." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "主题牵引灵感在海洋中的去向。"
           }
         }
       }
     },
-    "Today": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "今天"
+    "this device isn't eligible for Apple Intelligence" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此设备不支持 Apple 智能"
           }
         }
       }
     },
-    "Transcribing…": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "转写中…"
+    "this device runs an earlier iOS" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此设备的 iOS 版本过旧"
           }
         }
       }
     },
-    "Transcript": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "文字记录"
+    "This drifts out of the Ocean for good." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "这条灵感将永远离开海洋。"
           }
         }
       }
     },
-    "Transcription is off: type the words, if you like": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "转写已关闭：也可以直接输入文字"
+    "This week" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本周"
           }
         }
       }
     },
-    "Try a first capture": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "试试第一次捕捉"
+    "Thought" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "灵感"
           }
         }
       }
     },
-    "Turn into question": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "转为问题"
+    "Title" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "标题"
           }
         }
       }
     },
-    "Type": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "输入"
+    "Today" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今天"
           }
         }
       }
     },
-    "Typing First": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "优先输入"
+    "Transcribing…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "转写中…"
           }
         }
       }
     },
-    "Typing is ready.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "可以开始输入了。"
+    "Transcript" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文字记录"
           }
         }
       }
     },
-    "Understood as": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "理解为"
+    "Transcription is off: type the words, if you like" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "转写已关闭：也可以直接输入文字"
           }
         }
       }
     },
-    "Undo": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "撤销"
+    "Try a first capture" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "试试第一次捕捉"
           }
         }
       }
     },
-    "Undo capture": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "撤销捕捉"
+    "Turn into question" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "转为问题"
           }
         }
       }
     },
-    "Use a screenshot handoff shortcut.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "使用截图接力快捷指令。"
+    "Type" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入"
           }
         }
       }
     },
-    "Voice": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "语音"
+    "Typing First" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "优先输入"
           }
         }
       }
     },
-    "Voice First": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "语音优先"
+    "Typing is ready." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "可以开始输入了。"
           }
         }
       }
     },
-    "What are you noticing?": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "你注意到了什么？"
+    "Understood as" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "理解为"
           }
         }
       }
     },
-    "What concept could grow from this?": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "由此能延展出什么概念？"
+    "Undo" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "撤销"
           }
         }
       }
     },
-    "What could this become physically?": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "这在现实中能变成什么？"
+    "Undo capture" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "撤销捕捉"
           }
         }
       }
     },
-    "What could this become?": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "这能变成什么？"
+    "Use a screenshot handoff shortcut." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用截图接力快捷指令。"
           }
         }
       }
     },
-    "What did I capture last week?": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "我上周捕捉了什么？"
+    "Voice" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "语音"
           }
         }
       }
     },
-    "What did you say?": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "你刚才说了什么？"
+    "Voice First" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "语音优先"
           }
         }
       }
     },
-    "What drifted by": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "闪过的灵感"
+    "What are you noticing?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "你注意到了什么？"
           }
         }
       }
     },
-    "What field sits next to my obsessions?": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "哪个领域紧挨着我的执念？"
+    "What concept could grow from this?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "由此能延展出什么概念？"
           }
         }
       }
     },
-    "What just drifted by?": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "刚刚闪过什么？"
+    "What could this become physically?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "这在现实中能变成什么？"
           }
         }
       }
     },
-    "What patterns are forming?": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "正在形成什么样的脉络？"
+    "What could this become?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这能变成什么？"
           }
         }
       }
     },
-    "What patterns keep resurfacing?": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "什么脉络在不断浮现？"
+    "What did I capture last week?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我上周捕捉了什么？"
           }
         }
       }
     },
-    "What question does this open up?": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "这引出了什么问题？"
+    "What did you say?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "你刚才说了什么？"
           }
         }
       }
     },
-    "What should I explore next?": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "我接下来该探索什么？"
+    "What drifted by" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "闪过的灵感"
           }
         }
       }
     },
-    "What tension am I circling?": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "我在围绕什么张力打转？"
+    "What field sits next to my obsessions?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "哪个领域紧挨着我的执念？"
           }
         }
       }
     },
-    "What this link is about": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "这个链接讲了什么"
+    "What just drifted by?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "刚刚闪过什么？"
           }
         }
       }
     },
-    "What was said": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "说了什么"
+    "What patterns are forming?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "正在形成什么样的脉络？"
           }
         }
       }
     },
-    "What would you like to capture?": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "你想捕捉什么？"
+    "What patterns keep resurfacing?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "什么脉络在不断浮现？"
           }
         }
       }
     },
-    "What would you want to research?": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "你想研究什么？"
+    "What question does this open up?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这引出了什么问题？"
           }
         }
       }
     },
-    "Whisper": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "语音"
+    "What should I explore next?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "我接下来该探索什么？"
           }
         }
       }
     },
-    "Whisper held": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "语音已留存"
+    "What tension am I circling?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "我在围绕什么张力打转？"
           }
         }
       }
     },
-    "Who thinks about what I think about?": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "还有谁，和我想着同样的事？"
+    "What this link is about" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这个链接讲了什么"
           }
         }
       }
     },
-    "Widget": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "小组件"
+    "What was said" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "说了什么"
           }
         }
       }
     },
-    "Words appear as you speak…": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "边说，文字边浮现…"
+    "What would you like to capture?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你想捕捉什么？"
           }
         }
       }
     },
-    "https://…": {},
-    "the on-device model is still downloading": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "设备端模型仍在下载"
+    "What would you want to research?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你想研究什么？"
           }
         }
       }
     },
-    "the on-device model is unavailable": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "设备端模型不可用"
+    "Whisper" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "语音"
           }
         }
       }
     },
-    "this device isn't eligible for Apple Intelligence": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "此设备不支持 Apple 智能"
+    "Whisper held" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "语音已留存"
           }
         }
       }
     },
-    "this device runs an earlier iOS": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "此设备的 iOS 版本过旧"
+    "Who thinks about what I think about?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "还有谁，和我想着同样的事？"
           }
         }
       }
     },
-    "· %@": {},
-    "Images": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "图片"
+    "Widget" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "小组件"
           }
         }
       }
     },
-    "Only added %lld, %lld images max.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "仅添加了 %lld 张，最多 %lld 张图片。"
+    "Words appear as you speak…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "边说，文字边浮现…"
           }
         }
       }
     }
   },
-  "version": "1.0"
+  "version" : "1.0"
 }
