@@ -542,6 +542,7 @@ struct FastCaptureSessionView: View {
             isReviewing = false
             moment = .received(for: nodeID)
         }
+        CaptureFeedback.released()
         // The moment is also the undo window; linger a touch longer than the
         // old flash so a late tap can land.
         scheduleFinish(after: 2.4)
@@ -605,6 +606,7 @@ struct FastCaptureSessionView: View {
         withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
             moment = .received(for: nodeID)
         }
+        CaptureFeedback.released()
         scheduleFinish(after: 2.4)
     }
 

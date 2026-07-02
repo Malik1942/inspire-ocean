@@ -17,6 +17,16 @@ struct OceanSettingsView: View {
         store: FastCapturePreferences.defaults
     ) private var calmMode = false
 
+    @AppStorage(
+        CaptureFeedback.Keys.sound,
+        store: FastCapturePreferences.defaults
+    ) private var captureSound = true
+
+    @AppStorage(
+        CaptureFeedback.Keys.haptics,
+        store: FastCapturePreferences.defaults
+    ) private var captureHaptics = true
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -24,6 +34,7 @@ struct OceanSettingsView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         calmSection
+                        feedbackSection
                     }
                     .padding(.horizontal)
                     .padding(.vertical, 14)
@@ -68,6 +79,48 @@ struct OceanSettingsView: View {
                 .tint(OceanTheme.accent)
 
                 Text("Holds the water still, brightens the words that carry meaning, and widens every touch target. Nothing about your Ocean changes, only how it moves. The system Reduce Motion setting stills the water too.")
+                    .font(.caption)
+                    .foregroundStyle(OceanTheme.mist)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private var feedbackSection: some View {
+        GlassCard(padding: 16) {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 10) {
+                    Image(systemName: "checkmark.seal")
+                        .font(.title3)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(OceanTheme.accent)
+                        .frame(width: 28)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Capture feedback")
+                            .font(.headline)
+                            .foregroundStyle(OceanTheme.foam)
+                        Text("A quiet sign the Ocean received it.")
+                            .font(.caption)
+                            .foregroundStyle(OceanTheme.mist)
+                    }
+                }
+
+                Toggle(isOn: $captureSound) {
+                    Label("Sound", systemImage: "speaker.wave.2")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(OceanTheme.foam)
+                }
+                .tint(OceanTheme.accent)
+
+                Toggle(isOn: $captureHaptics) {
+                    Label("Haptics", systemImage: "hand.tap")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(OceanTheme.foam)
+                }
+                .tint(OceanTheme.accent)
+
+                Text("A soft chime and a gentle swell when a thought is released. The ring/silent switch quiets the chime.")
                     .font(.caption)
                     .foregroundStyle(OceanTheme.mist)
                     .fixedSize(horizontal: false, vertical: true)

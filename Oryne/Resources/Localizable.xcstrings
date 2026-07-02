@@ -54,6 +54,26 @@
         }
       }
     },
+    "A quiet sign the Ocean received it.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "海洋收到时的轻声回应。"
+          }
+        }
+      }
+    },
+    "A soft chime and a gentle swell when a thought is released. The ring/silent switch quiets the chime.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "灵感入海时,一声轻柔的音效,一阵温和的涌动。拨到静音时,音效也随之安静。"
+          }
+        }
+      }
+    },
     "Action Button": {
       "localizations": {
         "zh-Hans": {
@@ -360,6 +380,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "把一个灵感捕捉进 Oryne。"
+          }
+        }
+      }
+    },
+    "Capture feedback": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "捕捉反馈"
           }
         }
       }
@@ -880,6 +910,16 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "让它延展到意想不到的地方"
+          }
+        }
+      }
+    },
+    "Haptics": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "触感反馈"
           }
         }
       }
@@ -1851,6 +1891,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "跳过"
+          }
+        }
+      }
+    },
+    "Sound": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "声音"
           }
         }
       }

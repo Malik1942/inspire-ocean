@@ -536,6 +536,7 @@ struct CaptureView: View {
         session.beginUnderstanding(nodeID: nodeID)
 
         withAnimation(.spring) { moment = .received(for: nodeID) }
+        CaptureFeedback.released()
         scheduleFade(after: 4.0)
         keepUndoReachable(for: nodeID)
         resetReview()
@@ -621,6 +622,7 @@ struct CaptureView: View {
 
         // Phase 1: received — visually identical to the old confirmation.
         withAnimation(.spring) { moment = .received(for: nodeID) }
+        CaptureFeedback.released()
         scheduleFade(after: 4.0)
         keepUndoReachable(for: nodeID)
         reset()
