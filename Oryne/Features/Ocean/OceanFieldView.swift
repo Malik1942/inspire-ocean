@@ -1,37 +1,32 @@
 import SwiftUI
 import SwiftData
 
-/// Ocean Field (§8) — cluster-first.
+/// Ocean Field (§8), cluster-first.
 ///
 /// Three layers, cleanly separated:
-///  1. **Atmosphere** — `OceanBackground` + `AtmosphereView` (non-interactive,
-///     purely decorative).
-///  2. **Structure** — a cached layout (`OceanLayoutEngine`) whose large
+///  1. **Atmosphere**: `OceanBackground` plus a static depth fog
+///     (non-interactive, purely decorative).
+///  2. **Structure**: a cached layout (`OceanLayoutEngine`) whose large
 ///     objects are *currents*: labeled conceptual regions sized by how many
 ///     thoughts they hold. Member thoughts orbit them as small motes.
-///  3. **Interaction** — tap a current to open its stream of thoughts; tap a
+///  3. **Interaction**: tap a current to open its stream of thoughts; tap a
 ///     mote to open that single thought. Nothing on screen is unlabeled, so
 ///     there is no reveal-first friction.
 ///
-/// Animation design is unchanged: `TimelineView(.animation)` with no minimum
-/// interval (full ProMotion), small compound-sine drift so motion reads as
-/// floating, not jitter.
+/// The water itself is a SpriteKit scene (`OceanScene` in `OceanSceneView`):
+/// resting places come from the layout engine, and all per-frame life (drift,
+/// breathing, energy, ambient bubbles) runs in the scene's update loop, never
+/// through SwiftUI state.
 struct OceanFieldView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var context
     @Environment(\.calmAccessibility) private var calm
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(filter: #Predicate<Node> { !$0.isArchived }, sort: \Node.createdAt)
     private var nodes: [Node]
 
     @State private var layout = OceanLayout()
     @State private var sheet: OceanSheet?
     @State private var showSettings = false
-
-    /// Calm Accessibility Mode or the system Reduce Motion setting holds the
-    /// water still: same layout, same light, no drift. The Ocean's positions
-    /// are atmosphere, not information — stillness costs nothing but motion.
-    private var still: Bool { calm || reduceMotion }
 
     private var nodeByID: [UUID: Node] {
         Dictionary(uniqueKeysWithValues: nodes.map { ($0.id, $0) })
@@ -58,12 +53,12 @@ struct OceanFieldView: View {
                     nodes: nodes, size: geo.size, resurfacingID: resurfacing?.id)
                 ZStack {
                     OceanBackground()
-                    AtmosphereView()
+                    oceanFog
 
                     if nodes.isEmpty {
                         emptyState
                     } else {
-                        field(in: geo.size)
+                        field
                     }
                 }
                 .onAppear {
@@ -92,82 +87,41 @@ struct OceanFieldView: View {
 
     // MARK: Field
 
-    private func field(in size: CGSize) -> some View {
-        // No minimumInterval — ProMotion drives this at full refresh rate.
-        // Stilled, the field keeps its full layout at each thought's resting
-        // place; only the drift (and its battery cost) goes quiet.
-        TimelineView(.animation(paused: still)) { timeline in
-            let t = still ? 0 : timeline.date.timeIntervalSinceReferenceDate
-            ZStack {
-                // Currents first (beneath their particles), least prominent at the back.
-                ForEach(layout.clusters.sorted { $0.prominence < $1.prominence }) { cluster in
-                    let phase = still ? 0 : (sin(t * 0.5 + Double(cluster.center.x) * 0.02) + 1) / 2
-                    ClusterOrbView(placement: cluster, pulse: phase)
-                        .position(clusterPosition(cluster, t: t))
-                        .onTapGesture {
-                            sheet = .stream(theme: cluster.id)
-                        }
-                }
-
-                ForEach(layout.motes) { mote in
-                    let phase = still ? 0 : (sin(t * 0.6 + Double(mote.base.y) * 0.02) + 1) / 2
-                    ThoughtMoteView(mote: mote, pulse: phase)
-                        .position(motePosition(mote, t: t, in: size))
-                        .onTapGesture {
-                            if let node = nodeByID[mote.id] { open(node) }
-                        }
-                }
+    private var field: some View {
+        OceanSceneView(
+            layout: layout,
+            fragments: fragmentSnapshots,
+            onTapFragment: { id in
+                if let node = nodeByID[id] { open(node) }
+            },
+            onTapCluster: { theme in
+                sheet = .stream(theme: theme)
             }
+        )
+    }
+
+    /// Value snapshots for the scene: model objects stay on this side of the
+    /// boundary.
+    private var fragmentSnapshots: [FragmentSnapshot] {
+        nodes.map {
+            FragmentSnapshot(id: $0.id, createdAt: $0.createdAt, title: $0.displayTitle)
         }
     }
 
-    // MARK: Drift — currents sway slowly; particles orbit and float
-
-    /// The sway a current applies to itself — particles orbiting that current
-    /// track the same offset so the whole region moves as one body of water.
-    private func clusterSway(key: String, t: Double) -> CGSize {
-        let seed = Double(NodeComposer.stableHash(key) % 1000) / 1000
-        let ph = seed * 6.2831
-        let x = sin(t * 0.07 + ph) * 3.5 + sin(t * 0.045 + ph * 0.6) * 1.5
-        let y = cos(t * 0.055 + ph * 1.2) * 3.0
-        return CGSize(width: x, height: y)
-    }
-
-    private func clusterPosition(_ c: ClusterPlacement, t: Double) -> CGPoint {
-        let sway = clusterSway(key: c.id, t: t)
-        return CGPoint(x: c.center.x + sway.width, y: c.center.y + sway.height)
-    }
-
-    /// Orbiting particles sway gently along their ring — a slow pendulum
-    /// around their resting slot rather than a full revolution, so a particle
-    /// can never wander across its current's label (the layout reserves the
-    /// label arc). Standalone thoughts only float.
-    private func motePosition(_ m: MotePlacement, t: Double, in size: CGSize) -> CGPoint {
-        let seed = Double(NodeComposer.stableHash(m.id.uuidString) % 1000) / 1000
-        let ph = seed * 6.2831
-
-        var p: CGPoint
-        if let key = m.orbitKey {
-            // Each particle swings on its own rhythm — amplitude and tempo
-            // vary per thought (≈±3°–8°), so no two move in step.
-            let seed2 = Double(NodeComposer.stableHash(m.id.uuidString + "v") % 1000) / 1000
-            let angle = m.baseAngle + sin(t * (0.08 + seed2 * 0.09) + ph) * (0.05 + seed * 0.09)
-            let sway = clusterSway(key: key, t: t)
-            p = CGPoint(
-                x: m.orbitCenter.x + sway.width + CGFloat(cos(angle)) * m.orbitRadius,
-                y: m.orbitCenter.y + sway.height + CGFloat(sin(angle)) * m.orbitRadius
-            )
-        } else {
-            p = m.base
-        }
-
-        let amp = m.isResurfacing ? 3.0 : (m.orbitKey == nil ? 6.0 : 2.5)
-        p.x += sin(t * 0.14 + ph) * amp + sin(t * 0.09 + ph * 0.7) * 1.5
-        p.y += cos(t * 0.11 + ph * 1.3) * (amp * 0.85) + cos(t * 0.06 + ph) * 1.4
-
-        p.x = min(size.width - 12, max(12, p.x))
-        p.y = min(size.height - 96, max(132, p.y))
-        return p
+    /// Depth fog: faint brightening near the surface, darkening toward the
+    /// abyss. Static on purpose; the living water is the scene's job.
+    private var oceanFog: some View {
+        LinearGradient(
+            colors: [
+                OceanTheme.surface.opacity(0.05),
+                .clear,
+                OceanTheme.abyss.opacity(0.18)
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        .allowsHitTesting(false)
+        .ignoresSafeArea()
     }
 
     // MARK: Interaction
@@ -193,9 +147,9 @@ struct OceanFieldView: View {
         let next = OceanLayoutEngine.compute(
             nodes: nodes, size: size, resurfacingID: resurfacing?.id)
         guard next.signature != layout.signature else { return }
-        withAnimation(.spring(response: 0.70, dampingFraction: 0.85)) {
-            layout = next
-        }
+        // The scene animates the transition (settle or crossfade); no
+        // SwiftUI animation wraps the swap anymore.
+        layout = next
     }
 
     // MARK: Resurfacing (ambient rediscovery)

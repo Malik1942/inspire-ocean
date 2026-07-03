@@ -11,6 +11,17 @@ enum SeedData {
         let existing = (try? context.fetchCount(descriptor)) ?? 0
         guard existing == 0 else { return }
 
+        #if DEBUG
+        // Perf and legibility seam, following the OCEAN_START_TAB pattern:
+        // OCEAN_SIM_COUNT=60 (or 200) fills an empty store with a synthetic
+        // themed ocean instead of the demo drifts. Debug builds only.
+        if let raw = ProcessInfo.processInfo.environment["OCEAN_SIM_COUNT"],
+           let count = Int(raw), count > 0 {
+            seedSimulated(count: count, context: context)
+            return
+        }
+        #endif
+
         let now = Date()
         func ago(_ days: Double) -> Date { now.addingTimeInterval(-days * 86_400) }
 
@@ -44,4 +55,40 @@ enum SeedData {
 
         try? context.save()
     }
+
+    #if DEBUG
+    /// A deterministic synthetic ocean for frame-rate and legibility runs:
+    /// clustered themes, a sprinkle of floaters, and capture dates spread
+    /// from today back through two months so the energy gradient shows.
+    @MainActor
+    private static func seedSimulated(count: Int, context: ModelContext) {
+        let themePool = [
+            "water & ocean", "memory", "light & color", "sound & rhythm",
+            "tools", "attention", "dreams", "tide & return"
+        ]
+        let now = Date()
+        for index in 0..<count {
+            // Titled on purpose: the Library backfill re-understands any node
+            // without a title, which would re-theme the whole synthetic ocean
+            // into one current moments after launch.
+            let node = NodeComposer.make(
+                kind: .text,
+                title: "Synthetic drift \(index + 1)",
+                text: "Synthetic drift \(index + 1), a placeholder thought for performance and layout runs.",
+                detectThemes: false
+            )
+            // Every fifth thought floats free; the rest gather into currents.
+            if index % 5 != 4 {
+                let theme = themePool[index % themePool.count]
+                node.themes = [theme]
+                node.hue = NodeComposer.hue(for: theme)
+            }
+            let daysAgo = Double(index) * 60.0 / Double(max(1, count))
+            node.createdAt = now.addingTimeInterval(-daysAgo * 86_400)
+            node.updatedAt = node.createdAt
+            context.insert(node)
+        }
+        try? context.save()
+    }
+    #endif
 }
