@@ -1046,6 +1046,16 @@
         }
       }
     },
+    "It will stay where you put it." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "它会留在你安放的地方。"
+          }
+        }
+      }
+    },
     "Keep" : {
       "localizations" : {
         "zh-Hans" : {
@@ -1206,12 +1216,32 @@
         }
       }
     },
+    "Move to a current" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "移入洋流"
+          }
+        }
+      }
+    },
     "Nearby thoughts" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "相关灵感"
+          }
+        }
+      }
+    },
+    "No currents yet" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "还没有洋流"
           }
         }
       }

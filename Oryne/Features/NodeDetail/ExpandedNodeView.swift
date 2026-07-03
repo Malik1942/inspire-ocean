@@ -34,6 +34,7 @@ struct NodeDetailContent: View {
     @State private var showBranchComposer = false
     @State private var showDeleteConfirm = false
     @State private var showEditSheet = false
+    @State private var showMovePicker = false
     @State private var editFocusesBody = false
     @State private var relatedIDs: [UUID] = []
     @State private var showImageViewer = false
@@ -72,6 +73,17 @@ struct NodeDetailContent: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Close") { dismiss() }
                 }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                // The quiet escape hatch: move this one thought to a chosen
+                // current when the Ocean filed it wrong. Never surfaced
+                // anywhere else, never suggested.
+                Button {
+                    showMovePicker = true
+                } label: {
+                    Image(systemName: "arrow.turn.up.right")
+                }
+                .accessibilityLabel("Move to a current")
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
@@ -113,6 +125,9 @@ struct NodeDetailContent: View {
         }
         .sheet(isPresented: $showEditSheet) {
             NodeEditSheet(node: node, focusBodyOnAppear: editFocusesBody)
+        }
+        .sheet(isPresented: $showMovePicker) {
+            MoveToCurrentSheet(node: node)
         }
         .fullScreenCover(isPresented: $showImageViewer) {
             ImageViewer(datas: node.imageDatas, index: $viewerIndex)
