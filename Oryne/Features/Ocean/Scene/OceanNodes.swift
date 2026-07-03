@@ -157,26 +157,59 @@ enum OrbTextures {
         return SKTexture(image: image)
     }()
 
-    /// A tiny soft dot for the ambient bubbles.
-    static let ambientDot: SKTexture = {
-        let side: CGFloat = 12
-        let image = UIGraphicsImageRenderer(size: CGSize(width: side, height: side)).image { ctx in
-            let colors = [
-                UIColor(white: 1, alpha: 1).cgColor,
-                UIColor(white: 1, alpha: 0.85).cgColor,
-                UIColor(white: 1, alpha: 0).cgColor
-            ] as CFArray
-            if let gradient = CGGradient(
-                colorsSpace: CGColorSpaceCreateDeviceRGB(),
-                colors: colors, locations: [0, 0.55, 1]) {
-                let center = CGPoint(x: side / 2, y: side / 2)
-                ctx.cgContext.drawRadialGradient(
-                    gradient, startCenter: center, startRadius: 0,
-                    endCenter: center, endRadius: side / 2, options: [])
-            }
+}
+
+// MARK: - Label typography
+
+/// The current label's type, shared between rendering and layout: the layout
+/// engine measures the exact box a label will render into, so label bounds
+/// can join collision footprints and truncation cannot happen. Whisper light
+/// by default, firmed and fully lit under Calm Accessibility.
+enum OceanLabelStyle {
+
+    /// Labels wrap to two lines at this width; the footprint reserves the
+    /// measured box, so nothing narrower ever truncates.
+    static let maxWidth: CGFloat = 160
+
+    static func attributed(_ text: String, prominence: Double, calm: Bool) -> NSAttributedString {
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .center
+        paragraph.lineBreakMode = .byTruncatingTail
+        let shadow = NSShadow()
+        shadow.shadowColor = UIColor(white: 0, alpha: 0.55)
+        shadow.shadowBlurRadius = 2.5
+        shadow.shadowOffset = .zero
+        return NSAttributedString(string: text, attributes: [
+            .font: UIFont.systemFont(ofSize: calm ? 12 : 11, weight: calm ? .medium : .light),
+            .kern: calm ? 0.2 : 0.6,
+            .foregroundColor: calm
+                ? UIColor(white: 1, alpha: 0.92)
+                : UIColor(white: 1, alpha: 0.5 * (0.74 + 0.24 * prominence)),
+            .paragraphStyle: paragraph,
+            .shadow: shadow
+        ])
+    }
+
+    /// The rendered box for a label, taken as the wider of the normal and
+    /// Calm Accessibility styles so toggling calm never needs a relayout.
+    /// Cached: measurement runs on every layout pass.
+    private static var measureCache: [String: CGSize] = [:]
+
+    static func measure(_ text: String) -> CGSize {
+        if let hit = measureCache[text] { return hit }
+        var size = CGSize.zero
+        for calm in [false, true] {
+            let bounds = attributed(text, prominence: 1, calm: calm).boundingRect(
+                with: CGSize(width: maxWidth, height: .greatestFiniteMagnitude),
+                options: [.usesLineFragmentOrigin, .usesFontLeading],
+                context: nil
+            )
+            size.width = max(size.width, ceil(bounds.width))
+            size.height = max(size.height, ceil(bounds.height))
         }
-        return SKTexture(image: image)
-    }()
+        measureCache[text] = size
+        return size
+    }
 }
 
 // MARK: - Settle
@@ -282,11 +315,15 @@ final class MoteNode: SKNode {
             return
         }
 
-        // Wander 4 to 10 pt and flow rate both scale with energy.
-        let amplitude = 4 + 6 * energy
+        // Common fate: the family's shared sway (clusterOffset) is the
+        // dominant motion; each dot keeps only a whisper of its own wander,
+        // 1.5 to 3 pt by energy, buoyancy up to 3. That whisper is what
+        // makes the tight 1.5x orbits hard-safe; keep these caps in step
+        // with OceanLayoutEngine.Metrics.
+        let amplitude = 1.5 + 1.5 * energy
         let pace = 0.75 + 0.5 * energy
         let wander = sampler.wander(at: t, amplitude: amplitude, timeScale: pace)
-        let buoyancy = CGFloat(8 * energy)
+        let buoyancy = CGFloat(3 * energy)
 
         position = CGPoint(
             x: resting.x + clusterOffset.dx + wander.dx,
@@ -356,8 +393,10 @@ final class ClusterNode: SKNode {
                            height: d + OrbTextures.clusterPadding * 2)
         zPosition = CGFloat(placement.prominence)
 
-        label.preferredMaxLayoutWidth = max(96, d * 1.6)
-        label.attributedText = Self.labelText(
+        // The wrap width is the measured width the layout reserved, so the
+        // rendered label always fits the box that collision protected.
+        label.preferredMaxLayoutWidth = placement.labelSize.width + 1
+        label.attributedText = OceanLabelStyle.attributed(
             placement.label, prominence: placement.prominence, calm: calm)
         label.position = CGPoint(
             x: placement.labelOffset.width,
@@ -365,29 +404,6 @@ final class ClusterNode: SKNode {
         )
     }
 
-    /// Whisper typography matching the old label: light and airy by default,
-    /// brightening slightly with the current's recency, firmed and fully lit
-    /// under Calm Accessibility.
-    private static func labelText(
-        _ text: String, prominence: Double, calm: Bool
-    ) -> NSAttributedString {
-        let paragraph = NSMutableParagraphStyle()
-        paragraph.alignment = .center
-        paragraph.lineBreakMode = .byTruncatingTail
-        let shadow = NSShadow()
-        shadow.shadowColor = UIColor(white: 0, alpha: 0.55)
-        shadow.shadowBlurRadius = 2.5
-        shadow.shadowOffset = .zero
-        return NSAttributedString(string: text, attributes: [
-            .font: UIFont.systemFont(ofSize: calm ? 12 : 11, weight: calm ? .medium : .light),
-            .kern: calm ? 0.2 : 0.6,
-            .foregroundColor: calm
-                ? UIColor(white: 1, alpha: 0.92)
-                : UIColor(white: 1, alpha: 0.5 * (0.74 + 0.24 * prominence)),
-            .paragraphStyle: paragraph,
-            .shadow: shadow
-        ])
-    }
 
     func tick(t: TimeInterval, motion: MotionPolicy) {
         let resting = settle.position(at: t)
@@ -401,83 +417,5 @@ final class ClusterNode: SKNode {
         position = CGPoint(x: resting.x + currentOffset.dx,
                            y: resting.y + currentOffset.dy)
         body.setScale(sampler.breathing(at: t))
-    }
-}
-
-// MARK: - Ambient bubbles
-
-/// The barely-there particles that keep the water alive: they rise ultra
-/// slowly, sway, fade in from the deep and out near the surface, and wrap
-/// back around. Deterministic across launches, exactly like the Canvas layer
-/// this replaces.
-final class AmbientBubbleLayer: SKNode {
-
-    private struct Bubble {
-        let x: Double
-        let baseY: Double
-        let radius: Double
-        let speed: Double
-        let drift: Double
-        let phase: Double
-        let opacity: Double
-    }
-
-    private let bubbles: [Bubble]
-    private let sprites: [SKSpriteNode]
-
-    override init() {
-        var rng = SeededRandom(seed: 0x0CEA_0CEA)
-        bubbles = (0..<18).map { _ in
-            Bubble(
-                x: rng.next(),
-                baseY: rng.next(),
-                radius: 0.5 + rng.next() * 1.6,
-                speed: 0.0018 + rng.next() * 0.0055,
-                drift: 3.0 + rng.next() * 12.0,
-                phase: rng.next() * 6.283,
-                opacity: 0.03 + rng.next() * 0.09
-            )
-        }
-        sprites = bubbles.map { bubble in
-            let sprite = SKSpriteNode(texture: OrbTextures.ambientDot)
-            sprite.color = UIColor(OceanTheme.accent)
-            sprite.colorBlendFactor = 1
-            sprite.size = CGSize(width: bubble.radius * 2, height: bubble.radius * 2)
-            sprite.alpha = 0
-            return sprite
-        }
-        super.init()
-        sprites.forEach(addChild)
-    }
-
-    @available(*, unavailable)
-    required init?(coder: NSCoder) { fatalError("AmbientBubbleLayer is never decoded") }
-
-    func tick(t: TimeInterval, size: CGSize) {
-        guard size.height > 0 else { return }
-        for (index, bubble) in bubbles.enumerated() {
-            let sprite = sprites[index]
-            let progress = (t * bubble.speed + bubble.baseY)
-                .truncatingRemainder(dividingBy: 1)
-            let sway = sin(t * 0.06 + bubble.phase) * bubble.drift
-            sprite.position = CGPoint(
-                x: bubble.x * size.width + sway,
-                y: progress * size.height
-            )
-            let edgeFade = min(progress * 5, (1 - progress) * 5, 1.0)
-            sprite.alpha = CGFloat(bubble.opacity * edgeFade)
-        }
-    }
-}
-
-/// Tiny seeded PRNG so the ambient field is identical across launches.
-struct SeededRandom {
-    var state: UInt64
-    init(seed: UInt64) { state = seed == 0 ? 0xDEADBEEF : seed }
-    mutating func next() -> Double {
-        state ^= state << 13
-        state ^= state >> 7
-        state ^= state << 17
-        return Double(state % 1_000_000) / 1_000_000
     }
 }

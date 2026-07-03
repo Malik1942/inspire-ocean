@@ -14,7 +14,7 @@ struct FragmentSnapshot: Equatable {
 /// The contract with SwiftUI is narrow on purpose: data flows in through
 /// `apply(layout:fragments:motion:calm:)` as value snapshots, events flow out
 /// through the two tap closures, and every per-frame concern (drift,
-/// breathing, energy, ambient particles) lives in `update(_:)`. SwiftUI state
+/// breathing, energy, camera pan) lives in `update(_:)`. SwiftUI state
 /// never changes per frame.
 final class OceanScene: SKScene {
 
@@ -32,8 +32,10 @@ final class OceanScene: SKScene {
     private var moteNodes: [UUID: MoteNode] = [:]
     private var currentLayout = OceanLayout()
     private var pending: (layout: OceanLayout, fragments: [FragmentSnapshot])?
+    private var lastFragments: [UUID: FragmentSnapshot] = [:]
 
-    private var ambient: AmbientBubbleLayer?
+    private let cameraController = OceanCameraController()
+    private var needsInitialFraming = true
 
     private var lastTime: TimeInterval = 0
     private var lastEnergyRefresh: TimeInterval = -.greatestFiniteMagnitude
@@ -57,32 +59,38 @@ final class OceanScene: SKScene {
         static let boostAmount: Double = 0.35
         static let boostDecaySeconds: Double = 180
         static let moteZ: CGFloat = 10
-        static let ambientZ: CGFloat = -5
     }
 
     // MARK: Lifecycle
 
     override func didMove(to view: SKView) {
         backgroundColor = .clear
-        if ambient == nil {
-            let layer = AmbientBubbleLayer()
-            layer.zPosition = Tuning.ambientZ
-            addChild(layer)
-            ambient = layer
+        if camera == nil {
+            camera = cameraController.node
+            addChild(cameraController.node)
+            cameraController.attach(to: view, scene: self)
+            cameraController.beginsOnBubble = { [weak self] point in
+                guard let self else { return false }
+                return self.nearestMote(to: point) != nil || self.clusterHit(at: point) != nil
+            }
+            cameraController.onRest = { [weak self] in
+                guard let self else { return }
+                self.rebuildAccessibility(fragments: self.lastFragments)
+            }
         }
         flushPendingIfPossible()
     }
 
+    override func willMove(from view: SKView) {
+        cameraController.detach(from: view)
+        super.willMove(from: view)
+    }
+
     override func didChangeSize(_ oldSize: CGSize) {
         super.didChangeSize(oldSize)
-        // Keep resting places sensible until SwiftUI recomputes the layout
-        // for the new size (the layout signature includes the size).
-        for node in clusterNodes.values {
-            node.settle = .immediate(scenePoint(node.placement.center))
-        }
-        for node in moteNodes.values {
-            node.settle = .immediate(restingPoint(for: node.placement))
-        }
+        // The world no longer depends on the viewport; a resize only needs
+        // the camera to stay inside the bounds.
+        cameraController.reclamp()
         flushPendingIfPossible()
     }
 
@@ -96,7 +104,6 @@ final class OceanScene: SKScene {
     ) {
         self.motion = motion
         self.calmPresentation = calm
-        ambient?.isHidden = (motion == .still)
 
         guard view != nil, size.width > 1, size.height > 1 else {
             pending = (layout, fragments)
@@ -171,8 +178,49 @@ final class OceanScene: SKScene {
         }
 
         currentLayout = layout
+        lastFragments = byID
+
+        // The camera learns the water's new extent.
+        cameraController.worldBounds = sceneRect(layout.worldBounds)
+        frameInitiallyIfNeeded()
+
+        #if DEBUG
+        let violations = OceanLayoutEngine.audit(layout)
+        let orphans = OceanLayoutEngine.orphanScan(layout, viewport: size)
+        let screens = size.height > 1
+            ? String(format: "%.2f", layout.worldBounds.height / size.height) : "?"
+        print("OceanLayout AUDIT: \(violations.count) violations, "
+            + "\(orphans.count) orphans, "
+            + "\(layout.clusters.count) currents, \(layout.motes.count) motes, "
+            + "world \(Int(layout.worldBounds.width))x\(Int(layout.worldBounds.height)) "
+            + "(\(screens) screens), "
+            + "hash \(OceanLayoutEngine.layoutHash(layout))")
+        for violation in violations {
+            print("OceanLayout AUDIT violation: \(violation)")
+        }
+        for orphan in orphans {
+            print("OceanLayout ORPHAN: \(orphan)")
+        }
+        // Centers on one line so a capture's locality is checkable from the
+        // console: unchanged currents must print identical coordinates.
+        let centers = layout.clusters
+            .map { "\($0.id)=(\(Int($0.center.x.rounded())),\(Int($0.center.y.rounded())))" }
+            .sorted().joined(separator: " ")
+        print("OceanLayout centers: \(centers)")
+        #endif
+
         refreshEnergies(now: .now, t: lastTime)
         rebuildAccessibility(fragments: byID)
+    }
+
+    /// First presentation framing: the dive starts at the top, which the
+    /// layout orders as the most energetic water. The vertical rhythm
+    /// guarantees the next current always peeks past the bottom edge.
+    private func frameInitiallyIfNeeded() {
+        guard needsInitialFraming, size.width > 1, !currentLayout.clusters.isEmpty else { return }
+        needsInitialFraming = false
+        let world = sceneRect(currentLayout.worldBounds)
+        cameraController.frame(on: CGPoint(x: 0, y: world.maxY))
     }
 
     // MARK: Transitions
@@ -256,9 +304,7 @@ final class OceanScene: SKScene {
                 .flatMap { clusterNodes[$0]?.currentOffset } ?? .zero
             node.tick(t: currentTime, clusterOffset: offset, motion: motion)
         }
-        if motion == .full, let ambient {
-            ambient.tick(t: currentTime, size: size)
-        }
+        cameraController.update(currentTime)
     }
 
     /// Energy is a slow value (7 day half-life); refreshing it every few
@@ -282,10 +328,16 @@ final class OceanScene: SKScene {
 
     // MARK: Coordinates
 
-    /// Layout points are UIKit-style (origin top left); the scene's origin is
-    /// bottom left. One flip, applied at the boundary.
+    /// Layout world coordinates grow downward (UIKit style); scene y grows
+    /// upward. One negation, applied at the boundary, independent of any
+    /// viewport size.
     private func scenePoint(_ layoutPoint: CGPoint) -> CGPoint {
-        CGPoint(x: layoutPoint.x, y: size.height - layoutPoint.y)
+        CGPoint(x: layoutPoint.x, y: -layoutPoint.y)
+    }
+
+    private func sceneRect(_ layoutRect: CGRect) -> CGRect {
+        CGRect(x: layoutRect.minX, y: -layoutRect.maxY,
+               width: layoutRect.width, height: layoutRect.height)
     }
 
     private func restingPoint(for placement: MotePlacement) -> CGPoint {
@@ -351,19 +403,28 @@ final class OceanScene: SKScene {
 
     /// SpriteKit is invisible to VoiceOver, so the scene publishes one
     /// element per current and per thought, anchored at resting positions.
+    /// Frames are camera-dependent: rebuilt on every integrate and whenever
+    /// a pan (and its momentum) comes to rest.
     private func rebuildAccessibility(fragments: [UUID: FragmentSnapshot]) {
-        guard let view else { return }
+        guard let view, size.width > 1 else { return }
         var elements: [UIAccessibilityElement] = []
+
+        func viewFrame(worldCenter: CGPoint, box: CGSize) -> CGRect {
+            let center = convertPoint(toView: scenePoint(worldCenter))
+            return CGRect(
+                x: center.x - box.width / 2, y: center.y - box.height / 2,
+                width: box.width, height: box.height
+            )
+        }
 
         for placement in currentLayout.clusters {
             let element = OceanAccessibilityElement(accessibilityContainer: view)
             element.accessibilityLabel = placement.label
             element.accessibilityTraits = .button
             let d = placement.radius * 2
-            element.accessibilityFrameInContainerSpace = CGRect(
-                x: placement.center.x - placement.radius,
-                y: placement.center.y - placement.radius,
-                width: d, height: d + 44
+            element.accessibilityFrameInContainerSpace = viewFrame(
+                worldCenter: CGPoint(x: placement.center.x, y: placement.center.y + 22),
+                box: CGSize(width: d, height: d + 44)
             )
             let id = placement.id
             element.onActivate = { [weak self] in self?.onTapCluster?(id) }
@@ -373,9 +434,8 @@ final class OceanScene: SKScene {
             let element = OceanAccessibilityElement(accessibilityContainer: view)
             element.accessibilityLabel = fragments[placement.id]?.title
             element.accessibilityTraits = .button
-            element.accessibilityFrameInContainerSpace = CGRect(
-                x: placement.base.x - 22, y: placement.base.y - 22,
-                width: 44, height: 44
+            element.accessibilityFrameInContainerSpace = viewFrame(
+                worldCenter: placement.base, box: CGSize(width: 44, height: 44)
             )
             let id = placement.id
             element.onActivate = { [weak self] in self?.onTapFragment?(id) }

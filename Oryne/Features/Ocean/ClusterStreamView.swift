@@ -54,7 +54,11 @@ struct ClusterStreamView: View {
     /// Just the concept and how much drifts in it — no decorative placeholder.
     private var header: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(OceanLayoutEngine.displayLabel(for: theme))
+            // The adrift gathering current is app-generated, so its name is
+            // localized; real currents wear their concept keys.
+            Text(theme == OceanLayoutEngine.adriftKey
+                ? String(localized: "Adrift")
+                : OceanLayoutEngine.displayLabel(for: theme))
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(OceanTheme.foam)
             Text("\(members.count) thoughts drift here")

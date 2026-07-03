@@ -133,6 +133,16 @@
         }
       }
     },
+    "Adrift" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "漂流"
+          }
+        }
+      }
+    },
     "All kinds" : {
       "localizations" : {
         "zh-Hans" : {

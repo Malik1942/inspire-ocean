@@ -48,26 +48,22 @@ struct OceanFieldView: View {
 
     var body: some View {
         NavigationStack {
-            GeometryReader { geo in
-                let key = OceanLayoutEngine.signature(
-                    nodes: nodes, size: geo.size, resurfacingID: resurfacing?.id)
-                ZStack {
-                    OceanBackground()
-                    oceanFog
+            ZStack {
+                OceanBackground()
+                oceanFog
 
-                    if nodes.isEmpty {
-                        emptyState
-                    } else {
-                        field
-                    }
+                if nodes.isEmpty {
+                    emptyState
+                } else {
+                    field
                 }
-                .onAppear {
-                    recompute(geo.size)
-                    consumePendingFocus()
-                }
-                .onChange(of: key) { _, _ in recompute(geo.size) }
-                .onChange(of: appState.pendingFocusNodeID) { _, _ in consumePendingFocus() }
             }
+            .onAppear {
+                recompute()
+                consumePendingFocus()
+            }
+            .onChange(of: layoutKey) { _, _ in recompute() }
+            .onChange(of: appState.pendingFocusNodeID) { _, _ in consumePendingFocus() }
             .overlay(alignment: .top) { header }
             .ignoresSafeArea(edges: .bottom)
             .navigationBarHidden(true)
@@ -143,9 +139,21 @@ struct OceanFieldView: View {
         open(node)
     }
 
-    private func recompute(_ size: CGSize) {
+    /// Layout depends only on the data, never the viewport: the world keeps
+    /// its shape across rotation and resize, and the camera does the rest.
+    private var layoutKey: String {
+        OceanLayoutEngine.signature(nodes: nodes, resurfacingID: resurfacing?.id)
+    }
+
+    private func recompute() {
+        // Passing the previous layout keeps settled water in place: only
+        // currents whose membership changed repack, everything else stays
+        // exactly where the user left it.
         let next = OceanLayoutEngine.compute(
-            nodes: nodes, size: size, resurfacingID: resurfacing?.id)
+            nodes: nodes,
+            resurfacingID: resurfacing?.id,
+            previous: layout.signature.isEmpty ? nil : layout
+        )
         guard next.signature != layout.signature else { return }
         // The scene animates the transition (settle or crossfade); no
         // SwiftUI animation wraps the swap anymore.
