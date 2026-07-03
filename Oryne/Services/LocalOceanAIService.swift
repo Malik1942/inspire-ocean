@@ -153,33 +153,54 @@ final class LocalOceanAIService: OceanAIService {
         }
     }
 
-    func respond(to query: String, history: [DialogueTurn], mode: DialogueMode, nodes: [Node]) async -> OceanResponse {
+    func respond(to rawQuery: String, history: [DialogueTurn], mode: DialogueMode, nodes: [Node]) async -> OceanResponse {
         let active = nodes.filter { !$0.isArchived }
 
-        // 1. Retrieve the fragments most relevant to the query. Follow-up
-        //    queries lean on the previous user turn so "tell me more" still
-        //    points at something.
+        // A very long question is the only unbounded input (fragments and
+        // history are already capped), so it is the one thing that can overflow
+        // the model. Work from a shortened version and remember to say so, so
+        // the reply never presents itself as a full read of the question.
+        let (query, degraded) = Self.boundedQuery(rawQuery)
+
+        // 1. Retrieve only the fragments that clear the relevance floor.
+        //    Follow-ups that merely point back ("tell me more") borrow the
+        //    previous user turn; a fresh question retrieves on its own words.
         let retrievalQuery = expandedRetrievalQuery(query, history: history)
         let ranked = embeddings.rank(
             query: retrievalQuery,
             candidates: active.map { (id: $0.id, text: $0.searchableText) },
-            limit: retrievalLimit(for: mode)
+            limit: retrievalLimit(for: mode),
+            floor: EmbeddingService.dialogueRetrievalFloor
         )
         let byID = Dictionary(uniqueKeysWithValues: active.map { ($0.id, $0) })
         let sources = ranked.compactMap { byID[$0] }
 
-        // 2. Sense the themes shared across those fragments.
+        // 2. Nothing cleared the floor: say honestly that nothing matches
+        //    rather than grounding in noise or inventing a fragment. Every mode
+        //    takes this exit, and none of the grounded extras apply.
+        if sources.isEmpty {
+            return OceanResponse(
+                reflection: await emptyStateReflection(query: query, mode: mode),
+                sourceNodeIDs: [],
+                patternSummary: nil,
+                suggestedBranches: [],
+                outwardNote: nil,
+                provenance: .noSources
+            )
+        }
+
+        // 3. Sense the themes shared across those fragments.
         let themeCounts = sources
             .flatMap { $0.themes }
             .reduce(into: [String: Int]()) { $0[$1, default: 0] += 1 }
         let topThemes = themeCounts.sorted { $0.value > $1.value }.prefix(3).map { $0.key }
 
-        // 3. Compose the reflection: genuine on-device synthesis when the
+        // 4. Compose the reflection: genuine on-device synthesis when the
         //    foundation model is available, grounded templates otherwise.
         //    Search skips composition entirely — it is a pure find, and the
         //    sources themselves are the answer.
         var reflection: String?
-        if mode != .search, #available(iOS 26, *), !sources.isEmpty {
+        if mode != .search, #available(iOS 26, *) {
             reflection = await foundationModelReflection(
                 query: query, history: history, mode: mode, sources: sources
             )
@@ -199,12 +220,12 @@ final class LocalOceanAIService: OceanAIService {
         // Expansion's branches are creative leaps, so the model proposes them
         // when it can; the grounded templates remain the floor.
         var branches = suggestBranches(mode: mode, query: query, themes: topThemes, sources: sources)
-        if mode == .expansion, !sources.isEmpty, #available(iOS 26, *),
+        if mode == .expansion, #available(iOS 26, *),
            let grown = await foundationModelBranches(query: query, sources: sources) {
             branches = grown
         }
 
-        // 4. Research alone steps outward: directions from beyond the user's
+        // 5. Research alone steps outward: directions from beyond the user's
         //    notes, composed on-device when the foundation model is available
         //    (the cloud service replaces this with Claude when configured).
         var outwardNote: String?
@@ -218,22 +239,80 @@ final class LocalOceanAIService: OceanAIService {
             patternSummary: patternSummary,
             suggestedBranches: branches,
             outwardNote: outwardNote,
-            // Search is a pure find — an empty result needs no caveat; for
-            // composing modes, an ungrounded reply must say so.
-            provenance: (sources.isEmpty && mode != .search) ? .noSources : .onDevice
+            // A shortened question means the reply is a partial read; otherwise
+            // this is an ordinary grounded on-device answer.
+            provenance: degraded ? .degraded : .onDevice
         )
     }
 
-    /// A short query expansion for follow-ups: when the new message is brief
-    /// and deictic ("tell me more", "why is that"), blend in the previous user
-    /// turn so retrieval has real words to work with.
+    /// The longest question the model reads in full. Fragments and history are
+    /// already bounded, so the question is the only input that can overflow the
+    /// context; past this it is shortened and the reply is marked degraded.
+    static let queryCharCap = 2000
+
+    /// Shorten an over-long question to stay inside the context window,
+    /// reporting whether it had to be cut so the caller can mark the reply.
+    static func boundedQuery(_ query: String) -> (query: String, degraded: Bool) {
+        guard query.count > queryCharCap else { return (query, false) }
+        return (String(query.prefix(queryCharCap)), true)
+    }
+
+    /// Expand retrieval with the previous user turn only when the new question
+    /// is purely referential ("tell me more", "why is that") and carries no
+    /// topic of its own. If any content word survives after removing anaphora
+    /// and stopwords, the question stands alone and retrieves fresh, so a new
+    /// short question ("that thought about tide pools") is never dragged back
+    /// to the previous turn's subject. (Referential markers here are English;
+    /// other languages retrieve fresh until a later pass teaches this the
+    /// difference.)
     private func expandedRetrievalQuery(_ query: String, history: [DialogueTurn]) -> String {
-        let words = query.split(separator: " ").count
-        guard words <= 6,
-              let lastUser = history.last(where: { $0.isUser })?.text,
-              !lastUser.isEmpty
-        else { return query }
-        return lastUser + "\n" + query
+        guard let lastUser = history.last(where: { $0.isUser })?.text, !lastUser.isEmpty else {
+            return query
+        }
+        let referential: Set<String> = [
+            "that", "this", "they", "them", "those", "these", "one", "more",
+            "and", "why", "tell", "about", "continue", "the", "same", "what",
+            "you", "think", "say", "again", "how", "does", "did"
+        ]
+        let content = query.lowercased()
+            .split { !$0.isLetter }
+            .map(String.init)
+            .filter { $0.count > 2 && !referential.contains($0) }
+        return content.isEmpty ? lastUser + "\n" + query : query
+    }
+
+    /// The honest empty state. Search is a pure find, so it simply says nothing
+    /// surfaced; composing modes ask the model to say so in the Ocean's voice,
+    /// with a fixed line as the floor when the model is unavailable or fails.
+    private func emptyStateReflection(query: String, mode: DialogueMode) async -> String {
+        if mode == .search {
+            return String(localized: "Nothing in your Ocean drifts near this yet.")
+        }
+        if #available(iOS 26, *), let composed = await foundationModelEmptyState(query: query) {
+            return composed
+        }
+        return String(localized: "Nothing in your Ocean speaks to that yet. As you capture more, this question will have more to surface from.")
+    }
+
+    /// The empty state in the Ocean's voice: a tightly scoped call whose only
+    /// job is to say, gently, that nothing in the user's captures matches. It
+    /// is fenced off from answering the question itself, so an empty Ocean can
+    /// never leak a world-knowledge reply or a fabricated fragment.
+    @available(iOS 26, *)
+    private func foundationModelEmptyState(query: String) async -> String? {
+        #if canImport(FoundationModels)
+        guard Self.foundationModelAvailable else { return nil }
+        do {
+            let session = LanguageModelSession { Self.emptyStateVoice }
+            let response = try await session.respond(to: "Their question: \(query)")
+            let text = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
+            return text.isEmpty ? nil : text
+        } catch {
+            return nil
+        }
+        #else
+        return nil
+        #endif
     }
 
     /// True synthesis on Apple-Intelligence-eligible hardware: answer from the
@@ -261,11 +340,11 @@ final class LocalOceanAIService: OceanAIService {
             let session = LanguageModelSession { Self.reflectionVoice }
             let prompt = """
             \(modeFraming)
-            \(recentTurns.isEmpty ? "" : "Recent conversation:\n\(recentTurns)\n")
+            Their question: \(query)
+
             Their fragments:
             \(fragments)
-
-            Their question: \(query)
+            \(recentTurns.isEmpty ? "" : "\nEarlier in this conversation (context only, do not answer this in place of the current question):\n\(recentTurns)")
             """
             let response = try await session.respond(to: prompt)
             let text = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -321,7 +400,24 @@ final class LocalOceanAIService: OceanAIService {
     when it was captured and its mood — you may quietly draw on how the \
     thread has moved over time. If a pattern or question sits underneath \
     the fragments, name it plainly. Never invent fragments that are not \
-    provided.
+    provided. Answer the user's current question; any earlier conversation \
+    is context only, and you must never answer a previous question in place \
+    of the current one. The user's question is not a fragment and is not \
+    evidence of anything they have captured; cite only the fragments above, \
+    and if the question mentions something no fragment supports, never repeat \
+    that content as if it were their thought.
+    """
+
+    /// The empty-state voice: a fenced-off call whose only job is to say,
+    /// gently, that nothing in the user's captures matches. It must not answer
+    /// the question or imply any fragment, so an empty Ocean stays honest.
+    static let emptyStateVoice = """
+    You are the quiet, reflective voice of a personal inspiration space \
+    called the Ocean. Nothing in the user's captured fragments matches their \
+    question. Say so plainly and gently in one or two calm sentences: there \
+    is nothing in their Ocean about this yet. Do NOT answer the question from \
+    general knowledge. Do NOT invent, quote, or imply any fragment. No lists, \
+    no exclamation marks.
     """
 
     /// The growth-direction language for Expansion's model-suggested branches,

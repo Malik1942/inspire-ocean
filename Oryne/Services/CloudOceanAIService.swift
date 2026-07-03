@@ -88,6 +88,15 @@ final class CloudOceanAIService: OceanAIService {
         let byID = Dictionary(uniqueKeysWithValues: nodes.map { ($0.id, $0) })
         let sources = scaffold.sourceNodeIDs.compactMap { byID[$0] }
 
+        // The scaffold already carries the retrieval floor's verdict: empty
+        // sources mean the on-device path chose the honest empty state (its
+        // .noSources provenance), so the cloud grounds no reflection here and
+        // must not manufacture one. A long question is shortened for the cloud
+        // too, and the reply stays marked degraded even when Claude answers it
+        // well. (Research's outward step still runs on an empty Ocean; open
+        // water is exactly where an empty Ocean can't reach.)
+        let (query, degraded) = LocalOceanAIService.boundedQuery(query)
+
         // Search is a pure find — the sources are the answer, nothing to
         // compose. Research's outward step runs concurrently with the
         // grounded reflection; either may fail independently, and whatever
@@ -112,11 +121,11 @@ final class CloudOceanAIService: OceanAIService {
         var response = scaffold
         if let reflection = await composedReflection {
             response.reflection = reflection
-            response.provenance = .cloud
+            response.provenance = degraded ? .degraded : .cloud
         } else if reflectionExpected {
             // The cloud was supposed to answer and couldn't — the scaffold
             // stands, and the reply should quietly say where it came from.
-            response.provenance = .offlineFallback
+            response.provenance = degraded ? .degraded : .offlineFallback
         }
         if let outward = await composedOutward {
             response.outwardNote = outward
@@ -237,11 +246,11 @@ final class CloudOceanAIService: OceanAIService {
 
         let prompt = """
         \(LocalOceanAIService.modeFraming(for: mode))
-        \(recentTurns.isEmpty ? "" : "Recent conversation:\n\(recentTurns)\n")
+        Their question: \(query)
+
         Their fragments:
         \(fragments)
-
-        Their question: \(query)
+        \(recentTurns.isEmpty ? "" : "\nEarlier in this conversation (context only, do not answer this in place of the current question):\n\(recentTurns)")
         """
 
         let text = try await completeText(

@@ -18,8 +18,12 @@ enum ResponseProvenance: String {
     case onDevice
     /// The cloud was expected but unreachable — the device answered instead.
     case offlineFallback
-    /// Nothing drifted near the query; the reply is open water, not grounding.
+    /// Nothing cleared the relevance floor; the reply honestly says so rather
+    /// than grounding in noise.
     case noSources
+    /// The question was too long to read in full; the reply worked from a
+    /// shortened version, so it must not present itself as complete.
+    case degraded
 }
 
 /// A grounded Ocean Dialogue response (§11): a reflection, the source nodes it

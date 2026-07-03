@@ -1316,16 +1316,6 @@
         }
       }
     },
-    "Nothing drifts near this yet, answered from open water" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "这附近还没有相关的灵感，答案来自更广的海洋"
-          }
-        }
-      }
-    },
     "Nothing drifts nearby yet." : {
       "localizations" : {
         "zh-Hans" : {
@@ -1342,6 +1332,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "这里还空空如也"
+          }
+        }
+      }
+    },
+    "Nothing in your Ocean drifts near this yet." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "你的海里，还没有灵感漂到这附近。"
+          }
+        }
+      }
+    },
+    "Nothing in your Ocean matches this yet" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "你的海里还没有和它相近的灵感"
+          }
+        }
+      }
+    },
+    "Nothing in your Ocean speaks to that yet. As you capture more, this question will have more to surface from." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "你的海里还没有能回应它的灵感。随着你捕捉更多，这个问题会有更多可以浮现的东西。"
           }
         }
       }
@@ -2637,6 +2657,16 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "边说，文字边浮现…"
+          }
+        }
+      }
+    },
+    "Your note was long, so I worked from a shortened version" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "你的这条内容较长，我读取了其中的一部分"
           }
         }
       }

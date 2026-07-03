@@ -58,11 +58,29 @@ final class EmbeddingService {
         return EmbeddingService.keywordOverlap(a, b)
     }
 
-    /// Rank candidates by similarity to a query. Returns ids in descending order.
-    func rank<ID>(query: String, candidates: [(id: ID, text: String)], limit: Int) -> [ID] {
+    /// Similarity below which a fragment is not relevant enough to enter an
+    /// Ocean Dialogue answer. A grounded reply built from noise is worse than
+    /// an honest "nothing matches", so retrieval drops everything under this
+    /// floor and lets the empty state fire. Chosen from the on-device
+    /// `NLEmbedding` score distribution: nonsense queries top out around 0.67,
+    /// real paraphrase matches land near 0.74, so 0.70 sits in the gap.
+    /// Sibling of `SemanticThemes.relatednessFloor` (a different, lower bar for
+    /// ambient related-node sensing).
+    ///
+    /// The corridor is narrow (about 0.03 above the noise ceiling, 0.04 below
+    /// the paraphrase target) and depends on Apple's NLEmbedding distribution,
+    /// so it can drift when Apple revises the model. Re-derive it with
+    /// `Scripts/embedding-floor-sweep/` rather than guessing a new number.
+    static let dialogueRetrievalFloor = 0.70
+
+    /// Rank candidates by similarity to a query. Returns ids in descending
+    /// order. `floor` drops candidates that score below it, so a caller can
+    /// require genuine relevance rather than padding the result to `limit`.
+    func rank<ID>(query: String, candidates: [(id: ID, text: String)], limit: Int, floor: Double = 0) -> [ID] {
+        let cutoff = Swift.max(floor, 0.0001)
         let scored = candidates.map { (id: $0.id, score: similarity(query, $0.text)) }
         return scored
-            .filter { $0.score > 0.0001 }
+            .filter { $0.score >= cutoff }
             .sorted { $0.score > $1.score }
             .prefix(limit)
             .map { $0.id }
