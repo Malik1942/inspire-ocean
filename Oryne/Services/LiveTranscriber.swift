@@ -40,9 +40,35 @@ final class LiveTranscriber {
     private var file: AVAudioFile?
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
+    /// Held for the take so a mid-take restart can mint a fresh task.
+    private var recognizer: SFSpeechRecognizer?
+    /// Monotonic id of the current task's callbacks. A cancelled task still
+    /// reports one last event (usually a "canceled" error); acting on it
+    /// after a replacement task owns the take would cancel the healthy task
+    /// and loop the restart. `handle` drops events from older generations.
+    private var taskGeneration = 0
     private(set) var currentURL: URL?
 
-    private var latestTranscription = ""
+    /// Finished segments of the take. On-device recognition resets its
+    /// hypothesis after a silence gap — the partials that follow carry only
+    /// the new utterance — so every closed segment is banked here, out of
+    /// the recognizer's reach.
+    private var committedSegments: [String] = []
+    /// The live hypothesis for the current segment. Volatile by design:
+    /// partials legitimately rewrite it wholesale (words included), so it is
+    /// only trusted once a commit trigger in `handle` banks it.
+    private var currentHypothesis = ""
+    /// The last committed segment came from a segment-final (metadata)
+    /// result. endAudio()'s final usually re-delivers that same segment
+    /// improved — punctuation, corrected words — so the final must replace
+    /// the segment, not append a near-duplicate. Cleared the moment new
+    /// words arrive: from then on the final describes the new segment.
+    private var lastSegmentReplaceableByFinal = false
+    /// Consecutive mid-take restarts with no result in between. The cap
+    /// turns a genuinely broken recognizer into recording-only instead of a
+    /// restart loop.
+    private var restartCount = 0
+    private static let maxConsecutiveRestarts = 3
     private var recognitionEnded = false
     private var finalContinuation: CheckedContinuation<Void, Never>?
     /// Set synchronously at start() entry: a double-tap on the mic must not
@@ -116,18 +142,8 @@ final class LiveTranscriber {
         }
 
         if authorized, let recognizer, recognizer.isAvailable {
-            let request = SFSpeechAudioBufferRecognitionRequest()
-            request.shouldReportPartialResults = true
-            // On-device wherever supported: privacy, and a bus with no signal
-            // both want it. Server recognition is the fallback.
-            if recognizer.supportsOnDeviceRecognition {
-                request.requiresOnDeviceRecognition = true
-            }
-            self.request = request
-            task = recognizer.recognitionTask(with: request) { [weak self] result, error in
-                guard let self else { return }
-                Task { @MainActor in self.handle(result: result, error: error) }
-            }
+            self.recognizer = recognizer
+            startRecognitionTask(with: recognizer)
             speechAvailability = .live
         } else {
             speechAvailability = .unavailable
@@ -135,7 +151,8 @@ final class LiveTranscriber {
 
         currentURL = url
         partial = ""
-        latestTranscription = ""
+        resetTranscript()
+        restartCount = 0
         recognitionEnded = false
         elapsed = 0
         level = 0
@@ -211,7 +228,7 @@ final class LiveTranscriber {
     /// (empty when recognition was unavailable). The file at `currentURL`
     /// holds the finished audio.
     func stop() async -> (audioURL: URL?, transcript: String) {
-        guard isRecording else { return (currentURL, latestTranscription) }
+        guard isRecording else { return (currentURL, composedTranscript) }
 
         removeInterruptionObservers()
         engine.inputNode.removeTap(onBus: 0)
@@ -240,7 +257,7 @@ final class LiveTranscriber {
         }
         teardownRecognition()
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-        return (currentURL, latestTranscription)
+        return (currentURL, composedTranscript)
     }
 
     /// Stops and deletes the recording — nothing entered the Ocean.
@@ -249,22 +266,193 @@ final class LiveTranscriber {
         if let url { try? FileManager.default.removeItem(at: url) }
         currentURL = nil
         partial = ""
-        latestTranscription = ""
+        resetTranscript()
     }
 
     // MARK: Recognition plumbing
 
+    /// The commit-trigger state machine. Partials legitimately rewrite the
+    /// current hypothesis wholesale, so it is banked into `committedSegments`
+    /// only on the explicit end-of-segment signals:
+    ///
+    /// - segment-final (`speechRecognitionMetadata`): on-device recognition
+    ///   endpointed on a silence — the partials that follow restart from
+    ///   empty with only post-pause speech, and would wipe these words.
+    /// - `isFinal`: the task is over, either from endAudio() or ended by the
+    ///   recognizer mid-take after a long pause — commit, then restart while
+    ///   still recording so later speech keeps streaming.
+    /// - error: the task died ("no speech detected" during a pause, mostly) —
+    ///   bank the hypothesis it heard, then restart while still recording.
     @MainActor
-    private func handle(result: SFSpeechRecognitionResult?, error: Error?) {
+    private func handle(result: SFSpeechRecognitionResult?, error: Error?, generation: Int) {
+        guard generation == taskGeneration else { return }
         if let result {
+            restartCount = 0
             let text = result.bestTranscription.formattedString
-            // The final pass can return an empty hypothesis for faint audio —
-            // never let it erase words the partials already heard.
-            if !text.isEmpty { latestTranscription = text }
-            if isRecording { partial = latestTranscription }
-            if result.isFinal { resolveFinal() }
+            if result.isFinal {
+                if text.isEmpty {
+                    // The final pass can return an empty hypothesis for faint
+                    // audio — never let it erase words the partials already
+                    // heard. The task is over, so bank them now.
+                    commitCurrentHypothesis()
+                } else {
+                    commitFinal(text)
+                }
+                if isRecording { restartRecognition() } else { resolveFinal() }
+            } else if result.speechRecognitionMetadata != nil {
+                commitSegment(text)
+            } else if !text.isEmpty {
+                currentHypothesis = text
+                // New words after a segment commit: the eventual final now
+                // describes this segment, not the committed one.
+                lastSegmentReplaceableByFinal = false
+            }
+            if isRecording { partial = composedTranscript }
         }
-        if error != nil { resolveFinal() }
+        if error != nil {
+            if isRecording {
+                // The dead task's words won't be re-delivered — bank them
+                // before the replacement task's partials can overwrite.
+                commitCurrentHypothesis()
+                restartRecognition()
+            } else {
+                resolveFinal()
+            }
+        }
+    }
+
+    /// Segment-final: on-device recognition endpointed on a silence. Bank the
+    /// segment so the restarted-from-empty partials that follow can't wipe it.
+    @MainActor
+    private func commitSegment(_ text: String) {
+        let segment = text.isEmpty ? currentHypothesis : text
+        guard !segment.isEmpty else { return }
+        committedSegments.append(segment)
+        currentHypothesis = ""
+        // endAudio()'s final usually re-delivers this same segment improved
+        // (punctuation, corrected words) — it must replace, not append.
+        lastSegmentReplaceableByFinal = true
+    }
+
+    /// A task's non-empty final result: it either re-delivers the last
+    /// metadata-committed segment improved (replace it) or closes the segment
+    /// the partials were still drafting (append it).
+    @MainActor
+    private func commitFinal(_ text: String) {
+        if lastSegmentReplaceableByFinal, !committedSegments.isEmpty {
+            committedSegments[committedSegments.count - 1] = text
+        } else {
+            committedSegments.append(text)
+        }
+        currentHypothesis = ""
+        lastSegmentReplaceableByFinal = false
+    }
+
+    /// Banks the live hypothesis as-is, for task ends that deliver no final
+    /// text (errors, empty finals).
+    @MainActor
+    private func commitCurrentHypothesis() {
+        guard !currentHypothesis.isEmpty else { return }
+        committedSegments.append(currentHypothesis)
+        currentHypothesis = ""
+        // A replacement task never heard this audio; its final must append.
+        lastSegmentReplaceableByFinal = false
+    }
+
+    /// The recognizer ended its task mid-take (isFinal after a long pause, or
+    /// a "no speech" error). The recording itself never stops — so mint a
+    /// fresh request/task and keep post-pause speech streaming; the words so
+    /// far are already committed.
+    ///
+    /// Between the old task dying and the new request landing in `request`,
+    /// the tap appends buffers to a dead or nil request: that sliver of audio
+    /// goes untranscribed by design. The .m4a is unaffected — the file write
+    /// is independent of recognition — and the gap sits inside the very
+    /// silence that ended the task, so no words are lost. A known, accepted
+    /// seam, not a bug.
+    @MainActor
+    private func restartRecognition() {
+        // Invalidate the dying task's last callback before cancelling.
+        taskGeneration += 1
+        task?.cancel()
+        task = nil
+        request = nil
+        restartCount += 1
+        guard restartCount <= Self.maxConsecutiveRestarts,
+              let recognizer, recognizer.isAvailable else {
+            // Recognition is gone for this take. The recording carries on,
+            // and the committed words survive into stop().
+            speechAvailability = .unavailable
+            return
+        }
+        recognitionEnded = false
+        startRecognitionTask(with: recognizer)
+    }
+
+    /// One streaming request + task pair, used at start and again by each
+    /// mid-take restart. The tap reads `self.request` on every buffer, so
+    /// assigning here is what routes audio into the new task.
+    private func startRecognitionTask(with recognizer: SFSpeechRecognizer) {
+        let request = SFSpeechAudioBufferRecognitionRequest()
+        request.shouldReportPartialResults = true
+        // On-device wherever supported: privacy, and a bus with no signal
+        // both want it. Server recognition is the fallback.
+        if recognizer.supportsOnDeviceRecognition {
+            request.requiresOnDeviceRecognition = true
+        }
+        self.request = request
+        taskGeneration += 1
+        let generation = taskGeneration
+        task = recognizer.recognitionTask(with: request) { [weak self] result, error in
+            guard let self else { return }
+            Task { @MainActor in self.handle(result: result, error: error, generation: generation) }
+        }
+    }
+
+    private func resetTranscript() {
+        committedSegments = []
+        currentHypothesis = ""
+        lastSegmentReplaceableByFinal = false
+    }
+
+    /// Committed segments ⧺ the live hypothesis — the transcript as it
+    /// stands right now; what `partial` mirrors and `stop()` returns.
+    private var composedTranscript: String {
+        var segments = committedSegments
+        if !currentHypothesis.isEmpty { segments.append(currentHypothesis) }
+        return Self.joined(segments)
+    }
+
+    /// Segments join with a single space, except across a CJK boundary:
+    /// 中文 reads wrong with spaces injected between characters.
+    private static func joined(_ segments: [String]) -> String {
+        segments.reduce(into: "") { joined, raw in
+            let segment = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !segment.isEmpty else { return }
+            if joined.isEmpty {
+                joined = segment
+            } else if isCJK(joined.last), isCJK(segment.first) {
+                joined += segment
+            } else {
+                joined += " " + segment
+            }
+        }
+    }
+
+    /// CJK ideographs and full-width punctuation — the scripts written
+    /// without inter-word spaces that this app ships (zh).
+    private static func isCJK(_ character: Character?) -> Bool {
+        guard let scalar = character?.unicodeScalars.first else { return false }
+        switch scalar.value {
+        case 0x3000...0x303F,   // CJK symbols and punctuation (。、「」)
+             0x3400...0x4DBF,   // CJK extension A
+             0x4E00...0x9FFF,   // CJK unified ideographs
+             0xF900...0xFAFF,   // CJK compatibility ideographs
+             0xFF00...0xFF65:   // full-width forms (，！？)
+            return true
+        default:
+            return false
+        }
     }
 
     @MainActor
@@ -275,9 +463,14 @@ final class LiveTranscriber {
     }
 
     private func teardownRecognition() {
+        // Mid-take restarts reuse the same `task` slot, so whichever task is
+        // current dies here — none left orphaned. The generation bump makes
+        // the dying task's last callback a no-op, whatever it carries.
+        taskGeneration += 1
         task?.cancel()
         task = nil
         request = nil
+        recognizer = nil
     }
 
     /// RMS of the buffer mapped to 0...1 for the waveform, matching the feel
