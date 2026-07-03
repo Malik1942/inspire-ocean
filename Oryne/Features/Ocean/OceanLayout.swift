@@ -32,6 +32,14 @@ struct MotePlacement: Identifiable {
     var baseAngle: Double = 0
 }
 
+/// One current's kinship to another: their streams overlap because a thought
+/// expresses both themes. Strength is how much they share, so kinship can be
+/// felt by degree, not just present or absent.
+struct CurrentKinship: Hashable {
+    let key: String
+    let strength: Double
+}
+
 struct OceanLayout {
     var clusters: [ClusterPlacement] = []
     var motes: [MotePlacement] = []
@@ -42,6 +50,10 @@ struct OceanLayout {
     /// Member sets per current, kept so the next compute can tell which
     /// clusters actually changed and leave the rest exactly where they are.
     var membership: [String: Set<UUID>] = [:]
+    /// For each current, the other currents its stream overlaps, strongest
+    /// first. Drives the long-press kinship reveal; positions never depend on
+    /// it, so it stays out of the layout hash.
+    var kinship: [String: [CurrentKinship]] = [:]
 }
 
 /// Cluster-first layout for the Ocean Field, world-space edition.
@@ -84,8 +96,11 @@ enum OceanLayoutEngine {
         /// Clear water within one current: siblings sit close.
         static let snugGap: CGFloat = 4
         /// A mote's center never exceeds this multiple of its parent orb's
-        /// radius: when the orb is off screen, so is its family.
-        static let orbitCap: CGFloat = 1.5
+        /// radius: when the orb is off screen, so is its family. Widened from
+        /// 1.5 so the ring sits farther off the rim and reads as its own band
+        /// of light; the reach is horizontal (dots stay clamped inside the
+        /// orb's vertical span), so this does not deepen the dive.
+        static let orbitCap: CGFloat = 1.7
         static let moteWander: CGFloat = 3
         static let moteBuoyancy: CGFloat = 3
         static let clusterSway: CGFloat = 4
@@ -141,6 +156,46 @@ enum OceanLayoutEngine {
     /// decides position, never membership.
     static func currentKey(for node: Node) -> String? {
         node.anchorThemeKey ?? node.themes.first
+    }
+
+    /// Currents that overlap `key` by shared membership: the same relation
+    /// that lets one thought visit more than one stream (a stream shows every
+    /// thought whose themes include its concept, or that is anchored to it).
+    /// Strength is the Jaccard overlap of the two currents' streams. Only
+    /// currents that actually exist as orbs (some thought's primary) are
+    /// returned, so the field and the detail row agree. Strongest first;
+    /// deterministic, so no seed is involved.
+    static func relatedCurrents(to key: String, among nodes: [Node]) -> [CurrentKinship] {
+        guard key != adriftKey else { return [] }
+        let active = nodes.filter { !$0.isArchived }
+        let existing = Set(active.compactMap { currentKey(for: $0) })
+        func members(_ k: String) -> Set<UUID> {
+            Set(active.filter { $0.themes.contains(k) || $0.anchorThemeKey == k }.map(\.id))
+        }
+        let mine = members(key)
+        guard !mine.isEmpty else { return [] }
+
+        var others = Set<String>()
+        for node in active where mine.contains(node.id) {
+            for theme in node.themes where theme != key && existing.contains(theme) {
+                others.insert(theme)
+            }
+            if let anchor = node.anchorThemeKey, anchor != key, existing.contains(anchor) {
+                others.insert(anchor)
+            }
+        }
+
+        var result: [CurrentKinship] = []
+        for other in others where other != adriftKey {
+            let theirs = members(other)
+            let shared = mine.intersection(theirs).count
+            guard shared > 0 else { continue }
+            let union = mine.union(theirs).count
+            result.append(CurrentKinship(key: other, strength: Double(shared) / Double(union)))
+        }
+        return result.sorted {
+            $0.strength != $1.strength ? $0.strength > $1.strength : $0.key < $1.key
+        }
     }
 
     /// Viewport size is deliberately absent: the layout no longer depends on
@@ -311,6 +366,15 @@ enum OceanLayoutEngine {
         // scroll fully above the tab bar.
         let headerInset: CGFloat = 150
         let tabBarInset: CGFloat = 120
+
+        // Kinship between currents, for the long-press reveal. Derived only
+        // from theme membership, so it is deterministic and adds no motion.
+        var kinship: [String: [CurrentKinship]] = [:]
+        for (key, _) in entries where key != adriftKey {
+            let related = relatedCurrents(to: key, among: nodes)
+            if !related.isEmpty { kinship[key] = related }
+        }
+
         return OceanLayout(
             clusters: clusters,
             motes: motes,
@@ -319,7 +383,8 @@ enum OceanLayoutEngine {
                 x: -halfW, y: top - headerInset,
                 width: Metrics.designWidth,
                 height: (bottom - top) + headerInset + tabBarInset),
-            membership: membership
+            membership: membership,
+            kinship: kinship
         )
     }
 
@@ -452,20 +517,19 @@ enum OceanLayoutEngine {
             candidates[candidates.count - 1] = resurfacingNode
         }
 
-        let rMax = candidates.map(moteRadius).max() ?? 6.7
-
         // The label hangs below the orb; the arc [30, 150] degrees is its
         // reserved water, same reservation as always.
         let arcStart = 150.0 * .pi / 180
         let arcSpan = 240.0 * .pi / 180
 
-        // Every dot rides its own radius in the 1.3 to 1.5x band, floored so
-        // it always clears the rim (the additive floor wins on small orbs
-        // where 1.3x would clip). Dots stay outside the orb in clear water.
+        // Every dot rides its own radius in the 1.45 to 1.65x band, floored so
+        // it always clears the rim by at least 5 pt (the additive floor wins on
+        // small orbs where the multiplier would clip). Dots stay outside the
+        // orb in clear water, farther off the rim than before.
         let ringMax = Metrics.orbitCap * radius - 2
         func ringRadius(_ moteR: CGFloat, _ id: String) -> CGFloat {
-            let base = (1.3 + noise(id, "rr") * 0.2) * radius
-            return min(max(base, radius + moteR + 3), ringMax)
+            let base = (1.45 + noise(id, "rr") * 0.2) * radius
+            return min(max(base, radius + moteR + 5), ringMax)
         }
 
         // The orphan guarantee does not need a squashed orbit: with the world
@@ -522,10 +586,18 @@ enum OceanLayoutEngine {
             ))
         }
 
-        // Center to farthest owned edge, drift included. The ring reaches
-        // widest at the cap; use it so the body circle stays conservative
-        // whatever radii the dots happened to draw.
-        let outermost = ringMax
+        // Never a lone dot: one particle reads as a notification badge, not a
+        // constellation. A current that can place only one (a single member,
+        // or an orb too tight to separate two) shows none, and the orb stands
+        // alone and clean. Two is the floor for "gathered life"; one is worse
+        // than zero.
+        if slots.count == 1 { slots.removeAll() }
+
+        // Center to farthest owned edge, drift included. With no dots the body
+        // is just the orb; with dots the ring reaches widest at the cap, so use
+        // the cap and the largest dot actually placed to stay conservative.
+        let placedRMax = slots.map(\.radius).max() ?? 0
+        let outermost = slots.isEmpty ? 0 : ringMax
         let labelReach = CGFloat(hypot(
             Double(labelSize.width / 2 + abs(labelOffset.width)),
             Double(radius + 13 + labelOffset.height + labelSize.height)
@@ -534,8 +606,9 @@ enum OceanLayoutEngine {
         // against this family's dots (both wanders, buoyancy, both sways,
         // half the water gap each side), so two bodies at water-gap distance
         // can never let their dots touch, even facing each other head on.
-        let moteReach = outermost + rMax + Metrics.moteWander + Metrics.moteBuoyancy
-            + Metrics.clusterSway + Metrics.waterGap / 2
+        let moteReach = slots.isEmpty ? 0
+            : outermost + placedRMax + Metrics.moteWander + Metrics.moteBuoyancy
+                + Metrics.clusterSway + Metrics.waterGap / 2
         let orbReach = radius * (1 + Metrics.breathe) + Metrics.clusterSway
         let enclosing = max(moteReach, max(orbReach, labelReach + Metrics.clusterSway)) + 4
 
@@ -548,7 +621,7 @@ enum OceanLayoutEngine {
             slots: slots,
             enclosingRadius: enclosing,
             bodyRadius: max(moteReach, orbReach) + 2,
-            crownExtent: outermost + rMax,
+            crownExtent: slots.isEmpty ? orbReach : outermost + placedRMax,
             orbExtent: orbReach,
             labelCenterOffset: CGVector(
                 dx: labelOffset.width,
@@ -704,11 +777,12 @@ enum OceanLayoutEngine {
                 let dOrb = hypot(m.base.x - c.center.x, m.base.y - c.center.y)
                 if own {
                     // Affiliation is the hard rule: a family dot rests
-                    // strictly outside its orb's rim, stays within the
-                    // orbit cap, and never escapes the body footprint.
-                    if dOrb < c.radius + m.radius + 2 - 0.5 {
+                    // strictly outside its orb's rim (now by at least 4 pt,
+                    // matching the wider ring floor), stays within the orbit
+                    // cap, and never escapes the body footprint.
+                    if dOrb < c.radius + m.radius + 4 - 0.5 {
                         violations.append(
-                            "mote inside rim of \(c.id): \(dOrb.rounded()) < \((c.radius + m.radius + 2).rounded())")
+                            "mote inside rim of \(c.id): \(dOrb.rounded()) < \((c.radius + m.radius + 4).rounded())")
                     }
                     if dOrb > Metrics.orbitCap * c.radius + 0.5 {
                         violations.append(

@@ -24,11 +24,18 @@ struct ClusterStreamView: View {
             : allNodes.filter { $0.themes.contains(theme) || $0.anchorThemeKey == theme }
     }
 
+    /// Currents this one overlaps by shared thoughts: the same relation the
+    /// field lights on a long-press, made legible here too.
+    private var related: [CurrentKinship] {
+        OceanLayoutEngine.relatedCurrents(to: theme, among: allNodes)
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
                     header
+                    if !related.isEmpty { relatedRow }
                     ForEach(members) { node in
                         NavigationLink { NodeDetailContent(node: node) } label: {
                             NodeRow(node: node)
@@ -66,5 +73,27 @@ struct ClusterStreamView: View {
                 .foregroundStyle(OceanTheme.mist)
         }
         .padding(.bottom, 6)
+    }
+
+    /// The currents that share thoughts with this one, as quiet chips. No
+    /// count, no line, just the names, so the overlap is legible without the
+    /// field.
+    private var relatedRow: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Related currents")
+                .font(.caption)
+                .foregroundStyle(OceanTheme.mist)
+            FlowLayout(spacing: 8) {
+                ForEach(related, id: \.key) { kin in
+                    Text(OceanLayoutEngine.displayLabel(for: kin.key))
+                        .font(.caption)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.white.opacity(0.08), in: Capsule())
+                        .foregroundStyle(OceanTheme.foam)
+                }
+            }
+        }
+        .padding(.bottom, 4)
     }
 }

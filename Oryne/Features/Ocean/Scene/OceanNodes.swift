@@ -357,6 +357,10 @@ final class ClusterNode: SKNode {
 
     private let body: SKSpriteNode
     private let label: SKLabelNode
+    /// A soft warm halo behind the orb, lit only while a kin current is held.
+    /// Absent at rest; its alpha is owned entirely by `setKinship`, so nothing
+    /// in the per-frame tick ever touches it.
+    private let kinGlow: SKSpriteNode
 
     /// The current's sway this frame; members read it so the region moves
     /// as one.
@@ -368,6 +372,11 @@ final class ClusterNode: SKNode {
         self.sampler = DriftSampler(seedKey: placement.id)
         self.settle = .immediate(resting)
 
+        kinGlow = SKSpriteNode(texture: OrbTextures.glow)
+        kinGlow.colorBlendFactor = 1
+        kinGlow.color = UIColor(OceanTheme.glowWarm)
+        kinGlow.zPosition = -1
+        kinGlow.alpha = 0
         body = SKSpriteNode(texture: nil)
         label = SKLabelNode()
         label.numberOfLines = 2
@@ -375,6 +384,7 @@ final class ClusterNode: SKNode {
         label.horizontalAlignmentMode = .center
 
         super.init()
+        addChild(kinGlow)
         addChild(body)
         addChild(label)
         apply(placement: placement, calm: calm)
@@ -391,6 +401,9 @@ final class ClusterNode: SKNode {
             prominence: placement.prominence)
         body.size = CGSize(width: d + OrbTextures.clusterPadding * 2,
                            height: d + OrbTextures.clusterPadding * 2)
+        // A halo a little wider than the orb, so the light reads as gathering
+        // around the current rather than sitting on it.
+        kinGlow.size = CGSize(width: d * 2.6, height: d * 2.6)
         zPosition = CGFloat(placement.prominence)
 
         // The wrap width is the measured width the layout reserved, so the
@@ -417,5 +430,17 @@ final class ClusterNode: SKNode {
         position = CGPoint(x: resting.x + currentOffset.dx,
                            y: resting.y + currentOffset.dy)
         body.setScale(sampler.breathing(at: t))
+    }
+
+    /// Raise this current's kinship halo toward `strength` (0 clears it),
+    /// scaled subtly so a faint overlap glows faintly. Under reduced motion it
+    /// is a plain crossfade; otherwise a gentle ease. Nothing pulses, and at
+    /// rest the halo is fully absent.
+    func setKinship(_ strength: Double, motion: MotionPolicy) {
+        let target = CGFloat(min(max(strength, 0), 1)) * 0.5
+        kinGlow.removeAction(forKey: "kinship")
+        let fade = SKAction.fadeAlpha(to: target, duration: motion == .still ? 0.15 : 0.3)
+        if motion == .full { fade.timingMode = .easeInEaseOut }
+        kinGlow.run(fade, withKey: "kinship")
     }
 }

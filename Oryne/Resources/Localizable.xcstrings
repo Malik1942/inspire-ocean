@@ -1619,6 +1619,16 @@
         }
       }
     },
+    "Related currents" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "相关洋流"
+          }
+        }
+      }
+    },
     "Release" : {
       "localizations" : {
         "zh-Hans" : {

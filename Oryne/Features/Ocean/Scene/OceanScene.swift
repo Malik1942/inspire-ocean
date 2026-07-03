@@ -45,6 +45,13 @@ final class OceanScene: SKScene {
     private var boostStart: [UUID: TimeInterval] = [:]
 
     private var touchDown: (location: CGPoint, time: TimeInterval)?
+    /// A press that landed on a current and may grow into a kinship hold. The
+    /// slop check in `touchesMoved` cancels it, leaving the long-press-then-
+    /// move path free for a future drag phase to claim.
+    private var holdCandidate: (clusterID: String, start: TimeInterval)?
+    /// The current whose kin are currently lit, so release settles exactly
+    /// those neighbors back to baseline.
+    private var activeKinshipCluster: String?
 
     // MARK: Tuning
 
@@ -59,6 +66,9 @@ final class OceanScene: SKScene {
         static let boostAmount: Double = 0.35
         static let boostDecaySeconds: Double = 180
         static let moteZ: CGFloat = 10
+        /// How long a still press on a current takes to become a kinship hold.
+        /// Longer than a tap, short enough to feel deliberate.
+        static let holdActivation: TimeInterval = 0.35
     }
 
     // MARK: Lifecycle
@@ -120,6 +130,11 @@ final class OceanScene: SKScene {
     }
 
     private func integrate(layout: OceanLayout, fragments: [FragmentSnapshot]) {
+        // A relayout ends any in-progress kinship reveal cleanly, before the
+        // cluster nodes and the kinship map underneath it change.
+        releaseKinship()
+        holdCandidate = nil
+
         let byID = Dictionary(uniqueKeysWithValues: fragments.map { ($0.id, $0) })
 
         // Currents.
@@ -304,6 +319,16 @@ final class OceanScene: SKScene {
                 .flatMap { clusterNodes[$0]?.currentOffset } ?? .zero
             node.tick(t: currentTime, clusterOffset: offset, motion: motion)
         }
+
+        // A press held still on a current past the threshold lights its kin.
+        if let hold = holdCandidate, activeKinshipCluster == nil,
+           currentTime - hold.start >= Tuning.holdActivation {
+            for kin in currentLayout.kinship[hold.clusterID] ?? [] {
+                clusterNodes[kin.key]?.setKinship(kin.strength, motion: motion)
+            }
+            activeKinshipCluster = hold.clusterID
+        }
+
         cameraController.update(currentTime)
     }
 
@@ -348,16 +373,40 @@ final class OceanScene: SKScene {
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
-        touchDown = (touch.location(in: self), lastTime)
+        let location = touch.location(in: self)
+        touchDown = (location, lastTime)
+        // A press directly on a current (not a mote) may grow into a kinship
+        // hold; motes keep tap only.
+        if nearestMote(to: location) == nil, let cluster = clusterHit(at: location) {
+            holdCandidate = (cluster.clusterID, lastTime)
+        }
+    }
+
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first, let down = touchDown else { return }
+        // Past the tap slop this is no longer a hold. Cancelling here leaves
+        // the long-press-then-move path open for a future drag to take over.
+        if touch.location(in: self).distance(to: down.location) >= 12 {
+            holdCandidate = nil
+            releaseKinship()
+        }
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         touchDown = nil
+        holdCandidate = nil
+        releaseKinship()
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        let wasHold = activeKinshipCluster != nil
+        releaseKinship()
+        holdCandidate = nil
+        defer { touchDown = nil }
         guard let touch = touches.first, let down = touchDown else { return }
-        touchDown = nil
+        // A hold that revealed kinship is its own gesture; releasing it never
+        // also opens detail.
+        guard !wasHold else { return }
         let location = touch.location(in: self)
         guard location.distance(to: down.location) < 12 else { return }
 
@@ -366,6 +415,15 @@ final class OceanScene: SKScene {
         } else if let cluster = clusterHit(at: location) {
             onTapCluster?(cluster.clusterID)
         }
+    }
+
+    /// Settle the currently lit kin currents back to baseline.
+    private func releaseKinship() {
+        guard let id = activeKinshipCluster else { return }
+        for kin in currentLayout.kinship[id] ?? [] {
+            clusterNodes[kin.key]?.setKinship(0, motion: motion)
+        }
+        activeKinshipCluster = nil
     }
 
     /// Generous targets for small visuals, matching the old invisible 36 to
