@@ -11,8 +11,8 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "1.0"
-    CURRENT_PROJECT_VERSION: "1"
+    MARKETING_VERSION: "1.1"
+    CURRENT_PROJECT_VERSION: "2"
     DEVELOPMENT_TEAM: ""
     CODE_SIGN_STYLE: Automatic
     ENABLE_USER_SCRIPT_SANDBOXING: YES
@@ -54,6 +54,11 @@ targets:
       path: Oryne/Info.plist
       properties:
         CFBundleDisplayName: Oryne
+        # Version lives once in settings.base (MARKETING_VERSION /
+        # CURRENT_PROJECT_VERSION); referencing it here is what makes the
+        # generated Info.plist track it, instead of xcodegen's 1.0/1 default.
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         # Declaring the shipped localizations is what surfaces the standard
         # per-app Language control in iOS Settings (Settings › Oryne › Language).
         # Language is chosen there, not in-app; the base is English.
@@ -109,6 +114,8 @@ targets:
       path: ShareExtension/Info.plist
       properties:
         CFBundleDisplayName: Oryne
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.share-services
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
@@ -137,5 +144,7 @@ targets:
       path: OceanWidgets/Info.plist
       properties:
         CFBundleDisplayName: Oryne
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
