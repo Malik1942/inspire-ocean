@@ -79,10 +79,6 @@ final class OceanScene: SKScene {
             camera = cameraController.node
             addChild(cameraController.node)
             cameraController.attach(to: view, scene: self)
-            cameraController.beginsOnBubble = { [weak self] point in
-                guard let self else { return false }
-                return self.nearestMote(to: point) != nil || self.clusterHit(at: point) != nil
-            }
             cameraController.onRest = { [weak self] in
                 guard let self else { return }
                 self.rebuildAccessibility(fragments: self.lastFragments)
@@ -372,9 +368,18 @@ final class OceanScene: SKScene {
     // MARK: Touches
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first else { return }
+        guard let touch = touches.first, let view else { return }
+        // Catch any decelerating glide immediately: while momentum runs, the
+        // camera moves the scene under a still finger, so an un-halted tap
+        // would hit-test a drifted point and open the wrong current. Halting
+        // freezes the camera for the tap and lets a drag resume from rest.
+        cameraController.halt()
         let location = touch.location(in: self)
-        touchDown = (location, lastTime)
+        // Slop is stored and compared in view space: during a pan the camera
+        // moves under the finger, so scene-space distance is meaningless (it
+        // can stay ~0 while the finger travels). Hit-testing still uses scene
+        // coordinates below.
+        touchDown = (touch.location(in: view), lastTime)
         // A press directly on a current (not a mote) may grow into a kinship
         // hold; motes keep tap only.
         if nearestMote(to: location) == nil, let cluster = clusterHit(at: location) {
@@ -383,10 +388,12 @@ final class OceanScene: SKScene {
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first, let down = touchDown else { return }
-        // Past the tap slop this is no longer a hold. Cancelling here leaves
-        // the long-press-then-move path open for a future drag to take over.
-        if touch.location(in: self).distance(to: down.location) >= 12 {
+        guard let touch = touches.first, let down = touchDown, let view else { return }
+        // Past the tap slop this is no longer a hold. Measured in view space,
+        // since a panning camera moves the scene under a stationary finger.
+        // Cancelling here leaves the long-press-then-move path open for the
+        // pan recognizer to take over.
+        if touch.location(in: view).distance(to: down.location) >= 12 {
             holdCandidate = nil
             releaseKinship()
         }
@@ -403,12 +410,14 @@ final class OceanScene: SKScene {
         releaseKinship()
         holdCandidate = nil
         defer { touchDown = nil }
-        guard let touch = touches.first, let down = touchDown else { return }
+        guard let touch = touches.first, let down = touchDown, let view else { return }
         // A hold that revealed kinship is its own gesture; releasing it never
         // also opens detail.
         guard !wasHold else { return }
         let location = touch.location(in: self)
-        guard location.distance(to: down.location) < 12 else { return }
+        // View-space slop again: a real drag recognized as a pan cancels this
+        // touch before it ever reaches here; a near-stationary lift opens.
+        guard touch.location(in: view).distance(to: down.location) < 12 else { return }
 
         if let mote = nearestMote(to: location) {
             onTapFragment?(mote.fragmentID)

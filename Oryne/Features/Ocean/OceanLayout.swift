@@ -114,9 +114,10 @@ enum OceanLayoutEngine {
         static let gapRatio: CGFloat = 0.45
         static let gapMin: CGFloat = 12
         static let gapMax: CGFloat = 46
-        /// Gentle lateral swing off the spine, alternating per cluster.
+        /// Floor for the lateral swing off the spine, alternating per cluster.
+        /// The swing now scales with the safe range (see `placeOnSpine`); this
+        /// is the minimum offset it uses whenever the range allows it.
         static let zigzagMin: CGFloat = 60
-        static let zigzagMax: CGFloat = 90
 
         /// The world is exactly one viewport wide: the portrait screen
         /// width, stable per device and independent of rotation.
@@ -650,9 +651,13 @@ enum OceanLayoutEngine {
             abs(pack.labelCenterOffset.dx) + pack.labelSize.width / 2)
         let maxX = max(0, halfW - reachX - Metrics.clusterSway)
         let sign: CGFloat = stackIndex.isMultiple(of: 2) ? -1 : 1
-        let amp = Metrics.zigzagMin
-            + CGFloat(noise(key, "zig")) * (Metrics.zigzagMax - Metrics.zigzagMin)
-        let x = sign * min(amp, maxX)
+        // Swing 80 to 95 percent of the safe range (deterministically
+        // jittered) so currents use the full screen width, never exceeding
+        // maxX (the hard horizontal-edge invariant) and never collapsing below
+        // the old floor when maxX allows it. Small orbs reach near the edges;
+        // very wide currents have a small maxX and naturally stay central.
+        let desired = maxX * (0.80 + 0.15 * CGFloat(noise(key, "zig")))
+        let x = sign * max(min(Metrics.zigzagMin, maxX), min(desired, maxX))
 
         guard !placed.isEmpty else {
             // The head of the dive: the orb top defines the world's top.
