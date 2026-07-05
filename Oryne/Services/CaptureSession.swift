@@ -129,6 +129,7 @@ final class CaptureSession {
             return nil
         }
         lastReleased = (node.id, draft, .now)
+        ReviewPrompt.shared.recordCapture()   // a verified save nudges the review ask
         return node.id
     }
 

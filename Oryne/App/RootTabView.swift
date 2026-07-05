@@ -4,6 +4,7 @@ import SwiftUI
 /// Library is the structured fallback "for accessibility and trust".
 struct RootTabView: View {
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.requestReview) private var requestReview
     @AppStorage(
         FastCapturePreferenceKeys.onboardingCompleted,
         store: FastCapturePreferences.defaults
@@ -84,6 +85,11 @@ struct RootTabView: View {
         }
         .onOpenURL { url in
             appState.handleDeepLink(url)
+        }
+        // A value-has-landed moment armed the once-ever review ask; fire it here,
+        // where the environment action lives and every surface funnels through.
+        .onChange(of: ReviewPrompt.shared.pendingRequest) { _, pending in
+            if pending { ReviewPrompt.shared.fulfill(using: requestReview) }
         }
         // Outermost, so the Fast Capture overlay and every presented sheet
         // inherit the stilled-water environment along with the tabs.

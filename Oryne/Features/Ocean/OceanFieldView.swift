@@ -127,6 +127,14 @@ struct OceanFieldView: View {
     private func open(_ node: Node) {
         if node.id == resurfacing?.id {
             Resurfacing.markMet(node, context: context)
+            // The core promise just paid off: arm the review ask once the old
+            // thought has had a couple of seconds to land, never during the open.
+            if !ReviewPrompt.shared.hasRequested {
+                Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(2))
+                    ReviewPrompt.shared.recordResurfacedOpen()
+                }
+            }
         }
         sheet = .thought(node)
     }
