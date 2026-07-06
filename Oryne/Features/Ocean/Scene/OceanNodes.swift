@@ -62,6 +62,11 @@ enum OrbTextures {
     /// Canvas padding around a cluster orb: room for the soft depth shadow.
     static let clusterPadding: CGFloat = 26
 
+    /// Canvas padding around a kinship rim: the ring plus room for its soft
+    /// bloom. Deliberately far smaller than `clusterPadding` (the rim carries
+    /// no depth shadow); just enough that the gentle glow never clips.
+    static let clusterRimPadding: CGFloat = 9
+
     static func cluster(hue: Double, radius: CGFloat, prominence: Double) -> SKTexture {
         let r = (radius / 2).rounded() * 2
         let p = (prominence * 4).rounded() / 4
@@ -129,6 +134,57 @@ enum OrbTextures {
             UIColor(white: 1, alpha: 0.07 + 0.06 * p).setStroke()
             cg.setLineWidth(0.6)
             cg.strokeEllipse(in: rect.insetBy(dx: 0.3, dy: 0.3))
+        }
+        let texture = SKTexture(image: image)
+        cache[key] = texture
+        return texture
+    }
+
+    /// The kinship edge-light: a soft, hue-tinted glass sheen hugging the orb's
+    /// own edge, meant to be drawn additively so it reads as the glass catching
+    /// a little light. No fill, no shadow pool — a wide faint blurred bloom, the
+    /// current's hue leading, and a whisper-thin core. Kept additive and low so
+    /// it reads as a transparent sheen, not the grey a partial-alpha ring gives
+    /// on dark water. Hue is baked in, so the sprite needs no per-node blend.
+    static func clusterRim(hue: Double, radius: CGFloat) -> SKTexture {
+        let r = (radius / 2).rounded() * 2
+        let key = "clusterRim·\(hueBucket(hue))·\(r)"
+        if let hit = cache[key] { return hit }
+
+        let d = r * 2
+        let pad = clusterRimPadding
+        let canvas = CGSize(width: d + pad * 2, height: d + pad * 2)
+        let rect = CGRect(x: pad, y: pad, width: d, height: d)
+        // The same rim circle the body's own resting rim uses, so the light
+        // lands exactly on the orb's edge.
+        let ring = rect.insetBy(dx: 0.3, dy: 0.3)
+        let hueGlass = UIColor(OceanTheme.color(forHue: bucketedHue(hue), brightness: 0.9))
+
+        let image = UIGraphicsImageRenderer(size: canvas).image { ctx in
+            let cg = ctx.cgContext
+
+            // Soft, transparent glass bloom hugging the rim: a wide, very faint,
+            // well-blurred stroke. Additive, so on dark water it reads as a
+            // light sheen catching the edge, never the grey a partial-alpha
+            // ring would give.
+            cg.saveGState()
+            cg.setShadow(offset: .zero, blur: 6, color: UIColor(white: 1, alpha: 0.45).cgColor)
+            UIColor(white: 1, alpha: 0.13).setStroke()
+            cg.setLineWidth(1.4)
+            cg.strokeEllipse(in: ring)
+            cg.restoreGState()
+
+            // The current's hue leads here, so the edge reads as tinted glass
+            // rather than clinical white: a soft, transparent, coloured sheen.
+            hueGlass.withAlphaComponent(0.24).setStroke()
+            cg.setLineWidth(2.2)
+            cg.strokeEllipse(in: ring)
+
+            // A whisper-thin core, kept very light: just enough to hint the
+            // edge, without the bright white line.
+            UIColor(white: 1, alpha: 0.3).setStroke()
+            cg.setLineWidth(0.8)
+            cg.strokeEllipse(in: ring)
         }
         let texture = SKTexture(image: image)
         cache[key] = texture
@@ -357,10 +413,11 @@ final class ClusterNode: SKNode {
 
     private let body: SKSpriteNode
     private let label: SKLabelNode
-    /// A soft warm halo behind the orb, lit only while a kin current is held.
-    /// Absent at rest; its alpha is owned entirely by `setKinship`, so nothing
-    /// in the per-frame tick ever touches it.
-    private let kinGlow: SKSpriteNode
+    /// A thin glass edge-light on the orb's own rim, lit only while a kin
+    /// current is held. Drawn additively above the body so it reads as the edge
+    /// catching light, not a glow behind it. Absent at rest; its alpha is owned
+    /// entirely by `setKinship`, so nothing in the per-frame tick ever touches it.
+    private let kinRim: SKSpriteNode
 
     /// The current's sway this frame; members read it so the region moves
     /// as one.
@@ -372,11 +429,13 @@ final class ClusterNode: SKNode {
         self.sampler = DriftSampler(seedKey: placement.id)
         self.settle = .immediate(resting)
 
-        kinGlow = SKSpriteNode(texture: OrbTextures.glow)
-        kinGlow.colorBlendFactor = 1
-        kinGlow.color = UIColor(OceanTheme.glowWarm)
-        kinGlow.zPosition = -1
-        kinGlow.alpha = 0
+        kinRim = SKSpriteNode(texture: OrbTextures.clusterRim(
+            hue: placement.hue, radius: placement.radius))
+        // Additive so the white rim reads as light on the glass edge and stays
+        // crisp on dark water instead of greying. Above the body, not behind.
+        kinRim.blendMode = .add
+        kinRim.zPosition = 1
+        kinRim.alpha = 0
         body = SKSpriteNode(texture: nil)
         label = SKLabelNode()
         label.numberOfLines = 2
@@ -384,7 +443,7 @@ final class ClusterNode: SKNode {
         label.horizontalAlignmentMode = .center
 
         super.init()
-        addChild(kinGlow)
+        addChild(kinRim)
         addChild(body)
         addChild(label)
         apply(placement: placement, calm: calm)
@@ -401,9 +460,12 @@ final class ClusterNode: SKNode {
             prominence: placement.prominence)
         body.size = CGSize(width: d + OrbTextures.clusterPadding * 2,
                            height: d + OrbTextures.clusterPadding * 2)
-        // A halo a little wider than the orb, so the light reads as gathering
-        // around the current rather than sitting on it.
-        kinGlow.size = CGSize(width: d * 2.6, height: d * 2.6)
+        // The rim hugs the orb itself: orb diameter plus only the rim texture's
+        // own small pad, so the lit edge sits on the rim and nowhere wider.
+        kinRim.texture = OrbTextures.clusterRim(
+            hue: placement.hue, radius: placement.radius)
+        kinRim.size = CGSize(width: d + OrbTextures.clusterRimPadding * 2,
+                             height: d + OrbTextures.clusterRimPadding * 2)
         zPosition = CGFloat(placement.prominence)
 
         // The wrap width is the measured width the layout reserved, so the
@@ -432,15 +494,24 @@ final class ClusterNode: SKNode {
         body.setScale(sampler.breathing(at: t))
     }
 
-    /// Raise this current's kinship halo toward `strength` (0 clears it),
-    /// scaled subtly so a faint overlap glows faintly. Under reduced motion it
-    /// is a plain crossfade; otherwise a gentle ease. Nothing pulses, and at
-    /// rest the halo is fully absent.
+    /// Light this current's kinship rim toward `strength` (0 clears it). With
+    /// additive blending a thin white rim reads clearly at low alpha, so a faint
+    /// kinship still shows a restrained edge while the strongest overlap stays
+    /// bright but not blown out. Under reduced motion it is a plain crossfade;
+    /// otherwise a gentle ease. Nothing pulses, and at rest the rim is fully
+    /// absent (alpha 0), so the orb is pixel-identical to its resting look.
+    // TODO: the rim could later breathe subtly while lit — an additive,
+    // low-amplitude sine driven from tick() while activeKinshipCluster is set,
+    // on kinRim.alpha or a rim-only setScale, never a grey pulse. Left unwired
+    // to judge the static rim first.
     func setKinship(_ strength: Double, motion: MotionPolicy) {
-        let target = CGFloat(min(max(strength, 0), 1)) * 0.5
-        kinGlow.removeAction(forKey: "kinship")
+        let s = min(max(strength, 0), 1)
+        // Low ceiling on purpose: even the pressed current (strength 1) is a
+        // light glass sheen, not a bright edge; fainter kin stay more sheer.
+        let target: CGFloat = s <= 0 ? 0 : min(0.55, 0.18 + 0.37 * CGFloat(s))
+        kinRim.removeAction(forKey: "kinship")
         let fade = SKAction.fadeAlpha(to: target, duration: motion == .still ? 0.15 : 0.3)
         if motion == .full { fade.timingMode = .easeInEaseOut }
-        kinGlow.run(fade, withKey: "kinship")
+        kinRim.run(fade, withKey: "kinship")
     }
 }

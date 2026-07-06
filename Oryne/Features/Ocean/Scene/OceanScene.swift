@@ -319,6 +319,10 @@ final class OceanScene: SKScene {
         // A press held still on a current past the threshold lights its kin.
         if let hold = holdCandidate, activeKinshipCluster == nil,
            currentTime - hold.start >= Tuning.holdActivation {
+            // The pressed current lights with a soft sheen to confirm the
+            // touch, kept light on purpose; its kin light in proportion to how
+            // much their streams overlap.
+            clusterNodes[hold.clusterID]?.setKinship(0.7, motion: motion)
             for kin in currentLayout.kinship[hold.clusterID] ?? [] {
                 clusterNodes[kin.key]?.setKinship(kin.strength, motion: motion)
             }
@@ -429,6 +433,7 @@ final class OceanScene: SKScene {
     /// Settle the currently lit kin currents back to baseline.
     private func releaseKinship() {
         guard let id = activeKinshipCluster else { return }
+        clusterNodes[id]?.setKinship(0, motion: motion)
         for kin in currentLayout.kinship[id] ?? [] {
             clusterNodes[kin.key]?.setKinship(0, motion: motion)
         }
