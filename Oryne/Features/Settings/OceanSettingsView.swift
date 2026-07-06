@@ -38,6 +38,12 @@ struct OceanSettingsView: View {
 
     @State private var pendingClearExamples = false
 
+    @State private var includeVoice = false
+    @State private var exportState: ExportState = .idle
+    @State private var zipURL: URL?
+
+    private enum ExportState { case idle, building, ready }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -51,6 +57,7 @@ struct OceanSettingsView: View {
                         if !exampleNodes.isEmpty && !realNodes.isEmpty {
                             examplesSection
                         }
+                        exportSection
                     }
                     .padding(.horizontal)
                     .padding(.vertical, 14)
@@ -206,5 +213,86 @@ struct OceanSettingsView: View {
             context.deleteNodeSafely(root)
         }
         try? context.save()
+    }
+
+    private var exportSection: some View {
+        GlassCard(padding: 16) {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 10) {
+                    Image(systemName: "arrow.up.doc")
+                        .font(.title3)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(OceanTheme.accent)
+                        .frame(width: 28)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Export the Ocean")
+                            .font(.headline)
+                            .foregroundStyle(OceanTheme.foam)
+                        Text("Your thoughts, ready to take with you.")
+                            .font(.caption)
+                            .foregroundStyle(OceanTheme.mist)
+                    }
+                }
+
+                Toggle(isOn: $includeVoice) {
+                    Label("Include voice recordings", systemImage: "waveform")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(OceanTheme.foam)
+                }
+                .tint(OceanTheme.accent)
+
+                switch exportState {
+                case .idle:
+                    Button { buildExport() } label: {
+                        Label("Prepare archive", systemImage: "shippingbox")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(OceanTheme.accent)
+                    }
+                    .disabled(realNodes.isEmpty)
+                case .building:
+                    HStack(spacing: 8) {
+                        ProgressView().controlSize(.small)
+                        Text("Packing your Ocean…")
+                            .font(.subheadline)
+                            .foregroundStyle(OceanTheme.mist)
+                    }
+                case .ready:
+                    if let zipURL {
+                        ShareLink(item: zipURL) {
+                            Label("Share archive", systemImage: "square.and.arrow.up")
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(OceanTheme.accent)
+                        }
+                    }
+                }
+
+                Text("One zip: a Markdown file per current, a full JSON backup, and your images. Examples stay behind.")
+                    .font(.caption)
+                    .foregroundStyle(OceanTheme.mist)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            // A built archive reflects the toggle at build time; changing it
+            // invalidates the archive so the user rebuilds with the new choice.
+            .onChange(of: includeVoice) { _, _ in
+                exportState = .idle
+                zipURL = nil
+            }
+        }
+    }
+
+    /// Snapshots the export set on the main actor (Node is main-isolated), then
+    /// writes files and zips off the main actor so the UI never blocks.
+    private func buildExport() {
+        exportState = .building
+        let snapshots = realNodes.map { OceanExport.snapshot(from: $0) }
+        let voice = includeVoice
+        Task {
+            let url = await Task.detached {
+                try? OceanExport.buildArchive(from: snapshots, includeVoice: voice)
+            }.value
+            zipURL = url
+            exportState = url != nil ? .ready : .idle
+        }
     }
 }

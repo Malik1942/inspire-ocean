@@ -1,6 +1,86 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Export the Ocean" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导出海洋"
+          }
+        }
+      }
+    },
+    "Include voice recordings" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "包含语音记录"
+          }
+        }
+      }
+    },
+    "One zip: a Markdown file per current, a full JSON backup, and your images. Examples stay behind." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一个压缩包：每条水流一份 Markdown 文件、一份完整的 JSON 备份，还有你的图片。示例不会包含在内。"
+          }
+        }
+      }
+    },
+    "Packing your Ocean…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在打包你的海洋……"
+          }
+        }
+      }
+    },
+    "Prepare archive" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "准备存档"
+          }
+        }
+      }
+    },
+    "Share archive" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分享存档"
+          }
+        }
+      }
+    },
+    "Uncategorized" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未分类"
+          }
+        }
+      }
+    },
+    "Your thoughts, ready to take with you." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的灵感，随时可以带走。"
+          }
+        }
+      }
+    },
     "A reading list that only grows, never finishes. Maybe the point was never to finish, only to drift through." : {
       "localizations" : {
         "zh-Hans" : {
