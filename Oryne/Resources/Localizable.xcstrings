@@ -1,6 +1,166 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "A reading list that only grows, never finishes. Maybe the point was never to finish, only to drift through." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一份只增不减、永远读不完的清单。也许重点从来不是读完，而是从中漫游而过。"
+          }
+        }
+      }
+    },
+    "Bioluminescence: light that living things make in the dark. Like ideas that only glow once you stop looking for them." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生物荧光：生命在黑暗里自己发出的光。就像有些灵感，只有当你不再盯着它时，才会亮起来。"
+          }
+        }
+      }
+    },
+    "Clear examples" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清空示例"
+          }
+        }
+      }
+    },
+    "Clear examples?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清空示例？"
+          }
+        }
+      }
+    },
+    "Color study: deep teal fading into violet at the horizon. I want a whole app to feel like dusk underwater." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "配色练习：深青色在地平线处淡入紫色。我想让一整个应用，感觉像水下的黄昏。"
+          }
+        }
+      }
+    },
+    "Example" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "示例"
+          }
+        }
+      }
+    },
+    "I keep meeting the same idea wearing different clothes. Maybe the repetition is the point, not the noise." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同一个念头，总换着不同的模样与我相遇。也许这种重复本身就是信号，而不是杂音。"
+          }
+        }
+      }
+    },
+    "Note to self: capture before consciousness. The thought before you judge the thought." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "写给自己：在意识介入之前先记下来。在你评判念头之前的那个念头。"
+          }
+        }
+      }
+    },
+    "Once you have thoughts of your own, the starter examples can drift out. Yours stay." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当你有了自己的灵感，这些示例便可以随水散去。你的灵感会留下。"
+          }
+        }
+      }
+    },
+    "Starter examples" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "示例灵感"
+          }
+        }
+      }
+    },
+    "The ocean keeps every river that ever fed it. Maybe memory works the same way: nothing lost, only carried." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "海洋留住了曾汇入它的每一条河。也许记忆也是如此：什么都没丢，只是被一路带着。"
+          }
+        }
+      }
+    },
+    "The starter thoughts drift out for good." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这些示例灵感会漂出海洋，不再回来。"
+          }
+        }
+      }
+    },
+    "The thoughts that came with your Ocean." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "海洋初次为你留下的那些灵感。"
+          }
+        }
+      }
+    },
+    "Voice note: I keep returning to the feeling of the tide. Things leaving and coming back without me forcing them." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "语音记录：我总回到潮水的那种感觉。事物自行退去又归来，不必我去强求。"
+          }
+        }
+      }
+    },
+    "What is the one question all these disguises keep circling?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这些模样一直绕着的，究竟是同一个什么问题？"
+          }
+        }
+      }
+    },
+    "Why do my best ideas arrive in the shower and never at the desk? Something about not gripping them too hard." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "为什么我最好的灵感总在洗澡时冒出来，而从不在书桌前？大概是因为没有把它们攥得太紧。"
+          }
+        }
+      }
+    },
     "" : {
 
     },

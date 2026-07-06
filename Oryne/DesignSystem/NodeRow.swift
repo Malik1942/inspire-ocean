@@ -58,6 +58,13 @@ struct NodeRow: View {
                     if let theme = node.themes.first {
                         Text("· \(theme)").font(.caption2).foregroundStyle(OceanTheme.mist).lineLimit(1)
                     }
+                    if node.isExample {
+                        Text("Example")
+                            .font(.caption2)
+                            .foregroundStyle(OceanTheme.mist)
+                            .padding(.horizontal, 6).padding(.vertical, 1)
+                            .background(Color.white.opacity(0.06), in: Capsule())
+                    }
                 }
             }
             Spacer()

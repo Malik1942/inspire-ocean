@@ -83,6 +83,9 @@ final class Node {
     var fieldY: Double = 0.5        // normalized 0...1 layout anchor
 
     var isArchived: Bool = false
+    /// Seeded starter content: quietly badged and clearable from Settings once
+    /// the user has thoughts of their own. Export will leave examples out.
+    var isExample: Bool = false
     var lastResurfacedAt: Date?
 
     /// Ownership contract: the system may fill fields the user never touched,
@@ -144,6 +147,7 @@ final class Node {
         self.fieldX = fieldX
         self.fieldY = fieldY
         self.isArchived = isArchived
+        self.isExample = false
         self.lastResurfacedAt = nil
         self.branchTypeRaw = branchType?.rawValue
         self.parent = parent
