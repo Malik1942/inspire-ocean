@@ -1,0 +1,38 @@
+name: BilingualSpike
+options:
+  # Standalone throwaway diagnostic — deliberately not merged into Oryne's
+  # own project.yml so this never ships and never touches app signing/assets.
+  bundleIdPrefix: com.inspireocean.spike
+  deploymentTarget:
+    iOS: "26.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+targets:
+  BilingualSpike:
+    type: application
+    platform: iOS
+    sources:
+      - path: BilingualSpike
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.inspireocean.spike.bilingualvoice
+        TARGETED_DEVICE_FAMILY: "1"
+    scheme:
+      configVariants: []
+    info:
+      path: BilingualSpike/Info.plist
+      properties:
+        CFBundleDisplayName: BilingualSpike
+        UILaunchScreen:
+          UIColorName: ""
+        NSMicrophoneUsageDescription: "BilingualSpike records short test takes to compare zh-CN and en-US speech recognition."
+        NSSpeechRecognitionUsageDescription: "BilingualSpike runs on-device speech recognition to log how it handles Mandarin, English, and mixed speech."
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
