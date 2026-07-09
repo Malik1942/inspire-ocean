@@ -4,7 +4,7 @@ import Speech
 /// Transcribes a recorded voice drift using on-device speech recognition where
 /// available. Returns nil (gracefully) when permission is denied or recognition
 /// fails — the audio is always kept regardless.
-final class SpeechTranscriber {
+final class DriftTranscriber {
 
     func requestAuthorization() async -> Bool {
         await withCheckedContinuation { continuation in

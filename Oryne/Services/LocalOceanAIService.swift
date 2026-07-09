@@ -12,7 +12,7 @@ import FoundationModels
 final class LocalOceanAIService: OceanAIService {
 
     private let embeddings = EmbeddingService.shared
-    private let transcriber = SpeechTranscriber()
+    private let transcriber = DriftTranscriber()
 
     init() {
         // Prime the foundation-model availability check off the critical path —
@@ -77,7 +77,9 @@ final class LocalOceanAIService: OceanAIService {
                 """
                 You create very short titles for entries in a personal inspiration journal.
                 Reply with ONLY the title — at most 6 words, no quotation marks, no trailing \
-                punctuation. Capture the essence or feeling rather than restating the text.
+                punctuation. Capture the essence or feeling rather than restating the text. \
+                Reply in the same language as the entry. If the entry is in Chinese, keep \
+                the title to about 6 to 10 characters.
                 """
             }
             let response = try await session.respond(to: "Entry:\n\(text)")
@@ -104,7 +106,8 @@ final class LocalOceanAIService: OceanAIService {
                 domain — what the entry is really about, never words copied from it. \
                 Examples: creative direction, career uncertainty, recurring thoughts, \
                 social energy, emotional friction, personal reflection. Reply with \
-                ONLY 1 to 3 themes, comma-separated, each one to three lowercase words.
+                ONLY 1 to 3 themes, comma-separated, each one to three lowercase words. \
+                Reply in the same language as the entry.
                 """
             }
             let response = try await session.respond(to: "Entry:\n\(text)")
