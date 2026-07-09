@@ -25,8 +25,8 @@ enum LanguageResolver {
     /// at app launch or store it in a property. BRIEF decision 1 requires the
     /// *current* system language, and a user can change iOS Settings ›
     /// Language between captures without relaunching the app.
-    static func resolve() -> (main: Locale, alternate: Locale?) {
-        resolve(preferredLanguages: Locale.preferredLanguages, supportedLocales: Array(liveSupportedLocales()))
+    static func resolve() async -> (main: Locale, alternate: Locale?) {
+        resolve(preferredLanguages: Locale.preferredLanguages, supportedLocales: Array(await liveSupportedLocales()))
     }
 
     /// Core resolution logic, parameterized for testing.
@@ -69,9 +69,9 @@ enum LanguageResolver {
 
     // MARK: - Supported-locale source (BRIEF decision 4)
 
-    private static func liveSupportedLocales() -> Set<Locale> {
+    private static func liveSupportedLocales() async -> Set<Locale> {
         if #available(iOS 26, *) {
-            return Set(Speech.SpeechTranscriber.supportedLocales)
+            return Set(await Speech.SpeechTranscriber.supportedLocales)
         }
         return SFSpeechRecognizer.supportedLocales()
     }

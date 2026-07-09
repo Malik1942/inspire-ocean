@@ -120,8 +120,8 @@ final class LanguageResolverTests: XCTestCase {
     /// path just enough to confirm it doesn't crash and always returns a
     /// non-empty main locale. Not a behavior assertion — the host's language
     /// settings vary per machine/CI runner.
-    func test_liveResolve_returnsNonEmptyMain() {
-        let result = LanguageResolver.resolve()
+    func test_liveResolve_returnsNonEmptyMain() async {
+        let result = await LanguageResolver.resolve()
         XCTAssertFalse(result.main.identifier.isEmpty)
     }
 }
