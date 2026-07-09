@@ -42,7 +42,7 @@ struct OceanSettingsView: View {
     @State private var exportState: ExportState = .idle
     @State private var zipURL: URL?
 
-    private enum ExportState { case idle, building, ready }
+    private enum ExportState { case idle, building, ready, failed }
 
     var body: some View {
         NavigationStack {
@@ -265,6 +265,17 @@ struct OceanSettingsView: View {
                                 .foregroundStyle(OceanTheme.accent)
                         }
                     }
+                case .failed:
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label("Could not pack the archive.", systemImage: "exclamationmark.triangle")
+                            .font(.subheadline)
+                            .foregroundStyle(OceanTheme.mist)
+                        Button { buildExport() } label: {
+                            Label("Try again", systemImage: "arrow.clockwise")
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(OceanTheme.accent)
+                        }
+                    }
                 }
 
                 Text("One zip: a Markdown file per current, a full JSON backup, and your images. Examples stay behind.")
@@ -288,11 +299,16 @@ struct OceanSettingsView: View {
         let snapshots = realNodes.map { OceanExport.snapshot(from: $0) }
         let voice = includeVoice
         Task {
-            let url = await Task.detached {
-                try? OceanExport.buildArchive(from: snapshots, includeVoice: voice)
-            }.value
-            zipURL = url
-            exportState = url != nil ? .ready : .idle
+            do {
+                let url = try await Task.detached {
+                    try OceanExport.buildArchive(from: snapshots, includeVoice: voice)
+                }.value
+                zipURL = url
+                exportState = .ready
+            } catch {
+                zipURL = nil
+                exportState = .failed
+            }
         }
     }
 }

@@ -16,6 +16,15 @@ struct RootTabView: View {
 
     @State private var appState = AppState()
     @State private var showFastCaptureOnboarding = false
+    @State private var reviewFulfillTask: Task<Void, Never>?
+
+    /// Nothing is covering the tabs: no Fast Capture overlay, no onboarding
+    /// sheet, no sheet up in the Ocean. The review ask only ever fires here.
+    private var canFulfillReview: Bool {
+        appState.fastCaptureRequest == nil
+            && !showFastCaptureOnboarding
+            && !appState.isPresentingOceanSheet
+    }
 
     var body: some View {
         TabView(selection: $appState.selectedTab) {
@@ -88,12 +97,32 @@ struct RootTabView: View {
         }
         // A value-has-landed moment armed the once-ever review ask; fire it here,
         // where the environment action lives and every surface funnels through.
+        // Held back, and retried, until nothing is covering the tabs, so the
+        // system sheet never lands over the Fast Capture overlay or an Ocean
+        // sheet (including the resurfaced thought that just armed it).
         .onChange(of: ReviewPrompt.shared.pendingRequest) { _, pending in
-            if pending { ReviewPrompt.shared.fulfill(using: requestReview) }
+            if pending { scheduleReviewFulfillIfSafe() }
         }
+        .onChange(of: appState.fastCaptureRequest?.id) { _, _ in scheduleReviewFulfillIfSafe() }
+        .onChange(of: showFastCaptureOnboarding) { _, _ in scheduleReviewFulfillIfSafe() }
+        .onChange(of: appState.isPresentingOceanSheet) { _, _ in scheduleReviewFulfillIfSafe() }
         // Outermost, so the Fast Capture overlay and every presented sheet
         // inherit the stilled-water environment along with the tabs.
         .environment(\.calmAccessibility, calmAccessibilityOn)
+    }
+
+    /// Re-checked on every change to what might cover the tabs; safe to call
+    /// repeatedly. Cancels any earlier wait so only the latest attempt lands,
+    /// and settles briefly once conditions clear (mirrors the overlay-dismiss
+    /// settle above) so the ask never races a transition's last frame.
+    private func scheduleReviewFulfillIfSafe() {
+        reviewFulfillTask?.cancel()
+        guard ReviewPrompt.shared.pendingRequest, canFulfillReview else { return }
+        reviewFulfillTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled, ReviewPrompt.shared.pendingRequest, canFulfillReview else { return }
+            ReviewPrompt.shared.fulfill(using: requestReview)
+        }
     }
 
     /// Tab label that always renders the outline (stroke) form of its symbol.

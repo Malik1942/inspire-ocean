@@ -23,6 +23,11 @@ final class AppState {
     /// consumed when the Ocean Field appears: it focuses and opens the node.
     var pendingFocusNodeID: UUID?
 
+    /// True while the Ocean Field has a sheet up (an opened thought, a stream,
+    /// or Settings). Lets the root view hold back anything that must never
+    /// appear over a sheet, such as the App Store review ask.
+    var isPresentingOceanSheet = false
+
     init() {
         // Testing seam: launch straight into a tab via the OCEAN_START_TAB env var
         // (e.g. `SIMCTL_CHILD_OCEAN_START_TAB=ask`). No effect in normal use.
