@@ -79,7 +79,10 @@ struct PostCaptureMoment: Identifiable, Equatable {
 struct PostCaptureMomentView: View {
     let moment: PostCaptureMoment
     var onTurnIntoQuestion: () -> Void
-    var onSeeInOcean: () -> Void
+    /// nil when the surface can't meaningfully go to the Ocean — capture opened
+    /// from inside a current, where the thought already sits atop the stream and
+    /// the two sheets would just stay in the way. The action is hidden, not dead.
+    var onSeeInOcean: (() -> Void)?
     /// Present while the released thought can still be taken back — undo
     /// stays reachable through the whole moment, not just the capsule.
     var onUndo: (() -> Void)? = nil
@@ -140,8 +143,10 @@ struct PostCaptureMomentView: View {
                     if moment.related != nil {
                         quietAction("Turn into question", system: "questionmark.circle",
                                     action: onTurnIntoQuestion)
-                        quietAction("See in Ocean", system: "water.waves",
-                                    action: onSeeInOcean)
+                        if let onSeeInOcean {
+                            quietAction("See in Ocean", system: "water.waves",
+                                        action: onSeeInOcean)
+                        }
                     }
                     if let onUndo {
                         quietAction("Undo", system: "arrow.uturn.backward", action: onUndo)

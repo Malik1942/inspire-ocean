@@ -8,9 +8,21 @@ import PhotosUI
 /// (voice, with optional image). Images and links are attachments blended into a
 /// thought/whisper rather than separate kinds. Capture stays under two seconds.
 struct CaptureView: View {
+    /// The current this capture was opened from, if any. When set, every saved
+    /// node is anchored here (`Node.anchorThemeKey`) the instant it's released,
+    /// so it lands in this current before understanding runs — and the surface
+    /// wears a quiet "Flows into …" line plus a dismiss affordance for its
+    /// sheet. nil for the Capture tab, whose behavior is unchanged.
+    let intoCurrentThemeKey: String?
+
+    init(intoCurrentThemeKey: String? = nil) {
+        self.intoCurrentThemeKey = intoCurrentThemeKey
+    }
+
     @Environment(\.modelContext) private var context
     @Environment(\.oceanAI) private var ai
     @Environment(AppState.self) private var appState
+    @Environment(\.dismiss) private var dismiss
 
     @State private var kind: NodeKind = .text   // .text = Thought, .voice = Whisper
     @State private var text: String = ""
@@ -55,7 +67,11 @@ struct CaptureView: View {
                         PostCaptureMomentView(
                             moment: moment,
                             onTurnIntoQuestion: { turnIntoQuestion(moment) },
-                            onSeeInOcean: { seeInOcean(moment) },
+                            // Inside a current the thought is already atop the
+                            // stream and both sheets would block the Ocean, so
+                            // this action is hidden rather than a dead-end tap.
+                            onSeeInOcean: intoCurrentThemeKey == nil
+                                ? { seeInOcean(moment) } : nil,
                             onUndo: session.undoAvailable(for: moment.id)
                                 ? { undoFromMoment() } : nil
                         )
@@ -67,6 +83,13 @@ struct CaptureView: View {
             .navigationTitle("Capture")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                // Presented from a current, this is a sheet and needs its own
+                // way out; the Capture tab passes nil and stays chrome-free.
+                if intoCurrentThemeKey != nil {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Done") { dismiss() }
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showFastCaptureSettings = true
@@ -108,6 +131,17 @@ struct CaptureView: View {
             }
             .pickerStyle(.segmented)
             .padding(.horizontal)
+
+            // A quiet promise of where this thought lands. Not a picker, not
+            // tappable — just visible. Absent on the Capture tab (nil), which
+            // keeps that surface byte-for-byte as it was.
+            if let key = intoCurrentThemeKey {
+                Text(String(localized: "Flows into “\(OceanLayoutEngine.displayLabel(for: key))”"))
+                    .font(.caption)
+                    .foregroundStyle(OceanTheme.mist)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal)
+            }
 
             GlassCard(padding: 18) {
                 if kind == .voice { whisperCapture } else { thoughtCapture }
@@ -472,7 +506,7 @@ struct CaptureView: View {
         photoItems = []
         imageNotice = nil
 
-        if let nodeID = session.release(draft) {
+        if let nodeID = session.release(stamped(draft)) {
             reviewNodeID = nodeID
             reviewPaused = false
             withAnimation(.snappy) { whisperPhase = .reviewing }
@@ -520,7 +554,7 @@ struct CaptureView: View {
                                      transcript: reviewText.trimmed,
                                      audioData: recordedAudioData,
                                      audioTempURL: recordedURL)
-            guard let id = session.release(draft) else { return }   // words stay on the surface
+            guard let id = session.release(stamped(draft)) else { return }   // words stay on the surface
             nodeID = id
         }
 
@@ -580,11 +614,22 @@ struct CaptureView: View {
 
     // MARK: Thought actions
 
+    /// Stamp a draft with the current this surface was opened from, so the
+    /// released node anchors there. nil (the Capture tab) leaves capture
+    /// untouched. Applied at every release path — text, whisper stop-save, and
+    /// the restored/save-failed re-release — so the anchor holds across undo →
+    /// restore too: the reconstructed draft is re-stamped from this constant.
+    private func stamped(_ draft: CaptureDraft) -> CaptureDraft {
+        var draft = draft
+        draft.anchorThemeKey = intoCurrentThemeKey
+        return draft
+    }
+
     private func save() {
         let link = linkText.trimmed.isEmpty ? nil : normalizedLink
         let draft = CaptureDraft(kind: .text, text: text.trimmed,
                                  imageDatas: imageDatas, linkURLString: link)
-        guard let nodeID = session.release(draft) else { return }   // draft stays on the surface
+        guard let nodeID = session.release(stamped(draft)) else { return }   // draft stays on the surface
         session.beginUnderstanding(nodeID: nodeID)
         // A link drifts in bare; enrichment makes it a rich card and folds what
         // it's about into the understanding pipeline (best-effort, async).
