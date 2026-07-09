@@ -36,6 +36,16 @@ transcription in whichever language is spoken. Zero configuration UI. On-device 
     kinship) vs dual `NLEmbedding` routing. Re-run `Scripts/embedding-floor-sweep` to
     re-tune `SemanticThemes.relatednessFloor` for whichever wins. Audit whitespace
     tokenization (SemanticThemes overlap, TitleDistiller) → `NLTokenizer`.
+    **Empirical correction (Wave 1, A4)**: the "one space for zh+en" premise is false
+    on-device — `NLContextualEmbedding` groups languages by script family (Latin-script
+    European vs CJK), and cross-model cosine on a genuinely related zh/en pair is noise
+    (~0.02). Theme-string overlap doesn't bridge either: FM themes are generated in the
+    entry's language (decision 10) and matched by exact string in `relatedness` and
+    Ocean clustering. Consequence: **cross-language kinship is out of scope for this
+    branch** — same-language kinship now works in both languages (a strict improvement;
+    zh was fully broken before), and zh↔en kinship needs a real bridge (language-neutral
+    canonical theme keys + localized display labels) as its own follow-up. No Wave 2/3
+    work should assume zh↔en cosine or theme-string matches.
 12. **Asset readiness**: if alternate language exists, ensure its model at app launch on
     Wi-Fi, not mid-capture. First-use download shows "准备中文识别…" state, never a
     silent recording-only degrade when download is merely pending.
@@ -62,4 +72,5 @@ transcription in whichever language is spoken. Zero configuration UI. On-device 
 ## Verification gates (Malik runs on device)
 Matrix: {iOS 26, iOS 18} × {pure zh, pure en, mixed 中英} × {live capture, recorded drift}.
 Plus: asset download offline/cellular behavior; bake-off lock timing feels instant;
-kinship spot-check zh node ↔ related en node if contextual embeddings ship.
+kinship spot-check within each language (zh node ↔ related zh node, en ↔ en) — the
+cross-language zh↔en check is dropped per the decision 11 empirical correction.
