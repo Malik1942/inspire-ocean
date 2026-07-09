@@ -1,152 +1,82 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "The ocean keeps every river that ever fed it. Maybe memory works the same way: nothing lost, only carried." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "海洋留住了曾汇入它的每一条河。也许记忆也是如此：什么都没丢，只是被一路带着。"
-          }
-        }
-      }
-    },
-    "Bioluminescence: light that living things make in the dark. Like ideas that only glow once you stop looking for them." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "生物荧光：生命在黑暗里自己发出的光。就像有些灵感，只有当你不再盯着它时，才会亮起来。"
-          }
-        }
-      }
-    },
-    "Voice note: I keep returning to the feeling of the tide. Things leaving and coming back without me forcing them." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "语音记录：我总回到潮水的那种感觉。事物自行退去又归来，不必我去强求。"
-          }
-        }
-      }
-    },
-    "A reading list that only grows, never finishes. Maybe the point was never to finish, only to drift through." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "一份只增不减、永远读不完的清单。也许重点从来不是读完，而是从中漫游而过。"
-          }
-        }
-      }
-    },
-    "Color study: deep teal fading into violet at the horizon. I want a whole app to feel like dusk underwater." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "配色练习：深青色在地平线处淡入紫色。我想让一整个应用，感觉像水下的黄昏。"
-          }
-        }
-      }
-    },
-    "Note to self: capture before consciousness. The thought before you judge the thought." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "写给自己：在意识介入之前先记下来。在你评判念头之前的那个念头。"
-          }
-        }
-      }
-    },
-    "I keep meeting the same idea wearing different clothes. Maybe the repetition is the point, not the noise." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "同一个念头，总换着不同的模样与我相遇。也许这种重复本身就是信号，而不是杂音。"
-          }
-        }
-      }
-    },
-    "What is the one question all these disguises keep circling?" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "这些模样一直绕着的，究竟是同一个什么问题？"
-          }
-        }
-      }
-    },
-    "Once you have thoughts of your own, the starter examples can drift out. Yours stay." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "当你有了自己的灵感，这些示例便可以随水散去。你的灵感会留下。"
-          }
-        }
-      }
-    },
-    "Let thoughts find their place." : {
+    "The Ocean gives back." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "让灵感各归其位。"
+            "value" : "海洋会把它们还给你。"
           }
         }
       }
     },
-    "Fragments drift into the Ocean, where related ideas can gather, connect, and slowly become clearer." : {
+    "Thoughts gather into currents and resurface when they matter. Ask a question, and the Ocean answers from everything you have caught." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "碎片汇入海洋，相关的灵感在那里聚拢、连接，慢慢变得清晰。"
+            "value" : "灵感会聚成洋流，在合适的时刻再次浮现。向海洋提问，它会从你捕捉过的一切中作答。"
           }
         }
       }
     },
-    "Return when something rises." : {
+    "The Ocean opens with a short introduction. Read it, then let it drift out." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "有什么浮起时，再回来。"
+            "value" : "海洋里备好了一条简短的介绍，读完之后，让它漂走就好。"
           }
         }
       }
     },
-    "The Ocean can bring back a thought when it feels connected to what you are exploring now." : {
+    "Oryne is a quiet ocean for whatever crosses your mind. Capture a thought in text, voice, or an image, and it drifts in as a glowing mote. Thoughts that share a theme gather into currents like this one. Open a thought to grow it with a question, or ask across the whole Ocean from the Ask tab. Old thoughts resurface on their own when it matters, and the Library lays everything out when you want to browse. Seen enough? Clear these examples in Settings." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "当一条灵感与你此刻所探索的有所关联时，海洋会把它带回来。"
+            "state" : "translated",
+            "value" : "Oryne 是一片安放灵感的海洋。用文字、语音或图片捕捉一个想法，它就会化作一点微光汇入海洋。主题相近的灵感会聚成一条条洋流，就像这一条。打开一条灵感，可以用一个问题把它延展下去；在提问页，则能向整片海洋发问。被时间冲远的灵感，会在合适的时刻再次浮现；想翻看时，库把一切都铺在那里。看完了？到设置里清空示例就好。"
           }
         }
       }
     },
-    "Ask what your Ocean remembers." : {
+    "How Oryne works" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "问问海洋记得什么。"
+            "state" : "translated",
+            "value" : "Oryne 怎么用"
           }
         }
       }
     },
-    "Ask questions across your captured fragments. Oryne helps find patterns, connections, and unfinished ideas worth returning to." : {
+    "Ideas arrive in the shower" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "向你捕捉的碎片提问。Oryne 帮你发现其中的脉络、联系，以及值得回头的未竟灵感。"
+            "state" : "translated",
+            "value" : "灵感总在洗澡时冒出来"
+          }
+        }
+      }
+    },
+    "introduction" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "介绍"
+          }
+        }
+      }
+    },
+    "When you have seen how the Ocean works, the introduction can drift out. Your own thoughts stay." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "看明白海洋怎么用之后，介绍就可以漂走了。你自己的灵感会留下。"
           }
         }
       }

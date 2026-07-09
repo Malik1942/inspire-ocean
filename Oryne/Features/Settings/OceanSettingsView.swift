@@ -52,9 +52,9 @@ struct OceanSettingsView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         calmSection
                         feedbackSection
-                        // Appears only once the user has both examples and real
-                        // content, so it never shows before they have started.
-                        if !exampleNodes.isEmpty && !realNodes.isEmpty {
+                        // The introduction is meant to be read once and let go,
+                        // so the clear affordance is there from the first launch.
+                        if !exampleNodes.isEmpty {
                             examplesSection
                         }
                         exportSection
@@ -191,7 +191,7 @@ struct OceanSettingsView: View {
                         .font(.subheadline.weight(.medium))
                 }
 
-                Text("Once you have thoughts of your own, the starter examples can drift out. Yours stay.")
+                Text("When you have seen how the Ocean works, the introduction can drift out. Your own thoughts stay.")
                     .font(.caption)
                     .foregroundStyle(OceanTheme.mist)
                     .fixedSize(horizontal: false, vertical: true)

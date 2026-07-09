@@ -34,58 +34,41 @@ enum SeedData {
         guard !UserDefaults.standard.bool(forKey: seededKey) else { return }
 
         let now = Date()
-        func ago(_ days: Double) -> Date { now.addingTimeInterval(-days * 86_400) }
 
-        // Seeded thoughts are examples: quietly badged and clearable from Settings
-        // once the user has thoughts of their own. Export will leave them out.
-        let drifts: [(String, NodeKind, Double)] = [
-            (String(localized: "The ocean keeps every river that ever fed it. Maybe memory works the same way: nothing lost, only carried."), .text, 0.5),
-            (String(localized: "Bioluminescence: light that living things make in the dark. Like ideas that only glow once you stop looking for them."), .text, 1.2),
-            (String(localized: "Voice note: I keep returning to the feeling of the tide. Things leaving and coming back without me forcing them."), .voice, 2.0),
-            (String(localized: "Why do my best ideas arrive in the shower and never at the desk? Something about not gripping them too hard."), .text, 4.4),
-            (String(localized: "A reading list that only grows, never finishes. Maybe the point was never to finish, only to drift through."), .text, 6.0),
-            (String(localized: "Color study: deep teal fading into violet at the horizon. I want a whole app to feel like dusk underwater."), .image, 11.0),
-            (String(localized: "Note to self: capture before consciousness. The thought before you judge the thought."), .text, 18.0)
-        ]
+        // One starter current, named for what it is, holding exactly two
+        // example thoughts: a short tour of the app, and one idea so the
+        // reader sees what a captured thought looks like. Read once, then
+        // cleared from Settings. Export leaves examples out.
+        //
+        // Titles and themes are pre-set and marked user-owned so the
+        // understanding backfill never retitles them or re-themes the pair
+        // apart into separate currents.
+        let introTheme = String(localized: "introduction")
 
-        for (textBody, kind, daysAgo) in drifts {
-            let node: Node
-            switch kind {
-            case .voice:
-                node = NodeComposer.make(kind: .voice, transcription: textBody)
-            case .image:
-                node = NodeComposer.make(kind: .image, text: textBody)
-            default:
-                node = NodeComposer.make(kind: .text, text: textBody)
-            }
+        let intro = NodeComposer.make(
+            kind: .text,
+            title: String(localized: "How Oryne works"),
+            text: String(localized: "Oryne is a quiet ocean for whatever crosses your mind. Capture a thought in text, voice, or an image, and it drifts in as a glowing mote. Thoughts that share a theme gather into currents like this one. Open a thought to grow it with a question, or ask across the whole Ocean from the Ask tab. Old thoughts resurface on their own when it matters, and the Library lays everything out when you want to browse. Seen enough? Clear these examples in Settings."),
+            detectThemes: false
+        )
+        let example = NodeComposer.make(
+            kind: .text,
+            title: String(localized: "Ideas arrive in the shower"),
+            text: String(localized: "Why do my best ideas arrive in the shower and never at the desk? Something about not gripping them too hard."),
+            detectThemes: false
+        )
+
+        // The tour reads first: streams surface the newest thought on top.
+        for (node, minutesAgo) in [(intro, 5.0), (example, 30.0)] {
             node.isExample = true
-            node.createdAt = ago(daysAgo)
-            node.updatedAt = ago(daysAgo)
+            node.themes = [introTheme]
+            node.hue = NodeComposer.hue(for: introTheme)
+            node.titleEditedByUser = true
+            node.themesEditedByUser = true
+            node.createdAt = now.addingTimeInterval(-minutesAgo * 60)
+            node.updatedAt = node.createdAt
             context.insert(node)
         }
-
-        // The one cultivated example: a fragment and the question grown from it,
-        // so a new Ocean shows what living alongside an idea (延展) looks like,
-        // not only a field of one-liners.
-        let parent = NodeComposer.make(
-            kind: .text,
-            text: String(localized: "I keep meeting the same idea wearing different clothes. Maybe the repetition is the point, not the noise.")
-        )
-        parent.isExample = true
-        parent.createdAt = ago(16.0)
-        parent.updatedAt = ago(16.0)
-        context.insert(parent)
-
-        let branch = NodeComposer.make(
-            kind: .text,
-            text: String(localized: "What is the one question all these disguises keep circling?"),
-            branchType: .question,
-            parent: parent
-        )
-        branch.isExample = true
-        branch.createdAt = ago(14.0)
-        branch.updatedAt = ago(14.0)
-        context.insert(branch)
 
         try? context.save()
         UserDefaults.standard.set(true, forKey: seededKey)

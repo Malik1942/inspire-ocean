@@ -1,10 +1,11 @@
 import SwiftUI
 
 /// First-run onboarding: establishes the mental model — capture fragments
-/// before they disappear, let them drift and connect, return when the Ocean
-/// brings something back — then folds Fast Capture setup into the final step.
+/// before they disappear, and the Ocean gives them back — then folds Fast
+/// Capture setup into the final step, which hands off to the seeded
+/// Introduction current for the concrete tour.
 ///
-/// Deliberately not a tutorial: five short screens of orientation, one of
+/// Deliberately not a tutorial: three short screens of orientation, one of
 /// setup. Skippable at any point; shown once (replayable from Fast Capture
 /// settings via the sparkle button). The bolt reference in the setup caption
 /// stays plain text — symbol glyphs inside Text render inconsistently here.
@@ -118,7 +119,9 @@ private struct OceanOnboardingPage {
     var title: LocalizedStringKey
     var text: LocalizedStringKey
 
-    /// The mental model, in five quiet steps.
+    /// The mental model, in three quiet steps: what this is, how thoughts
+    /// get in, and how they come back. The concrete tour lives in the
+    /// seeded Introduction current, which the setup page points to.
     static let pages: [OceanOnboardingPage] = [
         OceanOnboardingPage(
             visual: .stillWater,
@@ -131,19 +134,9 @@ private struct OceanOnboardingPage {
             text: "Speak, type, or capture from anywhere. The Ocean receives the thought without asking you to organize it first."
         ),
         OceanOnboardingPage(
-            visual: .drift,
-            title: "Let thoughts find their place.",
-            text: "Fragments drift into the Ocean, where related ideas can gather, connect, and slowly become clearer."
-        ),
-        OceanOnboardingPage(
             visual: .resurface,
-            title: "Return when something rises.",
-            text: "The Ocean can bring back a thought when it feels connected to what you are exploring now."
-        ),
-        OceanOnboardingPage(
-            visual: .ask,
-            title: "Ask what your Ocean remembers.",
-            text: "Ask questions across your captured fragments. Oryne helps find patterns, connections, and unfinished ideas worth returning to."
+            title: "The Ocean gives back.",
+            text: "Thoughts gather into currents and resurface when they matter. Ask a question, and the Ocean answers from everything you have caught."
         )
     ]
 }
@@ -246,6 +239,13 @@ private struct FastCaptureSetupPage: View {
                             .font(.caption)
                             .foregroundStyle(OceanTheme.faint)
                             .fixedSize(horizontal: false, vertical: true)
+
+                        // The handoff: the concrete tour lives in the Ocean
+                        // itself, as the seeded Introduction current.
+                        Text("The Ocean opens with a short introduction. Read it, then let it drift out.")
+                            .font(.caption)
+                            .foregroundStyle(OceanTheme.mist)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
 
                     Button(action: onTestCapture) {
@@ -272,9 +272,7 @@ private struct OceanOnboardingVisual: View {
     enum Variant {
         case stillWater   // calm, even field
         case capture      // one bright fragment entering from above
-        case drift        // a loose cluster, two quietly connected
         case resurface    // one warm fragment rising from the depth
-        case ask          // a question touching several fragments
     }
 
     let variant: Variant
@@ -287,14 +285,9 @@ private struct OceanOnboardingVisual: View {
                     (0.81, 0.62, 11, 0.5), (0.38, 0.25, 8, 0.3)]
         case .capture:
             return [(0.28, 0.72, 11, 0.5), (0.5, 0.82, 9, 0.4), (0.72, 0.7, 12, 0.55)]
-        case .drift:
-            return [(0.3, 0.38, 14, 0.75), (0.52, 0.58, 12, 0.65), (0.7, 0.32, 10, 0.5),
-                    (0.44, 0.8, 8, 0.35), (0.82, 0.66, 9, 0.4)]
         case .resurface:
             return [(0.24, 0.8, 10, 0.4), (0.46, 0.88, 8, 0.3), (0.68, 0.82, 11, 0.45),
                     (0.86, 0.74, 7, 0.3)]
-        case .ask:
-            return [(0.24, 0.7, 11, 0.6), (0.52, 0.8, 9, 0.5), (0.78, 0.68, 12, 0.65)]
         }
     }
 
@@ -324,15 +317,6 @@ private struct OceanOnboardingVisual: View {
                     }
                     drawOrb(ctx, at: p, radius: 13 * breathe, dim: 1.0)
 
-                case .drift:
-                    // Two related fragments, joined by a hairline current.
-                    let a = CGPoint(x: 0.3 * size.width, y: 0.38 * size.height)
-                    let b = CGPoint(x: 0.52 * size.width, y: 0.58 * size.height)
-                    var path = Path()
-                    path.move(to: a)
-                    path.addLine(to: b)
-                    ctx.stroke(path, with: .color(.white.opacity(0.18)), lineWidth: 0.75)
-
                 case .resurface:
                     // One warm fragment rising out of the depth.
                     let p = CGPoint(x: 0.5 * size.width, y: 0.34 * size.height)
@@ -340,21 +324,6 @@ private struct OceanOnboardingVisual: View {
                     ctx.fill(Path(ellipseIn: glow),
                              with: .color(OceanTheme.glowWarm.opacity(0.10)))
                     drawOrb(ctx, at: p, radius: 14 * breathe, dim: 1.0, warm: true)
-
-                case .ask:
-                    // A question, touching the fragments it draws from.
-                    let q = CGPoint(x: 0.5 * size.width, y: 0.26 * size.height)
-                    for orb in orbs {
-                        var path = Path()
-                        path.move(to: q)
-                        path.addLine(to: CGPoint(x: orb.x * size.width, y: orb.y * size.height))
-                        ctx.stroke(path, with: .color(.white.opacity(0.12)), lineWidth: 0.75)
-                    }
-                    let bubble = CGRect(x: q.x - 16, y: q.y - 16, width: 32, height: 32)
-                    ctx.fill(Path(ellipseIn: bubble), with: .color(.white.opacity(0.10)))
-                    ctx.stroke(Path(ellipseIn: bubble), with: .color(.white.opacity(0.26)), lineWidth: 0.5)
-                    ctx.draw(Text("?").font(.callout.weight(.medium)).foregroundStyle(OceanTheme.foam),
-                             at: q)
                 }
             }
         }
