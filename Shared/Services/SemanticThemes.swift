@@ -35,6 +35,20 @@ enum SemanticThemes {
     /// Human-readable concepts and the prototype words that anchor them in
     /// embedding space. Labels are what the user sees as theme chips; the
     /// prototypes are never shown.
+    ///
+    /// **Open gap, not closed by this pass**: prototypes are English-only.
+    /// `EmbeddingService`'s two candidate backends (contextual and dual
+    /// per-language `NLEmbedding`) were both measured to give Chinese and
+    /// English *separate, non-comparable* vector spaces (see that file's
+    /// doc comment) — so a Chinese thought's content words are compared
+    /// against these English prototypes across two unrelated spaces, which
+    /// scores near-zero contrast for every concept regardless of true
+    /// meaning, not just weak matches. Concept-mapping for Chinese text is
+    /// effectively unusable until either the prototypes gain Chinese
+    /// synonyms (embedded per-language, like the concept centroid would
+    /// need to become per-language too) or a translation bridge exists.
+    /// Flagged as an open question rather than fixed here: it's a content
+    /// pass, not a tokenization or backend-seam fix.
     static let concepts: [(label: String, prototypes: String)] = [
         ("creative direction", "create design draw paint sketch compose style imagine craft inspiration artistic"),
         ("product clarity", "product app feature interface prototype tool software user release build"),
@@ -182,6 +196,13 @@ enum SemanticThemes {
     /// nothing than a stretch. Averaged word vectors give any two English
     /// sentences a baseline ~0.3–0.4; genuine meaning-level neighbors clear
     /// 0.48 and unrelated pairs stay under 0.41 on the blended scale.
+    ///
+    /// Derived against the (then English-only) `NLEmbedding` backend, pre
+    /// bilingual-voice. `Scripts/embedding-floor-sweep/sweep.swift` now also
+    /// reports candidate floors for the contextual and dual-per-language
+    /// backends over a small zh/en/mixed fixture set — re-derive this value
+    /// from those numbers once a backend is picked; this task intentionally
+    /// leaves it unchanged.
     static let relatednessFloor = 0.45
 
     /// How strongly two thoughts belong near each other, in ~[0, 1].
@@ -214,6 +235,23 @@ enum SemanticThemes {
     /// Meaning-bearing words: everything except function words and very short
     /// tokens. Verbs and adjectives stay — "returning" and "anxious" carry the
     /// concept even though they'd never make a keyword theme.
+    ///
+    /// Already used `NLTokenizer` rather than a whitespace split (Chinese has
+    /// no whitespace word boundaries, so a `.split(separator: " ")`-style
+    /// approach would silently treat an entire Chinese sentence as one
+    /// token), but the length filter was not CJK-aware: `token.count > 2`
+    /// requires three-plus Latin letters, while most Chinese content words
+    /// are exactly two characters — the same filter that correctly drops
+    /// English filler ("of", "in") would have dropped nearly every Chinese
+    /// word too. The minimum is now 1 for tokens containing a CJK ideograph
+    /// (i.e. any token with 2+ Han characters passes) and 2 otherwise,
+    /// unchanged from before for non-CJK text.
+    ///
+    /// `ThemeDetector.grammaticalWords` (the stopword filter below) is
+    /// English-only, so Chinese function words (的/了/是/在/和, …) are not
+    /// excluded here — a smaller, separate gap from the tokenization fix,
+    /// also left open (see `concepts`'s doc comment for the larger reason
+    /// this doesn't fully fix Chinese theme detection on its own).
     static func contentWords(in text: String) -> [String] {
         let lowered = text.lowercased()
         let tokenizer = NLTokenizer(unit: .word)
@@ -223,7 +261,9 @@ enum SemanticThemes {
         var words: [String] = []
         tokenizer.enumerateTokens(in: lowered.startIndex..<lowered.endIndex) { range, _ in
             let token = String(lowered[range])
-            guard token.count > 2,
+            let isCJK = token.unicodeScalars.contains { $0.properties.isIdeographic }
+            let minLength = isCJK ? 1 : 2
+            guard token.count > minLength,
                   !ThemeDetector.grammaticalWords.contains(token),
                   token.rangeOfCharacter(from: .letters) != nil,
                   seen.insert(token).inserted
