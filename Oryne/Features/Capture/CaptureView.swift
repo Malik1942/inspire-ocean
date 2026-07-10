@@ -250,6 +250,15 @@ struct CaptureView: View {
                     minHeight: 60,
                     maxHeight: 120
                 )
+            } else if whisperPhase == .recording, session.transcriber.speechAvailability == .preparing {
+                // iOS 26 first-use: the on-device model is still downloading, so
+                // there are no live words yet — say so rather than looking like a
+                // silent recording-only degrade (BRIEF decision 12). The audio is
+                // captured regardless; the words come from the recording.
+                Text("Preparing speech recognition…")
+                    .font(.caption)
+                    .foregroundStyle(OceanTheme.faint)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             Button { Task { await toggleRecording() } } label: {

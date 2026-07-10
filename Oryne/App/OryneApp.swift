@@ -1,5 +1,7 @@
 import SwiftUI
 import SwiftData
+import Speech
+import Network
 
 @main
 struct OryneApp: App {
@@ -23,6 +25,12 @@ struct OryneApp: App {
                     Self.migrateLegacyAudio(context: container.mainContext)
                     Self.migrateLegacyImages(context: container.mainContext)
                     Self.expireConfirmedAudio(context: container.mainContext)
+                }
+                .task {
+                    // Warm the iOS 26 speech models at launch on Wi-Fi so the
+                    // first capture is instant, never a mid-capture download
+                    // (BRIEF decision 12). Off the main-context work above.
+                    if #available(iOS 26, *) { await Self.prefetchSpeechAssets() }
                 }
         }
         .modelContainer(container)
@@ -97,5 +105,69 @@ struct OryneApp: App {
             expired = true
         }
         if expired { try? context.save() }
+    }
+
+    /// Prefetch the iOS 26 `SpeechTranscriber` model(s) for the resolved main
+    /// (and alternate) recognition locale at launch, on an unmetered network —
+    /// so the model is already installed when the user opens Whisper capture,
+    /// instead of a mid-capture download (BRIEF decision 12). Best-effort and
+    /// silent: any failure just means the first take shows the "preparing"
+    /// state and downloads then.
+    @available(iOS 26, *)
+    static func prefetchSpeechAssets() async {
+        guard await onUnmeteredNetwork() else { return }
+
+        let resolved = await LanguageResolver.resolve()
+        let locales = [resolved.main, resolved.alternate].compactMap { $0 }
+
+        var modules: [SpeechTranscriber] = []
+        for locale in locales {
+            guard let supported = await SpeechTranscriber.supportedLocale(equivalentTo: locale) else { continue }
+            modules.append(SpeechTranscriber(
+                locale: supported,
+                transcriptionOptions: [],
+                reportingOptions: [.volatileResults],
+                attributeOptions: []
+            ))
+        }
+        guard !modules.isEmpty else { return }
+
+        do {
+            if let request = try await AssetInventory.assetInstallationRequest(supporting: modules) {
+                try await request.downloadAndInstall()
+            }
+        } catch {
+            // Leave it for first-use; the capture path handles the pending state.
+        }
+    }
+
+    /// One-shot check that the current network path is satisfied and neither
+    /// expensive (cellular) nor constrained (Low Data Mode) — BRIEF decision 12
+    /// asks for asset warming on Wi-Fi only.
+    private static func onUnmeteredNetwork() async -> Bool {
+        let monitor = NWPathMonitor()
+        let latch = OneShot()
+        return await withCheckedContinuation { (continuation: CheckedContinuation<Bool, Never>) in
+            monitor.pathUpdateHandler = { path in
+                guard latch.fire() else { return }
+                let unmetered = path.status == .satisfied && !path.isExpensive && !path.isConstrained
+                monitor.cancel()
+                continuation.resume(returning: unmetered)
+            }
+            monitor.start(queue: DispatchQueue.global(qos: .utility))
+        }
+    }
+}
+
+/// Serial-queue-safe latch so the `NWPathMonitor` handler resumes its
+/// continuation exactly once (the handler can fire repeatedly).
+private final class OneShot: @unchecked Sendable {
+    private let lock = NSLock()
+    private var fired = false
+    func fire() -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        if fired { return false }
+        fired = true
+        return true
     }
 }
