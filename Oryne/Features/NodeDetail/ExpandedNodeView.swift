@@ -39,6 +39,12 @@ struct NodeDetailContent: View {
     @State private var relatedIDs: [UUID] = []
     @State private var showImageViewer = false
     @State private var viewerIndex = 0
+    @State private var retranscribing = false
+    @State private var showReplaceConfirm = false
+    @State private var pendingRetranscribe: (data: Data, locale: Locale)?
+    @State private var retranscribeFailed = false
+
+    private let transcriber = DriftTranscriber()
 
     private var related: [Node] {
         let byID = Dictionary(uniqueKeysWithValues: allNodes.map { ($0.id, $0) })
@@ -129,6 +135,28 @@ struct NodeDetailContent: View {
         .sheet(isPresented: $showMovePicker) {
             MoveToCurrentSheet(node: node)
         }
+        // Words the user has touched are never overwritten by a re-transcribe
+        // without asking (mirrors NodeEditSheet's transcript-edit guard).
+        .confirmationDialog(
+            "Replace transcript?",
+            isPresented: $showReplaceConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Replace", role: .destructive) {
+                if let pending = pendingRetranscribe {
+                    Task { await runRetranscribe(pending.data, locale: pending.locale) }
+                }
+                pendingRetranscribe = nil
+            }
+            Button("Cancel", role: .cancel) { pendingRetranscribe = nil }
+        } message: {
+            Text("Your edited words will be replaced by a fresh transcription.")
+        }
+        .alert("Couldn't transcribe", isPresented: $retranscribeFailed) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Speech recognition couldn't produce words for this recording.")
+        }
         .fullScreenCover(isPresented: $showImageViewer) {
             ImageViewer(datas: node.imageDatas, index: $viewerIndex)
         }
@@ -154,6 +182,70 @@ struct NodeDetailContent: View {
         dismiss()
     }
 
+    // MARK: Re-transcribe (BRIEF decision 8)
+
+    /// The escape hatch: recompute the transcript in an explicitly chosen
+    /// language when the automatic pass landed in the wrong one. Language names
+    /// are shown in their own script (endonyms), not localizable UI chrome.
+    @ViewBuilder
+    private func retranscribeMenu(_ data: Data) -> some View {
+        Menu {
+            Section("Re-transcribe in") {
+                Button {
+                    requestRetranscribe(data, locale: Locale(identifier: "zh-CN"))
+                } label: {
+                    Text(verbatim: "中文")
+                }
+                Button {
+                    requestRetranscribe(data, locale: Locale(identifier: "en-US"))
+                } label: {
+                    Text(verbatim: "English")
+                }
+            }
+        } label: {
+            Group {
+                if retranscribing {
+                    ProgressView().controlSize(.mini)
+                } else {
+                    Image(systemName: "character.bubble")
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(OceanTheme.mist)
+        }
+        .disabled(retranscribing)
+        .accessibilityLabel("Re-transcribe in another language")
+    }
+
+    private func requestRetranscribe(_ data: Data, locale: Locale) {
+        // Only guard when there are user-touched words to lose.
+        if node.transcriptEditedByUser, let existing = node.transcription, !existing.isEmpty {
+            pendingRetranscribe = (data, locale)
+            showReplaceConfirm = true
+        } else {
+            Task { await runRetranscribe(data, locale: locale) }
+        }
+    }
+
+    private func runRetranscribe(_ data: Data, locale: Locale) async {
+        retranscribing = true
+        defer { retranscribing = false }
+        // The recognizer wants a file URL; the model's bytes are written out
+        // briefly and reclaimed. Audio in the node is never touched.
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("retranscribe-\(UUID().uuidString).m4a")
+        defer { try? FileManager.default.removeItem(at: url) }
+        guard (try? data.write(to: url)) != nil,
+              let transcript = await transcriber.transcribe(url: url, locale: locale),
+              !transcript.isEmpty else {
+            retranscribeFailed = true
+            return
+        }
+        node.transcription = transcript
+        // A fresh machine transcription is no longer a user-edited one.
+        node.transcriptEditedByUser = false
+    }
+
     // MARK: Sections
 
     private var contentCard: some View {
@@ -169,6 +261,9 @@ struct NodeDetailContent: View {
                         // quiet receipt, present only while it's retained.
                         if let data = node.audioData, !data.isEmpty {
                             ListenChip(data: data)
+                            // The words came out in the wrong language? Force a
+                            // pass in the other one (BRIEF decision 8).
+                            retranscribeMenu(data)
                         }
                     }
                     Text(transcription).foregroundStyle(OceanTheme.foam)
@@ -185,6 +280,7 @@ struct NodeDetailContent: View {
                         Spacer()
                         if let data = node.audioData, !data.isEmpty {
                             ListenChip(data: data)
+                            retranscribeMenu(data)
                         }
                     }
                     if node.createdAt.timeIntervalSinceNow <= -120 {
