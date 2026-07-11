@@ -74,3 +74,19 @@ Matrix: {iOS 26, iOS 18} × {pure zh, pure en, mixed 中英} × {live capture, r
 Plus: asset download offline/cellular behavior; bake-off lock timing feels instant;
 kinship spot-check within each language (zh node ↔ related zh node, en ↔ en) — the
 cross-language zh↔en check is dropped per the decision 11 empirical correction.
+
+## Open questions (raised during Wave 2, pending Gate 2 device results)
+1. **Legacy confidence floor = 0.3** (LiveTranscriber): the threshold below which a
+   legacy-path partial is suppressed as wrong-language garbage. Genuinely-unscored
+   (confidence == 0) results are kept, so total suppression is impossible, but 0.3
+   itself is an untuned guess — validate against real zh/en mixed takes in Gate 2.
+2. **iOS 26 has no legacy fallback**: if `SpeechAnalyzer`/`SpeechTranscriber` setup
+   returns `.unavailable` on iOS 26, capture degrades to recording-only rather than
+   falling back to `SFSpeechRecognizer`. This honors decision 4's clean OS split;
+   confirm we want no safety net there.
+3. **Seed examples freeze at seed-time language** (pre-existing, NOT this branch):
+   `SeedData` localizes the first-launch example nodes via `String(localized:)` and
+   persists them once (`seed.completed` one-shot), so a store first seeded in zh shows
+   Chinese example nodes under an English UI after a language switch. Correct for real
+   user data, confusing for app-provided demo content. Out of scope here — tracked as
+   its own follow-up, not fixed in bilingual-voice.
