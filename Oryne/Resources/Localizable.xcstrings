@@ -1,6 +1,78 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Couldn't transcribe" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法转写"
+          }
+        }
+      }
+    },
+    "Preparing speech recognition…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在准备语音识别…"
+          }
+        }
+      }
+    },
+    "Re-transcribe in" : {
+      "comment" : "Menu section header, followed by language choices (中文 / English)",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新转写为"
+          }
+        }
+      }
+    },
+    "Re-transcribe in another language" : {
+      "comment" : "Accessibility label for the re-transcribe menu button",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用其他语言重新转写"
+          }
+        }
+      }
+    },
+    "Replace transcript?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "替换文字记录？"
+          }
+        }
+      }
+    },
+    "Speech recognition couldn't produce words for this recording." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "语音识别没能从这段录音里辨认出文字。"
+          }
+        }
+      }
+    },
+    "Your edited words will be replaced by a fresh transcription." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新转写会替换你编辑过的文字记录。"
+          }
+        }
+      }
+    },
     "Export the Ocean" : {
       "localizations" : {
         "zh-Hans" : {
