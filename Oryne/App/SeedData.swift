@@ -38,6 +38,7 @@ enum SeedData {
 
         try? context.save()
         UserDefaults.standard.set(true, forKey: seededKey)
+        UserDefaults.standard.set(currentAppLanguage(), forKey: seedLanguageKey)
     }
 
     /// Inserts the demo example set (7 drifts + one cultivated dialogue pair)
@@ -99,6 +100,64 @@ enum SeedData {
         branch.createdAt = ago(14.0)
         branch.updatedAt = ago(14.0)
         context.insert(branch)
+    }
+
+    /// Records the app language the example set was last seeded in, so a later
+    /// per-app language change can re-localize the demo content (see
+    /// `relocalizeExamplesIfNeeded`). Distinct from `seed.completed`.
+    static let seedLanguageKey = "seed.language"
+
+    /// The active app language, resolved (en / zh-Hans). Intersects the user's
+    /// preferred languages with the bundle's available localizations, so it
+    /// matches what `String(localized:)` will actually render.
+    static func currentAppLanguage() -> String {
+        Bundle.main.preferredLocalizations.first ?? "en"
+    }
+
+    /// Whether/how to re-localize the demo examples on launch. Pure: no I/O, so
+    /// the branching is reviewable by inspection. The caller performs the wipe,
+    /// the re-seed, and the UserDefaults writes.
+    ///
+    /// - `.reseed` only when the store holds nothing but untouched examples AND
+    ///   the language changed since they were seeded — i.e. the user has neither
+    ///   written, cleared, nor edited anything. This preserves the one-shot
+    ///   intent for real data and never adds demo content to a store that has
+    ///   real writing.
+    /// - `.adoptBaseline` when we have no recorded seed language (an install
+    ///   that seeded before this feature shipped): silently record the current
+    ///   language as the baseline instead of guessing, so we never wipe an
+    ///   existing user's examples on the upgrade launch.
+    enum ExampleRelocalization: Equatable {
+        case skip
+        case adoptBaseline(String)
+        case reseed(String)
+    }
+
+    static func shouldRelocalizeExamples(
+        seeded: Bool,
+        realCount: Int,
+        exampleCount: Int,
+        anyExampleEdited: Bool,
+        recordedLanguage: String?,
+        currentLanguage: String
+    ) -> ExampleRelocalization {
+        // Never act before the first seed has happened (seedIfNeeded owns that).
+        guard seeded else { return .skip }
+
+        // Upgrade migration: unknown baseline. Adopt the current language rather
+        // than risk wiping examples whose seed language we can't determine.
+        guard let recordedLanguage else { return .adoptBaseline(currentLanguage) }
+
+        // The narrow re-seed window: examples-only store, nothing written,
+        // nothing edited, and the language actually changed.
+        if realCount == 0,
+           exampleCount > 0,
+           !anyExampleEdited,
+           recordedLanguage != currentLanguage {
+            return .reseed(currentLanguage)
+        }
+
+        return .skip
     }
 
     #if DEBUG
