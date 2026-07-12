@@ -20,6 +20,7 @@ struct OryneApp: App {
                 .preferredColorScheme(.dark)
                 .task {
                     SeedData.seedIfNeeded(container.mainContext)
+                    SeedData.relocalizeExamplesIfNeeded(container.mainContext)
                     Self.migrateLegacyAudio(context: container.mainContext)
                     Self.migrateLegacyImages(context: container.mainContext)
                     Self.expireConfirmedAudio(context: container.mainContext)

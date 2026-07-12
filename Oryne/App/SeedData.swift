@@ -160,6 +160,61 @@ enum SeedData {
         return .skip
     }
 
+    /// Re-localizes the demo examples after a per-app language change, but only
+    /// when the store holds nothing but untouched examples. Runs at launch,
+    /// AFTER `seedIfNeeded`, and deliberately does NOT share its `existing == 0`
+    /// guard: this path may replace examples with examples, never add demo
+    /// content to a store that has real writing.
+    ///
+    /// Device scope: keyed off `seed.completed`, a per-install UserDefaults flag
+    /// that is not CloudKit-synced, so this only ever runs on the device that
+    /// originally seeded — a second synced device (existing != 0 on its first
+    /// launch, never seeds, never records a seed language) won't re-seed.
+    @MainActor
+    static func relocalizeExamplesIfNeeded(_ context: ModelContext) {
+        let seeded = UserDefaults.standard.bool(forKey: "seed.completed")
+        let recorded = UserDefaults.standard.string(forKey: seedLanguageKey)
+        let current = currentAppLanguage()
+
+        // Count real vs example nodes without loading full objects where avoidable.
+        let realCount = (try? context.fetchCount(
+            FetchDescriptor<Node>(predicate: #Predicate { $0.isExample == false })
+        )) ?? 0
+        let examples = (try? context.fetch(
+            FetchDescriptor<Node>(predicate: #Predicate { $0.isExample == true })
+        )) ?? []
+        let anyExampleEdited = examples.contains {
+            $0.titleEditedByUser || $0.themesEditedByUser
+                || $0.transcriptEditedByUser || $0.positionPinnedByUser
+        }
+
+        switch shouldRelocalizeExamples(
+            seeded: seeded,
+            realCount: realCount,
+            exampleCount: examples.count,
+            anyExampleEdited: anyExampleEdited,
+            recordedLanguage: recorded,
+            currentLanguage: current
+        ) {
+        case .skip:
+            return
+
+        case .adoptBaseline(let language):
+            UserDefaults.standard.set(language, forKey: seedLanguageKey)
+
+        case .reseed(let language):
+            // Delete the example roots; the cascade delete rule takes the
+            // cultivated branch child with its parent. realCount == 0 here, so
+            // no real node is ever attached to an example.
+            for node in examples where node.parent == nil {
+                context.delete(node)
+            }
+            insertExamples(into: context, now: Date())
+            try? context.save()
+            UserDefaults.standard.set(language, forKey: seedLanguageKey)
+        }
+    }
+
     #if DEBUG
     /// A deterministic synthetic ocean for frame-rate and legibility runs:
     /// clustered themes, a sprinkle of floaters, and capture dates spread
