@@ -34,6 +34,19 @@ enum SeedData {
         guard !UserDefaults.standard.bool(forKey: seededKey) else { return }
 
         let now = Date()
+        insertExamples(into: context, now: now)
+
+        try? context.save()
+        UserDefaults.standard.set(true, forKey: seededKey)
+    }
+
+    /// Inserts the demo example set (7 drifts + one cultivated dialogue pair)
+    /// as badged, clearable, export-excluded nodes. Text resolves via
+    /// `String(localized:)` against the current bundle language at call time,
+    /// so both first-seed and language re-seed produce content in the active
+    /// language. Does not save; the caller owns the transaction.
+    @MainActor
+    static func insertExamples(into context: ModelContext, now: Date) {
         func ago(_ days: Double) -> Date { now.addingTimeInterval(-days * 86_400) }
 
         // Seeded thoughts are examples: quietly badged and clearable from Settings
@@ -86,9 +99,6 @@ enum SeedData {
         branch.createdAt = ago(14.0)
         branch.updatedAt = ago(14.0)
         context.insert(branch)
-
-        try? context.save()
-        UserDefaults.standard.set(true, forKey: seededKey)
     }
 
     #if DEBUG
