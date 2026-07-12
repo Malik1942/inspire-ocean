@@ -181,7 +181,7 @@ enum SeedData {
             FetchDescriptor<Node>(predicate: #Predicate { $0.isExample == false })
         )) ?? 0
         let examples = (try? context.fetch(
-            FetchDescriptor<Node>(predicate: #Predicate { $0.isExample == true })
+            FetchDescriptor<Node>(predicate: #Predicate { $0.isExample == true && $0.isArchived == false })
         )) ?? []
         let anyExampleEdited = examples.contains {
             $0.titleEditedByUser || $0.themesEditedByUser
