@@ -34,6 +34,20 @@ enum SeedData {
         guard !UserDefaults.standard.bool(forKey: seededKey) else { return }
 
         let now = Date()
+        insertExamples(into: context, now: now)
+
+        try? context.save()
+        UserDefaults.standard.set(true, forKey: seededKey)
+        UserDefaults.standard.set(currentAppLanguage(), forKey: seedLanguageKey)
+    }
+
+    /// Inserts the demo example set (7 drifts + one cultivated dialogue pair)
+    /// as badged, clearable, export-excluded nodes. Text resolves via
+    /// `String(localized:)` against the current bundle language at call time,
+    /// so both first-seed and language re-seed produce content in the active
+    /// language. Does not save; the caller owns the transaction.
+    @MainActor
+    static func insertExamples(into context: ModelContext, now: Date) {
         func ago(_ days: Double) -> Date { now.addingTimeInterval(-days * 86_400) }
 
         // Seeded thoughts are examples: quietly badged and clearable from Settings
@@ -86,9 +100,119 @@ enum SeedData {
         branch.createdAt = ago(14.0)
         branch.updatedAt = ago(14.0)
         context.insert(branch)
+    }
 
-        try? context.save()
-        UserDefaults.standard.set(true, forKey: seededKey)
+    /// Records the app language the example set was last seeded in, so a later
+    /// per-app language change can re-localize the demo content (see
+    /// `relocalizeExamplesIfNeeded`). Distinct from `seed.completed`.
+    static let seedLanguageKey = "seed.language"
+
+    /// The active app language, resolved (en / zh-Hans). Intersects the user's
+    /// preferred languages with the bundle's available localizations, so it
+    /// matches what `String(localized:)` will actually render.
+    static func currentAppLanguage() -> String {
+        Bundle.main.preferredLocalizations.first ?? "en"
+    }
+
+    /// Whether/how to re-localize the demo examples on launch. Pure: no I/O, so
+    /// the branching is reviewable by inspection. The caller performs the wipe,
+    /// the re-seed, and the UserDefaults writes.
+    ///
+    /// - `.reseed` only when the store holds nothing but untouched examples AND
+    ///   the language changed since they were seeded — i.e. the user has neither
+    ///   written, cleared, nor edited anything. This preserves the one-shot
+    ///   intent for real data and never adds demo content to a store that has
+    ///   real writing.
+    /// - `.adoptBaseline` when we have no recorded seed language (an install
+    ///   that seeded before this feature shipped): silently record the current
+    ///   language as the baseline instead of guessing, so we never wipe an
+    ///   existing user's examples on the upgrade launch.
+    enum ExampleRelocalization: Equatable {
+        case skip
+        case adoptBaseline(String)
+        case reseed(String)
+    }
+
+    static func shouldRelocalizeExamples(
+        seeded: Bool,
+        realCount: Int,
+        exampleCount: Int,
+        anyExampleEdited: Bool,
+        recordedLanguage: String?,
+        currentLanguage: String
+    ) -> ExampleRelocalization {
+        // Never act before the first seed has happened (seedIfNeeded owns that).
+        guard seeded else { return .skip }
+
+        // Upgrade migration: unknown baseline. Adopt the current language rather
+        // than risk wiping examples whose seed language we can't determine.
+        guard let recordedLanguage else { return .adoptBaseline(currentLanguage) }
+
+        // The narrow re-seed window: examples-only store, nothing written,
+        // nothing edited, and the language actually changed.
+        if realCount == 0,
+           exampleCount > 0,
+           !anyExampleEdited,
+           recordedLanguage != currentLanguage {
+            return .reseed(currentLanguage)
+        }
+
+        return .skip
+    }
+
+    /// Re-localizes the demo examples after a per-app language change, but only
+    /// when the store holds nothing but untouched examples. Runs at launch,
+    /// AFTER `seedIfNeeded`, and deliberately does NOT share its `existing == 0`
+    /// guard: this path may replace examples with examples, never add demo
+    /// content to a store that has real writing.
+    ///
+    /// Device scope: keyed off `seed.completed`, a per-install UserDefaults flag
+    /// that is not CloudKit-synced, so this only ever runs on the device that
+    /// originally seeded — a second synced device (existing != 0 on its first
+    /// launch, never seeds, never records a seed language) won't re-seed.
+    @MainActor
+    static func relocalizeExamplesIfNeeded(_ context: ModelContext) {
+        let seeded = UserDefaults.standard.bool(forKey: "seed.completed")
+        let recorded = UserDefaults.standard.string(forKey: seedLanguageKey)
+        let current = currentAppLanguage()
+
+        // Count real vs example nodes without loading full objects where avoidable.
+        let realCount = (try? context.fetchCount(
+            FetchDescriptor<Node>(predicate: #Predicate { $0.isExample == false })
+        )) ?? 0
+        let examples = (try? context.fetch(
+            FetchDescriptor<Node>(predicate: #Predicate { $0.isExample == true && $0.isArchived == false })
+        )) ?? []
+        let anyExampleEdited = examples.contains {
+            $0.titleEditedByUser || $0.themesEditedByUser
+                || $0.transcriptEditedByUser || $0.positionPinnedByUser
+        }
+
+        switch shouldRelocalizeExamples(
+            seeded: seeded,
+            realCount: realCount,
+            exampleCount: examples.count,
+            anyExampleEdited: anyExampleEdited,
+            recordedLanguage: recorded,
+            currentLanguage: current
+        ) {
+        case .skip:
+            return
+
+        case .adoptBaseline(let language):
+            UserDefaults.standard.set(language, forKey: seedLanguageKey)
+
+        case .reseed(let language):
+            // Delete the example roots; the cascade delete rule takes the
+            // cultivated branch child with its parent. realCount == 0 here, so
+            // no real node is ever attached to an example.
+            for node in examples where node.parent == nil {
+                context.delete(node)
+            }
+            insertExamples(into: context, now: Date())
+            try? context.save()
+            UserDefaults.standard.set(language, forKey: seedLanguageKey)
+        }
     }
 
     #if DEBUG
