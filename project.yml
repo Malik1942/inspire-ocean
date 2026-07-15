@@ -40,6 +40,8 @@ targets:
     # without this only Xcode's transient user scheme exists.
     scheme:
       configVariants: []
+      testTargets:
+        - SharedTests
     entitlements:
       path: Oryne/Oryne.entitlements
       properties:
@@ -89,6 +91,20 @@ targets:
           - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
+
+  # Unit tests for Shared/ logic (pure, no host app — keeps `xcodebuild test`
+  # runnable without booting the full Oryne app in a simulator). Runs via the
+  # Oryne scheme's test action.
+  SharedTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Shared
+      - path: SharedTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.inspireocean.app.sharedtests
+        GENERATE_INFOPLIST_FILE: YES
 
   ShareExtension:
     type: app-extension

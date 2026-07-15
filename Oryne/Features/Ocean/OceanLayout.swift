@@ -118,6 +118,15 @@ enum OceanLayoutEngine {
         /// The swing now scales with the safe range (see `placeOnSpine`); this
         /// is the minimum offset it uses whenever the range allows it.
         static let zigzagMin: CGFloat = 60
+        /// The swing's safe range is measured against this width, never the
+        /// real screen. Orbs have absolute sizes, so a swing that scales with
+        /// the device pins every current against the edges of a Max-class
+        /// phone and hollows out the middle; capping the width reproduces the
+        /// standard-phone composition, centered, with the extra width becoming
+        /// even side margins. Screens at or below the reference are untouched
+        /// (the cap is a no-op there), and the hard edge invariant keeps
+        /// holding because a capped swing only ever moves inward.
+        static let spineReferenceWidth: CGFloat = 393
 
         /// The world is exactly one viewport wide: the portrait screen
         /// width, stable per device and independent of rotation.
@@ -644,15 +653,18 @@ enum OceanLayoutEngine {
         stackIndex: Int
     ) -> CGPoint {
         // The widest thing this current owns decides how far off the spine
-        // it may swing: body circle or the label's horizontal reach.
-        let halfW = Metrics.designWidth / 2
+        // it may swing: body circle or the label's horizontal reach. The
+        // range is measured against the reference width, not the device
+        // width, so Max-class screens keep the standard composition instead
+        // of flinging every current to the edges (see `spineReferenceWidth`).
+        let halfW = min(Metrics.designWidth, Metrics.spineReferenceWidth) / 2
         let reachX = max(
             pack.bodyRadius,
             abs(pack.labelCenterOffset.dx) + pack.labelSize.width / 2)
         let maxX = max(0, halfW - reachX - Metrics.clusterSway)
         let sign: CGFloat = stackIndex.isMultiple(of: 2) ? -1 : 1
         // Swing 80 to 95 percent of the safe range (deterministically
-        // jittered) so currents use the full screen width, never exceeding
+        // jittered) so currents use the full reference width, never exceeding
         // maxX (the hard horizontal-edge invariant) and never collapsing below
         // the old floor when maxX allows it. Small orbs reach near the edges;
         // very wide currents have a small maxX and naturally stay central.

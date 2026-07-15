@@ -1,246 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Export the Ocean" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "导出海洋"
-          }
-        }
-      }
-    },
-    "Include voice recordings" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "包含语音记录"
-          }
-        }
-      }
-    },
-    "One zip: a Markdown file per current, a full JSON backup, and your images. Examples stay behind." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "一个压缩包：每条水流一份 Markdown 文件、一份完整的 JSON 备份，还有你的图片。示例不会包含在内。"
-          }
-        }
-      }
-    },
-    "Packing your Ocean…" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "正在打包你的海洋……"
-          }
-        }
-      }
-    },
-    "Prepare archive" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "准备存档"
-          }
-        }
-      }
-    },
-    "Share archive" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "分享存档"
-          }
-        }
-      }
-    },
-    "Uncategorized" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "未分类"
-          }
-        }
-      }
-    },
-    "Your thoughts, ready to take with you." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "你的灵感，随时可以带走。"
-          }
-        }
-      }
-    },
-    "A reading list that only grows, never finishes. Maybe the point was never to finish, only to drift through." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "一份只增不减、永远读不完的清单。也许重点从来不是读完，而是从中漫游而过。"
-          }
-        }
-      }
-    },
-    "Bioluminescence: light that living things make in the dark. Like ideas that only glow once you stop looking for them." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "生物荧光：生命在黑暗里自己发出的光。就像有些灵感，只有当你不再盯着它时，才会亮起来。"
-          }
-        }
-      }
-    },
-    "Clear examples" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "清空示例"
-          }
-        }
-      }
-    },
-    "Clear examples?" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "清空示例？"
-          }
-        }
-      }
-    },
-    "Color study: deep teal fading into violet at the horizon. I want a whole app to feel like dusk underwater." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "配色练习：深青色在地平线处淡入紫色。我想让一整个应用，感觉像水下的黄昏。"
-          }
-        }
-      }
-    },
-    "Example" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "示例"
-          }
-        }
-      }
-    },
-    "I keep meeting the same idea wearing different clothes. Maybe the repetition is the point, not the noise." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "同一个念头，总换着不同的模样与我相遇。也许这种重复本身就是信号，而不是杂音。"
-          }
-        }
-      }
-    },
-    "Note to self: capture before consciousness. The thought before you judge the thought." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "写给自己：在意识介入之前先记下来。在你评判念头之前的那个念头。"
-          }
-        }
-      }
-    },
-    "Once you have thoughts of your own, the starter examples can drift out. Yours stay." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "当你有了自己的灵感，这些示例便可以随水散去。你的灵感会留下。"
-          }
-        }
-      }
-    },
-    "Starter examples" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "示例灵感"
-          }
-        }
-      }
-    },
-    "The ocean keeps every river that ever fed it. Maybe memory works the same way: nothing lost, only carried." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "海洋留住了曾汇入它的每一条河。也许记忆也是如此：什么都没丢，只是被一路带着。"
-          }
-        }
-      }
-    },
-    "The starter thoughts drift out for good." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "这些示例灵感会漂出海洋，不再回来。"
-          }
-        }
-      }
-    },
-    "The thoughts that came with your Ocean." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "海洋初次为你留下的那些灵感。"
-          }
-        }
-      }
-    },
-    "Voice note: I keep returning to the feeling of the tide. Things leaving and coming back without me forcing them." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "语音记录：我总回到潮水的那种感觉。事物自行退去又归来，不必我去强求。"
-          }
-        }
-      }
-    },
-    "What is the one question all these disguises keep circling?" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "这些模样一直绕着的，究竟是同一个什么问题？"
-          }
-        }
-      }
-    },
-    "Why do my best ideas arrive in the shower and never at the desk? Something about not gripping them too hard." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "为什么我最好的灵感总在洗澡时冒出来，而从不在书桌前？大概是因为没有把它们攥得太紧。"
-          }
-        }
-      }
-    },
     "" : {
 
     },
@@ -309,6 +69,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "海洋收到时的轻声回应。"
+          }
+        }
+      }
+    },
+    "A reading list that only grows, never finishes. Maybe the point was never to finish, only to drift through." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一份只增不减、永远读不完的清单。也许重点从来不是读完，而是从中漫游而过。"
           }
         }
       }
@@ -533,6 +303,16 @@
         }
       }
     },
+    "Bioluminescence: light that living things make in the dark. Like ideas that only glow once you stop looking for them." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生物荧光：生命在黑暗里自己发出的光。就像有些灵感，只有当你不再盯着它时，才会亮起来。"
+          }
+        }
+      }
+    },
     "Branch type" : {
       "localizations" : {
         "zh-Hans" : {
@@ -713,6 +493,26 @@
         }
       }
     },
+    "Clear examples" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清空示例"
+          }
+        }
+      }
+    },
+    "Clear examples?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清空示例？"
+          }
+        }
+      }
+    },
     "Close" : {
       "localizations" : {
         "zh-Hans" : {
@@ -749,6 +549,16 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "让我的两条灵感碰撞"
+          }
+        }
+      }
+    },
+    "Color study: deep teal fading into violet at the horizon. I want a whole app to feel like dusk underwater." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "配色练习：深青色在地平线处淡入紫色。我想让一整个应用，感觉像水下的黄昏。"
           }
         }
       }
@@ -859,6 +669,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "无法在设备上生成摘要，点按重试。"
+          }
+        }
+      }
+    },
+    "Couldn't transcribe" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法转写"
           }
         }
       }
@@ -1033,12 +853,32 @@
         }
       }
     },
+    "Example" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "示例"
+          }
+        }
+      }
+    },
     "Expansion" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "延展"
+          }
+        }
+      }
+    },
+    "Export the Ocean" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导出海洋"
           }
         }
       }
@@ -1246,6 +1086,16 @@
         }
       }
     },
+    "I keep meeting the same idea wearing different clothes. Maybe the repetition is the point, not the noise." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同一个念头，总换着不同的模样与我相遇。也许这种重复本身就是信号，而不是杂音。"
+          }
+        }
+      }
+    },
     "Image" : {
       "localizations" : {
         "zh-Hans" : {
@@ -1272,6 +1122,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "图片"
+          }
+        }
+      }
+    },
+    "Include voice recordings" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "包含语音记录"
           }
         }
       }
@@ -1546,6 +1406,16 @@
         }
       }
     },
+    "Note to self: capture before consciousness. The thought before you judge the thought." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "写给自己：在意识介入之前先记下来。在你评判念头之前的那个念头。"
+          }
+        }
+      }
+    },
     "Nothing drifts near this yet" : {
       "localizations" : {
         "zh-Hans" : {
@@ -1626,12 +1496,36 @@
         }
       }
     },
+    "OK" : {
+      "comment" : "A button that dismisses an alert.",
+      "isCommentAutoGenerated" : true
+    },
+    "Once you have thoughts of your own, the starter examples can drift out. Yours stay." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当你有了自己的灵感，这些示例便可以随水散去。你的灵感会留下。"
+          }
+        }
+      }
+    },
     "One press, one drift." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "一按，一念汇入。"
+          }
+        }
+      }
+    },
+    "One zip: a Markdown file per current, a full JSON backup, and your images. Examples stay behind." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一个压缩包：每条水流一份 Markdown 文件、一份完整的 JSON 备份，还有你的图片。示例不会包含在内。"
           }
         }
       }
@@ -1719,6 +1613,16 @@
         }
       }
     },
+    "Packing your Ocean…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在打包你的海洋……"
+          }
+        }
+      }
+    },
     "Pause" : {
       "localizations" : {
         "zh-Hans" : {
@@ -1735,6 +1639,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "暂停录音"
+          }
+        }
+      }
+    },
+    "Prepare archive" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "准备存档"
+          }
+        }
+      }
+    },
+    "Preparing speech recognition…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在准备语音识别…"
           }
         }
       }
@@ -1805,6 +1729,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "重新转写并替换"
+          }
+        }
+      }
+    },
+    "Re-transcribe in" : {
+      "comment" : "Menu section header, followed by language choices (中文 / English)",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新转写为"
+          }
+        }
+      }
+    },
+    "Re-transcribe in another language" : {
+      "comment" : "Accessibility label for the re-transcribe menu button",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用其他语言重新转写"
           }
         }
       }
@@ -1940,7 +1886,6 @@
       }
     },
     "Replace" : {
-      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1957,6 +1902,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "替换图片"
+          }
+        }
+      }
+    },
+    "Replace transcript?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "替换文字记录？"
           }
         }
       }
@@ -2201,6 +2156,16 @@
         }
       }
     },
+    "Share archive" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分享存档"
+          }
+        }
+      }
+    },
     "Shortcut" : {
       "localizations" : {
         "zh-Hans" : {
@@ -2261,6 +2226,16 @@
         }
       }
     },
+    "Speech recognition couldn't produce words for this recording." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "语音识别没能从这段录音里辨认出文字。"
+          }
+        }
+      }
+    },
     "Start Context Capture" : {
       "localizations" : {
         "zh-Hans" : {
@@ -2287,6 +2262,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "开始快速捕捉"
+          }
+        }
+      }
+    },
+    "Starter examples" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "示例灵感"
           }
         }
       }
@@ -2421,6 +2406,16 @@
         }
       }
     },
+    "The ocean keeps every river that ever fed it. Maybe memory works the same way: nothing lost, only carried." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "海洋留住了曾汇入它的每一条河。也许记忆也是如此：什么都没丢，只是被一路带着。"
+          }
+        }
+      }
+    },
     "the on-device model is still downloading" : {
       "localizations" : {
         "zh-Hans" : {
@@ -2447,6 +2442,26 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "还是这片海，归于平静。"
+          }
+        }
+      }
+    },
+    "The starter thoughts drift out for good." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这些示例灵感会漂出海洋，不再回来。"
+          }
+        }
+      }
+    },
+    "The thoughts that came with your Ocean." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "海洋初次为你留下的那些灵感。"
           }
         }
       }
@@ -2621,6 +2636,16 @@
         }
       }
     },
+    "Uncategorized" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未分类"
+          }
+        }
+      }
+    },
     "Understood as" : {
       "localizations" : {
         "zh-Hans" : {
@@ -2677,6 +2702,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "语音优先"
+          }
+        }
+      }
+    },
+    "Voice note: I keep returning to the feeling of the tide. Things leaving and coming back without me forcing them." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "语音记录：我总回到潮水的那种感觉。事物自行退去又归来，不必我去强求。"
           }
         }
       }
@@ -2757,6 +2792,16 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "哪个领域紧挨着我的执念？"
+          }
+        }
+      }
+    },
+    "What is the one question all these disguises keep circling?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这些模样一直绕着的，究竟是同一个什么问题？"
           }
         }
       }
@@ -2891,6 +2936,16 @@
         }
       }
     },
+    "Why do my best ideas arrive in the shower and never at the desk? Something about not gripping them too hard." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "为什么我最好的灵感总在洗澡时冒出来，而从不在书桌前？大概是因为没有把它们攥得太紧。"
+          }
+        }
+      }
+    },
     "Widget" : {
       "localizations" : {
         "zh-Hans" : {
@@ -2911,6 +2966,16 @@
         }
       }
     },
+    "Your edited words will be replaced by a fresh transcription." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新转写会替换你编辑过的文字记录。"
+          }
+        }
+      }
+    },
     "Your note was long, so I worked from a shortened version" : {
       "localizations" : {
         "zh-Hans" : {
@@ -2920,7 +2985,17 @@
           }
         }
       }
+    },
+    "Your thoughts, ready to take with you." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的灵感，随时可以带走。"
+          }
+        }
+      }
     }
   },
-  "version" : "1.0"
+  "version" : "1.1"
 }
