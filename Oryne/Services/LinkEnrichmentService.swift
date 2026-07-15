@@ -1,6 +1,6 @@
 import Foundation
 import SwiftData
-import LinkPresentation
+@preconcurrency import LinkPresentation
 import UIKit
 #if canImport(FoundationModels)
 import FoundationModels
@@ -253,14 +253,23 @@ final class LinkEnrichmentService {
 
     // MARK: Stage A — LinkPresentation
 
+    /// Wraps a value the compiler can't prove `Sendable` but that, by this
+    /// call's actual shape (created here, touched only by its own one-shot
+    /// completion handler, never accessed concurrently), safely crosses a
+    /// `@Sendable` closure boundary.
+    private struct UncheckedSendableBox<Value>: @unchecked Sendable {
+        let value: Value
+    }
+
     /// Title + a preview image via `LPMetadataProvider` (the system's blessed
     /// rich-link path). Best-effort: returns nils on any failure.
     private static func fetchLinkMetadata(_ url: URL) async -> (title: String?, imageData: Data?) {
         await withCheckedContinuation { continuation in
             let provider = LPMetadataProvider()
             provider.timeout = 10
-            provider.startFetchingMetadata(for: url) { [provider] metadata, error in
-                _ = provider   // keep the provider alive until completion
+            let providerBox = UncheckedSendableBox(value: provider)
+            provider.startFetchingMetadata(for: url) { [providerBox] metadata, error in
+                _ = providerBox   // keep the provider alive until completion
                 guard let metadata, error == nil else {
                     continuation.resume(returning: (nil, nil))
                     return
