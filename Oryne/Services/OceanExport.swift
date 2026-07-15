@@ -168,7 +168,7 @@ enum OceanExport {
         }
     }
 
-    struct OceanBackup: Codable {
+    struct OceanBackup: Encodable {
         let format = "oryne-export-v1"
         let exportedAt: Date
         let nodeCount: Int
