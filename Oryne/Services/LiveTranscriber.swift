@@ -654,10 +654,17 @@ private final class ModernSpeechSession {
             return .unavailable
         }
 
+        // `.volatileResults` alone is not enough for live captioning: without
+        // `.fastResults` the transcriber holds hypotheses until it is fairly
+        // sure, so words appear in sentence-sized bursts instead of as they
+        // are spoken. This pair is exactly Apple's own live configuration —
+        // `Preset.progressiveTranscription` decomposes to
+        // `reportingOptions: [.volatileResults, .fastResults]` (verified by
+        // dumping the preset on the macOS 26 SDK).
         let transcriber = SpeechTranscriber(
             locale: resolved,
             transcriptionOptions: [],
-            reportingOptions: [.volatileResults],
+            reportingOptions: [.volatileResults, .fastResults],
             attributeOptions: []
         )
 
