@@ -164,6 +164,11 @@ struct LibraryView: View {
         let migrate = !UserDefaults.standard.bool(forKey: Self.semanticThemesMigrationKey)
 
         for node in allNodes {
+            // Seeded examples ship pre-titled and pre-themed in the app
+            // language; understanding them again would split the pair into
+            // separate currents, and marking them edited to prevent that
+            // would block the language re-seed (see SeedData). Leave them be.
+            guard !node.isExample else { continue }
             let needsTitle = node.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             guard needsTitle || migrate else { continue }
 

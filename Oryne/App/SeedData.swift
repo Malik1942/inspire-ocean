@@ -55,9 +55,12 @@ enum SeedData {
         // reader sees what a captured thought looks like. Read once, then
         // cleared from Settings. Export leaves examples out.
         //
-        // Titles and themes are pre-set and marked user-owned so the
-        // understanding backfill never retitles them or re-themes the pair
-        // apart into separate currents.
+        // Titles and themes are pre-set; the understanding backfill skips
+        // `isExample` nodes, so it never retitles them or re-themes the pair
+        // apart into separate currents. The `*EditedByUser` flags stay false:
+        // they must keep meaning "the user touched this", because the
+        // language re-seed (`shouldRelocalizeExamples`) reads them to decide
+        // whether the examples are still untouched.
         let introTheme = String(localized: "introduction")
 
         let intro = NodeComposer.make(
@@ -78,8 +81,6 @@ enum SeedData {
             node.isExample = true
             node.themes = [introTheme]
             node.hue = NodeComposer.hue(for: introTheme)
-            node.titleEditedByUser = true
-            node.themesEditedByUser = true
             node.createdAt = now.addingTimeInterval(-minutesAgo * 60)
             node.updatedAt = node.createdAt
             context.insert(node)

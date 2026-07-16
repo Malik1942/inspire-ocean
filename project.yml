@@ -100,6 +100,9 @@ targets:
     platform: iOS
     sources:
       - path: Shared
+      # SeedData is app-layer but pure enough to unit-test (it only touches
+      # Shared types); compiled in directly, like the Shared sources.
+      - path: Oryne/App/SeedData.swift
       - path: SharedTests
     settings:
       base:
