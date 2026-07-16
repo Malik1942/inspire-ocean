@@ -25,6 +25,12 @@ struct CaptureView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var kind: NodeKind = .text   // .text = Thought, .voice = Whisper
+    /// The carousel's settled page. Kept as a separate state from `kind` so
+    /// finger-driven paging (page settles → picker follows) and picker taps
+    /// (selection changes → card scrolls over) stay one-directional each and
+    /// can't feed back into each other.
+    @State private var pagedKind: NodeKind? = .text
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var text: String = ""
     @State private var linkText: String = ""
     @State private var showLinkField = false
@@ -143,10 +149,30 @@ struct CaptureView: View {
                     .padding(.horizontal)
             }
 
-            GlassCard(padding: 18) {
-                if kind == .voice { whisperCapture } else { thoughtCapture }
+            // The two capture surfaces sit side by side, camera-style: the
+            // card follows the finger and the picker above stays the visible
+            // truth of where you are. Paging is off while a whisper records,
+            // so a stray swipe can never end a live take (the picker keeps
+            // its deliberate stop-equals-captured path).
+            ScrollView(.horizontal) {
+                HStack(alignment: .top, spacing: 0) {
+                    GlassCard(padding: 18) { thoughtCapture }
+                        .padding(.horizontal)
+                        .containerRelativeFrame(.horizontal)
+                        .id(NodeKind.text)
+                        .accessibilityHidden(kind != .text)
+                    GlassCard(padding: 18) { whisperCapture }
+                        .padding(.horizontal)
+                        .containerRelativeFrame(.horizontal)
+                        .id(NodeKind.voice)
+                        .accessibilityHidden(kind != .voice)
+                }
+                .scrollTargetLayout()
             }
-            .padding(.horizontal)
+            .scrollTargetBehavior(.paging)
+            .scrollPosition(id: $pagedKind)
+            .scrollIndicators(.hidden)
+            .scrollDisabled(whisperPhase == .recording)
 
             // Whispers save themselves on stop; only thoughts need a button.
             if kind != .voice { saveButton }
@@ -154,13 +180,30 @@ struct CaptureView: View {
         }
         .padding(.top, 8)
         .animation(.snappy, value: kind)
-        .onChange(of: kind) { _, _ in
+        .onChange(of: kind) { _, newKind in
             // Switching modes is the user moving on — let the moment go early
             // rather than have it hang over the next capture.
             dismissMomentIfPresent()
             // Switching modes mid-recording must not leave a hot mic behind:
             // stop = captured, exactly as if the user had tapped stop.
             if session.transcriber.isRecording { Task { await captureWhisper() } }
+            // The keyboard belongs to the thought pane; folding it here covers
+            // both the picker tap and a swipe landing on Whisper.
+            if newKind != .text { textFocused = false }
+            // Picker-driven switch: bring the card along. A finger-driven
+            // swipe already moved it, so this is a no-op then.
+            if pagedKind != newKind {
+                if reduceMotion {
+                    pagedKind = newKind
+                } else {
+                    withAnimation(.snappy) { pagedKind = newKind }
+                }
+            }
+        }
+        .onChange(of: pagedKind) { _, newPage in
+            // A finger-driven page settled: the picker follows the card.
+            guard let newPage, newPage != kind else { return }
+            kind = newPage
         }
         .onChange(of: textFocused) { _, focused in
             // Tapping back into the field to write the next thought dismisses
