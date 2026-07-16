@@ -78,6 +78,10 @@ struct OceanFieldView: View {
             .sheet(isPresented: $showSettings) {
                 OceanSettingsView()
             }
+            // Reported so the root view can hold back anything (the review
+            // ask) that must never appear over a sheet.
+            .onChange(of: sheet?.id) { _, _ in updateOceanSheetPresence() }
+            .onChange(of: showSettings) { _, _ in updateOceanSheetPresence() }
         }
     }
 
@@ -137,6 +141,10 @@ struct OceanFieldView: View {
             }
         }
         sheet = .thought(node)
+    }
+
+    private func updateOceanSheetPresence() {
+        appState.isPresentingOceanSheet = sheet != nil || showSettings
     }
 
     /// A deep link (e.g. the Resurfacing widget) queued a node: open it.

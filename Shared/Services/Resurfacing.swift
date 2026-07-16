@@ -28,7 +28,9 @@ enum Resurfacing {
 
     /// Today's resurfacing fragment, or nil when the Ocean is too young.
     static func pick(from nodes: [Node], now: Date = .now) -> Node? {
-        let live = nodes.filter { !$0.isArchived }
+        // Seeded starter content never resurfaces as if it were a rediscovered
+        // thought: the moment only means something when it is the user's own.
+        let live = nodes.filter { !$0.isArchived && !$0.isExample }
         guard live.count > 3 else { return nil }
 
         let calendar = Calendar.current

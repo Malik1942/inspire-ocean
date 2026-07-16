@@ -42,7 +42,7 @@ struct OceanSettingsView: View {
     @State private var exportState: ExportState = .idle
     @State private var zipURL: URL?
 
-    private enum ExportState { case idle, building, ready }
+    private enum ExportState { case idle, building, ready, failed }
 
     var body: some View {
         NavigationStack {
@@ -52,9 +52,9 @@ struct OceanSettingsView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         calmSection
                         feedbackSection
-                        // Appears only once the user has both examples and real
-                        // content, so it never shows before they have started.
-                        if !exampleNodes.isEmpty && !realNodes.isEmpty {
+                        // The introduction is meant to be read once and let go,
+                        // so the clear affordance is there from the first launch.
+                        if !exampleNodes.isEmpty {
                             examplesSection
                         }
                         exportSection
@@ -191,7 +191,7 @@ struct OceanSettingsView: View {
                         .font(.subheadline.weight(.medium))
                 }
 
-                Text("Once you have thoughts of your own, the starter examples can drift out. Yours stay.")
+                Text("When you have seen how the Ocean works, the introduction can drift out. Your own thoughts stay.")
                     .font(.caption)
                     .foregroundStyle(OceanTheme.mist)
                     .fixedSize(horizontal: false, vertical: true)
@@ -265,6 +265,17 @@ struct OceanSettingsView: View {
                                 .foregroundStyle(OceanTheme.accent)
                         }
                     }
+                case .failed:
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label("Could not pack the archive.", systemImage: "exclamationmark.triangle")
+                            .font(.subheadline)
+                            .foregroundStyle(OceanTheme.mist)
+                        Button { buildExport() } label: {
+                            Label("Try again", systemImage: "arrow.clockwise")
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(OceanTheme.accent)
+                        }
+                    }
                 }
 
                 Text("One zip: a Markdown file per current, a full JSON backup, and your images. Examples stay behind.")
@@ -288,11 +299,16 @@ struct OceanSettingsView: View {
         let snapshots = realNodes.map { OceanExport.snapshot(from: $0) }
         let voice = includeVoice
         Task {
-            let url = await Task.detached {
-                try? OceanExport.buildArchive(from: snapshots, includeVoice: voice)
-            }.value
-            zipURL = url
-            exportState = url != nil ? .ready : .idle
+            do {
+                let url = try await Task.detached {
+                    try OceanExport.buildArchive(from: snapshots, includeVoice: voice)
+                }.value
+                zipURL = url
+                exportState = .ready
+            } catch {
+                zipURL = nil
+                exportState = .failed
+            }
         }
     }
 }

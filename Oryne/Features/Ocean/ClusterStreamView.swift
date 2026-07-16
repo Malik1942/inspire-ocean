@@ -12,6 +12,7 @@ struct ClusterStreamView: View {
     let theme: String
 
     @Environment(\.dismiss) private var dismiss
+    @State private var showCapture = false
     @Query(filter: #Predicate<Node> { !$0.isArchived }, sort: \Node.createdAt, order: .reverse)
     private var allNodes: [Node]
 
@@ -49,6 +50,18 @@ struct ClusterStreamView: View {
             .background(OceanBackground())
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                // No + for Adrift: its membership is defined by having no anchor
+                // and no themes, so adding *into* it would be a contradiction.
+                if theme != OceanLayoutEngine.adriftKey {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            showCapture = true
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                        .accessibilityLabel("Add a thought to this current")
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Close") { dismiss() }
                 }
@@ -56,6 +69,14 @@ struct ClusterStreamView: View {
         }
         .presentationDetents([.medium, .large])
         .presentationBackground(.clear)
+        // The familiar capture surface, opened into this current: the saved
+        // node is anchored here (see CaptureView / CaptureSession.release), so
+        // the live @Query drops it at the top of this stream on save. CaptureView
+        // brings its own NavigationStack and, given the anchor context, its own
+        // Done button — so it's presented directly. Sheet-over-sheet, fine on 17+.
+        .sheet(isPresented: $showCapture) {
+            CaptureView(intoCurrentThemeKey: theme)
+        }
     }
 
     /// Just the concept and how much drifts in it — no decorative placeholder.

@@ -23,6 +23,12 @@ struct CaptureDraft {
     var imageDatas: [Data] = []
     var linkURLString: String? = nil
 
+    /// When set, the released node is spatially anchored to this current
+    /// (`Node.anchorThemeKey`) at creation — placement is the user's intent;
+    /// AI understanding still adds theme chips but never relocates it.
+    /// Not part of `isEmpty`: an anchor alone is not content.
+    var anchorThemeKey: String? = nil
+
     var isEmpty: Bool {
         text.trimmed.isEmpty
             && transcript.trimmed.isEmpty
@@ -120,6 +126,11 @@ final class CaptureSession {
             imageDatas: imageDatas,
             detectThemes: !meaning.isEmpty
         )
+        // The user's placement intent, applied before insert and independent of
+        // understanding: nil for ordinary capture (unchanged), a current's key
+        // when captured into one. Understanding still runs and adds chips, but
+        // layout groups by `anchorThemeKey` first, so the node never relocates.
+        node.anchorThemeKey = draft.anchorThemeKey
         context.insert(node)
         do {
             try context.save()
