@@ -164,6 +164,12 @@ struct LibraryView: View {
         let migrate = !UserDefaults.standard.bool(forKey: Self.semanticThemesMigrationKey)
 
         for node in allNodes {
+            // Examples are curated: seeded with final titles and themes, and
+            // re-localized wholesale on language change. Understanding must
+            // never retitle or re-theme them, and they carry no user-edit
+            // flags, so they are skipped here rather than protected per-field.
+            guard !node.isExample else { continue }
+
             let needsTitle = node.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             guard needsTitle || migrate else { continue }
 
