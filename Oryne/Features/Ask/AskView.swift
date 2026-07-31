@@ -135,7 +135,7 @@ struct AskView: View {
             }
         } else {
             VStack(alignment: .leading, spacing: 10) {
-                Text(message.text)
+                Text(AnswerMarkdown.attributed(message.text))
                     .foregroundStyle(OceanTheme.foam)
                     .padding(.horizontal, 14).padding(.vertical, 12)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -180,7 +180,7 @@ struct AskView: View {
             Label("Beyond your Ocean", systemImage: "sparkles")
                 .font(.caption2.weight(.medium))
                 .foregroundStyle(OceanTheme.glowWarm)
-            Text(text)
+            Text(AnswerMarkdown.attributed(text))
                 .foregroundStyle(OceanTheme.foam)
         }
         .padding(.horizontal, 14).padding(.vertical, 12)
