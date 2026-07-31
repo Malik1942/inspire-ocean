@@ -1,0 +1,14 @@
+{
+  "_comment": "Synthetic co-location eval for the interpret/grouping system. Each thought belongs to an expected group; the test asks whether same-group thoughts end up sharing a theme (co-locate in one current) while different-group thoughts do not. 'expectedTheme' is a human label for the readout only — scoring is purely structural (shared theme strings), never a match against this word. Thoughts are interleaved on purpose so theme reuse is tested across gaps, not just back-to-back. lang drives which currency of theme we expect reuse within (bilingual proof: food-zh must unify on its own).",
+  "thoughts": [
+    { "id": "food-en-1", "group": "food-en", "lang": "en", "expectedTheme": "food", "text": "I want to eat the most delicious hamburger in the world" },
+    { "id": "work-en-1", "group": "work-en", "lang": "en", "expectedTheme": "career", "text": "I keep wondering if I should quit my job and start something of my own" },
+    { "id": "food-en-2", "group": "food-en", "lang": "en", "expectedTheme": "food", "text": "the drink was very yummy" },
+    { "id": "nature-en-1", "group": "nature-en", "lang": "en", "expectedTheme": "nature", "text": "the fog rolled over the hills this morning and everything went quiet" },
+    { "id": "food-en-3", "group": "food-en", "lang": "en", "expectedTheme": "food", "text": "So I like burgers a lot I want to try the best burger in San Francisco and the Bay Area" },
+    { "id": "food-zh-1", "group": "food-zh", "lang": "zh", "expectedTheme": "food", "text": "我想吃全世界最美味的汉堡" },
+    { "id": "work-en-2", "group": "work-en", "lang": "en", "expectedTheme": "career", "text": "another performance review and still no promotion" },
+    { "id": "food-zh-2", "group": "food-zh", "lang": "zh", "expectedTheme": "food", "text": "这杯饮料很好喝" },
+    { "id": "food-zh-3", "group": "food-zh", "lang": "zh", "expectedTheme": "food", "text": "我很喜欢汉堡，想尝尝旧金山湾区最好吃的汉堡" }
+  ]
+}
