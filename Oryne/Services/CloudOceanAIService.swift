@@ -268,11 +268,23 @@ final class CloudOceanAIService: OceanAIService {
     /// One Claude call interprets the fragment into essence + conceptual
     /// themes; mood stays on-device. Any failure or unusable reply falls back
     /// to the local understanding path unchanged.
-    func understand(_ text: String) async -> ThoughtUnderstanding {
+    ///
+    /// `existingThemes` (the ocean's current vocabulary, see `ThemeVocabulary`)
+    /// is passed into the prompt so the model *reuses* a theme that already
+    /// fits instead of coining a near-synonym. Without it, isolated
+    /// interpretation scatters related thoughts — "yummy drink" → `taste`,
+    /// "best burger" → `food curiosity` — into separate currents, since
+    /// currents match theme strings exactly (`OceanLayoutEngine`).
+    func understand(_ text: String, existingThemes: [String] = []) async -> ThoughtUnderstanding {
         let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let configuration, !cleaned.isEmpty else {
-            return await fallback.understand(text)
+            return await fallback.understand(text, existingThemes: existingThemes)
         }
+
+        let vocabulary = existingThemes.isEmpty
+            ? "The journal has no themes yet — you are naming its first ones."
+            : "The journal already uses these themes:\n"
+                + existingThemes.map { "- \($0)" }.joined(separator: "\n")
 
         let system = """
         You interpret entries in a personal inspiration journal.
@@ -281,9 +293,23 @@ final class CloudOceanAIService: OceanAIService {
         rather than restating the text; no quotation marks, no trailing punctuation.
         Line 2: 1 to 3 conceptual themes, comma-separated, each one to three \
         lowercase words. A theme names the underlying concept, intention, \
-        emotion, or domain — what the entry is really about, never words \
-        copied from it. Examples: creative direction, career uncertainty, \
-        recurring thoughts, social energy, emotional friction.
+        emotion, or domain.
+
+        \(vocabulary)
+
+        Consistency matters more than novelty. When an entry belongs with an \
+        existing theme, reuse that theme's exact wording rather than coining a \
+        near-synonym: a journal where "yummy drink" and "best burger" both sit \
+        under one "food" theme is far more useful than one that scatters them \
+        across "taste" and "food curiosity". Coin a NEW theme only when none of \
+        the existing ones genuinely fit, and keep new themes broad enough that \
+        future related entries can reuse them (prefer "food" over "food \
+        curiosity", "work" over "career uncertainty"). But a theme must still \
+        distinguish the entry from unrelated ones: never attach a catch-all \
+        that could fit most entries — "desire", "wanting", "thoughts", \
+        "feelings", "life". The entry's domain (food, work, nature) matters \
+        more than the stance it takes toward it. Write each theme in the \
+        language of the entry.
         """
 
         do {
@@ -298,10 +324,14 @@ final class CloudOceanAIService: OceanAIService {
                 .split(whereSeparator: \.isNewline)
                 .map { $0.trimmingCharacters(in: .whitespaces) }
                 .filter { !$0.isEmpty }
-            guard let titleLine = lines.first else { return await fallback.understand(text) }
+            guard let titleLine = lines.first else {
+                return await fallback.understand(text, existingThemes: existingThemes)
+            }
 
             let essence = TitleDistiller.tidy(titleLine)
-            guard !essence.isEmpty else { return await fallback.understand(text) }
+            guard !essence.isEmpty else {
+                return await fallback.understand(text, existingThemes: existingThemes)
+            }
 
             let themes = lines.dropFirst().first.map(SemanticThemes.tidyThemeList) ?? []
             return ThoughtUnderstanding(
@@ -312,7 +342,7 @@ final class CloudOceanAIService: OceanAIService {
                 mood: ThemeDetector.mood(from: cleaned)
             )
         } catch {
-            return await fallback.understand(text)
+            return await fallback.understand(text, existingThemes: existingThemes)
         }
     }
 

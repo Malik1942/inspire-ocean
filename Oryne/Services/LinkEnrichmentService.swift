@@ -226,7 +226,7 @@ final class LinkEnrichmentService {
         guard let node = Self.fetch(nodeID, in: context) else { return }
         let basis = node.meaningText
         guard !basis.isEmpty else { return }
-        let understanding = await ai.understand(basis)
+        let understanding = await ai.understand(basis, existingThemes: ThemeVocabulary.current(in: context))
         guard let fresh = Self.fetch(nodeID, in: context) else { return }
         NodeComposer.applyUnderstanding(understanding, to: fresh)
         try? context.save()

@@ -182,7 +182,7 @@ struct LibraryView: View {
                 continue
             }
 
-            let understanding = await ai.understand(raw)
+            let understanding = await ai.understand(raw, existingThemes: ThemeVocabulary.current(in: context))
             NodeComposer.applyUnderstanding(understanding, to: node, preserveTitle: !needsTitle)
             try? context.save()
         }

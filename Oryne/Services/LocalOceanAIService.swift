@@ -35,7 +35,14 @@ final class LocalOceanAIService: OceanAIService {
     /// Raw thought → semantic understanding → essence + conceptual themes.
     /// The foundation model interprets freely when available; otherwise the
     /// concept-space fallback (`SemanticThemes`) still maps meaning, not words.
-    func understand(_ text: String) async -> ThoughtUnderstanding {
+    ///
+    /// `existingThemes` is accepted for protocol conformance but not used here:
+    /// the on-device path already converges without it. The concept-space
+    /// fallback snaps onto a fixed, shared vocabulary (`SemanticThemes.concepts`),
+    /// so two related thoughts land on the same label by construction; the
+    /// reuse-vs-coin problem it solves is specific to the cloud path's open,
+    /// free-text themes (see `CloudOceanAIService`).
+    func understand(_ text: String, existingThemes: [String] = []) async -> ThoughtUnderstanding {
         let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleaned.isEmpty else {
             return ThoughtUnderstanding(essence: "Untitled drift", themes: [], mood: nil)

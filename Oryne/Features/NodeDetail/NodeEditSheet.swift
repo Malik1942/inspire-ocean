@@ -499,7 +499,7 @@ struct NodeEditSheet: View {
             .filter { !$0.isEmpty }
             .joined(separator: "\n")
         guard !basis.isEmpty else { return }
-        let understanding = await ai.understand(basis)
+        let understanding = await ai.understand(basis, existingThemes: ThemeVocabulary.current(in: context))
         if !understanding.essence.isEmpty { titleDraft = understanding.essence }
         if !understanding.themes.isEmpty { themesDraft = understanding.themes }
     }

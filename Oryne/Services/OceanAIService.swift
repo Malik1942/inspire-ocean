@@ -62,7 +62,16 @@ protocol OceanAIService {
     /// a concise essence (its title), 1–3 conceptual themes, and a soft mood.
     /// Uses the on-device foundation model when available; the fallback still
     /// reasons about meaning (concept-space embeddings), never bare keywords.
-    func understand(_ text: String) async -> ThoughtUnderstanding
+    ///
+    /// `existingThemes` are the themes already present in the ocean (see
+    /// `ThemeVocabulary.current`). Currents group by exact theme-string
+    /// equality (`OceanLayoutEngine`), so a thought interpreted in isolation
+    /// tends to coin a near-synonym ("food curiosity") of a theme that already
+    /// exists ("food") and lands in its own current instead of joining. Passing
+    /// the vocabulary lets a model-backed implementation reuse an existing theme
+    /// verbatim when the meaning fits, so related thoughts converge. Empty is
+    /// valid (a fresh ocean, or an implementation that ignores it).
+    func understand(_ text: String, existingThemes: [String]) async -> ThoughtUnderstanding
 
     /// Nodes related to `node` *by meaning* — blended embedding similarity,
     /// conceptual-theme overlap and mood — used for rediscovery and Expanded
@@ -73,6 +82,14 @@ protocol OceanAIService {
     /// Carry an Ocean Dialogue turn, grounded in the user's saved nodes.
     /// `history` is the last few turns (oldest first), for continuity.
     func respond(to query: String, history: [DialogueTurn], mode: DialogueMode, nodes: [Node]) async -> OceanResponse
+}
+
+extension OceanAIService {
+    /// Convenience for callers with no vocabulary at hand (e.g. App Intents in
+    /// a separate process, or a first thought). Equivalent to passing `[]`.
+    func understand(_ text: String) async -> ThoughtUnderstanding {
+        await understand(text, existingThemes: [])
+    }
 }
 
 // MARK: - Environment injection
