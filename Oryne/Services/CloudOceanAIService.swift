@@ -281,10 +281,15 @@ final class CloudOceanAIService: OceanAIService {
             return await fallback.understand(text, existingThemes: existingThemes)
         }
 
-        let vocabulary = existingThemes.isEmpty
-            ? "The journal has no themes yet — you are naming its first ones."
+        // Same-language candidates only: reuse reliably beats the
+        // write-in-the-entry's-language instruction (measured in
+        // Scripts/theme-reconcile-eval), so a zh entry must simply never be
+        // offered "food" — each language converges on its own anchor.
+        let reusable = ThemeVocabulary.filtered(existingThemes, forEntry: cleaned)
+        let vocabulary = reusable.isEmpty
+            ? "The journal has no themes yet in this entry's language — you are naming its first ones."
             : "The journal already uses these themes:\n"
-                + existingThemes.map { "- \($0)" }.joined(separator: "\n")
+                + reusable.map { "- \($0)" }.joined(separator: "\n")
 
         let system = """
         You interpret entries in a personal inspiration journal.
@@ -309,7 +314,8 @@ final class CloudOceanAIService: OceanAIService {
         that could fit most entries — "desire", "wanting", "thoughts", \
         "feelings", "life". The entry's domain (food, work, nature) matters \
         more than the stance it takes toward it. Write each theme in the \
-        language of the entry.
+        language of the entry; for a mixed-language entry, its dominant \
+        language.
         """
 
         do {

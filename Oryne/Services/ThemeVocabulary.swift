@@ -26,4 +26,32 @@ enum ThemeVocabulary {
             .prefix(limit)
             .map(\.key)
     }
+
+    /// Only the themes in `entry`'s language, so reuse can never put an
+    /// English chip on a Chinese thought (or vice versa): a zh entry that
+    /// found "food" in the vocabulary would reuse it verbatim — the reuse
+    /// instruction reliably beats the write-in-the-entry's-language one, as
+    /// the eval measured — so the cross-language candidates must simply not
+    /// be offered. Each language then converges on its own anchor (`food`
+    /// / `美食`). Mixed entries follow their dominant script.
+    ///
+    /// Script split, not language detection: the app is zh-Hans + English,
+    /// and Han-vs-Latin is unambiguous where `NLLanguageRecognizer` is
+    /// flaky on two-word fragments. An entry counts as Chinese when Han
+    /// makes up a third of its letters — Han carries roughly a word per
+    /// character, so even a mixed line like "今天吃了个 burger" is
+    /// dominantly Chinese while an English sentence quoting one Chinese
+    /// word is not.
+    static func filtered(_ themes: [String], forEntry entry: String) -> [String] {
+        themes.filter { isChinese($0) == isChinese(entry) }
+    }
+
+    private static func isChinese(_ text: String) -> Bool {
+        var letters = 0, han = 0
+        for scalar in text.unicodeScalars where scalar.properties.isAlphabetic {
+            letters += 1
+            if scalar.properties.isIdeographic { han += 1 }
+        }
+        return han * 3 >= letters && han > 0
+    }
 }

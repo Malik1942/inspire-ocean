@@ -66,13 +66,28 @@ Line 1: a title of at most 6 words — capture the essence or feeling rather tha
 Line 2: 1 to 3 conceptual themes, comma-separated, each one to three lowercase words. A theme names the underlying concept, intention, emotion, or domain — what the entry is really about, never words copied from it. Examples: creative direction, career uncertainty, recurring thoughts, social energy, emotional friction.
 """
 
-// Fix C. `existing` is the running list of themes already present in the ocean.
-func newSystem(existing: [String]) -> String {
+// Mirrors ThemeVocabulary.filtered / isChinese: reuse candidates are limited
+// to the entry's own language, so a zh entry can never reuse "food" verbatim —
+// it must coin its own anchor. Script split (Han ≥ 1/3 of letters), since the
+// app is zh-Hans + English and short theme strings defeat language detectors.
+func isChinese(_ text: String) -> Bool {
+    var letters = 0, han = 0
+    for scalar in text.unicodeScalars where scalar.properties.isAlphabetic {
+        letters += 1
+        if scalar.properties.isIdeographic { han += 1 }
+    }
+    return han * 3 >= letters && han > 0
+}
+
+// Fix C. `existing` is the running list of themes already present in the
+// ocean; only the entry's-language subset is offered for reuse.
+func newSystem(existing: [String], entry: String) -> String {
+    let reusable = existing.filter { isChinese($0) == isChinese(entry) }
     let vocab: String
-    if existing.isEmpty {
-        vocab = "The journal has no themes yet — you are naming its first ones."
+    if reusable.isEmpty {
+        vocab = "The journal has no themes yet in this entry's language — you are naming its first ones."
     } else {
-        vocab = "The journal already uses these themes:\n" + existing.map { "- \($0)" }.joined(separator: "\n")
+        vocab = "The journal already uses these themes:\n" + reusable.map { "- \($0)" }.joined(separator: "\n")
     }
     return """
     You interpret entries in a personal inspiration journal.
@@ -82,7 +97,7 @@ func newSystem(existing: [String]) -> String {
 
     \(vocab)
 
-    Consistency matters more than novelty. When an entry belongs with an existing theme, reuse that theme's exact wording rather than coining a near-synonym — a journal where "yummy drink" and "best burger" both sit under one "food" theme is far more useful than one that scatters them across "taste" and "food curiosity". Coin a NEW theme only when none of the existing ones genuinely fit, and keep new themes broad enough that future related entries can reuse them (prefer "food" over "food curiosity", "work" over "career uncertainty"). But a theme must still distinguish the entry from unrelated ones: never attach a catch-all that could fit most entries — "desire", "wanting", "thoughts", "feelings", "life". The entry's domain (food, work, nature) matters more than the stance it takes toward it. Write each theme in the language of the entry.
+    Consistency matters more than novelty. When an entry belongs with an existing theme, reuse that theme's exact wording rather than coining a near-synonym — a journal where "yummy drink" and "best burger" both sit under one "food" theme is far more useful than one that scatters them across "taste" and "food curiosity". Coin a NEW theme only when none of the existing ones genuinely fit, and keep new themes broad enough that future related entries can reuse them (prefer "food" over "food curiosity", "work" over "career uncertainty"). But a theme must still distinguish the entry from unrelated ones: never attach a catch-all that could fit most entries — "desire", "wanting", "thoughts", "feelings", "life". The entry's domain (food, work, nature) matters more than the stance it takes toward it. Write each theme in the language of the entry; for a mixed-language entry, its dominant language.
     """
 }
 
@@ -175,7 +190,7 @@ func runPass(reuse: Bool) throws -> [Outcome] {
     let label = reuse ? "NEW (Fix C)" : "OLD (shipping)"
     print("\n── \(label) ─────────────────────────────────────────")
     for t in thoughts {
-        let system = reuse ? newSystem(existing: vocabulary) : OLD_SYSTEM
+        let system = reuse ? newSystem(existing: vocabulary, entry: t.text) : OLD_SYSTEM
         let themes = try understand(t.text, system: system)
         guard !themes.isEmpty else {
             throw CallError.api("\(t.id): the model returned no usable theme line — cannot score this run")
@@ -222,11 +237,29 @@ func report(_ label: String, _ outcomes: [Outcome]) {
     print(String(format: "  → false merges across concepts: %d/%d  (want 0)", falseMerges.count, diffConcept.count))
     for (x, y) in falseMerges { print("      ⚠︎ \(x.id) & \(y.id) both have \(Set(x.themes).intersection(Set(y.themes)).sorted())") }
 
-    // 3) Same-concept, different language (food-en vs food-zh): informational only.
+    // 3) Theme-language correctness: a zh entry must wear zh themes and an en
+    //    entry en themes — a Chinese thought with an English "food" chip is a
+    //    localization break even when the grouping is right. Checked per
+    //    thought against the eval set's lang tag (mixed entries are tagged by
+    //    their dominant language).
+    let byID = Dictionary(uniqueKeysWithValues: thoughts.map { ($0.id, $0.lang) })
+    var langChecked = 0, langCorrect = 0
+    for o in outcomes {
+        guard let lang = byID[o.id], !o.themes.isEmpty else { continue }
+        langChecked += 1
+        let wrong = o.themes.filter { isChinese($0) != (lang == "zh") }
+        if wrong.isEmpty { langCorrect += 1 }
+        else { print("      ⚠︎ \(o.id) [\(lang)] wears wrong-language theme(s) \(wrong)") }
+    }
+    print("  → theme-language correctness: \(langCorrect)/\(langChecked)  (want all)")
+
+    // 4) Same-concept, different language (food-en vs food-zh): with the
+    //    language filter these stay separate currents by design; sharing here
+    //    would mean the filter leaked.
     let crossLang = pairs(outcomes).filter { $0.0.concept == $0.1.concept && $0.0.group != $0.1.group }
     if !crossLang.isEmpty {
         let merged = crossLang.filter { share($0.0, $0.1) }.count
-        print("  · cross-language same concept sharing a theme: \(merged)/\(crossLang.count) (either is acceptable)")
+        print("  · cross-language same concept sharing a theme: \(merged)/\(crossLang.count) (expect 0 under the language filter)")
     }
 }
 
@@ -281,4 +314,5 @@ do {
 report("OLD (shipping prompt)", old)
 report("NEW (Fix C: reuse-or-coin)", new)
 print("\nDone. RED = OLD within-group well below 100% / fragmented; GREEN = NEW at/near 100% with 0 false merges,")
-print("including the food-zh group unifying on its own (bilingual proof).")
+print("full theme-language correctness (zh thoughts wear zh themes, mixed follow their dominant language),")
+print("and the food-zh group unifying on its own zh anchor (bilingual proof).")

@@ -9,6 +9,7 @@
     { "id": "food-zh-1", "group": "food-zh", "lang": "zh", "expectedTheme": "food", "text": "我想吃全世界最美味的汉堡" },
     { "id": "work-en-2", "group": "work-en", "lang": "en", "expectedTheme": "career", "text": "another performance review and still no promotion" },
     { "id": "food-zh-2", "group": "food-zh", "lang": "zh", "expectedTheme": "food", "text": "这杯饮料很好喝" },
-    { "id": "food-zh-3", "group": "food-zh", "lang": "zh", "expectedTheme": "food", "text": "我很喜欢汉堡，想尝尝旧金山湾区最好吃的汉堡" }
+    { "id": "food-zh-3", "group": "food-zh", "lang": "zh", "expectedTheme": "food", "text": "我很喜欢汉堡，想尝尝旧金山湾区最好吃的汉堡" },
+    { "id": "food-mix-1", "group": "food-zh", "lang": "zh", "expectedTheme": "food", "text": "今天在 Mission 吃到一个超好吃的 burger，下次还要去" }
   ]
 }
