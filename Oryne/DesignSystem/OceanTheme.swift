@@ -42,6 +42,10 @@ enum OceanTheme {
     static let foam  = Color.white.opacity(0.92)
     static let mist  = Color.white.opacity(0.50)
     static let faint = Color.white.opacity(0.26)
+    /// Placeholder and helper text inside an input: quieter than `mist`, but it
+    /// still has to be read. `faint` measured about 2.2:1 over a field on the
+    /// glass card; this clears 4.5:1 (WCAG AA for text).
+    static let hint  = Color.white.opacity(0.58)
 
     /// Soft near-white for interactive accents — kept monochrome.
     static let accent   = Color(red: 0.82, green: 0.84, blue: 0.88)

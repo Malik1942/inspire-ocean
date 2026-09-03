@@ -215,7 +215,7 @@ struct FastCaptureSessionView: View {
                 if text.trimmed.isEmpty {
                     Text("A few words, if needed")
                         .font(.subheadline)
-                        .foregroundStyle(OceanTheme.faint)
+                        .foregroundStyle(OceanTheme.hint)
                         .padding(.top, 8)
                         .padding(.leading, 5)
                         .allowsHitTesting(false)
@@ -249,7 +249,7 @@ struct FastCaptureSessionView: View {
             if autoReleaseTask != nil {
                 Text("Tap words to keep editing")
                     .font(.caption2)
-                    .foregroundStyle(OceanTheme.faint)
+                    .foregroundStyle(OceanTheme.hint)
             }
 
             if autoReleaseTask == nil {
@@ -300,7 +300,7 @@ struct FastCaptureSessionView: View {
                 if text.trimmed.isEmpty {
                     Text("What are you noticing?")
                         .font(.subheadline)
-                        .foregroundStyle(OceanTheme.faint)
+                        .foregroundStyle(OceanTheme.hint)
                         .padding(.top, 8)
                         .padding(.leading, 5)
                         .allowsHitTesting(false)
@@ -368,11 +368,8 @@ struct FastCaptureSessionView: View {
                     Label("Release", systemImage: "arrow.up.forward.circle.fill")
                         .font(.subheadline.weight(.semibold))
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(OceanTheme.accent)
-                .foregroundStyle(OceanTheme.abyss)
+                .buttonStyle(ReleasePillStyle())
                 .disabled(!canSave || isSaving)
-                .opacity(canSave ? 1 : 0.45)
             }
         }
     }
@@ -757,5 +754,23 @@ private struct FastCaptureWaveform: View {
             }
             .frame(maxWidth: .infinity)
         }
+    }
+}
+
+/// The Release pill. Idle, with nothing to release yet, it stays a readable
+/// grey: the system's dimmed prominent style plus an opacity fade sank it into
+/// the card at roughly 1:1 label contrast. Ready, it turns to the accent with
+/// abyss text, the same pairing as "Release into the Ocean".
+private struct ReleasePillStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(isEnabled ? OceanTheme.accent : Color.white.opacity(0.12), in: Capsule())
+            .foregroundStyle(isEnabled ? OceanTheme.abyss : Color.white.opacity(0.62))
+            .opacity(configuration.isPressed ? 0.8 : 1)
+            .animation(.easeOut(duration: 0.15), value: isEnabled)
     }
 }

@@ -262,7 +262,7 @@ struct CaptureView: View {
             }
 
             if let imageNotice {
-                Text(imageNotice).font(.caption2).foregroundStyle(OceanTheme.faint)
+                Text(imageNotice).font(.caption2).foregroundStyle(OceanTheme.hint)
             }
 
             if showLinkField || !linkText.trimmed.isEmpty {
@@ -295,7 +295,7 @@ struct CaptureView: View {
                     }
                 }
                 if let imageNotice {
-                    Text(imageNotice).font(.caption2).foregroundStyle(OceanTheme.faint)
+                    Text(imageNotice).font(.caption2).foregroundStyle(OceanTheme.hint)
                 }
             }
         }
@@ -334,7 +334,7 @@ struct CaptureView: View {
                 // captured regardless; the words come from the recording.
                 Text("Preparing speech recognition…")
                     .font(.caption)
-                    .foregroundStyle(OceanTheme.faint)
+                    .foregroundStyle(OceanTheme.hint)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 
@@ -370,7 +370,7 @@ struct CaptureView: View {
 
             if !reviewPaused {
                 Text("Tap words to keep editing")
-                    .font(.caption2).foregroundStyle(OceanTheme.faint)
+                    .font(.caption2).foregroundStyle(OceanTheme.hint)
             }
 
             if reviewPaused {
@@ -385,7 +385,7 @@ struct CaptureView: View {
 
                 if session.transcriber.speechAvailability == .unavailable, reviewText.trimmed.isEmpty {
                     Text("Live transcription is off: type the words, or keep just the audio.")
-                        .font(.caption2).foregroundStyle(OceanTheme.faint)
+                        .font(.caption2).foregroundStyle(OceanTheme.hint)
                 }
 
                 HStack {
