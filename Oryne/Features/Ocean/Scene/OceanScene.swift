@@ -22,6 +22,8 @@ final class OceanScene: SKScene {
 
     var onTapFragment: ((UUID) -> Void)?
     var onTapCluster: ((String) -> Void)?
+    /// Receives the orbs' accessibility items after every rebuild.
+    var onAccessibilityItems: (([OceanAccessibilityItem]) -> Void)?
 
     // MARK: State
 
@@ -473,13 +475,15 @@ final class OceanScene: SKScene {
 
     // MARK: Accessibility
 
-    /// SpriteKit is invisible to VoiceOver, so the scene publishes one
-    /// element per current and per thought, anchored at resting positions.
+    /// SpriteKit is invisible to VoiceOver, and elements placed on the SKView
+    /// never surface through SwiftUI's `SpriteView`. So the scene publishes
+    /// one item per current and per thought, in view coordinates, and
+    /// `OceanSceneView` lays transparent accessibility views over them.
     /// Frames are camera-dependent: rebuilt on every integrate and whenever
     /// a pan (and its momentum) comes to rest.
     private func rebuildAccessibility(fragments: [UUID: FragmentSnapshot]) {
-        guard let view, size.width > 1 else { return }
-        var elements: [UIAccessibilityElement] = []
+        guard view != nil, size.width > 1 else { return }
+        var items: [OceanAccessibilityItem] = []
 
         func viewFrame(worldCenter: CGPoint, box: CGSize) -> CGRect {
             let center = convertPoint(toView: scenePoint(worldCenter))
@@ -490,41 +494,42 @@ final class OceanScene: SKScene {
         }
 
         for placement in currentLayout.clusters {
-            let element = OceanAccessibilityElement(accessibilityContainer: view)
-            element.accessibilityLabel = placement.label
-            element.accessibilityTraits = .button
             let d = placement.radius * 2
-            element.accessibilityFrameInContainerSpace = viewFrame(
-                worldCenter: CGPoint(x: placement.center.x, y: placement.center.y + 22),
-                box: CGSize(width: d, height: d + 44)
-            )
             let id = placement.id
-            element.onActivate = { [weak self] in self?.onTapCluster?(id) }
-            elements.append(element)
+            items.append(OceanAccessibilityItem(
+                id: "current:\(id)",
+                identifier: "oceanCurrent.\(id)",
+                label: placement.label,
+                frame: viewFrame(
+                    worldCenter: CGPoint(x: placement.center.x, y: placement.center.y + 22),
+                    box: CGSize(width: d, height: d + 44)
+                ),
+                activate: { [weak self] in self?.onTapCluster?(id) }
+            ))
         }
         for placement in currentLayout.motes {
-            let element = OceanAccessibilityElement(accessibilityContainer: view)
-            element.accessibilityLabel = fragments[placement.id]?.title
-            element.accessibilityTraits = .button
-            element.accessibilityFrameInContainerSpace = viewFrame(
-                worldCenter: placement.base, box: CGSize(width: 44, height: 44)
-            )
             let id = placement.id
-            element.onActivate = { [weak self] in self?.onTapFragment?(id) }
-            elements.append(element)
+            items.append(OceanAccessibilityItem(
+                id: "thought:\(id.uuidString)",
+                identifier: "oceanThought",
+                label: fragments[placement.id]?.title ?? "Thought",
+                frame: viewFrame(worldCenter: placement.base, box: CGSize(width: 44, height: 44)),
+                activate: { [weak self] in self?.onTapFragment?(id) }
+            ))
         }
-        view.accessibilityElements = elements
+        onAccessibilityItems?(items)
     }
 }
 
-/// An accessibility element that forwards activation to the scene.
-private final class OceanAccessibilityElement: UIAccessibilityElement {
-    var onActivate: (() -> Void)?
-    override func accessibilityActivate() -> Bool {
-        guard let onActivate else { return false }
-        onActivate()
-        return true
-    }
+/// One orb as VoiceOver and pointing tools see it: a label, a stable
+/// identifier (`oceanCurrent.<theme>` for currents, `oceanThought` for
+/// thoughts), its frame in the hosting view's coordinates, and activation.
+struct OceanAccessibilityItem: Identifiable {
+    let id: String
+    let identifier: String
+    let label: String
+    let frame: CGRect
+    let activate: () -> Void
 }
 
 private extension CGPoint {

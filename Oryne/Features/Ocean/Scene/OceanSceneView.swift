@@ -17,6 +17,7 @@ struct OceanSceneView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var scene = OceanScene()
+    @State private var accessibilityItems: [OceanAccessibilityItem] = []
 
     var body: some View {
         SpriteView(
@@ -27,6 +28,7 @@ struct OceanSceneView: View {
             options: [.allowsTransparency],
             debugOptions: Self.debugOptions
         )
+        .overlay { accessibilityOverlay }
         .onAppear { push() }
         .onChange(of: layout.signature) { _, _ in push() }
         // Snapshots can change without the layout moving (a title edit, for
@@ -38,6 +40,7 @@ struct OceanSceneView: View {
 
     private func push() {
         scene.scaleMode = .resizeFill
+        scene.onAccessibilityItems = { items in accessibilityItems = items }
         scene.onTapFragment = onTapFragment
         scene.onTapCluster = onTapCluster
         scene.apply(
@@ -46,6 +49,25 @@ struct OceanSceneView: View {
             motion: .current(calm: calm, reduceMotion: reduceMotion),
             calm: calm
         )
+    }
+
+    /// The orbs' accessibility, in SwiftUI's own tree: SpriteKit exposes nothing, and elements set
+    /// on the SKView never surface through `SpriteView`. Transparent, non-interactive views carry
+    /// the label, a greppable identifier, and VoiceOver activation; taps still reach the scene.
+    private var accessibilityOverlay: some View {
+        ZStack(alignment: .topLeading) {
+            ForEach(accessibilityItems) { item in
+                Color.clear
+                    .frame(width: item.frame.width, height: item.frame.height)
+                    .position(x: item.frame.midX, y: item.frame.midY)
+                    .accessibilityElement()
+                    .accessibilityLabel(item.label)
+                    .accessibilityIdentifier(item.identifier)
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityAction { item.activate() }
+            }
+        }
+        .allowsHitTesting(false)
     }
 
     /// Frame and node counters for performance checks, opted into per launch
