@@ -34,6 +34,11 @@ struct LibraryView: View {
     @State private var focusedAnchorID: UUID?
     @State private var focusRelatedRank: [UUID: Int] = [:]
 
+    #if DEBUG
+    /// One-shot for `OCEAN_SHOW_RELATED_TITLE` (marketing recapture).
+    @State private var didEngageScreenshotRelated = false
+    #endif
+
     /// True only while a focus reorder is animating, so cards drop their blurred
     /// glow/anchor shadow during the move (the shadow re-rasterizes the image
     /// every frame) and restore it on settle.
@@ -144,6 +149,7 @@ struct LibraryView: View {
             }
             #if DEBUG
             .onAppear { LibraryPerf.beginColdOpen() }
+            .task { await engageScreenshotRelatedIfNeeded() }
             #endif
         }
     }
@@ -370,6 +376,25 @@ struct LibraryView: View {
             _ = EmbeddingService.shared.vector(for: "ocean")
         }.value
     }
+
+    #if DEBUG
+    /// Marketing recapture: `OCEAN_SHOW_RELATED_TITLE` engages Show Related once
+    /// the named card is in the Library. Waits for seed + embedding warm-up.
+    private func engageScreenshotRelatedIfNeeded() async {
+        let title = ProcessInfo.processInfo.environment["OCEAN_SHOW_RELATED_TITLE"] ?? ""
+        guard !title.isEmpty, !didEngageScreenshotRelated else { return }
+        await prewarmEmbedding()
+        for _ in 0..<40 {
+            if let node = filtered.first(where: { $0.displayTitle == title }) {
+                didEngageScreenshotRelated = true
+                try? await Task.sleep(for: .milliseconds(500))
+                showRelated(to: node)
+                return
+            }
+            try? await Task.sleep(for: .milliseconds(100))
+        }
+    }
+    #endif
 
     /// Engage "Show related": pin the anchor and chip instantly (and scroll to
     /// the top via the grid's onChange), then rank off-main and let the related

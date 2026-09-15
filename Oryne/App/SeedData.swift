@@ -8,6 +8,18 @@ enum SeedData {
     @MainActor
     static func seedIfNeeded(_ context: ModelContext) {
         let seededKey = "seed.completed"
+
+        #if DEBUG
+        // Marketing recapture: wipe and load a clustered library so Show Related
+        // has real neighbors. simctl: SIMCTL_CHILD_OCEAN_SCREENSHOT_SEED=1
+        if ProcessInfo.processInfo.environment["OCEAN_SCREENSHOT_SEED"] == "1" {
+            SeedScreenshot.replaceLibrary(in: context)
+            UserDefaults.standard.set(true, forKey: seededKey)
+            FastCapturePreferences.defaults.set(true, forKey: FastCapturePreferenceKeys.onboardingCompleted)
+            return
+        }
+        #endif
+
         let descriptor = FetchDescriptor<Node>()
         let existing = (try? context.fetchCount(descriptor)) ?? 0
         guard existing == 0 else {

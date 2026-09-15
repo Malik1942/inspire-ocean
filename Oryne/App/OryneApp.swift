@@ -14,6 +14,14 @@ struct OryneApp: App {
     /// the device either way.
     private let ai: any OceanAIService = CloudOceanAIService(configuration: .fromEnvironment())
 
+    init() {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["OCEAN_SCREENSHOT_SEED"] == "1" {
+            FastCapturePreferences.defaults.set(true, forKey: FastCapturePreferenceKeys.onboardingCompleted)
+        }
+        #endif
+    }
+
     var body: some Scene {
         WindowGroup {
             RootTabView()

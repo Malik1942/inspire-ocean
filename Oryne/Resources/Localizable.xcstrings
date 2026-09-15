@@ -2382,6 +2382,16 @@
         }
       }
     },
+    "Still preparing speech recognition: type the words, if you like" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "语音识别还在准备中：也可以直接输入文字"
+          }
+        }
+      }
+    },
     "Stop" : {
       "localizations" : {
         "zh-Hans" : {

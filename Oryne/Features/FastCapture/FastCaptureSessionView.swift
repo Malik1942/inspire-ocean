@@ -200,6 +200,17 @@ struct FastCaptureSessionView: View {
                     maxHeight: 88
                 )
             } else {
+                if session.transcriber.isRecording, session.transcriber.speechAvailability == .preparing {
+                    // iOS 26 first use: the on-device model is still downloading,
+                    // so no live words are coming. Say so, rather than dropping to
+                    // the note field and letting it read as "nothing was heard"
+                    // (BRIEF decision 12). The audio is captured either way, and
+                    // the post-capture pass recovers the words.
+                    Text("Preparing speech recognition…")
+                        .font(.caption)
+                        .foregroundStyle(OceanTheme.hint)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
                 noteEditor
             }
         }
@@ -224,6 +235,18 @@ struct FastCaptureSessionView: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    /// What the empty review field says, one honest line per speech state:
+    /// recognition is off for good, still preparing, or was listening and simply
+    /// caught nothing. Only the last one may ask "what did you say?" — the other
+    /// two would be blaming the user for the model's absence (BRIEF decision 12).
+    private var transcriptPlaceholder: LocalizedStringKey {
+        switch session.transcriber.speechAvailability {
+        case .unavailable: "Transcription is off: type the words, if you like"
+        case .preparing: "Still preparing speech recognition: type the words, if you like"
+        case .live, .unknown: "What did you say?"
+        }
     }
 
     /// The brief post-stop beat: the thought is already saved; the words sit
@@ -256,9 +279,7 @@ struct FastCaptureSessionView: View {
                 TranscriptEditor(
                     text: $transcriptDraft,
                     isEditable: true,
-                    placeholder: session.transcriber.speechAvailability == .unavailable
-                        ? "Transcription is off: type the words, if you like"
-                        : "What did you say?",
+                    placeholder: transcriptPlaceholder,
                     minHeight: 54,
                     maxHeight: 110,
                     focus: $transcriptFocused
