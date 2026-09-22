@@ -25,13 +25,14 @@ SCENES:
            frame; two wide flat rings open on the water behind the phone
    data: screenshot seed (10 English thoughts); the line is entered live
    ~11s
-2. Find its place — idea: related thoughts gather on their own, no folders
-   start: Ocean field right after the release (same launch as scene 1)
-   interaction: tap the "light and color" current
-   payoff: the current's sheet listing the new thought beside the four seeded ones
-           (Sunset gradient study, Golden hour on the walk home, Warm to cool, not a filter, Desk at 6pm), held ≥2s
+2. Find its place — idea: related thoughts gather on their own, no folders   [revised 2026-09-22, see Revision 1]
+   start: the Fast Capture sheet right after the release (same launch as scene 1)
+   interaction: hold while the sheet turns into the app's "Understood as … · Drifts near "<neighbour>"" card,
+                then tap the "Light And Color" current in the Ocean
+   payoff: 1) the card naming the new thought's neighbour (a Light And Color thought), held ≥2s;
+           2) the Light And Color sheet with that neighbour in it, held ≥2s
    data: seed "light and color" current (4 thoughts) + the scene-1 thought
-   ~9s
+   ~11s
 3. Get it back — idea: a forgotten idea comes back on its own
    start: Home Screen, Resurfacing widget showing today's pick (an older seeded thought)
    interaction: tap the Resurfacing widget
@@ -61,6 +62,17 @@ SOUND: the website's ocean ambience (sound.js: deep brown-noise bed, pink-noise 
 ```
 
 `*…*` marks the italic accent. Every `~s` is a target; real lengths come from the measured takes.
+
+## Revision 1 (2026-09-22): scene 2 after the first take
+
+A live capture cannot join a seeded current: currents are keyed by the exact first-theme string
+(`OceanLayout.currentKey` = `anchorThemeKey ?? themes.first`), the seed's theme is the hand-written
+"light and color", and new thoughts get free-form themes from the on-device model ("light", "warmth"…).
+The app's own "found its place" signal is the Fast Capture result card, "Understood as … · Drifts near
+"<related thought>"". Malik chose to film that card, then the neighbour's current (Light And Color), as an
+honest chain: new thought → its neighbour → the neighbour's current. Scene 2 becomes ~11 s. The typed line
+stays as written if its neighbour is a Light And Color thought; otherwise the first fallback line
+("Warm light at dusk makes the room feel slower.", which drifted near "Golden hour on the walk home").
 
 ## Timeline (targets)
 
