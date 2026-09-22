@@ -5478,3 +5478,8 @@ screens the thought now leaves the card's right edge and settles in the open wat
 between the card and the viewport edge, below the phone if the phone is in the way, then
 drifts right as it lets go. On phones it still drops out of the card's lower edge.
 `release()` takes an optional `to` and `drift`.
+
+## Parked (2026-09-21)
+
+- Chinese copy review: Malik will revise `zh/*.html` himself later. Everything else on the
+  site is signed off and live.
