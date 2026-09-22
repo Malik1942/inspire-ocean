@@ -5503,3 +5503,10 @@ typing first, the three-second review before auto-release (`scheduleAutoRelease`
 widget. Screen captured from the seeded simulator via `oryne://capture/whisper`.
 `choreo.js` gained the `fast` chapter (pools pulled back, amber glow); its tests iterate
 `CHAPTERS` so they cover it.
+
+## Fast Capture card (2026-09-21)
+
+A fifth How it works card, second in the row: "One press, no app." with a vignette of a
+light switching on in an instant and breathing while it listens. The grid is five across
+from 1024px (tighter padding, 24px card titles), two columns below that with the odd card
+spanning the row.

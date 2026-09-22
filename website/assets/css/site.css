@@ -367,8 +367,17 @@ html:lang(zh-Hans) .lead { font-weight: 400; }
 /* ---------------------------------------------------------- how cards */
 
 .cards { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 48px; }
-@media (min-width: 640px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (min-width: 1024px) { .cards { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+/* Five cards: one row on wide screens, two columns in between (the odd one out spans the row). */
+@media (min-width: 640px) {
+  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cards > li:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+@media (min-width: 1024px) {
+  .cards { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+  .cards > li:last-child:nth-child(odd) { grid-column: auto; }
+  .card { padding: 16px 16px 20px; }
+  .card h3 { font-size: 24px; }
+}
 .card {
   display: flex;
   flex-direction: column;

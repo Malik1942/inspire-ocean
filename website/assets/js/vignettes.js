@@ -1,6 +1,7 @@
 // The four small visuals on the How it works cards, drawn with the Ocean's own
-// large lights: a pale light setting into the water, three pools of light
-// gathering, a warm one rising again, and one light with its answer. Nothing
+// large lights: a pale light setting into the water, one switching on at a
+// press, three pools gathering, a warm one rising again, and one light with
+// its answer. Nothing
 // small, no lines, and every edge fades out. Each runs
 // only while its card is on screen, and rests in a still frame when motion is off.
 
@@ -97,6 +98,16 @@ export const SCENES = {
     horizon(ctx, w, line, 1);
     reflection(ctx, x, line, r, '180,198,238', 0.9 * (1 - sink));
     aboveWater(ctx, w, line, () => lamp(ctx, { x, y, r, alpha: 1, soft: 0.08, palette: 'moon' }));
+  },
+
+  // One press: a light switches on in an instant, then breathes while it listens.
+  fast(ctx, w, h, t, still) {
+    const cycle = still ? 2 : t % 8;
+    const on = still ? 1 : easeOut(unit(cycle / 0.35));
+    const off = still || cycle < 7.3 ? 1 : 1 - (cycle - 7.3) / 0.7;
+    const breath = still ? 0 : 0.06 * Math.sin((cycle - 0.35) * 2.4) * unit((cycle - 0.35) / 1);
+    const r = h * 0.26 * (0.6 + 0.4 * on) * (1 + breath);
+    lamp(ctx, { x: w * 0.5, y: h * 0.5, r, alpha: on * off, soft: 0.1 + 0.25 * (1 - on), palette: 'amber' });
   },
 
   // Three pools of light drift together into one current, and loosen again.
