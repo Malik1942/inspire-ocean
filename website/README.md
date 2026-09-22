@@ -88,6 +88,8 @@ fact the water shows is also written on the page, and Reduce Motion (or
   `fast-capture.webp` is the same build opened with `simctl openurl … oryne://capture/whisper`
   after granting the microphone and answering the speech prompt; its source line reads
   "Widget" because that is how the URL route is labelled.
+  `widget.webp` is the same simulator's Home Screen with the medium Quick Capture widget
+  added through the widget gallery (Edit › Add Widget › Oryne).
 - Social image: a headless Chrome capture of the stilled hero (`?motion=still`) at
   1200×630 (driven through the DevTools protocol), with the bar, lead, and Listen
   button hidden and the headline set at 92px, so the headline, badge, and phone in

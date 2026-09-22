@@ -5510,3 +5510,11 @@ A fifth How it works card, second in the row: "One press, no app." with a vignet
 light switching on in an instant and breathing while it listens. The grid is five across
 from 1024px (tighter padding, 24px card titles), two columns below that with the odd card
 spanning the row.
+
+## Widget screenshot (2026-09-21)
+
+The Fast Capture chapter's visual is now a pair of small phones: the listening session and
+the Home Screen with the medium Quick Capture widget (Thought and Whisper buttons), added
+in the simulator through the widget gallery. `.chapter__visual--pair` sizes the pair down
+to 42vw each so both fit a phone screen. The widget point in the copy now names the two
+buttons and the Lock Screen widget (`accessoryCircular`).

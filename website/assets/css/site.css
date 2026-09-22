@@ -401,6 +401,8 @@ html:lang(zh-Hans) .lead { font-weight: 400; }
 @media (min-width: 900px) { .chapter__grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; } }
 .chapter__grid > * { min-width: 0; }
 .chapter__visual { display: flex; justify-content: center; }
+.chapter__visual--pair { gap: clamp(12px, 3vw, 24px); }
+.chapter__visual--pair .phone { --w: clamp(150px, 42vw, 240px); }
 .features { display: grid; gap: 22px; margin-top: 36px; }
 .features li { padding-left: 18px; border-left: 1px solid rgba(255, 255, 255, 0.12); }
 .features p { margin-top: 4px; font-size: 16px; font-weight: 300; }
