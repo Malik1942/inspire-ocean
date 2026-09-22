@@ -5483,3 +5483,13 @@ drifts right as it lets go. On phones it still drops out of the card's lower edg
 
 - Chinese copy review: Malik will revise `zh/*.html` himself later. Everything else on the
   site is signed off and live.
+
+## Outage and fix (2026-09-21, evening)
+
+After the worktree was removed, the `oryne` Vercel project turned out to be connected to
+the GitHub repo with Root Directory `.`, and a git deployment from `main` had replaced the
+CLI deployment: the site 404ed and the repository root, including the app's Swift source,
+was served as static files for a few minutes. Fix: Root Directory set to `website`, build
+and install commands cleared, and a fresh production deployment created from `main`.
+Verified: all pages 200, `/Oryne/...`, `/PHILOSOPHY.md`, `/project.yml`, and `/tests/...`
+404. From here on, pushes to `main` deploy the site.

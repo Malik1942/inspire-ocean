@@ -93,18 +93,23 @@ fact the water shows is also written on the page, and Reduce Motion (or
 ## Deploy
 
 Hosted on Vercel as the `oryne` project (team malik1942s-projects), a plain static
-deployment with no build step: https://oryne-zeta.vercel.app, also attached to
-`oryne.malikzhang.com` (DNS for `malikzhang.com` lives at the registrar, so the
-subdomain needs an `A 76.76.21.21` or `CNAME cname.vercel-dns.com` record there).
-`malikzhang.com` itself belongs to the separate `malik-portfolio` project.
+deployment with no build step, at https://oryne.malikzhang.com and
+https://oryne-zeta.vercel.app. `malikzhang.com` itself belongs to the separate
+`malik-portfolio` project.
+
+The project is connected to the GitHub repo, with **Root Directory set to `website`**:
+every push to `main` deploys this folder automatically, and nothing outside it is
+served. Keep that setting. When it was briefly unset (2026-09-21), Vercel deployed the
+repository root instead: the site 404ed and the app's source was served as static files
+until the setting was restored.
 
 ```bash
-cd website && npx vercel deploy --prod
+git push origin main        # deploys; check https://oryne.malikzhang.com a minute later
 ```
 
-The folder is linked through `website/.vercel/` (git-ignored, with the CLI's
-`.env.local`). `.vercelignore` keeps `tests/`, `tools/`, `package.json`, and this README
-out of the upload. Vercel Authentication is off for this project, so the site is public.
+`.vercelignore` keeps `tests/`, `tools/`, `package.json`, and this README out of the
+deployment. `website/.vercel/` and `.env.local` are the CLI's local link files,
+git-ignored. Vercel Authentication is off for this project, so the site is public.
 
 ## Before going live
 
