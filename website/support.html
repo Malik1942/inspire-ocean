@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en" class="no-js" data-en="support.html" data-zh="zh/support.html">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Support · Oryne</title>
+  <meta name="description" content="Answers to common questions about Oryne: fast capture, sync, export, and more.">
+  <meta name="theme-color" content="#050508">
+  <meta name="color-scheme" content="dark">
+  <link rel="alternate" hreflang="en" href="support.html">
+  <link rel="alternate" hreflang="zh-Hans" href="zh/support.html">
+  <link rel="alternate" hreflang="x-default" href="support.html">
+  <link rel="icon" href="assets/img/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="icon" href="assets/img/favicon-16.png" sizes="16x16" type="image/png">
+  <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+  <link rel="stylesheet" href="assets/css/site.css">
+  <script>
+    (function () {
+      var root = document.documentElement;
+      root.className = root.className.replace('no-js', 'js');
+      var here = root.lang === 'zh-Hans' ? 'zh-Hans' : 'en';
+      var want = null;
+      try { want = window.localStorage.getItem('oryne.lang'); } catch (e) {}
+      if (!want && here === 'en') {
+        var first = ((navigator.languages && navigator.languages[0]) || navigator.language || '').toLowerCase();
+        if (/^zh(?:-(?:hans|cn|sg)(?:-|$)|$)/.test(first)) want = 'zh-Hans';
+      }
+      if (want && want !== here) {
+        var target = root.getAttribute(want === 'zh-Hans' ? 'data-zh' : 'data-en');
+        if (target) window.location.replace(target + window.location.search + window.location.hash);
+      }
+    })();
+  </script>
+  <script type="module" src="assets/js/site.js"></script>
+</head>
+<body data-page="long">
+  <a class="skip" href="#main">Skip to content</a>
+
+  <div class="ocean" aria-hidden="true">
+    <canvas class="ocean__water"></canvas>
+    <canvas class="ocean__field"></canvas>
+    <div class="ocean__grain"></div>
+  </div>
+
+  <header class="bar">
+    <div class="wrap bar__inner">
+      <a class="wordmark" href="index.html"><svg class="wordmark__mark" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="11.2" opacity="0.4"/><path d="M21.2 5.4A11.2 11.2 0 0 1 6.8 22.6"/><path d="M5.8 17.1c1.38-1.5 2.76-1.5 4.14 0s2.76 1.5 4.14 0 2.76-1.5 4.14 0 2.76 1.5 4.14 0" opacity="0.7"/></svg><span class="wordmark__name">Oryne</span></a>
+      <nav class="bar__nav" aria-label="Sections">
+        <a href="index.html#how">Features</a>
+        <a href="index.html#use-cases">Use cases</a>
+        <a href="index.html#privacy">Privacy</a>
+        <a href="index.html#faq">FAQ</a>
+      </nav>
+      <div class="bar__controls">
+        <a class="lang" href="zh/support.html" hreflang="zh-Hans" data-lang-switch="zh-Hans" aria-label="Switch to Chinese"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.6"/><path d="M3.4 12h17.2"/><path d="M12 3.4c2.15 2.4 3.23 5.27 3.23 8.6S14.15 18.2 12 20.6c-2.15-2.4-3.23-5.27-3.23-8.6S9.85 5.8 12 3.4z"/></svg><span aria-hidden="true" lang="zh-Hans">中文</span></a>
+        <button class="icon-btn js-only" type="button" data-sound-toggle aria-pressed="false">
+          <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/><path d="M3 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg>
+          <span class="icon-btn__label">Sound</span>
+        </button>
+        <a class="btn btn--primary btn--small" href="https://apps.apple.com/app/id6778995892">Download</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <article class="wrap prose">
+      <p class="eyebrow">Support</p>
+      <h1 class="prose__title">How can we help?</h1>
+      <p class="updated">Answers to common questions, and a way to reach us.</p>
+
+      <h2 id="getting-started">Getting started</h2>
+      <details class="qa" id="capture-basics"><summary>How do I capture a thought?</summary><p>One tap. Open Oryne and start a whisper by voice or text, whichever is faster in the moment. Speak it out loud or type it in, then let it go. Capture is meant to take a second, so the idea lands before it slips away.</p></details>
+      <details class="qa" id="fast-capture"><summary>How do I capture fastest?</summary><p>In your iPhone's Settings, open Action Button, choose Shortcut, then pick Oryne's Start Fast Capture. You can also add Oryne's button to Control Center. Either way, Oryne opens already listening.</p></details>
+      <details class="qa" id="context-capture"><summary>How do I keep a screenshot together with a spoken note?</summary><p>In the Shortcuts app, make a shortcut that runs Take Screenshot, then Oryne's Start Context Capture. Run it from the Action Button, from Back Tap in Accessibility settings, or from Camera Control where your iPhone allows it.</p></details>
+      <details class="qa" id="share"><summary>Can I capture from other apps?</summary><p>Yes. In any app, tap Share and choose Oryne. Links, images, and text arrive in your Ocean.</p></details>
+      <details class="qa" id="siri"><summary>Can I use Siri?</summary><p>Yes. Say “Hey Siri, add an inspiration to Oryne,” then speak your thought. Siri phrases are in English. In any language, you can run Oryne's Add Inspiration action from a shortcut.</p></details>
+
+      <h2 id="your-ocean">Your Ocean</h2>
+      <details class="qa" id="organize"><summary>Where do my notes go, and how do they get organized?</summary><p>You never have to file anything. Once you release a whisper into the Ocean, on-device intelligence reads it, gives it a title, and finds the themes inside it. Related thoughts drift together into currents, so ideas that belong together end up together without you sorting them by hand. When you want to find something, you can ask the Ocean in plain language instead of digging through folders.</p></details>
+      <details class="qa" id="sync"><summary>Does Oryne sync between my iPhone and iPad?</summary><p>Yes, through iCloud, when both devices are signed in to the same Apple Account.</p></details>
+      <details class="qa" id="offline"><summary>Does it work offline?</summary><p>Capture always works. You can record or type a whisper and release it into the Ocean with no connection at all, and titling and theming happen on your device. Some extras need a network: summarizing a link you saved requires a connection and a supported device. When that is not available, Oryne keeps the link with its basic details instead of failing.</p></details>
+      <details class="qa" id="link-summary"><summary>Why didn't a link get summarized?</summary><p>Link summarizing leans on on-device intelligence, and that depends on your hardware. On a device without support for it, Oryne falls back to the basic link information it can read, the title and address, rather than a full summary. A network drop at the moment of saving can cause the same fallback. The link is saved either way, so nothing is lost, and a more capable device will summarize future links.</p></details>
+      <details class="qa" id="export"><summary>How do I export everything?</summary><p>In Oryne's Settings, choose Export the Ocean. You get Markdown files, one per current, plus a JSON backup.</p></details>
+      <details class="qa" id="delete"><summary>How do I edit or delete a thought?</summary><p>Open any thought to edit its text, fix a title, or refine what was captured. To remove one, choose Delete and confirm. Right after a capture, Undo takes it back. Deleting a thought takes it out of your currents and removes it from your private iCloud sync across your devices.</p></details>
+      <details class="qa" id="examples"><summary>What are the example thoughts?</summary><p>Oryne starts with a short introduction current. Once you've read it, choose Clear examples in Oryne's Settings.</p></details>
+
+      <h2 id="comfort">Comfort</h2>
+      <details class="qa" id="motion"><summary>The Ocean moves too much for me.</summary><p>Turn on Calm Accessibility Mode in Oryne's Settings, or Reduce Motion in your iPhone's Settings under Accessibility, then Motion. The Ocean holds still.</p></details>
+      <details class="qa" id="language"><summary>How do I switch Oryne to Chinese?</summary><p>In Settings › Oryne › Language, choose <span lang="zh-Hans">简体中文</span>.</p></details>
+
+      <h2 id="privacy">Your privacy</h2>
+      <p>Oryne is built so your thoughts stay yours. The intelligence that titles, themes, and connects your whispers runs on your device. Your captures sync only through your own private iCloud, tied to your Apple Account, so they reach your other devices without living on our servers. There is no tracking, no advertising profile, and nothing about what you capture is mined or sold. Read the full <a href="privacy.html">Privacy Policy</a>.</p>
+
+      <h2 id="contact">Contact</h2>
+      <p>Questions, feedback, or a bug to report? Reach the Oryne team directly at <a href="mailto:malikdes9gn@gmail.com">malikdes9gn@gmail.com</a>. This is the fastest way to get help. For a bug, a short description of what you did, what you expected, and your device model helps us track it down. We read every message.</p>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer__inner">
+      <a class="wordmark" href="index.html"><svg class="wordmark__mark" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="11.2" opacity="0.4"/><path d="M21.2 5.4A11.2 11.2 0 0 1 6.8 22.6"/><path d="M5.8 17.1c1.38-1.5 2.76-1.5 4.14 0s2.76 1.5 4.14 0 2.76-1.5 4.14 0 2.76 1.5 4.14 0" opacity="0.7"/></svg><span class="wordmark__name">Oryne</span></a>
+      <nav aria-label="Legal and help"><a href="privacy.html">Privacy</a><a href="support.html" aria-current="page">Support</a></nav>
+      <p class="footer__lang"><span aria-current="true">English</span><a href="zh/support.html" hreflang="zh-Hans" lang="zh-Hans" data-lang-switch="zh-Hans">简体中文</a></p>
+      <p>© 2026 Oryne. Apple, iPhone, iPad, and Siri are trademarks of Apple Inc. App Store is a service mark of Apple Inc.</p>
+    </div>
+  </footer>
+</body>
+</html>

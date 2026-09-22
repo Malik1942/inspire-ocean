@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="zh-Hans" class="no-js" data-en="../" data-zh="./">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Oryne：在灵感溜走之前，接住它</title>
+  <meta name="description" content="Oryne 是安放灵感、语音、截图与链接的宁静之所。相关的灵感会自行汇聚，被遗忘的灵感会再次浮现。适用于 iPhone 与 iPad。">
+  <meta name="theme-color" content="#050508">
+  <meta name="color-scheme" content="dark">
+  <link rel="alternate" hreflang="en" href="../">
+  <link rel="alternate" hreflang="zh-Hans" href="./">
+  <link rel="alternate" hreflang="x-default" href="../">
+  <link rel="icon" href="../assets/img/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="icon" href="../assets/img/favicon-16.png" sizes="16x16" type="image/png">
+  <link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Oryne">
+  <meta property="og:title" content="Oryne：在灵感溜走之前，接住它">
+  <meta property="og:description" content="安放灵感、语音、截图与链接的宁静之所。适用于 iPhone 与 iPad。">
+  <meta property="og:image" content="../assets/img/og.png">
+  <meta property="og:locale" content="zh_CN">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="../assets/css/site.css">
+  <script>
+    (function () {
+      var root = document.documentElement;
+      root.className = root.className.replace('no-js', 'js');
+      var here = root.lang === 'zh-Hans' ? 'zh-Hans' : 'en';
+      var want = null;
+      try { want = window.localStorage.getItem('oryne.lang'); } catch (e) {}
+      if (!want && here === 'en') {
+        var first = ((navigator.languages && navigator.languages[0]) || navigator.language || '').toLowerCase();
+        if (/^zh(?:-(?:hans|cn|sg)(?:-|$)|$)/.test(first)) want = 'zh-Hans';
+      }
+      if (want && want !== here) {
+        var target = root.getAttribute(want === 'zh-Hans' ? 'data-zh' : 'data-en');
+        if (target) window.location.replace(target + window.location.search + window.location.hash);
+      }
+    })();
+  </script>
+  <script type="module" src="../assets/js/site.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">跳到正文</a>
+
+  <div class="ocean" aria-hidden="true">
+    <canvas class="ocean__water"></canvas>
+    <canvas class="ocean__field"></canvas>
+    <div class="ocean__grain"></div>
+  </div>
+
+  <header class="bar">
+    <div class="wrap bar__inner">
+      <a class="wordmark" href="#top"><svg class="wordmark__mark" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="11.2" opacity="0.4"/><path d="M21.2 5.4A11.2 11.2 0 0 1 6.8 22.6"/><path d="M5.8 17.1c1.38-1.5 2.76-1.5 4.14 0s2.76 1.5 4.14 0 2.76-1.5 4.14 0 2.76 1.5 4.14 0" opacity="0.7"/></svg><span class="wordmark__name">Oryne</span></a>
+      <nav class="bar__nav" aria-label="页面导航">
+        <a href="#how">功能</a>
+        <a href="#use-cases">使用场景</a>
+        <a href="#privacy">隐私</a>
+        <a href="#faq">常见问题</a>
+      </nav>
+      <div class="bar__controls">
+        <a class="lang" href="../" hreflang="en" data-lang-switch="en" aria-label="切换到英文"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.6"/><path d="M3.4 12h17.2"/><path d="M12 3.4c2.15 2.4 3.23 5.27 3.23 8.6S14.15 18.2 12 20.6c-2.15-2.4-3.23-5.27-3.23-8.6S9.85 5.8 12 3.4z"/></svg><span aria-hidden="true" lang="en">English</span></a>
+        <button class="icon-btn js-only" type="button" data-sound-toggle aria-pressed="false">
+          <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/><path d="M3 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg>
+          <span class="icon-btn__label">声音</span>
+        </button>
+        <a class="btn btn--primary btn--small" href="https://apps.apple.com/app/id6778995892">下载</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="section hero" id="top" data-chapter="top">
+      <div class="wrap hero__copy" data-anchor="hero-copy">
+        <p class="eyebrow">适用于 iPhone 与 iPad</p>
+        <h1 class="display">在灵感溜走之前，接住它。</h1>
+        <p class="lead">Oryne 是安放灵感、语音、截图与链接的宁静之所。相关的灵感会自行汇聚，被遗忘的灵感会在需要时再次浮现。</p>
+        <div class="hero__actions">
+          <a class="badge" href="https://apps.apple.com/app/id6778995892"><img src="../assets/img/badge-zh.svg" alt="在 App Store 下载" height="48" data-lang-asset></a>
+          <button class="btn btn--ghost js-only" type="button" data-sound-toggle aria-pressed="false">
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/><path d="M3 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg>
+            聆听
+          </button>
+        </div>
+      </div>
+      <div class="hero__stage">
+        <figure class="phone" data-anchor="hero-phone">
+          <img class="phone__screen" src="../assets/img/screens/ocean.webp" width="640" height="1391" alt="Oryne 的海洋：每条灵感都是一个柔和的光点，相关的灵感汇成洋流。" fetchpriority="high">
+          <img class="phone__frame" src="../assets/img/phone-frame.webp" width="900" height="1840" alt="" aria-hidden="true" decoding="async">
+        </figure>
+      </div>
+    </section>
+
+    <section class="section how" id="how" data-chapter="how">
+      <div class="wrap">
+        <p class="eyebrow">工作方式</p>
+        <h2 class="headline">捕捉一次，其余交给 Oryne。</h2>
+        <ol class="cards">
+          <li class="card">
+            <canvas class="vignette js-only" data-vignette="capture" aria-hidden="true"></canvas>
+            <p class="card__label">捕捉</p>
+            <h3>几秒就能留住。</h3>
+            <p>语音、文字、截图与链接，在 iPhone 上随时随地捕捉。</p>
+            <a class="more" href="#capture">了解更多<span class="vh">：捕捉</span><span aria-hidden="true">&nbsp;›</span></a>
+          </li>
+          <li class="card">
+            <canvas class="vignette js-only" data-vignette="gather" aria-hidden="true"></canvas>
+            <p class="card__label">汇聚</p>
+            <h3>让它自己找到归处。</h3>
+            <p>相关的灵感会汇成洋流。无需文件夹，也无需标签。</p>
+            <a class="more" href="#currents">了解更多<span class="vh">：洋流</span><span aria-hidden="true">&nbsp;›</span></a>
+          </li>
+          <li class="card">
+            <canvas class="vignette js-only" data-vignette="resurface" aria-hidden="true"></canvas>
+            <p class="card__label">浮现</p>
+            <h3>把它找回来。</h3>
+            <p>每天，一条被遗忘的灵感会在合适的时候回到你面前。</p>
+            <a class="more" href="#resurface">了解更多<span class="vh">：再次浮现</span><span aria-hidden="true">&nbsp;›</span></a>
+          </li>
+          <li class="card">
+            <canvas class="vignette js-only" data-vignette="ask" aria-hidden="true"></canvas>
+            <p class="card__label">提问</p>
+            <h3>问问这一切意味着什么。</h3>
+            <p>向你自己的灵感提问，并看到每个回答背后的灵感。</p>
+            <a class="more" href="#ask">了解更多<span class="vh">：提问</span><span aria-hidden="true">&nbsp;›</span></a>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section chapter" id="capture" data-chapter="capture">
+      <div class="wrap chapter__grid">
+        <div class="chapter__copy" data-calm>
+          <p class="eyebrow">捕捉</p>
+          <h2 class="headline">灵感一来，立刻接住。</h2>
+          <p class="lead">说出来、打出来、拍下来，或者分享过来。Oryne 原样接住每一条灵感，从不要求你先归档。</p>
+          <ul class="features">
+            <li><h3>按下，就说。</h3><p>把操作按钮或控制中心按钮设为「快速捕捉」。Oryne 一打开就在聆听。</p></li>
+            <li><h3>用你思考的语言说。</h3><p>说话的同时，文字就会出现。如果你的 iPhone 设置了两种语言，Oryne 会同时聆听这两种语言。</p></li>
+            <li><h3>截个图，再说说为什么。</h3><p>「截图 + 语音」会把屏幕上的内容和你的语音备注一起留存。</p></li>
+            <li><h3>从任何 App 分享。</h3><p>通过共享表单把链接、图片和文字发送到 Oryne。链接会带着标题和预览一起到来。</p></li>
+            <li><h3>或者，交给快捷指令。</h3><p>在「快捷指令」中使用 Oryne 的「记录灵感」操作，无需打开 App 就能留住灵感，也可以用 Siri 运行它。</p></li>
+          </ul>
+          <form class="release js-only" data-release data-released="已汇入海洋" autocomplete="off">
+            <label class="release__label" for="release-input">在这里试试</label>
+            <div class="release__row">
+              <input id="release-input" name="thought" type="text" maxlength="140" placeholder="刚刚闪过什么？" enterkeyhint="send">
+              <button class="btn btn--primary" type="submit">汇入</button>
+            </div>
+            <p class="release__status" role="status" aria-live="polite"></p>
+            <p class="release__note">这个演示只在本页进行，不会发送任何内容。</p>
+          </form>
+        </div>
+        <div class="chapter__visual">
+          <figure class="phone" data-anchor="capture-phone">
+            <img class="phone__screen" src="../assets/img/screens/capture.webp" width="640" height="1391" alt="Oryne 的捕捉界面，问你刚刚闪过什么。" loading="lazy" decoding="async">
+            <img class="phone__frame" src="../assets/img/phone-frame.webp" width="900" height="1840" alt="" aria-hidden="true" decoding="async" loading="lazy">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section chapter" id="currents" data-chapter="currents">
+      <div class="wrap chapter__grid">
+        <div class="chapter__copy" data-calm>
+          <p class="eyebrow">洋流</p>
+          <h2 class="headline">你的灵感，会自己整理好。</h2>
+          <p class="lead">Oryne 理解每条灵感在说什么，并把相关的灵感汇成洋流。你不必建文件夹、选标签，也不必决定它该放在哪里。</p>
+          <ul class="features">
+            <li><h3>按含义归类，而非关键词。</h3><p>一张日落照片和一条关于暖光的笔记会汇到一起，即使它们没有一个相同的词。</p></li>
+            <li><h3>一条灵感，可属多条洋流。</h3><p>想法本就彼此交叠，所以一条灵感可以同时属于多条洋流。文件夹做不到这一点。</p></li>
+            <li><h3>自动起好标题。</h3><p>每条灵感都会在你的设备上得到一个简短的标题。改了它，它就一直是你的。</p></li>
+          </ul>
+        </div>
+        <div class="chapter__visual">
+          <figure class="phone" data-anchor="currents-phone">
+            <img class="phone__screen" src="../assets/img/screens/current.webp" width="640" height="1391" alt="Oryne 中的一条洋流：所有关于光与色的灵感，最新的在最上面。" loading="lazy" decoding="async">
+            <img class="phone__frame" src="../assets/img/phone-frame.webp" width="900" height="1840" alt="" aria-hidden="true" decoding="async" loading="lazy">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section chapter" id="resurface" data-chapter="resurface">
+      <div class="wrap chapter__grid">
+        <div class="chapter__copy" data-calm>
+          <p class="eyebrow">再次浮现</p>
+          <h2 class="headline">你忘掉的灵感，会回来。</h2>
+          <p class="lead">每天，都会有一条你许久未见的灵感浮上水面。它不是提醒，也不是任务，只是一个好念头，重新回到眼前。</p>
+          <ul class="features">
+            <li><h3>每天一条，就在主屏幕上。</h3><p>「再次浮现」小组件会在主屏幕或锁定屏幕上显示当天的那条灵感。</p></li>
+            <li><h3>与你此刻所想相连。</h3><p>与你最近的灵感同属一条洋流的旧灵感，会更容易浮现。</p></li>
+            <li><h3>不会一再重复。</h3><p>刚刚重温过的灵感会先歇一阵，之后才可能再次浮现。</p></li>
+          </ul>
+        </div>
+        <div class="chapter__visual">
+          <div class="widgets" data-anchor="resurface-widget">
+            <div class="widget widget--small" role="img" aria-label="「再次浮现」小组件，小尺寸：灵感总在洗澡时冒出来，3 周前。">
+              <p class="widget__head"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19.5s-7.5-4.6-7.5-9.8A4 4 0 0 1 12 7.6a4 4 0 0 1 7.5 2.1c0 5.2-7.5 9.8-7.5 9.8z"/><path d="M12 15.5v-5M9.8 12.6 12 10.4l2.2 2.2"/></svg>再次浮现</p>
+              <p class="widget__title">灵感总在洗澡时冒出来</p>
+              <p class="widget__age">3 周前</p>
+            </div>
+            <div class="widget widget--medium" role="img" aria-label="「再次浮现」小组件，中尺寸：灵感总在洗澡时冒出来。为什么我最好的灵感总在洗澡时冒出来，而从不在书桌前？">
+              <p class="widget__head"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19.5s-7.5-4.6-7.5-9.8A4 4 0 0 1 12 7.6a4 4 0 0 1 7.5 2.1c0 5.2-7.5 9.8-7.5 9.8z"/><path d="M12 15.5v-5M9.8 12.6 12 10.4l2.2 2.2"/></svg>再次浮现</p>
+              <p class="widget__title">灵感总在洗澡时冒出来</p>
+              <p class="widget__snippet">为什么我最好的灵感总在洗澡时冒出来，而从不在书桌前？大概是因为没有把它们攥得太紧。</p>
+              <p class="widget__age">3 周前</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section chapter" id="ask" data-chapter="ask">
+      <div class="wrap chapter__grid">
+        <div class="chapter__copy" data-calm>
+          <p class="eyebrow">提问</p>
+          <h2 class="headline">向你的灵感<wbr>提任何问题。</h2>
+          <p class="lead">Oryne 从你捕捉过的灵感中作答，并标明用到了哪些，让每个回答都能追溯到你自己的文字。</p>
+          <ul class="modes">
+            <li><h3>搜索</h3><p>找到那条你只记得一半的灵感。</p></li>
+            <li><h3>综合</h3><p>看清一堆笔记加起来意味着什么。</p></li>
+            <li><h3>延展</h3><p>把一个想法带去新的地方。</p></li>
+            <li><h3>研究</h3><p>看向笔记之外，并明确标为「海洋之外」。</p></li>
+          </ul>
+          <p class="footnote">回答在你的设备上生成，在支持的机型上使用 Apple 智能。</p>
+        </div>
+        <div class="chapter__visual">
+          <figure class="phone" data-anchor="ask-phone">
+            <img class="phone__screen" src="../assets/img/screens/ask.webp" width="640" height="1391" alt="向海洋询问关于光的问题：回答标明了它参考的灵感。" loading="lazy" decoding="async">
+            <img class="phone__frame" src="../assets/img/phone-frame.webp" width="900" height="1840" alt="" aria-hidden="true" decoding="async" loading="lazy">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section grow" id="grow" data-chapter="grow">
+      <div class="wrap grow__grid">
+        <article class="panel">
+          <p class="eyebrow">延展</p>
+          <h2 class="panel__title">延展一个想法，不丢失原来的它。</h2>
+          <p>把任何灵感延展为问题、概念、研究或项目。原始内容会完全保持你写下的样子。</p>
+          <figure class="phone phone--small">
+            <img class="phone__screen" src="../assets/img/screens/detail.webp" width="640" height="1391" alt="在 Oryne 中延展一条灵感：选择问题、概念、研究或项目。" loading="lazy" decoding="async">
+            <img class="phone__frame" src="../assets/img/phone-frame.webp" width="900" height="1840" alt="" aria-hidden="true" decoding="async" loading="lazy">
+          </figure>
+        </article>
+        <article class="panel">
+          <p class="eyebrow">库</p>
+          <h2 class="panel__title">需要时，一切井然有序。</h2>
+          <p>搜索每一条灵感，按类型筛选，还可以按时间或相关性浏览。</p>
+          <figure class="phone phone--small">
+            <img class="phone__screen" src="../assets/img/screens/library.webp" width="640" height="1391" alt="Oryne 的库：相关的灵感并排呈现。" loading="lazy" decoding="async">
+            <img class="phone__frame" src="../assets/img/phone-frame.webp" width="900" height="1840" alt="" aria-hidden="true" decoding="async" loading="lazy">
+          </figure>
+        </article>
+      </div>
+    </section>
+
+    <section class="section usecases" id="use-cases" data-chapter="ambient">
+      <div class="wrap">
+        <p class="eyebrow">使用场景</p>
+        <h2 class="headline">为灵感真实的<wbr>到来方式<wbr>而设计。</h2>
+        <div class="tabs" data-tabs>
+          <div class="tabs__list js-only" data-tab-list data-label="使用场景"></div>
+
+          <div class="tabs__panel" id="use-designers" data-tab-panel>
+            <h3 class="tabs__title" data-tab-title>设计师</h3>
+            <p class="moment">在公交上截下一组配色，说说是什么打动了你。你的色彩研究会汇成一条洋流，项目开始时随时可用。</p>
+            <ul class="thoughts">
+              <li class="thought">
+                <div class="thought__image thought__image--sunset" aria-hidden="true"></div>
+                <p class="thought__kind"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="M3.5 15.5l4.5-4.5 4 4 3-3 5.5 5.5"/><circle cx="16" cy="9.5" r="1.3"/></svg>图片</p>
+                <p class="thought__title">日落渐变研究</p>
+                <p class="thought__text">橙色并没有结束，它在地平线吞没它之前，冷却成了紫色。</p>
+                <p class="thought__current">光与色</p>
+              </li>
+              <li class="thought">
+                <p class="thought__kind"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h9"/></svg>灵感</p>
+                <p class="thought__title">由暖到冷，而非滤镜</p>
+                <p class="thought__text">别再叠一层橙色了。日落本身就是色温的变化：从 3500K 降到蓝色。去匹配它，而不是伪造它。</p>
+                <p class="thought__current">光与色</p>
+              </li>
+              <li class="thought">
+                <div class="thought__image thought__image--dusk" aria-hidden="true"></div>
+                <p class="thought__kind"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="M3.5 15.5l4.5-4.5 4 4 3-3 5.5 5.5"/><circle cx="16" cy="9.5" r="1.3"/></svg>图片</p>
+                <p class="thought__title">傍晚 6 点的书桌</p>
+                <p class="thought__text">太阳落下时，墙面先变成桃色，再变成石板灰。选 App 背景前值得取个样。</p>
+                <p class="thought__current">光与色</p>
+              </li>
+            </ul>
+          </div>
+
+          <div class="tabs__panel" id="use-writers" data-tab-panel>
+            <h3 class="tabs__title" data-tab-title>写作者</h3>
+            <p class="moment">火车上的半句话，咖啡馆里偶然听到的一句。Oryne 帮你留着这些碎片，直到它们长成段落。</p>
+            <ul class="thoughts">
+              <li class="thought">
+                <p class="thought__kind"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11v2M7.5 8.5v7M11 5v14M14.5 8v8M18 10v4"/></svg>语音</p>
+                <p class="thought__title">房子留着夏天的气味</p>
+                <p class="thought__text">开头一句？我们关上房子很久以后，它还留着夏天的气味。</p>
+                <p class="thought__current">写作</p>
+              </li>
+              <li class="thought">
+                <p class="thought__kind"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h9"/></svg>灵感</p>
+                <p class="thought__title">咖啡馆里听到的</p>
+                <p class="thought__text">「我只在小事上撒谎。」这是人物，不是台词。</p>
+                <p class="thought__current">写作</p>
+              </li>
+            </ul>
+          </div>
+
+          <div class="tabs__panel" id="use-founders" data-tab-panel>
+            <h3 class="tabs__title" data-tab-title>创始人与创作者</h3>
+            <p class="moment">凌晨两点的产品点子，值得留着的链接，客户随口说的一句话。之后问问自己：我一直在绕着什么打转？</p>
+            <ul class="thoughts">
+              <li class="thought">
+                <p class="thought__kind"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h9"/></svg>灵感</p>
+                <p class="thought__title">火车上的半句话</p>
+                <p class="thought__text">如果主屏幕只是一条灵感，而不是一格格的网格呢。</p>
+                <p class="thought__current">产品灵感</p>
+              </li>
+              <li class="thought">
+                <p class="thought__kind"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h9"/></svg>灵感</p>
+                <p class="thought__title">不需要文字的按钮</p>
+                <p class="thought__text">如果图标本身就是动作，旁边的文字就是噪音。先删掉文字。</p>
+                <p class="thought__current">界面设计</p>
+              </li>
+              <li class="thought">
+                <p class="thought__kind"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66L11.5 6.8"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1.5-1.46"/></svg>链接</p>
+                <p class="thought__title">Apple 设计原则</p>
+                <p class="thought__source">developer.apple.com</p>
+                <p class="thought__text">让界面始终像是属于这台手机的设计指南。</p>
+                <p class="thought__current">用户体验</p>
+              </li>
+            </ul>
+          </div>
+
+          <div class="tabs__panel" id="use-students" data-tab-panel>
+            <h3 class="tabs__title" data-tab-title>学生与研究者</h3>
+            <p class="moment">引文、文章和问题。把任何一条延展为研究，再问问你的资料有什么共同点。</p>
+            <ul class="thoughts">
+              <li class="thought">
+                <p class="thought__kind"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66L11.5 6.8"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1.5-1.46"/></svg>链接</p>
+                <p class="thought__title">Are.na Editorial</p>
+                <p class="thought__source">are.na</p>
+                <p class="thought__text">关于注意力、收藏与慢软件的笔记。保存不等于看见。</p>
+                <p class="thought__current">阅读</p>
+              </li>
+              <li class="thought">
+                <p class="thought__kind"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg>研究</p>
+                <p class="thought__title">什么让一个收藏变得有用？</p>
+                <p class="thought__source">延展自 Are.na Editorial</p>
+                <p class="thought__text">看看最好的收藏舍弃了什么。</p>
+                <p class="thought__current">阅读</p>
+              </li>
+            </ul>
+          </div>
+
+          <div class="tabs__panel" id="use-everyday" data-tab-panel>
+            <h3 class="tabs__title" data-tab-title>日常生活</h3>
+            <p class="moment">菜谱、礼物点子、想去的地方。那些不记下来就会丢掉的小事。</p>
+            <ul class="thoughts">
+              <li class="thought">
+                <p class="thought__kind"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h9"/></svg>灵感</p>
+                <p class="thought__title">工作日晚上的拌面</p>
+                <p class="thought__text">辣椒油、蒜、剩下的青菜。十分钟。别丢了这条。</p>
+                <p class="thought__current">烹饪</p>
+              </li>
+              <li class="thought">
+                <p class="thought__kind"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h9"/></svg>灵感</p>
+                <p class="thought__title">给爸爸修好那台旧收音机</p>
+                <p class="thought__text">他还常说起老厨房里的那台。找个会修电子管收音机的人。</p>
+                <p class="thought__current">礼物</p>
+              </li>
+              <li class="thought">
+                <div class="thought__image thought__image--dumplings" aria-hidden="true"></div>
+                <p class="thought__kind"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="M3.5 15.5l4.5-4.5 4 4 3-3 5.5 5.5"/><circle cx="16" cy="9.5" r="1.3"/></svg>图片</p>
+                <p class="thought__title">车站旁的那家饺子馆</p>
+                <p class="thought__text">猪肉韭菜馅，七点门口就排起长队。工作日去。</p>
+                <p class="thought__current">地方</p>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section why" id="why" data-chapter="ambient">
+      <div class="wrap">
+        <h2 class="headline">不是又一个笔记应用。</h2>
+        <p class="lead">笔记应用帮你把事情记下来。Oryne 让灵感一直活着。</p>
+        <table class="compare">
+          <caption class="vh">Oryne 与一般笔记应用的对比</caption>
+          <thead>
+            <tr><td></td><th scope="col">一般的笔记应用</th><th scope="col" class="is-oryne">Oryne</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">记下一个想法</th><td data-label="一般的笔记应用">打开 App，新建笔记，起个名字，选个文件夹。</td><td class="is-oryne" data-label="Oryne">按一下按钮，开口就说。</td></tr>
+            <tr><th scope="row">保持有序</th><td data-label="一般的笔记应用">永远得靠你自己。</td><td class="is-oryne" data-label="Oryne">相关的灵感会自己汇聚。</td></tr>
+            <tr><th scope="row">旧的想法</th><td data-label="一般的笔记应用">沉到看不见的地方。</td><td class="is-oryne" data-label="Oryne">每天回来一条。</td></tr>
+            <tr><th scope="row">找东西</th><td data-label="一般的笔记应用">得猜对关键词。</td><td class="is-oryne" data-label="Oryne">用你自己的话提问，并看到出处。</td></tr>
+            <tr><th scope="row">发展一个想法</th><td data-label="一般的笔记应用">直接在原稿上改。</td><td class="is-oryne" data-label="Oryne">延展它，原稿保持不变。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section privacy" id="privacy" data-chapter="ambient">
+      <div class="wrap">
+        <p class="eyebrow">隐私</p>
+        <h2 class="headline">你的灵感，只属于你。</h2>
+        <p class="lead">Oryne 的设计让你的灵感无需离开你的设备，也无需创建任何账户。</p>
+        <ul class="promises">
+          <li>
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 18h2"/></svg>
+            <h3>在你的设备上理解。</h3>
+            <p>标题、主题、洋流与回答，都在你的 iPhone 或 iPad 上完成。</p>
+          </li>
+          <li>
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .6-7.95 5.5 5.5 0 0 0-10.7 1.2A3.5 3.5 0 0 0 7 18z"/></svg>
+            <h3>通过你自己的 iCloud 同步。</h3>
+            <p>你的海洋通过你的私人 iCloud 在设备之间同步。</p>
+          </li>
+          <li>
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.5"/><path d="M4 4l16 16"/></svg>
+            <h3>没有广告，没有追踪，没有分析。</h3>
+            <p>App 里没有，这个网站上也没有。</p>
+          </li>
+          <li>
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14V4M8 8l4-4 4 4"/><path d="M5 12v6.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V12"/></svg>
+            <h3>随时导出全部内容。</h3>
+            <p>把整片海洋导出为 Markdown 文件，带着它去任何地方。</p>
+          </li>
+        </ul>
+        <a class="more" href="privacy.html">阅读隐私政策<span aria-hidden="true">&nbsp;›</span></a>
+      </div>
+    </section>
+
+    <section class="section more-section" id="more" data-chapter="ambient">
+      <div class="wrap">
+        <h2 class="headline">还有更多。</h2>
+        <ul class="tiles">
+          <li><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="16" height="7" rx="2"/></svg><span>主屏幕与锁定屏幕小组件</span></li>
+          <li><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="8" rx="4"/><circle cx="16.5" cy="12" r="2.2"/></svg><span>控制中心按钮</span></li>
+          <li><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg><span>Siri 与快捷指令</span></li>
+          <li><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M7 10H6a1.5 1.5 0 0 0-1.5 1.5v8A1.5 1.5 0 0 0 6 21h12a1.5 1.5 0 0 0 1.5-1.5v-8A1.5 1.5 0 0 0 18 10h-1"/></svg><span>从任何 App 分享</span></li>
+          <li><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66L11.5 6.8"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1.5-1.46"/></svg><span>链接预览</span></li>
+          <li><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="13" height="15" rx="2"/><rect x="16" y="9" width="5.5" height="11" rx="1.5"/></svg><span>iPhone 与 iPad 同步</span></li>
+          <li><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.4 2.3 3.5 5.1 3.5 8.5s-1.1 6.2-3.5 8.5c-2.4-2.3-3.5-5.1-3.5-8.5s1.1-6.2 3.5-8.5z"/></svg><span><span lang="en">English</span> 与简体中文</span></li>
+          <li><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16M4 13h16M7 17h10"/></svg><span>宁静无障碍模式</span></li>
+          <li><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6 5 10l4 4"/><path d="M5 10h9.5a4.5 4.5 0 0 1 0 9H12"/></svg><span>捕捉后可立即撤销</span></li>
+          <li><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3.5H7.5A1.5 1.5 0 0 0 6 5v14a1.5 1.5 0 0 0 1.5 1.5h9A1.5 1.5 0 0 0 18 19V7.5z"/><path d="M14 3.5v4h4M9 12.5h6M9 16h4"/></svg><span>导出为 Markdown</span></li>
+          <li><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3.5l1.5 4 4 1.5-4 1.5-1.5 4-1.5-4-4-1.5 4-1.5z"/><path d="M18 14l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></svg><span>在支持的机型上使用 Apple 智能</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section faq" id="faq" data-chapter="deep">
+      <div class="wrap wrap--narrow">
+        <h2 class="headline">常见问题</h2>
+        <details class="qa"><summary>Oryne 支持哪些设备？</summary><p>运行 iOS 18 或更高版本的 iPhone，以及运行 iPadOS 18 或更高版本的 iPad。由 Apple 智能生成的回答需要受支持的机型。</p></details>
+        <details class="qa"><summary>需要注册账户吗？</summary><p>不需要。Oryne 通过你的 iCloud 同步，不用 iCloud 也能完整使用。</p></details>
+        <details class="qa"><summary>我的灵感存在哪里？</summary><p>在你的设备上；如果你使用 iCloud，也会存在你的私人 iCloud 中。我们看不到它们。</p></details>
+        <details class="qa"><summary>可以离线使用吗？</summary><p>可以。捕捉、洋流、再次浮现和提问都无需联网。链接预览需要联网；对于设备无法独立转写的语言，语音转写也需要联网。</p></details>
+        <details class="qa"><summary>可以用中文使用 Oryne 吗？</summary><p>可以。Oryne 支持 <span lang="en">English</span> 与简体中文。在「设置」›「Oryne」›「语言」中选择。</p></details>
+        <details class="qa"><summary>可以把灵感导出吗？</summary><p>可以。在 Oryne 的设置中选择「导出海洋」，所有内容都会保存为 Markdown 文件，每条洋流一个，并附带一份 JSON 备份。</p></details>
+      </div>
+    </section>
+
+    <section class="section final" id="download" data-chapter="deep">
+      <div class="wrap final__inner">
+        <img class="final__icon" src="../assets/img/icon-192.webp" width="96" height="96" alt="">
+        <h2 class="display">潜入海洋。</h2>
+        <p class="lead">下一个灵感正在路上。准备好接住它。</p>
+        <div class="final__actions">
+          <a class="badge" href="https://apps.apple.com/app/id6778995892"><img src="../assets/img/badge-zh.svg" alt="在 App Store 下载" height="48" data-lang-asset></a>
+        </div>
+      </div>
+      <div class="final__stage" data-anchor="final-phone">
+        <figure class="phone">
+          <img class="phone__screen" src="../assets/img/screens/capture.webp" width="640" height="1391" alt="Oryne，准备好接住下一个灵感。" loading="lazy" decoding="async">
+          <img class="phone__frame" src="../assets/img/phone-frame.webp" width="900" height="1840" alt="" aria-hidden="true" decoding="async" loading="lazy">
+        </figure>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer__inner">
+      <a class="wordmark" href="#top"><svg class="wordmark__mark" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="11.2" opacity="0.4"/><path d="M21.2 5.4A11.2 11.2 0 0 1 6.8 22.6"/><path d="M5.8 17.1c1.38-1.5 2.76-1.5 4.14 0s2.76 1.5 4.14 0 2.76-1.5 4.14 0 2.76 1.5 4.14 0" opacity="0.7"/></svg><span class="wordmark__name">Oryne</span></a>
+      <nav aria-label="法律与帮助"><a href="privacy.html">隐私</a><a href="support.html">支持</a></nav>
+      <p class="footer__lang"><a href="../" hreflang="en" lang="en" data-lang-switch="en">English</a><span aria-current="true">简体中文</span></p>
+      <p>© 2026 Oryne。Apple、iPhone、iPad 和 Siri 是 Apple Inc. 的商标。App Store 是 Apple Inc. 的服务标记。</p>
+    </div>
+  </footer>
+</body>
+</html>

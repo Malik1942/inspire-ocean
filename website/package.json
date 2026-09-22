@@ -1,0 +1,11 @@
+{
+  "name": "oryne-website",
+  "private": true,
+  "type": "module",
+  "description": "The Oryne product website: static pages, no dependencies, no build step.",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs && python3 -m unittest discover -s tools -p 'test_*.py'",
+    "check": "python3 tools/check.py",
+    "serve": "python3 -m http.server 8765 --bind 127.0.0.1"
+  }
+}

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-Hans" class="no-js" data-en="../support.html" data-zh="support.html">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>支持 · Oryne</title>
+  <meta name="description" content="关于 Oryne 的常见问题：快速捕捉、同步、导出等。">
+  <meta name="theme-color" content="#050508">
+  <meta name="color-scheme" content="dark">
+  <link rel="alternate" hreflang="en" href="../support.html">
+  <link rel="alternate" hreflang="zh-Hans" href="support.html">
+  <link rel="alternate" hreflang="x-default" href="../support.html">
+  <link rel="icon" href="../assets/img/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="icon" href="../assets/img/favicon-16.png" sizes="16x16" type="image/png">
+  <link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+  <link rel="stylesheet" href="../assets/css/site.css">
+  <script>
+    (function () {
+      var root = document.documentElement;
+      root.className = root.className.replace('no-js', 'js');
+      var here = root.lang === 'zh-Hans' ? 'zh-Hans' : 'en';
+      var want = null;
+      try { want = window.localStorage.getItem('oryne.lang'); } catch (e) {}
+      if (!want && here === 'en') {
+        var first = ((navigator.languages && navigator.languages[0]) || navigator.language || '').toLowerCase();
+        if (/^zh(?:-(?:hans|cn|sg)(?:-|$)|$)/.test(first)) want = 'zh-Hans';
+      }
+      if (want && want !== here) {
+        var target = root.getAttribute(want === 'zh-Hans' ? 'data-zh' : 'data-en');
+        if (target) window.location.replace(target + window.location.search + window.location.hash);
+      }
+    })();
+  </script>
+  <script type="module" src="../assets/js/site.js"></script>
+</head>
+<body data-page="long">
+  <a class="skip" href="#main">跳到正文</a>
+
+  <div class="ocean" aria-hidden="true">
+    <canvas class="ocean__water"></canvas>
+    <canvas class="ocean__field"></canvas>
+    <div class="ocean__grain"></div>
+  </div>
+
+  <header class="bar">
+    <div class="wrap bar__inner">
+      <a class="wordmark" href="index.html"><svg class="wordmark__mark" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="11.2" opacity="0.4"/><path d="M21.2 5.4A11.2 11.2 0 0 1 6.8 22.6"/><path d="M5.8 17.1c1.38-1.5 2.76-1.5 4.14 0s2.76 1.5 4.14 0 2.76-1.5 4.14 0 2.76 1.5 4.14 0" opacity="0.7"/></svg><span class="wordmark__name">Oryne</span></a>
+      <nav class="bar__nav" aria-label="页面导航">
+        <a href="index.html#how">功能</a>
+        <a href="index.html#use-cases">使用场景</a>
+        <a href="index.html#privacy">隐私</a>
+        <a href="index.html#faq">常见问题</a>
+      </nav>
+      <div class="bar__controls">
+        <a class="lang" href="../support.html" hreflang="en" data-lang-switch="en" aria-label="切换到英文"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.6"/><path d="M3.4 12h17.2"/><path d="M12 3.4c2.15 2.4 3.23 5.27 3.23 8.6S14.15 18.2 12 20.6c-2.15-2.4-3.23-5.27-3.23-8.6S9.85 5.8 12 3.4z"/></svg><span aria-hidden="true" lang="en">English</span></a>
+        <button class="icon-btn js-only" type="button" data-sound-toggle aria-pressed="false">
+          <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/><path d="M3 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg>
+          <span class="icon-btn__label">声音</span>
+        </button>
+        <a class="btn btn--primary btn--small" href="https://apps.apple.com/app/id6778995892">下载</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <article class="wrap prose">
+      <p class="eyebrow">支持</p>
+      <h1 class="prose__title">需要什么帮助？</h1>
+      <p class="updated">常见问题的解答，以及联系我们的方式。</p>
+
+      <h2 id="getting-started">开始使用</h2>
+      <details class="qa" id="capture-basics"><summary>怎样捕捉一条灵感？</summary><p>一次轻点。打开 Oryne，用语音或文字开始一条语音，哪个更快就用哪个。说出来或者打出来，然后放手让它离开。捕捉只需要一秒钟，灵感就在溜走之前落了地。</p></details>
+      <details class="qa" id="fast-capture"><summary>怎样捕捉得最快？</summary><p>在 iPhone 的「设置」中打开「操作按钮」，选择「快捷指令」，然后选择 Oryne 的「开始快速捕捉」。你也可以在控制中心添加 Oryne 按钮。无论哪种方式，Oryne 一打开就在聆听。</p></details>
+      <details class="qa" id="context-capture"><summary>怎样把截图和一句语音一起留住？</summary><p>在「快捷指令」App 中新建一个快捷指令：先「截屏」，再运行 Oryne 的「开始情境捕捉」。你可以用操作按钮、辅助功能中的「轻点背面」运行它，在机型支持时也可以用相机控制。</p></details>
+      <details class="qa" id="share"><summary>能从其他 App 捕捉吗？</summary><p>可以。在任意 App 中轻点「分享」，然后选择 Oryne。链接、图片和文字都会汇入你的海洋。</p></details>
+      <details class="qa" id="siri"><summary>能用 Siri 吗？</summary><p>Oryne 的 Siri 短语目前只有英文：<span lang="en">“Hey Siri, add an inspiration to Oryne”</span>。在任何语言下，你都可以在快捷指令中使用 Oryne 的「记录灵感」操作，并用 Siri 运行这个快捷指令。</p></details>
+
+      <h2 id="your-ocean">你的海洋</h2>
+      <details class="qa" id="organize"><summary>我的内容去了哪里，又是怎样被整理的？</summary><p>你不需要归档任何东西。一条语音汇入海洋之后，设备端的智能会读它、给它一个标题，并找出其中的主题。相关的灵感会自己汇到一起，形成洋流，属于同一件事的想法不用你手动整理就聚在了一起。想找什么的时候，你可以用平常说话的方式向海洋提问，而不用翻文件夹。</p></details>
+      <details class="qa" id="sync"><summary>Oryne 会在 iPhone 和 iPad 之间同步吗？</summary><p>会。只要两台设备登录了同一个 Apple 账户，就会通过 iCloud 同步。</p></details>
+      <details class="qa" id="offline"><summary>离线时能用吗？</summary><p>捕捉始终可用。完全没有网络时，你也可以录一条语音或打一段文字并汇入海洋，标题和主题都在你的设备上完成。有些附加功能需要网络：为你保存的链接生成摘要，需要联网和支持的机型。在做不到的时候，Oryne 会保留这个链接和它的基本信息，而不是失败。</p></details>
+      <details class="qa" id="link-summary"><summary>为什么某个链接没有生成摘要？</summary><p>链接摘要依赖设备端智能，而这取决于你的硬件。在不支持的机型上，Oryne 会退回到它能读到的基本链接信息，也就是标题和地址，而不是完整摘要。保存的那一刻网络中断，也会导致同样的结果。无论哪种情况链接都会被保存，不会丢失，换成能力更强的设备后，之后的链接就会有摘要。</p></details>
+      <details class="qa" id="export"><summary>怎样导出全部内容？</summary><p>在 Oryne 的设置中选择「导出海洋」。你会得到 Markdown 文件（每条洋流一个）以及一份 JSON 备份。</p></details>
+      <details class="qa" id="delete"><summary>怎样编辑或删除一条灵感？</summary><p>打开任意一条灵感，就可以修改它的文字、订正标题，或者补充捕捉到的内容。要移除它，选择「删除」并确认；刚捕捉完时，也可以轻点「撤销」。删除一条灵感，会把它从你的洋流中移除，也会从你私人 iCloud 的同步中移除。</p></details>
+      <details class="qa" id="examples"><summary>那些示例灵感是什么？</summary><p>Oryne 一开始会附带一条简短的介绍洋流。读完后，在 Oryne 的设置中选择「清空示例」即可。</p></details>
+
+      <h2 id="comfort">舒适</h2>
+      <details class="qa" id="motion"><summary>海洋动得太多了。</summary><p>在 Oryne 的设置中打开「宁静无障碍模式」，或在 iPhone 的「设置」›「辅助功能」›「动态效果」中打开「减弱动态效果」。海洋会静止下来。</p></details>
+      <details class="qa" id="language"><summary>怎样把 Oryne 切换成中文？</summary><p>在「设置」›「Oryne」›「语言」中选择「简体中文」。</p></details>
+
+      <h2 id="privacy">你的隐私</h2>
+      <p>Oryne 的设计，是让你的灵感始终属于你。为你的语音取标题、找主题、建立关联的智能，都在你的设备上运行。你捕捉的内容只通过你自己的私人 iCloud 同步，绑定你的 Apple 账户，它们到达你的其他设备，而不会存放在我们的服务器上。这里没有追踪，没有广告画像，你捕捉的内容不会被挖掘或出售。完整内容见<a href="privacy.html">隐私政策</a>。</p>
+
+      <h2 id="contact">联系我们</h2>
+      <p>有问题、建议，或者要反馈一个 bug？可以直接联系 Oryne 团队：<a href="mailto:malikdes9gn@gmail.com">malikdes9gn@gmail.com</a>，这是获得帮助最快的方式。如果是 bug，简单说明你做了什么、期待看到什么，以及你的设备型号，会让我们更快定位。每一封邮件我们都会读。</p>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer__inner">
+      <a class="wordmark" href="index.html"><svg class="wordmark__mark" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="11.2" opacity="0.4"/><path d="M21.2 5.4A11.2 11.2 0 0 1 6.8 22.6"/><path d="M5.8 17.1c1.38-1.5 2.76-1.5 4.14 0s2.76 1.5 4.14 0 2.76-1.5 4.14 0 2.76 1.5 4.14 0" opacity="0.7"/></svg><span class="wordmark__name">Oryne</span></a>
+      <nav aria-label="法律与帮助"><a href="privacy.html">隐私</a><a href="support.html" aria-current="page">支持</a></nav>
+      <p class="footer__lang"><a href="../support.html" hreflang="en" lang="en" data-lang-switch="en">English</a><span aria-current="true">简体中文</span></p>
+      <p>© 2026 Oryne。Apple、iPhone、iPad 和 Siri 是 Apple Inc. 的商标。App Store 是 Apple Inc. 的服务标记。</p>
+    </div>
+  </footer>
+</body>
+</html>

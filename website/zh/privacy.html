@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-Hans" class="no-js" data-en="../privacy.html" data-zh="privacy.html">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>隐私政策 · Oryne</title>
+  <meta name="description" content="Oryne 如何处理你捕捉的内容：留在你的设备上，只通过你自己的私人 iCloud 同步，每一项 AI 功能都在设备上运行。">
+  <meta name="theme-color" content="#050508">
+  <meta name="color-scheme" content="dark">
+  <link rel="alternate" hreflang="en" href="../privacy.html">
+  <link rel="alternate" hreflang="zh-Hans" href="privacy.html">
+  <link rel="alternate" hreflang="x-default" href="../privacy.html">
+  <link rel="icon" href="../assets/img/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="icon" href="../assets/img/favicon-16.png" sizes="16x16" type="image/png">
+  <link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+  <link rel="stylesheet" href="../assets/css/site.css">
+  <script>
+    (function () {
+      var root = document.documentElement;
+      root.className = root.className.replace('no-js', 'js');
+      var here = root.lang === 'zh-Hans' ? 'zh-Hans' : 'en';
+      var want = null;
+      try { want = window.localStorage.getItem('oryne.lang'); } catch (e) {}
+      if (!want && here === 'en') {
+        var first = ((navigator.languages && navigator.languages[0]) || navigator.language || '').toLowerCase();
+        if (/^zh(?:-(?:hans|cn|sg)(?:-|$)|$)/.test(first)) want = 'zh-Hans';
+      }
+      if (want && want !== here) {
+        var target = root.getAttribute(want === 'zh-Hans' ? 'data-zh' : 'data-en');
+        if (target) window.location.replace(target + window.location.search + window.location.hash);
+      }
+    })();
+  </script>
+  <script type="module" src="../assets/js/site.js"></script>
+</head>
+<body data-page="long">
+  <a class="skip" href="#main">跳到正文</a>
+
+  <div class="ocean" aria-hidden="true">
+    <canvas class="ocean__water"></canvas>
+    <canvas class="ocean__field"></canvas>
+    <div class="ocean__grain"></div>
+  </div>
+
+  <header class="bar">
+    <div class="wrap bar__inner">
+      <a class="wordmark" href="index.html"><svg class="wordmark__mark" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="11.2" opacity="0.4"/><path d="M21.2 5.4A11.2 11.2 0 0 1 6.8 22.6"/><path d="M5.8 17.1c1.38-1.5 2.76-1.5 4.14 0s2.76 1.5 4.14 0 2.76-1.5 4.14 0 2.76 1.5 4.14 0" opacity="0.7"/></svg><span class="wordmark__name">Oryne</span></a>
+      <nav class="bar__nav" aria-label="页面导航">
+        <a href="index.html#how">功能</a>
+        <a href="index.html#use-cases">使用场景</a>
+        <a href="index.html#privacy">隐私</a>
+        <a href="index.html#faq">常见问题</a>
+      </nav>
+      <div class="bar__controls">
+        <a class="lang" href="../privacy.html" hreflang="en" data-lang-switch="en" aria-label="切换到英文"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.6"/><path d="M3.4 12h17.2"/><path d="M12 3.4c2.15 2.4 3.23 5.27 3.23 8.6S14.15 18.2 12 20.6c-2.15-2.4-3.23-5.27-3.23-8.6S9.85 5.8 12 3.4z"/></svg><span aria-hidden="true" lang="en">English</span></a>
+        <button class="icon-btn js-only" type="button" data-sound-toggle aria-pressed="false">
+          <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/><path d="M3 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg>
+          <span class="icon-btn__label">声音</span>
+        </button>
+        <a class="btn btn--primary btn--small" href="https://apps.apple.com/app/id6778995892">下载</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <article class="wrap prose">
+      <p class="eyebrow">隐私</p>
+      <h1 class="prose__title">隐私政策</h1>
+      <p class="updated">生效日期：2026 年 6 月 28 日</p>
+      <p class="summary">Oryne 的设计，是让你捕捉的一切始终属于你。你创建的内容留在你的设备上，只通过你自己的私人 iCloud 同步。Oryne 不出售你的数据，也不会把你的内容用于广告。每一项 AI 功能都在你的设备上运行。</p>
+
+      <h2 id="summary">要点</h2>
+      <ul>
+        <li>你的灵感、笔记、语音文字记录和图片，都留在你的设备上。</li>
+        <li>它们只通过你自己的私人 iCloud 在你的设备之间同步，开发者无法访问。</li>
+        <li>所有 AI（链接摘要、主题、标题，以及向海洋提问）都在你的设备上运行。</li>
+        <li>你的内容不会被发送给任何外部、第三方或云端 AI 服务。</li>
+        <li>没有任何内容被出售、挖掘，或用于广告。</li>
+      </ul>
+
+      <h2 id="stores">Oryne 保存什么，保存在哪里</h2>
+      <p>Oryne 保存你捕捉的内容：你的灵感、笔记、语音文字记录，以及你导入的图片。它们保存在你的设备上。Oryne 通过你自己的私人 iCloud（Apple 的 CloudKit）同步这些内容，让它们在登录同一 Apple 账户的设备之间保持一致。开发者无法访问这些数据。它们留在你的私人 iCloud 中，不会存储在任何开发者服务器上，也不会经由开发者服务器传输。</p>
+
+      <h2 id="ai">Oryne 中的 AI 如何工作</h2>
+      <p>Oryne 的所有 AI 功能都使用 Apple 的设备端智能，在你的设备上运行，包括链接摘要、主题、标题，以及向海洋提问。任何功能都不会把你的内容发送给外部、第三方或云端 AI 服务。你捕捉的内容在你的设备上被读取和整理，也一直留在那里。</p>
+
+      <h2 id="microphone">麦克风与照片</h2>
+      <p><strong>麦克风。</strong>Oryne 只在语音捕捉时使用麦克风，并且只在你录音的过程中使用。只要你的设备能够转写你所说的语言，转写就在设备上完成。对于设备无法独立处理的语言，Apple 的语音识别可能会处理这段音频，适用 Apple 的隐私政策。</p>
+      <p>一条语音有了文字记录后，Oryne 会在捕捉 30 天后删除它的录音。Oryne 保留你的文字，而不是音频文件。</p>
+      <p><strong>照片。</strong>只有在你选择导入或附加图片时，Oryne 才会访问你的照片。它不会在后台浏览或读取你的照片图库。</p>
+
+      <h2 id="links">你保存的链接</h2>
+      <p>保存链接时，Oryne 会像浏览器一样获取该页面，读取它的标题、描述和图片。这个请求只会发送到你保存的那个网站。</p>
+
+      <h2 id="ads">不出售，不做广告</h2>
+      <p>Oryne 不出售你的数据，也不会把你的内容用于广告。这里没有追踪，也没有广告画像。因为你的内容留在你的设备和你自己的私人 iCloud 中，开发者无从收集、挖掘或分享。</p>
+
+      <h2 id="control">删除你的内容</h2>
+      <p>你的内容由你掌控。你可以在 App 中删除任何不再需要的捕捉或灵感。删除一条灵感，会把它从你的设备上移除，也会从你私人 iCloud 的同步中移除。你也可以在 Oryne 的设置中把全部内容导出为 Markdown 文件，并附带一份 JSON 备份，即使删除 App，副本也依然属于你。</p>
+
+      <h2 id="website">本网站</h2>
+      <p>本网站由静态页面组成，不使用 Cookie，也没有分析工具。它只会在你的浏览器中保存两项偏好：语言，以及是否开启声音。「在这里试试」演示从不离开本页。和所有网站一样，网站托管服务商可能会保留标准的访问日志（例如 IP 地址和浏览器类型），用于提供和保护网站。</p>
+
+      <h2 id="changes">政策的变更</h2>
+      <p>本政策描述的是 Oryne 当前的工作方式。如果 App 的变化会影响你的隐私，本页面会在该变化发布之前更新，并标注新的生效日期。</p>
+
+      <h2 id="contact">联系我们</h2>
+      <p>对隐私或本政策有任何疑问？可以直接联系 Oryne 团队：<a href="mailto:malikdes9gn@gmail.com">malikdes9gn@gmail.com</a>。使用上需要帮助？请访问 <a href="support.html">Oryne 支持</a>。</p>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer__inner">
+      <a class="wordmark" href="index.html"><svg class="wordmark__mark" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="11.2" opacity="0.4"/><path d="M21.2 5.4A11.2 11.2 0 0 1 6.8 22.6"/><path d="M5.8 17.1c1.38-1.5 2.76-1.5 4.14 0s2.76 1.5 4.14 0 2.76-1.5 4.14 0 2.76 1.5 4.14 0" opacity="0.7"/></svg><span class="wordmark__name">Oryne</span></a>
+      <nav aria-label="法律与帮助"><a href="privacy.html" aria-current="page">隐私</a><a href="support.html">支持</a></nav>
+      <p class="footer__lang"><a href="../privacy.html" hreflang="en" lang="en" data-lang-switch="en">English</a><span aria-current="true">简体中文</span></p>
+      <p>© 2026 Oryne。Apple、iPhone、iPad 和 Siri 是 Apple Inc. 的商标。App Store 是 Apple Inc. 的服务标记。</p>
+    </div>
+  </footer>
+</body>
+</html>
