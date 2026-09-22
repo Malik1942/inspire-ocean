@@ -5470,3 +5470,11 @@ Asked for my own read of the site, I named two soft spots and Malik said do both
 Malik chose to match the published policy: the microphone paragraph now says the audio is
 transcribed on the device, in both languages, with the narrower on-device-when-supported
 clause removed. The 30-day recording deletion sentence stays.
+
+## Release into open water (2026-09-21)
+
+Malik: the released light should appear in the empty right part of the page. On wide
+screens the thought now leaves the card's right edge and settles in the open water
+between the card and the viewport edge, below the phone if the phone is in the way, then
+drifts right as it lets go. On phones it still drops out of the card's lower edge.
+`release()` takes an optional `to` and `drift`.

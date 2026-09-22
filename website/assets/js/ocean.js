@@ -343,15 +343,18 @@ export function createOcean({ water: waterCanvas, field, grain, policy = 'full' 
     kick();
   }
 
-  function release({ text, x, y }) {
+  /** `to` is where the light settles; without it, it sinks a little below where it started. `drift` is the side it leaves toward. */
+  function release({ text, x, y, to, drift }) {
+    const rest = to ?? {
+      x: Math.min(vw - 60, Math.max(60, x + (Math.random() - 0.5) * 90)),
+      y: Math.max(y + 40, Math.min(vh - 70, y + 150 + Math.random() * 60)),
+    };
     released.push({
       text,
       born: now(),
       from: { x, y },
-      to: {
-        x: Math.min(vw - 60, Math.max(60, x + (Math.random() - 0.5) * 90)),
-        y: Math.max(y + 40, Math.min(vh - 70, y + 150 + Math.random() * 60)),
-      },
+      to: { x: Math.min(vw - 80, Math.max(80, rest.x)), y: Math.min(vh - 70, Math.max(60, rest.y)) },
+      drift: drift ?? (Math.random() < 0.5 ? -1 : 1),
       seed: Math.random(),
     });
     if (released.length > 3) released.shift();
@@ -435,7 +438,7 @@ export function createOcean({ water: waterCanvas, field, grain, policy = 'full' 
       if (!still && p >= 1) {
         const [wx, wy] = wanderOffset(r.seed, t, 3);
         // Once it has settled, it drifts off to one side and keeps sinking, slowly.
-        at.x += wx + settled * 9 * (r.seed < 0.5 ? -1 : 1);
+        at.x += wx + settled * 9 * r.drift;
         at.y += wy + settled * 4;
       }
       const fade = unit((10 - age) / 4.5);   // lets go over the last four seconds

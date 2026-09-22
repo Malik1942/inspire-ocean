@@ -165,9 +165,22 @@ function setupRelease(ocean, sound) {
     event.preventDefault();
     const text = input.value.trim();
     if (!text) return;
-    // The thought drops out of the card's lower edge into open water.
+    // On a wide screen the thought leaves the card for the open water to its
+    // right, below the phone; on a phone it drops out of the card's lower edge.
     const card = form.getBoundingClientRect();
-    ocean?.release({ text, x: card.left + card.width / 2, y: card.bottom + 40 });
+    const phone = document.querySelector('[data-anchor="capture-phone"]')?.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const room = vw - card.right;
+    if (room >= 260) {
+      const x = card.right + room * 0.5;
+      const clear = phone && phone.left < x + 90 && phone.right > x - 90 ? phone.bottom + 90 : 0;
+      ocean?.release({
+        text, x: card.right - 40, y: card.top + card.height * 0.5,
+        to: { x, y: Math.max(card.top + card.height * 0.45, clear) }, drift: 1,
+      });
+    } else {
+      ocean?.release({ text, x: card.left + card.width / 2, y: card.bottom + 40 });
+    }
     sound?.chime();
     input.value = '';
     sync();
