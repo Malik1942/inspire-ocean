@@ -5493,3 +5493,13 @@ was served as static files for a few minutes. Fix: Root Directory set to `websit
 and install commands cleared, and a fresh production deployment created from `main`.
 Verified: all pages 200, `/Oryne/...`, `/PHILOSOPHY.md`, `/project.yml`, and `/tests/...`
 404. From here on, pushes to `main` deploy the site.
+
+## Fast Capture chapter (2026-09-21)
+
+Malik asked for the Action Button and Fast Capture on the site. A new chapter after
+Capture (`#fast-capture`, water chapter `fast`) in both languages: the Action Button setup
+path from `FastCapturePreferences.setupSteps`, the Control Center control, voice first or
+typing first, the three-second review before auto-release (`scheduleAutoRelease`), and the
+widget. Screen captured from the seeded simulator via `oryne://capture/whisper`.
+`choreo.js` gained the `fast` chapter (pools pulled back, amber glow); its tests iterate
+`CHAPTERS` so they cover it.

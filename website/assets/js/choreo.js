@@ -6,11 +6,11 @@
 // plays the story either way. Motion is atmosphere: everything the water shows
 // is also written on the page (PHILOSOPHY §4).
 
-export const CHAPTERS = ['top', 'how', 'capture', 'currents', 'resurface', 'ask', 'grow', 'ambient', 'deep'];
+export const CHAPTERS = ['top', 'how', 'capture', 'fast', 'currents', 'resurface', 'ask', 'grow', 'ambient', 'deep'];
 
 /** How lively the water is per chapter; wander and breathing scale with it. */
 export const ENERGY = {
-  top: 1, how: 0.9, capture: 0.9, currents: 0.8, resurface: 0.8,
+  top: 1, how: 0.9, capture: 0.9, fast: 0.95, currents: 0.8, resurface: 0.8,
   ask: 0.7, grow: 0.5, ambient: 0.6, deep: 0.25,
 };
 
@@ -71,6 +71,9 @@ const LAYOUTS = {
   how: (l, ctx) => (l.role === 'current' ? bokeh(l, ctx, 0.24) : hidden(l, ctx)),
 
   capture: (l, ctx) => (l.role === 'current' ? bokeh(l, ctx, 0.16) : hidden(l, ctx)),
+
+  // Fast Capture: the pools pull back and the water brightens, so the one press has the stage.
+  fast: (l, ctx) => (l.role === 'current' ? bokeh(l, ctx, 0.1) : hidden(l, ctx)),
 
   // Related ideas drift together: the pools tuck in behind the phone and glow past its edges.
   currents(l, ctx) {
@@ -163,6 +166,7 @@ const GLOWS = {
   top: [[0.16, 0.12, 0.55, 'moon', 0.16], [0.86, 0.95, 0.6, 'dusk', 0.12], [0.74, 0.36, 0.42, 'lilac', 0.07], [0.3, 0.82, 0.45, 'moon', 0.05]],
   how: [[0.82, 0.16, 0.5, 'moon', 0.12], [0.1, 0.88, 0.55, 'dusk', 0.08], [0.46, 0.5, 0.45, 'lilac', 0.05], [0.92, 0.9, 0.4, 'moon', 0.04]],
   capture: [[0.76, 0.36, 0.5, 'moon', 0.12], [0.14, 0.92, 0.5, 'dusk', 0.07], [0.3, 0.18, 0.42, 'lilac', 0.05], [0.95, 0.86, 0.4, 'moon', 0.04]],
+  fast: [[0.3, 0.4, 0.6, 'amber', 0.16], [0.82, 0.24, 0.5, 'moon', 0.1], [0.14, 0.9, 0.45, 'dusk', 0.06], [0.9, 0.9, 0.4, 'lilac', 0.04]],
   currents: [[0.72, 0.5, 0.55, 'moon', 0.1], [0.18, 0.2, 0.45, 'dusk', 0.06], [0.1, 0.82, 0.42, 'lilac', 0.06], [0.92, 0.1, 0.4, 'amber', 0.04]],
   resurface: [[0.62, 1.15, 0.7, 'dusk', 0.2], [0.18, 0.2, 0.45, 'moon', 0.07], [0.9, 0.28, 0.4, 'lilac', 0.05], [0.4, 0.62, 0.42, 'amber', 0.05]],
   ask: [[0.7, 0.45, 0.55, 'moon', 0.12], [0.15, 0.86, 0.45, 'lilac', 0.06], [0.1, 0.14, 0.4, 'dusk', 0.05], [0.95, 0.9, 0.4, 'moon', 0.04]],

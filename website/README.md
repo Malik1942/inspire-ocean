@@ -85,6 +85,9 @@ fact the water shows is also written on the page, and Reduce Motion (or
 - Screens: Debug build on the iPhone 17 Pro simulator, launched with
   `SIMCTL_CHILD_OCEAN_SCREENSHOT_SEED=1` and `SIMCTL_CHILD_OCEAN_START_TAB=…`, status bar
   set to 9:41, captured with `simctl io … screenshot`, resized to 640 px, WebP q82.
+  `fast-capture.webp` is the same build opened with `simctl openurl … oryne://capture/whisper`
+  after granting the microphone and answering the speech prompt; its source line reads
+  "Widget" because that is how the URL route is labelled.
 - Social image: a headless Chrome capture of the stilled hero (`?motion=still`) at
   1200×630 (driven through the DevTools protocol), with the bar, lead, and Listen
   button hidden and the headline set at 92px, so the headline, badge, and phone in

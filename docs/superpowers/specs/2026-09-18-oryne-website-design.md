@@ -98,6 +98,7 @@ languages as plain links.
 | 1 | Hero (`top`) | two-part benefit line, one sentence naming inputs, App Store button, Listen | phone with the real Ocean screen, standing inside the breathing ring | the portal breathes, lit like a sunset lamp |
 | 2 | How it works (`how`) | four verb cards: Capture · Gather · Resurface · Ask, each linking to its chapter | a small live vignette per card | four large pools of light drift at the edges |
 | 3 | Capture (`capture`) | chapter: label, headline, intro, 5 sentence-titled items, **Try it** release demo | real Capture screen | your released thought sinks inside a large soft light, and the water opens in wide rings, with the chime |
+| 3b | Fast Capture (`fast-capture`, chapter `fast`; added 2026-09-21) | chapter: label, headline, intro, 5 items on the Action Button, Control Center, voice or typing first, the three-second review, the widget | real Fast Capture screen, listening | the pools pull back; a warm amber glow behind the phone |
 | 4 | Currents (`currents`) | chapter, 3 items | real screen inside one current (its stream) | the pools gather around the phone as you scroll; scrolling back loosens them |
 | 5 | Resurfacing (`resurface`) | chapter, 3 items | HTML rendition of the Resurfacing widget | one warm sun rises from the depth behind the widgets and comes into focus |
 | 6 | Ask (`ask`) | chapter, four mode tiles | real Ask screen (answer + source chips) | the pools sink low; the glows cool |
