@@ -5518,3 +5518,13 @@ the Home Screen with the medium Quick Capture widget (Thought and Whisper button
 in the simulator through the widget gallery. `.chapter__visual--pair` sizes the pair down
 to 42vw each so both fit a phone screen. The widget point in the copy now names the two
 buttons and the Lock Screen widget (`accessoryCircular`).
+
+## Web Analytics (2026-09-21)
+
+Malik asked for Vercel Analytics. The site has no npm and no build, so it uses the plain
+HTML method: the `window.va` shim and `/_vercel/insights/script.js` on all six pages, with
+Web Analytics enabled on the project through the CLI (it needed a pseudo-terminal to accept
+the confirmation). The site had promised "no analytics"; that is no longer true, so the
+Privacy page's website section now names Vercel Web Analytics as cookieless page counts
+with no profile and no cross-site tracking, and the landing tile reads "No ads, no tracking,
+no profiles." `check.py` treats `/_vercel/` paths as host-served, with a test.

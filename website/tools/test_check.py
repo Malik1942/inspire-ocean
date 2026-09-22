@@ -74,6 +74,15 @@ class CheckTests(unittest.TestCase):
         errors, _ = check.run(self.root)
         self.assertTrue(any("missing file" in e and "site.css" in e for e in errors), errors)
 
+    def test_host_served_paths_are_not_missing_files(self):
+        build(self.root)
+        for page in list(check.PAGES) + [f"zh/{name}" for name in check.PAGES]:
+            path = self.root / page
+            path.write_text(path.read_text(encoding="utf-8").replace(
+                "</head>", '<script defer src="/_vercel/insights/script.js"></script></head>'), encoding="utf-8")
+        errors, _ = check.run(self.root)
+        self.assertEqual(errors, [])
+
     def test_structural_drift_between_languages_is_an_error(self):
         build(self.root, zh_extra='<section id="extra" data-chapter="deep"></section>')
         errors, _ = check.run(self.root)

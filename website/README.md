@@ -112,6 +112,11 @@ until the setting was restored.
 git push origin main        # deploys; check https://oryne.malikzhang.com a minute later
 ```
 
+Vercel Web Analytics is on for the project (enabled with `vercel project web-analytics
+enable oryne`); every page loads `/_vercel/insights/script.js`, which the host serves, so
+`check.py` treats `/_vercel/` paths as host-provided. It counts page views without cookies;
+the Privacy page says so.
+
 `.vercelignore` keeps `tests/`, `tools/`, `package.json`, and this README out of the
 deployment. `website/.vercel/` and `.env.local` are the CLI's local link files,
 git-ignored. Vercel Authentication is off for this project, so the site is public.

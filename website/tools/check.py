@@ -66,8 +66,14 @@ class PageScan(HTMLParser):
             self.refs.extend((tag, url, excluded) for url in urls if url)
 
 
+# Paths the host serves itself, not files in this folder: Vercel's analytics script.
+HOST_PATHS = ("/_vercel/",)
+
+
 def is_local(url):
     parts = urlsplit(url)
+    if not parts.scheme and not parts.netloc and parts.path.startswith(HOST_PATHS):
+        return False
     return not parts.scheme and not parts.netloc and bool(parts.path)
 
 
