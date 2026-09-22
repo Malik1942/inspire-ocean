@@ -117,6 +117,16 @@ class CheckTests(unittest.TestCase):
         errors, _ = check.run(self.root)
         self.assertTrue(any("x-default" in e for e in errors), errors)
 
+    def test_canonical_links_may_differ_per_language(self):
+        build(self.root)
+        for name, url in (("index.html", "https://example.com/"),
+                          ("zh/index.html", "https://example.com/zh/")):
+            page = self.root / name
+            page.write_text(page.read_text(encoding="utf-8").replace(
+                "</head>", f'<link rel="canonical" href="{url}">\n</head>'), encoding="utf-8")
+        errors, _ = check.run(self.root)
+        self.assertEqual(errors, [])
+
     def test_a_missing_counterpart_page_is_an_error(self):
         build(self.root)
         (self.root / "zh" / "support.html").unlink()

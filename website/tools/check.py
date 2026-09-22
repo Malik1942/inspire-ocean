@@ -11,7 +11,8 @@ Errors fail the run (exit 1):
   - a page missing from either language tree
   - an English page and its Chinese counterpart differing in structure:
     element ids (in order), the data-chapter sequence, or links and assets
-    (language switches, per-language assets, and hreflang alternates excluded)
+    (language switches, per-language assets, hreflang alternates, and the
+    canonical link excluded)
 Warnings do not fail the run:
   - placeholders still in place (App Store URL, support email)
 """
@@ -48,6 +49,7 @@ class PageScan(HTMLParser):
         if tag == "html":
             self.lang = a.get("lang")
         alternate = tag == "link" and a.get("rel") == "alternate" and "hreflang" in a
+        canonical = tag == "link" and a.get("rel") == "canonical"
         if alternate:
             self.hreflangs.add(a["hreflang"])
         if a.get("id"):
@@ -56,7 +58,7 @@ class PageScan(HTMLParser):
             self.chapters.append(a["data-chapter"])
         attr = REF_ATTRS.get(tag)
         if attr and a.get(attr):
-            excluded = alternate or "data-lang-switch" in a or "data-lang-asset" in a
+            excluded = alternate or canonical or "data-lang-switch" in a or "data-lang-asset" in a
             if attr == "srcset":
                 urls = [part.strip().split(" ")[0] for part in a[attr].split(",")]
             else:

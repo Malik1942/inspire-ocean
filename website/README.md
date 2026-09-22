@@ -118,9 +118,12 @@ git-ignored. Vercel Authentication is off for this project, so the site is publi
 
 1. The App Store link (id6778995892) and the support address are in place; `check.py`
    warns if a placeholder ever comes back.
-2. Once the domain is known: make `og:image` absolute, add `<link rel="canonical">`,
-   make the `hreflang` URLs absolute, add `sitemap.xml` with a `Sitemap:` line in
-   `robots.txt`, and add `<meta name="apple-itunes-app" content="app-id=…">`.
+2. Done (2026-09-21): `og:image`, `og:url`, `twitter:image`, `canonical`, and the
+   `hreflang` URLs are absolute on `https://oryne.malikzhang.com`; `sitemap.xml` is
+   listed in `robots.txt`; the Smart App Banner meta names the App Store id. Social
+   cards need absolute image URLs: X showed a blank card while the path was relative.
+   X caches a card per URL, so after a card change share the link with a fresh query
+   string (`?v=2`) or wait for the cache to expire.
 4. If a feature that sends content off the device ships in Release, update the
    Privacy page first.
 5. Run the checks: `0 error(s), 0 warning(s)`.
