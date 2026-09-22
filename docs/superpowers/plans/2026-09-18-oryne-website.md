@@ -5465,3 +5465,8 @@ Asked for my own read of the site, I named two soft spots and Malik said do both
   Still mode keeps its single frame.
 - Redeployed to https://oryne-zeta.vercel.app.
 
+## Microphone wording (2026-09-21)
+
+Malik chose to match the published policy: the microphone paragraph now says the audio is
+transcribed on the device, in both languages, with the narrower on-device-when-supported
+clause removed. The 30-day recording deletion sentence stays.
