@@ -35,7 +35,13 @@ final class LocalOceanAIService: OceanAIService {
     /// Raw thought → semantic understanding → essence + conceptual themes.
     /// The foundation model interprets freely when available; otherwise the
     /// concept-space fallback (`SemanticThemes`) still maps meaning, not words.
-    func understand(_ text: String) async -> ThoughtUnderstanding {
+    ///
+    /// With the model available, a second constrained question asks which of
+    /// `currents` the thought is about (`FoundationCurrentPicker`), run
+    /// alongside the themes call; a pick leads the themes so the thought
+    /// joins that current (`CurrentSnap.resolve`). The concept fallback has
+    /// no trustworthy signal for joining, so it leaves grouping as it was.
+    func understand(_ text: String, currents: [CurrentCandidate]) async -> ThoughtUnderstanding {
         let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleaned.isEmpty else {
             return ThoughtUnderstanding(essence: "Untitled drift", themes: [], mood: nil)
@@ -44,12 +50,14 @@ final class LocalOceanAIService: OceanAIService {
         if #available(iOS 26, *), Self.foundationModelAvailable {
             let modelTitle = await foundationModelTitle(for: cleaned).map(TitleDistiller.tidy)
             let essence = modelTitle ?? TitleDistiller.essence(from: cleaned)
+            async let pick = FoundationCurrentPicker.pick(entry: cleaned, candidates: currents)
             let modelThemes = await foundationModelThemes(for: cleaned)
+            let themes = modelThemes.isEmpty
+                ? SemanticThemes.themes(for: cleaned, essence: essence)
+                : modelThemes
             return ThoughtUnderstanding(
                 essence: essence,
-                themes: modelThemes.isEmpty
-                    ? SemanticThemes.themes(for: cleaned, essence: essence)
-                    : modelThemes,
+                themes: CurrentSnap.resolve(themes: themes, pick: await pick, candidates: currents),
                 mood: ThemeDetector.mood(from: cleaned)
             )
         }
