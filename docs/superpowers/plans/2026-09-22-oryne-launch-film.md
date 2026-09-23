@@ -652,18 +652,20 @@ git add takes/TAKES.md && git commit -qm "Takes A, B, C recorded and conformed"
 ```json
 {
   "beats": {
-    "catch":     { "take": "A", "in": 0.0, "out": 0.0, "release": 0.0,
+    "catch":     { "take": "A", "segments": [{ "in": 0.0, "out": 0.0 }], "release": 0.0,
                    "cues":   [{ "t": 0.0, "x": 0.0, "y": 0.0, "what": "Thought button" }],
                    "camera": [{ "t": 0, "s": 1, "x": 0.5, "y": 0.5 }] },
-    "currents":  { "take": "A", "in": 0.0, "out": 0.0, "cues": [], "camera": [] },
-    "resurface": { "take": "B", "in": 0.0, "out": 0.0, "cues": [], "camera": [] },
-    "ask":       { "take": "C", "in": 0.0, "out": 0.0, "cues": [], "camera": [] }
+    "currents":  { "take": "A", "segments": [], "cues": [], "camera": [] },
+    "resurface": { "take": "B", "segments": [], "cues": [], "camera": [] },
+    "ask":       { "take": "C", "segments": [], "cues": [], "camera": [] }
   }
 }
 ```
 
 Field rules (every number comes from a scan span or a still, never from a plan):
+- `segments` (amendment 2026-09-22, Malik): a beat is 1–3 pieces of its take, played back to back. Capture-tool latency left long static pauses inside takes; a pause may be removed ONLY where the screen is completely still across the cut: the low-threshold scan's diffs must be < 0.05 for the 3 frames either side of both cut points, and the frames at `out` of one segment and `in` of the next must be pixel-identical except for the text caret (check with a still pair). Never cut inside an animation, typing burst or readable hold. Each removed pause keeps ≥ 0.4 s of stillness on both sides of the cut. The first segment's `in` and the last segment's `out` follow the `in`/`out` rules below. Beat duration = sum of segment lengths.
 - `in` / `out` are seconds in the take. `in = first cue's absolute tap time − 0.9`. `out = last payoff settle time + 2.4` (settle time is the `end` of the last span, when the screen stops changing). The `catch` beat ends where the Ocean is back after the release, and the `currents` beat starts there (same take A: `currents.in = catch.out`).
+- All beat-local times (`cues[].t`, `camera[].t`, `release`) count in the EDITED beat (segments concatenated), not in the take. Convert: local = (take time − segment.in) + sum of earlier segment lengths.
 - `cues[].t` is beat-local: the absolute time of the first frame the screen responds to the tap (that span's `start`), minus `in`. `cues[].x` / `y` are fractions of the **screen**, measured from the control's own geometry on a still from just before the tap. Don't use the change centroid, which marks where pixels redrew. `what` names the control.
 - `catch.release` is beat-local: the span `start` right after the Release tap, which is when the app's release animation begins.
 - `camera[]` is a list of keys `{t, s, x, y, move}`. `t` is when the camera arrives (beat-local), `s` is the scale (1–1.8), and `x`/`y` are the screen fraction placed at the canvas centre. `move` is the length of the move, default 0.6 s, starting at `t − move`. Key 0 is the state at `t: 0` and has no `move`. A move may not start before the previous key's `t`. The camera moves only to show something:
@@ -695,7 +697,7 @@ Fill every field by the rules above. Every value needs a source: the span or sti
 
 - [ ] **Step 4: Check the payoff holds**
 
-For each beat, `out − (last span end − in)` must be ≥ 2.0 s. The typed line in catch must be fully readable for ≥ 1.0 s before the Release tap: check the still at `release − 1.0`.
+For each beat, the time from its last settle to the end of its last segment must be ≥ 2.0 s (waived for `catch`, which flows straight into the scene-2 card while the release rings open on the water). The typed line in catch must be fully readable for ≥ 1.0 s before the Release tap: check the still at `release − 1.0`.
 
 - [ ] **Step 5: Commit**
 
@@ -1387,7 +1389,7 @@ import { join } from 'node:path';
 import { validateCuts, plan, build, ORDER, RELEASE_TEXT } from './assemble.mjs';
 
 const beat = (take, dur, extra = {}) => ({
-  take, in: 2, out: 2 + dur,
+  take, segments: [{ in: 2, out: 2 + dur }],
   cues: [{ t: 1.2, x: 0.5, y: 0.8, what: 'button' }],
   camera: [{ t: 0, s: 1, x: 0.5, y: 0.5 }, { t: 1.1, s: 1.4, x: 0.5, y: 0.8, move: 0.6 }],
   ...extra,
@@ -1408,7 +1410,22 @@ test('the chime lands on the release frame', () => {
   assert.equal(p.release.text, RELEASE_TEXT);
 });
 
+test('segments add up and play back to back', () => {
+  const split = structuredClone(CUTS);
+  split.beats.catch.segments = [{ in: 2, out: 8 }, { in: 15, out: 20 }];   // 6 + 5 = 11 s, 7 s pause removed
+  const p = plan(split);
+  assert.equal(p.slots.find((s) => s.id === 'catch').dur, 11);
+  const dir = mkdtempSync(join(tmpdir(), 'film-'));
+  build(dir, split, FRAME);
+  const html = readFileSync(join(dir, 'compositions', 'catch.html'), 'utf8');
+  assert.match(html, /id="catch-video-0"[^>]*data-start="0" data-duration="6" data-media-start="2"/);
+  assert.match(html, /id="catch-video-1"[^>]*data-start="6" data-duration="5" data-media-start="15"/);
+});
+
 test('bad cuts are refused with the beat named', () => {
+  const overlap = structuredClone(CUTS);
+  overlap.beats.currents.segments = [{ in: 2, out: 8 }, { in: 7, out: 12 }];
+  assert.throws(() => validateCuts(overlap), /cuts\.currents: /);
   const bad = structuredClone(CUTS);
   bad.beats.ask.cues = [];
   assert.throws(() => validateCuts(bad), /cuts\.ask: /);
@@ -1427,7 +1444,7 @@ test('build writes every composition with the exact words and the measured trim'
   const html = (id) => readFileSync(join(dir, 'compositions', `${id}.html`), 'utf8');
   assert.match(html('opening'), /<span class="w">Catch<\/span>.*<em><span class="w">drift<\/span> <span class="w">away\.<\/span><\/em>/s);
   assert.match(html('card-resurface'), /<em><span class="w">Get<\/span> <span class="w">it<\/span> <span class="w">back\.<\/span><\/em>/);
-  assert.match(html('catch'), /data-media-start="2"/);
+  assert.match(html('catch'), /id="catch-video-0"[^>]*data-media-start="2"/);
   assert.match(html('catch'), /src="assets\/takes\/A\.mp4"/);
   assert.match(html('end'), /Now on the App Store/);
   const index = readFileSync(join(dir, 'index.html'), 'utf8');
@@ -1539,7 +1556,14 @@ export function cameraTransforms(cut, geo) {
 export function beat({ id, cut, frame }) {
   const geo = phone(frame);
   const s = geo.screen;
-  const dur = +(cut.out - cut.in).toFixed(3);
+  let at = 0;
+  const pieces = cut.segments.map((g, i) => {
+    const len = +(g.out - g.in).toFixed(3);
+    const piece = { i, start: +at.toFixed(3), len, from: g.in };
+    at += len;
+    return piece;
+  });
+  const dur = +at.toFixed(3);
   const cues = cut.cues.map((c, i) => ({ i, t: c.t, left: +(s.x + c.x * s.w).toFixed(1), top: +(s.y + c.y * s.h).toFixed(1) }));
   const cam = cameraTransforms(cut, geo);
   return `<template id="${id}-template">
@@ -1555,7 +1579,9 @@ export function beat({ id, cut, frame }) {
     #${id} .ripple { border: 3px solid rgba(255,255,255,0.9); }
   </style>
   <div class="cam">
-    <div class="screen"><video id="${id}-video" class="clip" src="assets/takes/${cut.take}.mp4" data-start="0" data-duration="${dur}" data-media-start="${cut.in}" muted playsinline></video></div>
+    <div class="screen">
+${pieces.map((p) => `      <video id="${id}-video-${p.i}" class="clip" src="assets/takes/${cut.take}.mp4" data-start="${p.start}" data-duration="${p.len}" data-media-start="${p.from}" muted playsinline></video>`).join('\n')}
+    </div>
     <img class="frame" src="assets/phone-frame.png" alt="">
 ${cues.map((c) => `    <div class="ripple" id="${id}-ripple-${c.i}" style="left:${c.left}px;top:${c.top}px"></div>
     <div class="dot" id="${id}-dot-${c.i}" style="left:${c.left}px;top:${c.top}px"></div>`).join('\n')}
@@ -1669,6 +1695,8 @@ export const LENGTH = { opening: 3.5, card: 2.4, end: 5.0 };
 export const RELEASE_TEXT = 'The room feels slower when the light turns warm.';
 const BEATS = ['catch', 'currents', 'resurface', 'ask'];
 const r3 = (v) => Math.round(v * 1000) / 1000;
+/** A beat's length on screen: its segments played back to back. */
+export const beatLength = (b) => r3(b.segments.reduce((sum, g) => sum + (g.out - g.in), 0));
 const kindOf = (id) => (id === 'opening' || id === 'end' ? id : id.startsWith('card-') ? 'card' : 'beat');
 
 export function validateCuts(cuts) {
@@ -1677,8 +1705,12 @@ export function validateCuts(cuts) {
     const fail = (why) => { throw new Error(`cuts.${id}: ${why}`); };
     if (!b) fail('missing');
     if (!['A', 'B', 'C'].includes(b.take)) fail('take must be A, B or C');
-    if (!(Number.isFinite(b.in) && Number.isFinite(b.out) && b.out > b.in)) fail('in/out must be numbers with out > in');
-    const dur = b.out - b.in;
+    if (!Array.isArray(b.segments) || b.segments.length < 1 || b.segments.length > 3) fail('needs 1–3 segments');
+    b.segments.forEach((g, i) => {
+      if (!(Number.isFinite(g.in) && Number.isFinite(g.out) && g.out > g.in)) fail(`segment ${i} needs in < out`);
+      if (i > 0 && g.in < b.segments[i - 1].out) fail(`segment ${i} starts before segment ${i - 1} ends`);
+    });
+    const dur = beatLength(b);
     if (!Array.isArray(b.cues) || b.cues.length === 0) fail('needs at least one cue');
     for (const c of b.cues) {
       if (!(c.t > 0.45 && c.t < dur)) fail(`cue t ${c.t} outside (0.45, ${dur})`);
@@ -1698,7 +1730,7 @@ export function plan(cuts) {
   let t = 0;
   const slots = ORDER.map((id) => {
     const kind = kindOf(id);
-    const dur = kind === 'beat' ? r3(cuts.beats[id].out - cuts.beats[id].in) : LENGTH[kind];
+    const dur = kind === 'beat' ? beatLength(cuts.beats[id]) : LENGTH[kind];
     const slot = { id, kind, start: r3(t), dur };
     t += dur;
     return slot;
@@ -1734,7 +1766,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 - [ ] **Step 5: Run the tests and watch them pass**
 
 Run: `cd ~/Desktop/oryne-launch && node --test tools/film/test-assemble.mjs`
-Expected: `# pass 4`, `# fail 0`.
+Expected: `# pass 5`, `# fail 0`.
 
 - [ ] **Step 6: Generate the real film, then the bed at its exact length**
 
