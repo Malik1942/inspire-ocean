@@ -74,6 +74,11 @@ honest chain: new thought → its neighbour → the neighbour's current. Scene 2
 stays as written if its neighbour is a Light And Color thought; otherwise the first fallback line
 ("Warm light at dusk makes the room feel slower.", which drifted near "Golden hour on the walk home").
 
+## Revision 2 (2026-09-22): after draft v4/v5
+
+- **Camera (Malik: "a little too small, hard to see what's going on inside the screen")**: taps and payoffs framed at ~1.9–2.3×, resting framing ≥ 1.3×, a brief pull-back at the release so the rings read. App body text renders ≈ 35–42 px on the 2560×1440 canvas (was ≈ 19 px). Cards, words, timing and ocean unchanged.
+- **Sound (Malik: "add more energetic product launch BGMs")**: supersedes "No music". Three frame-locked candidates were scored locally with product-film's `score-render`; Malik chose **apple-pulse** (clean kick-only groove, ~123 BPM, A major, bell from the release; `audio/scores/1-apple-pulse/score.json`). The website ocean bed stays underneath at −10 dB and the app's chime stays on the release frame; the music dips ~6 dB under the chime and ducks into each card. Master ≈ −16 LUFS, true peak ≤ −1 dBTP.
+
 ## Timeline (targets)
 
 | t (s) | Segment |
