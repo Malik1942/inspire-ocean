@@ -222,7 +222,8 @@ final class CaptureSession {
         guard let node = fetch(nodeID) else { return }
         let basis = node.meaningText
         guard !basis.isEmpty else { return }
-        let understanding = await ai.understand(basis)
+        let currents = context.map { CurrentSnap.candidates(in: $0, excluding: nodeID, forEntry: basis) } ?? []
+        let understanding = await ai.understand(basis, currents: currents)
         guard !Task.isCancelled, let fresh = fetch(nodeID) else { return }
         NodeComposer.applyUnderstanding(understanding, to: fresh)
         try? context?.save()

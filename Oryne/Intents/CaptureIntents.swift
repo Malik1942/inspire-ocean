@@ -37,7 +37,8 @@ struct AddInspirationIntent: AppIntent {
         let node = NodeComposer.make(kind: .text, text: trimmed)
         context.insert(node)
 
-        let understanding = await LocalOceanAIService().understand(trimmed)
+        let currents = CurrentSnap.candidates(in: context, excluding: node.id, forEntry: trimmed)
+        let understanding = await LocalOceanAIService().understand(trimmed, currents: currents)
         NodeComposer.applyUnderstanding(understanding, to: node)
         try? context.save()
 
@@ -82,7 +83,8 @@ struct SaveToOceanIntent: AppIntent {
         context.insert(node)
 
         if !trimmedNote.isEmpty {
-            let understanding = await LocalOceanAIService().understand(trimmedNote)
+            let currents = CurrentSnap.candidates(in: context, excluding: node.id, forEntry: trimmedNote)
+            let understanding = await LocalOceanAIService().understand(trimmedNote, currents: currents)
             NodeComposer.applyUnderstanding(understanding, to: node)
         }
         try? context.save()

@@ -268,10 +268,13 @@ final class CloudOceanAIService: OceanAIService {
     /// One Claude call interprets the fragment into essence + conceptual
     /// themes; mood stays on-device. Any failure or unusable reply falls back
     /// to the local understanding path unchanged.
-    func understand(_ text: String) async -> ThoughtUnderstanding {
+    ///
+    /// `currents` reach only that fallback: the cloud prompt doesn't join
+    /// currents yet (Debug-only path; see `Configuration.fromEnvironment`).
+    func understand(_ text: String, currents: [CurrentCandidate]) async -> ThoughtUnderstanding {
         let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let configuration, !cleaned.isEmpty else {
-            return await fallback.understand(text)
+            return await fallback.understand(text, currents: currents)
         }
 
         let system = """
@@ -298,10 +301,10 @@ final class CloudOceanAIService: OceanAIService {
                 .split(whereSeparator: \.isNewline)
                 .map { $0.trimmingCharacters(in: .whitespaces) }
                 .filter { !$0.isEmpty }
-            guard let titleLine = lines.first else { return await fallback.understand(text) }
+            guard let titleLine = lines.first else { return await fallback.understand(text, currents: currents) }
 
             let essence = TitleDistiller.tidy(titleLine)
-            guard !essence.isEmpty else { return await fallback.understand(text) }
+            guard !essence.isEmpty else { return await fallback.understand(text, currents: currents) }
 
             let themes = lines.dropFirst().first.map(SemanticThemes.tidyThemeList) ?? []
             return ThoughtUnderstanding(
@@ -312,7 +315,7 @@ final class CloudOceanAIService: OceanAIService {
                 mood: ThemeDetector.mood(from: cleaned)
             )
         } catch {
-            return await fallback.understand(text)
+            return await fallback.understand(text, currents: currents)
         }
     }
 

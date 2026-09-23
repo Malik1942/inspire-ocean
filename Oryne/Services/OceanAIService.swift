@@ -62,7 +62,14 @@ protocol OceanAIService {
     /// a concise essence (its title), 1–3 conceptual themes, and a soft mood.
     /// Uses the on-device foundation model when available; the fallback still
     /// reasons about meaning (concept-space embeddings), never bare keywords.
-    func understand(_ text: String) async -> ThoughtUnderstanding
+    ///
+    /// `currents` are the existing currents the thought may join
+    /// (`CurrentSnap.candidates`). Currents group by exact theme strings, so
+    /// a thought themed in isolation founds its own current even when one
+    /// already fits; an implementation that can ask a model puts the chosen
+    /// current's key first. Empty means no joining (a fresh Ocean, or a
+    /// re-derive of a thought that already has its place).
+    func understand(_ text: String, currents: [CurrentCandidate]) async -> ThoughtUnderstanding
 
     /// Nodes related to `node` *by meaning* — blended embedding similarity,
     /// conceptual-theme overlap and mood — used for rediscovery and Expanded
@@ -73,6 +80,14 @@ protocol OceanAIService {
     /// Carry an Ocean Dialogue turn, grounded in the user's saved nodes.
     /// `history` is the last few turns (oldest first), for continuity.
     func respond(to query: String, history: [DialogueTurn], mode: DialogueMode, nodes: [Node]) async -> OceanResponse
+}
+
+extension OceanAIService {
+    /// Understanding with no currents to join (re-derives and migrations,
+    /// where the thought already has its place).
+    func understand(_ text: String) async -> ThoughtUnderstanding {
+        await understand(text, currents: [])
+    }
 }
 
 // MARK: - Environment injection

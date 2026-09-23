@@ -165,7 +165,7 @@ enum OceanLayoutEngine {
     /// (`anchorThemeKey`) wins over the primary theme; layout only ever
     /// decides position, never membership.
     static func currentKey(for node: Node) -> String? {
-        node.anchorThemeKey ?? node.themes.first
+        node.currentKey
     }
 
     /// Currents that overlap `key` by shared membership: the same relation
