@@ -10,8 +10,10 @@ import UIKit
 /// (`cancelsTouchesInView`), cleanly aborting a pending tap or an active hold.
 /// Momentum carries a released pan and decays exponentially; the edges of the
 /// world rubber band with the standard iOS curve while dragging past the
-/// bounds and spring back on release. Pan is direct manipulation, so it works
-/// identically under Reduce Motion and Calm Accessibility. No zoom in this patch.
+/// bounds and spring back on release. An axis the world fits inside never
+/// pans at all, so a vertical dive ignores the thumb's sideways arc. Pan is
+/// direct manipulation, so it works identically under Reduce Motion and Calm
+/// Accessibility. No zoom in this patch.
 @MainActor
 final class OceanCameraController: NSObject {
 
@@ -92,8 +94,10 @@ final class OceanCameraController: NSObject {
             // applies the rubber-band curve to however far the virtual position
             // has pushed past the world's edge. In bounds the curve is the
             // identity, so the two stay equal and overscroll self-resets the
-            // moment the finger comes back inside.
-            raw.x -= translation.x
+            // moment the finger comes back inside. A locked x axis drops the
+            // finger's sideways drift entirely instead of rubber banding it,
+            // so the ocean never slides off center under a vertical scroll.
+            if !locksHorizontal { raw.x -= translation.x }
             raw.y += translation.y
             let limit = clamped(raw)
             node.position = CGPoint(
@@ -103,7 +107,9 @@ final class OceanCameraController: NSObject {
         case .ended, .cancelled, .failed:
             dragging = false
             let v = gesture.velocity(in: view)
-            velocity = CGVector(dx: -v.x, dy: v.y)
+            // No sideways fling on a locked axis: it would only overshoot the
+            // rim and spring back, motion with nothing to reveal.
+            velocity = CGVector(dx: locksHorizontal ? 0 : -v.x, dy: v.y)
         default:
             break
         }
@@ -120,6 +126,16 @@ final class OceanCameraController: NSObject {
         let sign: CGFloat = offset < 0 ? -1 : 1
         let magnitude = abs(offset)
         return sign * (1 - 1 / (magnitude * rubberConstant / dim + 1)) * dim
+    }
+
+    /// True when the world fits the viewport's width, which the layout makes
+    /// the norm (it emits exactly one viewport of width). Like a UIScrollView
+    /// whose content fits its width, the axis then ignores horizontal drags
+    /// and flings. Vertical has no such lock: a young ocean that fits the
+    /// screen still bounces under the finger, the native feel of a short list.
+    private var locksHorizontal: Bool {
+        guard let scene else { return true }
+        return worldBounds.insetBy(dx: -margin, dy: -margin).width <= scene.size.width
     }
 
     // MARK: Frame loop
@@ -141,8 +157,9 @@ final class OceanCameraController: NSObject {
         // Past the edge, the boundary absorbs momentum hard (UIScrollView feel):
         // the deeper the overshoot, the faster velocity bleeds, so a hard flick
         // barely crosses the rim instead of sailing ~200pt past it. Ramped in
-        // from the edge so there is no discontinuity at the rim. A locked axis
-        // has position == limit there, so it contributes 0 and stays centered.
+        // from the edge so there is no discontinuity at the rim. A locked x
+        // axis carries no drag offset and no velocity, so it stays at its
+        // limit, contributes 0 here, and stays centered.
         let overshoot = hypot(position.x - limit.x, position.y - limit.y)
         if overshoot > 0.5 {
             let boundaryDecay = min(1, 12 * dt) * min(1, overshoot / 40)
