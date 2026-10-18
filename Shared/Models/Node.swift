@@ -251,6 +251,11 @@ extension Node {
 
     var isBranch: Bool { parent != nil }
 
+    /// The current this thought belongs to: the user's placement
+    /// (`anchorThemeKey`) wins over the primary theme. Nil for a themeless
+    /// thought, which drifts in the adrift current.
+    var currentKey: String? { anchorThemeKey ?? themes.first }
+
     /// A short, human-friendly display title, derived from content when empty.
     var displayTitle: String {
         if !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
