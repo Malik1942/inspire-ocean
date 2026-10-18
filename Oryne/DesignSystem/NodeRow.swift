@@ -18,60 +18,54 @@ struct NodeRow: View {
         }
     }
 
+    /// Text first. A thumbnail only when the thought has a picture; what kind
+    /// of thought it is lives in the meta line as a small glyph, never as a
+    /// badge beside the title. A fill, no border, like every card.
     private var row: some View {
-        HStack(spacing: 12) {
-            ZStack(alignment: .bottomTrailing) {
-                ZStack {
-                    Circle()
-                        .fill(OceanTheme.color(forHue: node.hue).opacity(0.3))
-                        .frame(width: 40, height: 40)
-                    if let data = node.imageDatas.first, let ui = UIImage(data: data) {
-                        Image(uiImage: ui).resizable().scaledToFill()
-                            .frame(width: 40, height: 40).clipShape(Circle())
-                    } else {
-                        Image(systemName: node.kind.symbol)
-                            .foregroundStyle(OceanTheme.foam)
-                    }
-                }
-                // "+N" when a node carries more than the one shown.
-                if node.imageDatas.count > 1 {
-                    Text(verbatim: "+\(node.imageDatas.count - 1)")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 4).padding(.vertical, 1)
-                        .background(OceanTheme.accent, in: Capsule())
-                        .offset(x: 3, y: 3)
-                }
+        HStack(alignment: .center, spacing: 12) {
+            if let data = node.imageDatas.first ?? node.linkImageData, let ui = UIImage(data: data) {
+                Image(uiImage: ui)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 44, height: 44)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
 
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(node.displayTitle)
-                    .font(.subheadline.weight(.medium))
+                    .font(.body.weight(.medium))
                     .foregroundStyle(OceanTheme.foam)
                     .lineLimit(2)
+                    .multilineTextAlignment(.leading)
                 HStack(spacing: 6) {
-                    if node.isBranch, let bt = node.branchType {
-                        Image(systemName: bt.symbol).font(.caption2).foregroundStyle(OceanTheme.accent)
-                    }
-                    Text(node.createdAt.formatted(.relative(presentation: .named)))
-                        .font(.caption2).foregroundStyle(OceanTheme.faint)
-                    if let theme = node.themes.first {
-                        Text("· \(theme)").font(.caption2).foregroundStyle(OceanTheme.mist).lineLimit(1)
-                    }
-                    if node.isExample {
-                        Text("Example")
+                    if node.kind == .voice || node.kind == .link {
+                        Image(systemName: node.kind.symbol)
                             .font(.caption2)
                             .foregroundStyle(OceanTheme.mist)
-                            .padding(.horizontal, 6).padding(.vertical, 1)
-                            .background(Color.white.opacity(0.06), in: Capsule())
+                    }
+                    if node.isBranch, let bt = node.branchType {
+                        Image(systemName: bt.symbol).font(.caption2).foregroundStyle(OceanTheme.mist)
+                    }
+                    Text(node.createdAt.formatted(.relative(presentation: .named)))
+                        .foregroundStyle(OceanTheme.mist)
+                    if let theme = node.themes.first {
+                        Text("· \(theme)").foregroundStyle(OceanTheme.mist).lineLimit(1)
+                    }
+                    if node.isExample {
+                        Text("Example").foregroundStyle(OceanTheme.faint)
                     }
                 }
+                .font(.footnote)
             }
-            Spacer()
-            Image(systemName: "chevron.right").font(.caption2).foregroundStyle(OceanTheme.faint)
+
+            Spacer(minLength: 8)
+
+            Image(systemName: "chevron.right")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(OceanTheme.faint)
         }
-        .padding(.vertical, 10).padding(.horizontal, 12)
-        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(16)
+        .background(OceanTheme.fill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
