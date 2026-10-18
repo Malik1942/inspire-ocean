@@ -29,25 +29,7 @@ struct NodeRow: View {
                 .foregroundStyle(OceanTheme.foam)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
-            HStack(spacing: 6) {
-                if node.kind != .text {
-                    Image(systemName: node.kind.symbol)
-                        .font(.caption2)
-                        .foregroundStyle(OceanTheme.mist)
-                }
-                if node.isBranch, let bt = node.branchType {
-                    Image(systemName: bt.symbol).font(.caption2).foregroundStyle(OceanTheme.mist)
-                }
-                Text(node.createdAt.formatted(.relative(presentation: .named)))
-                    .foregroundStyle(OceanTheme.mist)
-                if let theme = node.themes.first {
-                    Text("· \(theme)").foregroundStyle(OceanTheme.mist).lineLimit(1)
-                }
-                if node.isExample {
-                    Text("Example").foregroundStyle(OceanTheme.faint)
-                }
-            }
-            .font(.footnote)
+            NodeMeta(node: node)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)

@@ -159,9 +159,7 @@ struct OceanFieldView: View {
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
                     }
-                    Text(metaLine(node))
-                        .font(.footnote)
-                        .foregroundStyle(OceanTheme.mist)
+                    NodeMeta(node: node, detail: whisperLength(node), showsCurrent: false)
                         .padding(.top, 2)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -230,19 +228,10 @@ struct OceanFieldView: View {
         }
     }
 
-    private func metaLine(_ node: Node) -> String {
-        var parts = [node.createdAt.formatted(.relative(presentation: .named))]
-        switch node.kind {
-        case .voice:
-            if let data = node.audioData, let seconds = AudioDurations.seconds(for: data, id: node.id) {
-                parts.append(AudioDurations.format(seconds))
-            } else {
-                parts.append(node.kind.label)
-            }
-        case .text: break
-        default: parts.append(node.kind.label)
-        }
-        return parts.joined(separator: " · ")
+    private func whisperLength(_ node: Node) -> String? {
+        guard node.kind == .voice, let data = node.audioData,
+              let seconds = AudioDurations.seconds(for: data, id: node.id) else { return nil }
+        return AudioDurations.format(seconds)
     }
 
     // MARK: Drifted in
@@ -405,10 +394,7 @@ private struct GlanceCard: View {
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
-                Text(meta)
-                    .font(.footnote)
-                    .foregroundStyle(OceanTheme.mist)
-                    .lineLimit(1)
+                NodeMeta(node: node, detail: duration, showsCurrent: false)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
@@ -416,13 +402,10 @@ private struct GlanceCard: View {
         }
     }
 
-    private var meta: String {
-        let when = node.createdAt.formatted(.relative(presentation: .named))
-        if node.kind == .voice, let data = node.audioData,
-           let seconds = AudioDurations.seconds(for: data, id: node.id) {
-            return AudioDurations.format(seconds) + " · " + when
-        }
-        return when
+    private var duration: String? {
+        guard node.kind == .voice, let data = node.audioData,
+              let seconds = AudioDurations.seconds(for: data, id: node.id) else { return nil }
+        return AudioDurations.format(seconds)
     }
 }
 

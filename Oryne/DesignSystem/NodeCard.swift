@@ -181,18 +181,7 @@ struct NodeCard: View {
     }
 
     private var footer: some View {
-        HStack(spacing: 6) {
-            if node.isBranch, let bt = node.branchType {
-                Image(systemName: bt.symbol)
-                    .font(.caption2).foregroundStyle(OceanTheme.accent)
-            }
-            Image(systemName: node.kind.symbol)
-                .font(.caption2).foregroundStyle(OceanTheme.faint)
-            Text(node.createdAt.formatted(.relative(presentation: .named)))
-                .font(.caption2).foregroundStyle(OceanTheme.faint)
-                .lineLimit(1)
-            Spacer(minLength: 0)
-        }
+        NodeMeta(node: node, showsCurrent: false)
     }
 
     /// The edge shadow colour: steady accent for the anchor, warm-decaying for a

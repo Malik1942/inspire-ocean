@@ -174,9 +174,9 @@ struct CurrentsPage: View {
         NavigationLink(value: node) {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Image(systemName: node.kind.symbol)
-                    .font(.footnote)
+                    .font(.caption2)
                     .foregroundStyle(OceanTheme.mist)
-                    .frame(width: 18)
+                    .frame(width: 14)
                 Text(node.displayTitle)
                     .font(.subheadline)
                     .foregroundStyle(OceanTheme.foam)
