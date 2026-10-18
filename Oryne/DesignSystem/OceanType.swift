@@ -1,27 +1,29 @@
 import SwiftUI
 
-/// Display type for the Tide page. The brand's serif (Instrument Serif,
-/// OFL, the website's display face) is used in three places only: the page
-/// title, the section labels (italic), and the resurfacing title. Everything
-/// else is the system font. `useSerif` switches the whole treatment off.
+/// Display type for the Tide page: a serif in three places only (the page
+/// title, the italic section labels, the resurfacing title); the system
+/// font everywhere else. `face` picks the serif; `.none` turns it off.
 enum OceanType {
-    static let useSerif = true
+    enum Face { case none, instrument, newYork, baskerville }
 
-    private static let serif = "InstrumentSerif-Regular"
-    private static let serifItalic = "InstrumentSerif-Italic"
+    static let face: Face = .newYork
 
-    /// The page title ("Tide").
-    static var pageTitle: Font {
-        useSerif ? .custom(serif, size: 40, relativeTo: .largeTitle) : .largeTitle.bold()
-    }
+    static var pageTitle: Font { display(size: 40, relativeTo: .largeTitle) }
+    static var sectionLabel: Font { display(size: 21, relativeTo: .title3, italic: true) }
+    static var resurfacingTitle: Font { display(size: 32, relativeTo: .title) }
 
-    /// Section labels: a quiet italic line.
-    static var sectionLabel: Font {
-        useSerif ? .custom(serifItalic, size: 21, relativeTo: .title3) : .subheadline.weight(.semibold)
-    }
-
-    /// The resurfacing thought's title, the one lit thing.
-    static var resurfacingTitle: Font {
-        useSerif ? .custom(serif, size: 32, relativeTo: .title) : .title2.weight(.semibold)
+    private static func display(size: CGFloat, relativeTo style: Font.TextStyle, italic: Bool = false) -> Font {
+        switch face {
+        case .none:
+            let base = Font.system(size: size, weight: style == .largeTitle ? .bold : .semibold)
+            return italic ? base.italic() : base
+        case .newYork:
+            let base = Font.system(size: size, weight: .regular, design: .serif)
+            return italic ? base.italic() : base
+        case .baskerville:
+            return .custom(italic ? "Baskerville-Italic" : "Baskerville", size: size, relativeTo: style)
+        case .instrument:
+            return .custom(italic ? "InstrumentSerif-Italic" : "InstrumentSerif-Regular", size: size, relativeTo: style)
+        }
     }
 }
