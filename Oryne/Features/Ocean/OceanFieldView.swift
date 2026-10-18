@@ -15,6 +15,8 @@ struct OceanFieldView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var context
     @Environment(\.oceanAI) private var ai
+    @Environment(\.calmAccessibility) private var calm
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(filter: #Predicate<Node> { !$0.isArchived }, sort: \Node.createdAt, order: .reverse)
     private var nodes: [Node]
 
@@ -25,6 +27,10 @@ struct OceanFieldView: View {
     @State private var nearby: [Node] = []
     /// Bumped by "Let it rest" so today's pick recomputes.
     @State private var restTick = 0
+    /// The lamp's extra warmth while a new thought rises; 0 at rest.
+    @State private var lampLift: Double = 0
+    /// The lamp dims while a thought sinks.
+    @State private var lampDim: Double = 1
 
     private static let newestLimit = 5
     private static let currentLimit = 4
@@ -74,7 +80,15 @@ struct OceanFieldView: View {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 32) {
                             pageTitle
-                            if let resurfacing { resurfacingSection(resurfacing) }
+                            if let resurfacing {
+                                resurfacingSection(resurfacing)
+                                    // Sinks when let go, rises when it arrives.
+                                    .id(resurfacing.id)
+                                    .transition(.asymmetric(
+                                        insertion: .opacity.combined(with: .offset(y: -12)),
+                                        removal: .opacity.combined(with: .offset(y: 16))
+                                    ))
+                            }
                             newestSection
                             if !currents.isEmpty { currentsSection }
                         }
@@ -128,7 +142,9 @@ struct OceanFieldView: View {
     private var lamp: some View {
         if resurfacing != nil {
             RadialGradient(
-                colors: [OceanTheme.glowWarm.opacity(0.11), OceanTheme.glowWarm.opacity(0.04), .clear],
+                colors: [OceanTheme.glowWarm.opacity((0.11 + lampLift) * lampDim),
+                         OceanTheme.glowWarm.opacity((0.04 + lampLift * 0.4) * lampDim),
+                         .clear],
                 center: .center, startRadius: 0, endRadius: 260
             )
             .frame(width: 560, height: 420)
@@ -330,12 +346,25 @@ struct OceanFieldView: View {
     }
 
     /// Today's thought sinks; another rises. It counts as met, so it rests.
+    /// The lamp dims as it goes under, then warms past its resting glow as
+    /// the next one comes up, and settles.
     private func rest(_ node: Node) {
         Resurfacing.markMet(node, context: context)
         Resurfacing.Rest.rest(node.id)
-        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
-            nearbyOpen = false
-            restTick += 1
+        let stilled = calm || reduceMotion
+        Task { @MainActor in
+            withAnimation(stilled ? .easeOut(duration: 0.2) : .easeIn(duration: 0.5)) {
+                nearbyOpen = false
+                lampDim = 0.2
+            }
+            try? await Task.sleep(for: .milliseconds(stilled ? 200 : 650))
+            withAnimation(stilled ? .easeOut(duration: 0.2) : .easeOut(duration: 0.7)) {
+                restTick += 1
+                lampDim = 1
+                lampLift = stilled ? 0 : 0.08
+            }
+            try? await Task.sleep(for: .milliseconds(700))
+            withAnimation(.easeInOut(duration: 1.0)) { lampLift = 0 }
         }
     }
 

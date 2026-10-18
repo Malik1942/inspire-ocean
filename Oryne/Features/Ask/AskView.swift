@@ -187,16 +187,7 @@ struct AskView: View {
         HStack(spacing: 8) {
             switch phase {
             case .reading:
-                ForEach(0..<3, id: \.self) { i in
-                    Circle().fill(OceanTheme.mist).frame(width: 5, height: 5)
-                        .opacity(0.4)
-                        .scaleEffect(searchPhase == .reading ? 1 : 0.6)
-                        .animation(.easeInOut(duration: 0.6).repeatForever().delay(Double(i) * 0.2),
-                                   value: searchPhase)
-                }
-                Text("Reading your Ocean…")
-                    .font(.caption)
-                    .foregroundStyle(OceanTheme.mist)
+                ThinkingText(text: String(localized: "Reading your Ocean…"))
 
             case .found(let count):
                 Image(systemName: "water.waves")
@@ -209,6 +200,9 @@ struct AskView: View {
         }
         .padding(.horizontal, 14).padding(.vertical, 12)
         .background(.ultraThinMaterial, in: Capsule())
+        .background {
+            if case .reading = phase { ThinkingLamp() }
+        }
         .animation(.spring(response: 0.36, dampingFraction: 0.86), value: phase)
     }
 
@@ -370,5 +364,73 @@ struct AskView: View {
     private func sourceNodes(_ message: ChatMessage) -> [Node] {
         let byID = Dictionary(uniqueKeysWithValues: nodes.map { ($0.id, $0) })
         return message.referencedNodeIDs.compactMap { byID[$0] }
+    }
+}
+
+// MARK: - Thinking
+
+/// The Ocean reading: a warm light passes slowly through the words, the
+/// way light moves through water. No dots, no spinner. Still under Reduce
+/// Motion and Calm Accessibility Mode.
+private struct ThinkingText: View {
+    let text: String
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.calmAccessibility) private var calm
+
+    var body: some View {
+        if reduceMotion || calm {
+            Text(text).font(.caption).foregroundStyle(OceanTheme.mist)
+        } else {
+            TimelineView(.animation) { timeline in
+                let t = timeline.date.timeIntervalSinceReferenceDate
+                // One sweep every 1.8 s, left to right, a soft band.
+                let x = CGFloat((t.truncatingRemainder(dividingBy: 1.8)) / 1.8) * 1.6 - 0.3
+                Text(text)
+                    .font(.caption)
+                    .foregroundStyle(OceanTheme.mist)
+                    .overlay {
+                        Text(text)
+                            .font(.caption)
+                            .foregroundStyle(OceanTheme.glowWarm)
+                            .mask(
+                                LinearGradient(
+                                    stops: [
+                                        .init(color: .clear, location: max(0, x - 0.25)),
+                                        .init(color: .white, location: x),
+                                        .init(color: .clear, location: min(1, x + 0.25))
+                                    ],
+                                    startPoint: .leading, endPoint: .trailing
+                                )
+                            )
+                    }
+            }
+        }
+    }
+}
+
+/// The lamp behind the reading capsule, breathing: the same light Tide
+/// gives its resurfacing thought, here telling you the water is awake.
+private struct ThinkingLamp: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.calmAccessibility) private var calm
+
+    var body: some View {
+        if reduceMotion || calm {
+            lamp(0.07)
+        } else {
+            TimelineView(.animation(minimumInterval: 1 / 30)) { timeline in
+                let t = timeline.date.timeIntervalSinceReferenceDate
+                lamp(0.075 + 0.025 * sin(t * (2 * .pi / 2.4)))
+            }
+        }
+    }
+
+    private func lamp(_ opacity: Double) -> some View {
+        RadialGradient(
+            colors: [OceanTheme.glowWarm.opacity(opacity), OceanTheme.glowWarm.opacity(opacity * 0.35), .clear],
+            center: .center, startRadius: 0, endRadius: 140
+        )
+        .frame(width: 320, height: 200)
+        .allowsHitTesting(false)
     }
 }
