@@ -18,19 +18,12 @@ struct NodeRow: View {
         }
     }
 
-    /// Text first. A thumbnail only when the thought has a picture; what kind
-    /// of thought it is lives in the meta line as a small glyph, never as a
-    /// badge beside the title. A fill, no border, like every card.
+    /// Text first, and the text column always starts on the same line: a
+    /// picture, when the thought has one, sits at the trailing edge as the
+    /// row's attachment. No chevron: the fill says the row is a place to go.
+    /// What kind of thought it is lives in the meta line as a small glyph.
     private var row: some View {
         HStack(alignment: .center, spacing: 12) {
-            if let data = node.imageDatas.first ?? node.linkImageData, let ui = UIImage(data: data) {
-                Image(uiImage: ui)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 44, height: 44)
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            }
-
             VStack(alignment: .leading, spacing: 4) {
                 Text(node.displayTitle)
                     .font(.body.weight(.medium))
@@ -57,15 +50,19 @@ struct NodeRow: View {
                 }
                 .font(.footnote)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            Spacer(minLength: 8)
-
-            Image(systemName: "chevron.right")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(OceanTheme.faint)
+            if let data = node.imageDatas.first ?? node.linkImageData, let ui = UIImage(data: data) {
+                Image(uiImage: ui)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 44, height: 44)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
         }
         .padding(16)
         .background(OceanTheme.fill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
