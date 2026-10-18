@@ -1,116 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Tap the bar to type, or hold the disc and whisper. From the Action Button, Control Center or the widget, it is one press. The Ocean receives the thought without asking you to organize it first." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "轻点输入栏打字，或按住圆钮说一段语音。从操作按钮、控制中心或小组件进来，只要一下。海洋会直接接住这条灵感，不必你先整理。"
-          }
-        }
-      }
-    },
-    "The tide brings them back." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "潮水会把它们带回来。"
-          }
-        }
-      }
-    },
-    "Each day one older thought resurfaces on Tide. Thoughts that belong together gather into currents. Ask a question, and the Ocean answers from what you have caught." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "每天都有一条旧灵感在潮汐页浮上来。相近的灵感会聚成洋流。向海洋提问，它会从你捕捉过的一切中作答。"
-          }
-        }
-      }
-    },
-    "The Action Button and Camera Control shortcuts live in Settings, under the gear on any tab." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "操作按钮与相机控制的快捷指令在设置里，任一页右上角的齿轮都能进。"
-          }
-        }
-      }
-    },
-    "Tide opens with a short introduction current. Read it, then let it drift out." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "潮汐页备好了一条简短的介绍洋流，读完之后，让它漂走就好。"
-          }
-        }
-      }
-    },
-    "How a capture from the Action Button, Control Center or the widget should open." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "从操作按钮、控制中心或小组件进来时，捕捉以哪种方式开始。"
-          }
-        }
-      }
-    },
-    "Opens with" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "起始方式"
-          }
-        }
-      }
-    },
-    "Typing" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "打字"
-          }
-        }
-      }
-    },
-    "From the Action Button, Control Center and the widget. The bar itself always offers both." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "仅影响操作按钮、控制中心和小组件的入口。输入栏本身两种都有。"
-          }
-        }
-      }
-    },
-    "Stills the water, brightens the words that carry meaning, and widens every touch target. Nothing about your Ocean changes, only how it moves. The system Reduce Motion setting stills the water too." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "让水面静止，提亮承载意义的文字，并放大每个触控目标。你的海洋本身不会改变，只是不再流动。系统的“减弱动态效果”同样会让水面静止。"
-          }
-        }
-      }
-    },
-    "Oryne is a quiet ocean for whatever crosses your mind. Tap the bar to type a thought, or hold the disc and whisper, and it drifts in. Thoughts that share a theme gather into currents like this one. Each day one older thought resurfaces here on Tide. Ask across the whole Ocean from the Ask tab, or summarize a current. The Library lays everything out when you want to browse. Seen enough? Clear these examples in Settings." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Oryne 是一片安放灵感的海洋。轻点输入栏写下一条灵感，或按住圆钮说一段语音，它就会漂进来。主题相近的灵感会聚成一条条洋流，就像这一条。每天都有一条旧灵感在潮汐页浮上来。在提问页可以向整片海洋发问，也可以为一条洋流生成摘要。想翻看时，库把一切都铺在那里。看完了？到设置里清空示例就好。"
-          }
-        }
-      }
-    },
     "" : {
 
     },
@@ -416,6 +306,7 @@
       }
     },
     "Begin with the least resistance." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -640,6 +531,7 @@
       }
     },
     "Choose how you want to catch thoughts quickly." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1008,6 +900,16 @@
         }
       }
     },
+    "Each day one older thought resurfaces on Tide. Thoughts that belong together gather into currents. Ask a question, and the Ocean answers from what you have caught." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每天都有一条旧灵感在潮汐页浮上来。相近的灵感会聚成洋流。向海洋提问，它会从你捕捉过的一切中作答。"
+          }
+        }
+      }
+    },
     "Earlier" : {
       "localizations" : {
         "zh-Hans" : {
@@ -1243,6 +1145,16 @@
         }
       }
     },
+    "From the Action Button, Control Center and the widget. The bar itself always offers both." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅影响操作按钮、控制中心和小组件的入口。输入栏本身两种都有。"
+          }
+        }
+      }
+    },
     "Grow" : {
       "localizations" : {
         "zh-Hans" : {
@@ -1315,11 +1227,22 @@
       }
     },
     "Holds the water still, brightens the words that carry meaning, and widens every touch target. Nothing about your Ocean changes, only how it moves. The system Reduce Motion setting stills the water too." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "让水面静止，点亮承载意义的文字，并加大每个可点按区域。海洋本身不会变，变的只是它流动的方式。系统的「减弱动态效果」设置同样会让水面静止。"
+          }
+        }
+      }
+    },
+    "How a capture from the Action Button, Control Center or the widget should open." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "从操作按钮、控制中心或小组件进来时，捕捉以哪种方式开始。"
           }
         }
       }
@@ -1420,6 +1343,7 @@
       }
     },
     "Input" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1941,6 +1865,16 @@
         }
       }
     },
+    "Opens with" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "起始方式"
+          }
+        }
+      }
+    },
     "Original audio is temporarily preserved to improve understanding." : {
       "localizations" : {
         "zh-Hans" : {
@@ -1975,7 +1909,18 @@
         }
       }
     },
+    "Oryne is a quiet ocean for whatever crosses your mind. Tap the bar to type a thought, or hold the disc and whisper, and it drifts in. Thoughts that share a theme gather into currents like this one. Each day one older thought resurfaces here on Tide. Ask across the whole Ocean from the Ask tab, or summarize a current. The Library lays everything out when you want to browse. Seen enough? Clear these examples in Settings." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oryne 是一片安放灵感的海洋。轻点输入栏写下一条灵感，或按住圆钮说一段语音，它就会漂进来。主题相近的灵感会聚成一条条洋流，就像这一条。每天都有一条旧灵感在潮汐页浮上来。在提问页可以向整片海洋发问，也可以为一条洋流生成摘要。想翻看时，库把一切都铺在那里。看完了？到设置里清空示例就好。"
+          }
+        }
+      }
+    },
     "Oryne is a quiet ocean for whatever crosses your mind. Tap the button to type a thought, or hold it and whisper, and it drifts in as a glowing mote. Thoughts that share a theme gather into currents like this one. Ask across the whole Ocean from the Ask tab, or summarize a current. Old thoughts resurface on their own when it matters, and the Library lays everything out when you want to browse. Seen enough? Clear these examples in Settings." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -2731,6 +2676,16 @@
         }
       }
     },
+    "Stills the water, brightens the words that carry meaning, and widens every touch target. Nothing about your Ocean changes, only how it moves. The system Reduce Motion setting stills the water too." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "让水面静止，提亮承载意义的文字，并放大每个触控目标。你的海洋本身不会改变，只是不再流动。系统的“减弱动态效果”同样会让水面静止。"
+          }
+        }
+      }
+    },
     "Stop" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2843,7 +2798,18 @@
         }
       }
     },
+    "Tap the bar to type, or hold the disc and whisper. From the Action Button, Control Center or the widget, it is one press. The Ocean receives the thought without asking you to organize it first." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轻点输入栏打字，或按住圆钮说一段语音。从操作按钮、控制中心或小组件进来，只要一下。海洋会直接接住这条灵感，不必你先整理。"
+          }
+        }
+      }
+    },
     "Tap the button to type, hold it to whisper, or capture from anywhere. The Ocean receives the thought without asking you to organize it first." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -2916,11 +2882,22 @@
       }
     },
     "The Action Button and Camera Control shortcuts live in Fast Capture settings, under the Ocean's gear." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "操作按钮与相机控制的快捷指令都在「快速捕捉」设置里，入口是海洋页的齿轮。"
+          }
+        }
+      }
+    },
+    "The Action Button and Camera Control shortcuts live in Settings, under the gear on any tab." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "操作按钮与相机控制的快捷指令在设置里，任一页右上角的齿轮都能进。"
           }
         }
       }
@@ -2947,6 +2924,7 @@
       }
     },
     "The Ocean gives back." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -2978,6 +2956,7 @@
       }
     },
     "The Ocean opens with a short introduction. Read it, then let it drift out." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -3034,6 +3013,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "海洋初次为你留下的那些灵感。"
+          }
+        }
+      }
+    },
+    "The tide brings them back." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "潮水会把它们带回来。"
           }
         }
       }
@@ -3109,6 +3098,7 @@
       }
     },
     "Thoughts gather into currents and resurface when they matter. Ask a question, and the Ocean answers from everything you have caught." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -3124,6 +3114,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "潮汐"
+          }
+        }
+      }
+    },
+    "Tide opens with a short introduction current. Read it, then let it drift out." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "潮汐页备好了一条简短的介绍洋流，读完之后，让它漂走就好。"
           }
         }
       }
@@ -3221,7 +3221,18 @@
         }
       }
     },
+    "Typing" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打字"
+          }
+        }
+      }
+    },
     "Typing First" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -3303,6 +3314,7 @@
       }
     },
     "Voice First" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {

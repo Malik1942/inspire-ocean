@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import SafariServices
 
 /// A link rendered the way Oryne renders everything else: dark, glassy, calm.
