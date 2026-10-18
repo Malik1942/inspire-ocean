@@ -88,6 +88,14 @@ enum TranscriptScorer {
     /// (BRIEF decision 5: the zh model survives embedded English, whereas the
     /// en model produces confident garbage on Chinese, so an ambiguous pair is
     /// trusted to zh).
+    /// Both passes landed within the tie band: neither is clearly right, so
+    /// the loser is worth keeping for the user to switch to.
+    static func areClose(_ a: TranscriptCandidate, _ b: TranscriptCandidate) -> Bool {
+        guard !a.transcript.trimmingCharacters(in: .whitespaces).isEmpty,
+              !b.transcript.trimmingCharacters(in: .whitespaces).isEmpty else { return false }
+        return abs(score(a) - score(b)) <= tieEpsilon
+    }
+
     static func pickWinner(_ a: TranscriptCandidate, _ b: TranscriptCandidate) -> TranscriptCandidate {
         let sa = score(a)
         let sb = score(b)

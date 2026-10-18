@@ -211,6 +211,16 @@ struct LibraryView: View {
         if migrate {
             UserDefaults.standard.set(true, forKey: Self.semanticThemesMigrationKey)
         }
+
+        // Long whispers from before summaries existed get their reading now,
+        // one at a time, in the background.
+        for node in allNodes where node.kind == .voice && !node.isExample && node.summary == nil {
+            guard let transcript = node.transcription, transcript.count >= CaptureSession.summaryThreshold else { continue }
+            if let summary = await ai.summarizeTranscript(transcript) {
+                node.summary = summary
+                try? context.save()
+            }
+        }
     }
 
     /// Recomputes the Related order only when it matters: the arrangement is

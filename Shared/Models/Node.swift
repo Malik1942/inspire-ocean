@@ -106,6 +106,17 @@ final class Node {
     /// "Move to new current" action clears this.
     var anchorThemeKey: String?
 
+    /// A short reading of a long whisper, written by the on-device model in
+    /// the words' own language. Shown above the transcript; never replaces it.
+    var summary: String?
+    /// The recognition locale the kept transcript came from ("en-US").
+    var transcriptLocale: String?
+    /// The other language's pass, kept only when the two passes scored close
+    /// enough that the user should be the judge. Swapping makes it the
+    /// transcript and keeps the previous one here.
+    var alternateTranscription: String?
+    var alternateTranscriptLocale: String?
+
     /// The branch relationship this node represents relative to its parent.
     var branchTypeRaw: String?
 
@@ -291,7 +302,7 @@ extension Node {
     var snippet: String {
         let source = !text.isEmpty
             ? text
-            : (transcription ?? linkSummary ?? linkDescription ?? linkURLString ?? "")
+            : (summary ?? transcription ?? linkSummary ?? linkDescription ?? linkURLString ?? "")
         return String(source.prefix(140))
     }
 

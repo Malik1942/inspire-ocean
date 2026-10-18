@@ -117,3 +117,12 @@ iPad and Mac Oryne, direct manipulation of currents, bring-your-own-key chat, an
 - ~~Hold-to-whisper from the Home Screen widget and Control Center~~: decided in Phase 1. Those entry points have no finger to hold, so the take opens locked and runs until Stop. The same happens when the finger leaves during the first-run permission ask.
 - Subtitle language for a bilingual take: show the resolved main locale's words only, or both passes as they land?
 - ~~Where does the capture button sit relative to the tab bar on iOS 26~~: in the accessory slot (`tabViewBottomAccessory`), disabled on Ask from iOS 26.1; on 26.0 it also shows on Ask.
+
+## Whispers (added 2026-10-18)
+
+Decided after the first device dogfood:
+
+- **Summary above, words below.** A whisper longer than about 240 characters gets a two-or-three-sentence reading from the on-device model, in the note's own language, shown first and labelled "Summary" (the label stays: it says these are not the speaker's words, §3). The transcript folds under it. No model, no summary; never a template.
+- **Audio keeps its 30-day rule**, silently. No caption about expiry: the user would do nothing with it.
+- **Mixed Chinese and English.** Apple's recognizers take one locale per pass and cannot switch mid-utterance, so the phone cannot truly transcribe code-switching yet. What it does: a bilingual user's take is run in both languages, the scorer keeps the better, and when the two are within the tie band the other is kept and offered as "Switch to 中文 / English"; the user's own words (Latin-script terms from their thoughts) go to every pass as contextual strings; the transcript's language is the re-transcribe control itself. A true code-switching recognizer (SenseVoice-Small on device, about 225 MB) is the next step if a spike on real recordings earns it. Cloud transcription is out: the words stay on the device.
+- **Translate** is the system Translation sheet over the transcript, on demand.

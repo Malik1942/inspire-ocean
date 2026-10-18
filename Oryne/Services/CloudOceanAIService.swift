@@ -70,6 +70,15 @@ final class CloudOceanAIService: OceanAIService {
         await fallback.transcribe(audioURL: audioURL)
     }
 
+    func transcribeDetailed(audioURL: URL, vocabulary: [String]) async -> TranscriptOutcome? {
+        await fallback.transcribeDetailed(audioURL: audioURL, vocabulary: vocabulary)
+    }
+
+    /// A whisper's words never leave the device, so neither does their summary.
+    func summarizeTranscript(_ text: String) async -> String? {
+        await fallback.summarizeTranscript(text)
+    }
+
     func relatedNodeIDs(to node: Node, among nodes: [Node], limit: Int) -> [UUID] {
         fallback.relatedNodeIDs(to: node, among: nodes, limit: limit)
     }

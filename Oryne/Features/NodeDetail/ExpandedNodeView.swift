@@ -1,4 +1,5 @@
 import SwiftUI
+import Translation
 import SwiftData
 
 /// Expanded Node View (§9): a lightweight contextual layer around a single
@@ -40,6 +41,8 @@ struct NodeDetailContent: View {
     @State private var showImageViewer = false
     @State private var viewerIndex = 0
     @State private var retranscribing = false
+    @State private var transcriptOpen = false
+    @State private var showTranslation = false
     @State private var showReplaceConfirm = false
     @State private var pendingRetranscribe: (data: Data, locale: Locale)?
     @State private var retranscribeFailed = false
@@ -203,12 +206,15 @@ struct NodeDetailContent: View {
                 }
             }
         } label: {
-            Group {
+            HStack(spacing: 3) {
                 if retranscribing {
                     ProgressView().controlSize(.mini)
+                } else if let name = Self.languageName(node.transcriptLocale) {
+                    Text(verbatim: name)
                 } else {
                     Image(systemName: "character.bubble")
                 }
+                Image(systemName: "chevron.down").font(.system(size: 8, weight: .semibold))
             }
             .font(.caption)
             .foregroundStyle(OceanTheme.mist)
@@ -242,8 +248,44 @@ struct NodeDetailContent: View {
             return
         }
         node.transcription = transcript
+        node.transcriptLocale = locale.identifier
+        node.alternateTranscription = nil
+        node.alternateTranscriptLocale = nil
+        node.summary = nil
         // A fresh machine transcription is no longer a user-edited one.
         node.transcriptEditedByUser = false
+        if transcript.count >= CaptureSession.summaryThreshold {
+            node.summary = await ai.summarizeTranscript(transcript)
+        }
+    }
+
+    /// The other language's pass becomes the transcript; the previous one
+    /// waits behind the same button, so the swap is never a loss.
+    private func switchToAlternate() {
+        guard let alt = node.alternateTranscription else { return }
+        let previous = node.transcription
+        let previousLocale = node.transcriptLocale
+        node.transcription = alt
+        node.transcriptLocale = node.alternateTranscriptLocale
+        node.alternateTranscription = previous
+        node.alternateTranscriptLocale = previousLocale
+        node.transcriptEditedByUser = false
+        node.summary = nil
+        node.updatedAt = .now
+        Task {
+            if alt.count >= CaptureSession.summaryThreshold {
+                node.summary = await ai.summarizeTranscript(alt)
+            }
+        }
+    }
+
+    /// Endonyms for the two languages the app speaks; anything else by the
+    /// system's name for it.
+    static func languageName(_ localeID: String?) -> String? {
+        guard let localeID else { return nil }
+        if localeID.hasPrefix("zh") { return "中文" }
+        if localeID.hasPrefix("en") { return "English" }
+        return Locale.current.localizedString(forIdentifier: localeID)
     }
 
     // MARK: Sections
@@ -253,20 +295,67 @@ struct NodeDetailContent: View {
             VStack(alignment: .leading, spacing: 12) {
                 imageContent
                 if let transcription = node.transcription, !transcription.isEmpty {
-                    HStack {
-                        Label("Transcript", systemImage: "waveform")
-                            .font(.caption).foregroundStyle(OceanTheme.mist)
-                        Spacer()
-                        // The transcript is the thought; the recording is a
-                        // quiet receipt, present only while it's retained.
-                        if let data = node.audioData, !data.isEmpty {
-                            ListenChip(data: data)
-                            // The words came out in the wrong language? Force a
-                            // pass in the other one (BRIEF decision 8).
-                            retranscribeMenu(data)
+                    if let summary = node.summary, !summary.isEmpty {
+                        // The reading first, honest about its origin (§3); the
+                        // words themselves one tap below.
+                        HStack {
+                            Label("Summary", systemImage: "sparkles")
+                                .font(.caption).foregroundStyle(OceanTheme.mist)
+                            Spacer()
+                            if let data = node.audioData, !data.isEmpty {
+                                ListenChip(data: data)
+                                retranscribeMenu(data)
+                            }
                         }
+                        Text(summary).foregroundStyle(OceanTheme.foam)
+
+                        Button {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { transcriptOpen.toggle() }
+                        } label: {
+                            HStack {
+                                Label("Transcript", systemImage: "waveform")
+                                    .font(.caption).foregroundStyle(OceanTheme.mist)
+                                Spacer()
+                                Image(systemName: "chevron.down")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(OceanTheme.faint)
+                                    .rotationEffect(.degrees(transcriptOpen ? 180 : 0))
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, 4)
+                        if transcriptOpen {
+                            Text(transcription).foregroundStyle(OceanTheme.text)
+                        }
+                    } else {
+                        HStack {
+                            Label("Transcript", systemImage: "waveform")
+                                .font(.caption).foregroundStyle(OceanTheme.mist)
+                            Spacer()
+                            // The transcript is the thought; the recording is a
+                            // quiet receipt, present only while it's retained.
+                            if let data = node.audioData, !data.isEmpty {
+                                ListenChip(data: data)
+                                // The words came out in the wrong language? The
+                                // language itself is the control (BRIEF decision 8).
+                                retranscribeMenu(data)
+                            }
+                        }
+                        Text(transcription).foregroundStyle(OceanTheme.foam)
                     }
-                    Text(transcription).foregroundStyle(OceanTheme.foam)
+
+                    HStack(spacing: 8) {
+                        if let alt = node.alternateTranscription, !alt.isEmpty,
+                           let altName = Self.languageName(node.alternateTranscriptLocale) {
+                            Button(String(localized: "Switch to \(altName)")) { switchToAlternate() }
+                                .buttonStyle(.oceanSecondary)
+                        }
+                        Button("Translate") { showTranslation = true }
+                            .buttonStyle(.oceanSecondary)
+                            .translationPresentation(isPresented: $showTranslation, text: transcription)
+                    }
+                    .padding(.top, 4)
                 } else if node.kind == .voice {
                     HStack {
                         // Honest about state: "transcribing" only while a pass

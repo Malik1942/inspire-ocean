@@ -30,6 +30,43 @@ final class LocalOceanAIService: OceanAIService {
         await transcriber.transcribe(url: audioURL)
     }
 
+    func transcribeDetailed(audioURL: URL, vocabulary: [String]) async -> TranscriptOutcome? {
+        await transcriber.transcribe(url: audioURL, vocabulary: vocabulary)
+    }
+
+    /// The reading of a long whisper: the substance in 2 or 3 sentences, in
+    /// the note's own language, first person kept. On-device model only; no
+    /// template stands in for it, because a summary that is not a reading of
+    /// the words would be a lie with good intentions (§5).
+    func summarizeTranscript(_ text: String) async -> String? {
+        let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard cleaned.count > 200 else { return nil }
+        if #available(iOS 26, *) {
+            #if canImport(FoundationModels)
+            guard Self.foundationModelAvailable else { return nil }
+            do {
+                let session = LanguageModelSession {
+                    """
+                    You condense a spoken note into its substance. Reply with two or three \
+                    plain sentences in the same language the note is in (if it mixes Chinese \
+                    and English, answer in the language most of it is in). Keep the speaker's \
+                    first person: "I" stays "I". No preamble, no list, no quotation marks, \
+                    no heading. Say what they are getting at, not that they said it.
+                    """
+                }
+                let response = try await session.respond(to: String(cleaned.prefix(6000)))
+                let summary = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
+                return summary.isEmpty ? nil : summary
+            } catch {
+                return nil
+            }
+            #else
+            return nil
+            #endif
+        }
+        return nil
+    }
+
     // MARK: Understanding
 
     /// Raw thought → semantic understanding → essence + conceptual themes.
