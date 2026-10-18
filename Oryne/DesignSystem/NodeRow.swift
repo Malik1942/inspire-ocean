@@ -18,48 +18,38 @@ struct NodeRow: View {
         }
     }
 
-    /// Text first, and the text column always starts on the same line: a
-    /// picture, when the thought has one, sits at the trailing edge as the
-    /// row's attachment. No chevron: the fill says the row is a place to go.
-    /// What kind of thought it is lives in the meta line as a small glyph.
+    /// Text only. A row is a place to go, not a preview: the title, then one
+    /// meta line that says what kind of thought it is (a small glyph for a
+    /// whisper, a link or a picture), when, and which current. Pictures are
+    /// for cards and the thought itself. A fill, no border, no chevron.
     private var row: some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(node.displayTitle)
-                    .font(.body.weight(.medium))
-                    .foregroundStyle(OceanTheme.foam)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                HStack(spacing: 6) {
-                    if node.kind == .voice || node.kind == .link {
-                        Image(systemName: node.kind.symbol)
-                            .font(.caption2)
-                            .foregroundStyle(OceanTheme.mist)
-                    }
-                    if node.isBranch, let bt = node.branchType {
-                        Image(systemName: bt.symbol).font(.caption2).foregroundStyle(OceanTheme.mist)
-                    }
-                    Text(node.createdAt.formatted(.relative(presentation: .named)))
+        VStack(alignment: .leading, spacing: 4) {
+            Text(node.displayTitle)
+                .font(.body.weight(.medium))
+                .foregroundStyle(OceanTheme.foam)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+            HStack(spacing: 6) {
+                if node.kind != .text {
+                    Image(systemName: node.kind.symbol)
+                        .font(.caption2)
                         .foregroundStyle(OceanTheme.mist)
-                    if let theme = node.themes.first {
-                        Text("· \(theme)").foregroundStyle(OceanTheme.mist).lineLimit(1)
-                    }
-                    if node.isExample {
-                        Text("Example").foregroundStyle(OceanTheme.faint)
-                    }
                 }
-                .font(.footnote)
+                if node.isBranch, let bt = node.branchType {
+                    Image(systemName: bt.symbol).font(.caption2).foregroundStyle(OceanTheme.mist)
+                }
+                Text(node.createdAt.formatted(.relative(presentation: .named)))
+                    .foregroundStyle(OceanTheme.mist)
+                if let theme = node.themes.first {
+                    Text("· \(theme)").foregroundStyle(OceanTheme.mist).lineLimit(1)
+                }
+                if node.isExample {
+                    Text("Example").foregroundStyle(OceanTheme.faint)
+                }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            if let data = node.imageDatas.first ?? node.linkImageData, let ui = UIImage(data: data) {
-                Image(uiImage: ui)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 44, height: 44)
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            }
+            .font(.footnote)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .background(OceanTheme.fill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
