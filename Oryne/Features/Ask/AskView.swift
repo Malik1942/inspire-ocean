@@ -96,30 +96,36 @@ struct AskView: View {
                     .background(OceanTheme.accent.opacity(0.92), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
         } else {
-            VStack(alignment: .leading, spacing: 10) {
-                // Found: the chips come first, because for a lookup they are
-                // the answer and the paragraph is only a reading of them.
-                if !message.referencedNodeIDs.isEmpty {
-                    sourceChips(for: message)
-                }
-
+            VStack(alignment: .leading, spacing: 8) {
                 Text(AnswerMarkdown.attributed(message.text))
+                    .font(.callout)
+                    .lineSpacing(3)
                     .foregroundStyle(OceanTheme.foam)
-                    .padding(.horizontal, 14).padding(.vertical, 12)
+                    .padding(.horizontal, 16).padding(.vertical, 13)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .strokeBorder(Color.white.opacity(0.07), lineWidth: 0.5)
+                    )
 
                 if let note = provenanceNote(message) {
                     Text(note)
                         .font(.caption2)
                         .foregroundStyle(OceanTheme.faint)
-                        .padding(.leading, 4)
+                        .padding(.leading, 6)
+                }
+                // Found: the thoughts the answer drew from, as chips that
+                // open the real thing.
+                if !message.referencedNodeIDs.isEmpty {
+                    sourceChips(for: message)
+                        .padding(.leading, 2)
                 }
                 if let outward = message.outwardText, !outward.isEmpty {
                     outwardView(outward)
                 }
             }
-            .padding(.trailing, 30)
+            .padding(.trailing, 24)
         }
     }
 
@@ -156,15 +162,16 @@ struct AskView: View {
 
     private func sourceChips(for message: ChatMessage) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Found").font(.caption2).foregroundStyle(OceanTheme.faint)
-            FlowLayout(spacing: 8) {
+            Text("Drawn from").font(.caption2).foregroundStyle(OceanTheme.faint)
+            FlowLayout(spacing: 6) {
                 ForEach(sourceNodes(message), id: \.id) { node in
                     Button { openedNode = node } label: {
                         Label(node.displayTitle, systemImage: node.kind.symbol)
                             .font(.caption2).lineLimit(1)
                             .padding(.horizontal, 10).padding(.vertical, 6)
-                            .background(Color.white.opacity(0.08), in: Capsule())
-                            .foregroundStyle(OceanTheme.foam)
+                            .background(Color.white.opacity(0.07), in: Capsule())
+                            .overlay(Capsule().strokeBorder(Color.white.opacity(0.06), lineWidth: 0.5))
+                            .foregroundStyle(OceanTheme.mist)
                     }.buttonStyle(.plain)
                 }
             }
@@ -211,8 +218,6 @@ struct AskView: View {
 
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Ask the Ocean")
-                .font(.title3.weight(.semibold)).foregroundStyle(OceanTheme.foam)
             Text("Find a thought, or ask what a few of them mean together. Answers come from what you have captured.")
                 .font(.subheadline).foregroundStyle(OceanTheme.mist)
             VStack(alignment: .leading, spacing: 8) {
@@ -256,9 +261,7 @@ struct AskView: View {
             }
             .disabled(!canSend)
         }
-        .padding(.leading)
-        // Leave the floating capture button its corner.
-        .padding(.trailing, FastCaptureLayout.buttonTrailing + FastCaptureLayout.buttonSize + 8)
+        .padding(.horizontal)
         .padding(.vertical, 8)
         .background(.ultraThinMaterial)
     }
@@ -356,11 +359,10 @@ struct AskView: View {
         }
     }
 
+    /// The answer is the reflection alone; the recurring-threads line that
+    /// used to ride under it is noise on a phone (SPEC, Ask: one mode).
     private func composeText(_ response: OceanResponse) -> String {
-        if let summary = response.patternSummary {
-            return response.reflection + "\n\n" + summary
-        }
-        return response.reflection
+        response.reflection
     }
 
     private func sourceNodes(_ message: ChatMessage) -> [Node] {

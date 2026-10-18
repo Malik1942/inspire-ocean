@@ -10,7 +10,7 @@ What this rules out on the phone: an explorable map, direct manipulation of grou
 
 ## Decisions
 
-1. **Capture is a button plus the Fast Capture overlay, not a tab.** Same trigger grammar as Moti (button, floating sheet). That is house style, not a conflict; the products differ in what happens after the trigger. The Capture tab goes away.
+1. **Capture is a bar plus the Fast Capture overlay, not a tab.** The bar sits in the tab bar's accessory slot like a message composer: a field and the disc, never a lone floating button (Malik, 2026-10-17: a voice control on its own outside the composer is not how phones work). Same trigger grammar as Moti; the products differ in what happens after the trigger. The Capture tab goes away.
 2. **Voice is a gesture, not a mode.** Hold to whisper, release to catch. Slide up to lock for long takes. Thought and Whisper stop being a picker: typing makes a thought, holding makes a whisper, doing both keeps both.
 3. **The review beat goes away.** A whisper is caught the moment the finger lifts (Philosophy §1 already says review never gates capture). What remains is the same Undo pill the typed path has. Words are edited later in the thought, not at the moment of capture.
 4. **Ask stays as a surface.** As the Ocean grows the Library cannot be scanned, so a question is a real need. The four modes (Search, Synthesis, Expansion, Research) merge into one input and one answer shape. Summarize is the anchor use.
@@ -28,7 +28,7 @@ Three tabs and one button.
 | Ocean | Today's resurfacing, the newest thoughts, the water | Three seconds: what came back, what I just caught |
 | Ask | One question in, one grounded answer out | One question, one scroll |
 | Library | Find it: search, time, Related, current filter | Type two words, tap the card |
-| Capture button | Floating over all three tabs; tap to type, hold to whisper | One gesture |
+| Capture bar | Above the tab bar on Ocean and Library (the iOS 26 tab bar accessory; a floating bar before 26): a field to tap and the disc to hold. Hidden on Ask, which has its own input | One gesture |
 
 Deep links and intents keep working: `oryne://capture/thought` opens the overlay typing-first, `oryne://capture/whisper` opens it listening. `OCEAN_START_TAB=capture` is retired; the screenshot and film seeds move to `ocean`.
 
@@ -113,4 +113,4 @@ iPad and Mac Oryne, direct manipulation of currents, bring-your-own-key chat, an
 
 - ~~Hold-to-whisper from the Home Screen widget and Control Center~~: decided in Phase 1. Those entry points have no finger to hold, so the take opens locked and runs until Stop. The same happens when the finger leaves during the first-run permission ask.
 - Subtitle language for a bilingual take: show the resolved main locale's words only, or both passes as they land?
-- Where does the capture button sit relative to the tab bar on iOS 26 (liquid glass tab bar has its own accessory slot)?
+- ~~Where does the capture button sit relative to the tab bar on iOS 26~~: in the accessory slot (`tabViewBottomAccessory`), disabled on Ask from iOS 26.1; on 26.0 it also shows on Ask.

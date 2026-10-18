@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// A resolved placement for one *current*, a conceptual region of the Ocean
 /// holding every thought that expresses one theme. Currents are the field's
@@ -888,3 +889,59 @@ enum OceanLayoutEngine {
     }
     #endif
 }
+
+// The current label's measured typography, kept beside the engine that
+// measures with it (the SpriteKit field that rendered it left the phone).
+// MARK: - Label typography
+
+/// The current label's type, shared between rendering and layout: the layout
+/// engine measures the exact box a label will render into, so label bounds
+/// can join collision footprints and truncation cannot happen. Whisper light
+/// by default, firmed and fully lit under Calm Accessibility.
+enum OceanLabelStyle {
+
+    /// Labels wrap to two lines at this width; the footprint reserves the
+    /// measured box, so nothing narrower ever truncates.
+    static let maxWidth: CGFloat = 160
+
+    static func attributed(_ text: String, prominence: Double, calm: Bool) -> NSAttributedString {
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .center
+        paragraph.lineBreakMode = .byTruncatingTail
+        let shadow = NSShadow()
+        shadow.shadowColor = UIColor(white: 0, alpha: 0.55)
+        shadow.shadowBlurRadius = 2.5
+        shadow.shadowOffset = .zero
+        return NSAttributedString(string: text, attributes: [
+            .font: UIFont.systemFont(ofSize: calm ? 12 : 11, weight: calm ? .medium : .light),
+            .kern: calm ? 0.2 : 0.6,
+            .foregroundColor: calm
+                ? UIColor(white: 1, alpha: 0.92)
+                : UIColor(white: 1, alpha: 0.5 * (0.74 + 0.24 * prominence)),
+            .paragraphStyle: paragraph,
+            .shadow: shadow
+        ])
+    }
+
+    /// The rendered box for a label, taken as the wider of the normal and
+    /// Calm Accessibility styles so toggling calm never needs a relayout.
+    /// Cached: measurement runs on every layout pass.
+    private static var measureCache: [String: CGSize] = [:]
+
+    static func measure(_ text: String) -> CGSize {
+        if let hit = measureCache[text] { return hit }
+        var size = CGSize.zero
+        for calm in [false, true] {
+            let bounds = attributed(text, prominence: 1, calm: calm).boundingRect(
+                with: CGSize(width: maxWidth, height: .greatestFiniteMagnitude),
+                options: [.usesLineFragmentOrigin, .usesFontLeading],
+                context: nil
+            )
+            size.width = max(size.width, ceil(bounds.width))
+            size.height = max(size.height, ceil(bounds.height))
+        }
+        measureCache[text] = size
+        return size
+    }
+}
+

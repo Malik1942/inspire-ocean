@@ -75,6 +75,10 @@ struct FastCaptureSessionView: View {
     private var listening: Bool { phase == .listening }
 
     var body: some View {
+        GeometryReader { geo in
+        // With the keyboard up the bottom safe area is the keyboard itself,
+        // so the card sits right on it; otherwise it clears the tab bar.
+        let keyboardUp = geo.safeAreaInsets.bottom > 120
         ZStack(alignment: .bottom) {
             backdrop
 
@@ -110,27 +114,11 @@ struct FastCaptureSessionView: View {
                     undoPill
                 }
             }
-            .padding(.horizontal, 20)
-            // Clear of the capture button, which sits bottom trailing.
-            .padding(.bottom, phase == .linger ? 24 : FastCaptureLayout.buttonBottomAboveTabs + FastCaptureLayout.buttonSize + 16)
+            .padding(.horizontal, 16)
+            .padding(.bottom, phase == .linger ? 24 : (asSheet || keyboardUp ? 12 : FastCaptureLayout.tabBarClearance))
             .frame(maxWidth: .infinity, alignment: .leading)
             .animation(.spring(response: 0.36, dampingFraction: 0.86), value: phase)
         }
-        .overlay(alignment: .bottomTrailing) {
-            if phase == .composing || phase == .listening {
-                CaptureHoldButton(size: FastCaptureLayout.buttonSize)
-                    .padding(.trailing, FastCaptureLayout.buttonTrailing)
-                    .padding(.bottom, FastCaptureLayout.buttonBottomAboveTabs)
-                    // While the hold that opened this overlay still has its
-                    // finger on the floating button, that button owns the
-                    // gesture; this one is only the picture.
-                    .allowsHitTesting(asSheet || control.touch == .up)
-                    // ...and while that finger is down the floating button is
-                    // still drawn, so this one stays invisible rather than
-                    // stacking a second disc on top of it.
-                    .opacity(asSheet || control.touch == .up ? 1 : 0)
-                    .transition(.opacity)
-            }
         }
         .task {
             control.overlayOpen = true
@@ -240,6 +228,8 @@ struct FastCaptureSessionView: View {
                         .accessibilityLabel("Release into the Ocean")
                         .transition(.scale.combined(with: .opacity))
                     }
+
+                    overlayDisc
                 }
 
                 if let message {
@@ -272,11 +262,21 @@ struct FastCaptureSessionView: View {
             closeButton
                 .padding(.leading, -4)
             listeningNotes
+            Spacer(minLength: 8)
+            overlayDisc
         }
-        // Clear of the capture button and its slide-up hint.
-        .padding(.trailing, FastCaptureLayout.buttonSize)
         .frame(maxWidth: .infinity, alignment: .leading)
         .transition(.opacity)
+    }
+
+    /// The overlay's own disc, in the composer row and the listening row.
+    /// While the hold that opened this overlay still has its finger on the
+    /// capture bar's disc, that disc owns the gesture and this one stays
+    /// out of the way (the bar is still drawn beneath the backdrop).
+    private var overlayDisc: some View {
+        CaptureHoldButton(size: FastCaptureLayout.buttonSize)
+            .allowsHitTesting(asSheet || control.touch == .up)
+            .opacity(asSheet || control.touch == .up ? 1 : 0.35)
     }
 
     private var listeningNotes: some View {

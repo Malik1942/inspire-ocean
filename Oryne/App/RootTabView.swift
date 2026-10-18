@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// Primary navigation: Ocean · Ask · Library, with one capture button
-/// floating over all three. Capture is a gesture, not a tab: tap the button
-/// to type, hold it to whisper (docs/plans/phone-refocus/SPEC.md).
+/// Primary navigation: Ocean · Ask · Library, with the capture bar above the
+/// tab bar. Capture is a gesture, not a tab: tap the field to type, hold the
+/// disc to whisper (docs/plans/phone-refocus/SPEC.md).
 struct RootTabView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.requestReview) private var requestReview
@@ -70,23 +70,10 @@ struct RootTabView: View {
                 .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
         }
-        // The floating capture button, above the overlay so a hold that
-        // began here keeps its finger while the overlay rises. Once the
-        // overlay is up and the finger is gone, the overlay's own button (in
-        // the same place) takes over and this one steps aside.
-        .overlay(alignment: .bottomTrailing) {
-            CaptureHoldButton(size: FastCaptureLayout.buttonSize)
-                .environment(control)
-                .padding(.trailing, FastCaptureLayout.buttonTrailing)
-                .padding(.bottom, FastCaptureLayout.buttonBottomAboveTabs)
-                .opacity(floatingButtonVisible ? 1 : 0)
-                .allowsHitTesting(floatingButtonVisible)
-                .animation(.easeOut(duration: 0.2), value: floatingButtonVisible)
-                .accessibilityHidden(!floatingButtonVisible)
-                // The button belongs to the tabs, not to the keyboard: a
-                // Library search or an Ask question must not lift it.
-                .ignoresSafeArea(.keyboard)
-        }
+        // The capture bar rides above the tab bar (Ocean and Library). A
+        // hold that begins on its disc keeps its finger while the overlay
+        // rises; the overlay's own disc takes over once the finger lifts.
+        .modifier(CaptureBarPlacement(show: appState.selectedTab != .ask, control: control))
         .animation(.spring(response: 0.36, dampingFraction: 0.86), value: appState.fastCaptureRequest?.id)
         .sheet(isPresented: $showFastCaptureOnboarding) {
             OceanOnboardingView(
@@ -125,11 +112,11 @@ struct RootTabView: View {
         // overlay typing-first; a hold (or a tap in tap-to-toggle mode) opens
         // it listening, the finger still down.
         .onChange(of: control.tapCount) { _, _ in
-            guard appState.fastCaptureRequest == nil else { return }
+            guard appState.fastCaptureRequest == nil, !control.overlayOpen else { return }
             appState.startFastCapture(source: .inApp, inputPreference: .typingFirst)
         }
         .onChange(of: control.touch) { _, touch in
-            guard appState.fastCaptureRequest == nil, touch != .up else { return }
+            guard appState.fastCaptureRequest == nil, !control.overlayOpen, touch != .up else { return }
             appState.startFastCapture(source: .inApp, inputPreference: .voiceFirst)
         }
         // A value-has-landed moment armed the once-ever review ask; fire it here,
@@ -146,12 +133,6 @@ struct RootTabView: View {
         // Outermost, so the Fast Capture overlay and every presented sheet
         // inherit the stilled-water environment along with the tabs.
         .environment(\.calmAccessibility, calmAccessibilityOn)
-    }
-
-    /// The floating button shows whenever the overlay is closed, and stays
-    /// while a hold that began on it is still in progress.
-    private var floatingButtonVisible: Bool {
-        appState.fastCaptureRequest == nil || control.touch != .up
     }
 
     /// Re-checked on every change to what might cover the tabs; safe to call
@@ -182,11 +163,11 @@ struct RootTabView: View {
     }
 }
 
-/// Where the capture button sits, shared by the floating button and the
-/// overlay so a hold that starts on one lands on the other.
+/// Shared capture geometry.
 enum FastCaptureLayout {
-    static let buttonSize: CGFloat = 64
-    static let buttonTrailing: CGFloat = 20
-    /// Clear of the tab bar (49pt) plus breathing room.
-    static let buttonBottomAboveTabs: CGFloat = 49 + 18
+    /// The disc inside the overlay's composer and listening row.
+    static let buttonSize: CGFloat = 44
+    /// Clear of the tab bar (49pt) plus breathing room, for anything that
+    /// sits above it without the system's help.
+    static let tabBarClearance: CGFloat = 49 + 12
 }

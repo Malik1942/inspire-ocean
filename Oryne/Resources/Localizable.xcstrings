@@ -1,6 +1,26 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Capture a thought" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "捕捉一条灵感"
+          }
+        }
+      }
+    },
+    "Opens the keyboard. The button beside it whispers." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开键盘。旁边的按钮用来录语音。"
+          }
+        }
+      }
+    },
     "Cancel whisper" : {
       "localizations" : {
         "zh-Hans" : {
