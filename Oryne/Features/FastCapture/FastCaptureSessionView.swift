@@ -93,11 +93,9 @@ struct FastCaptureSessionView: View {
                         text: listening ? session.transcriber.partial : settlingWords,
                         showsPlaceholder: listening && !wordsDelayed
                     )
-                    .modifier(SettleIntoWater(progress: phase == .settling && settled ? 1 : 0, stilled: stilled))
-                    .animation(
-                        stilled ? .easeOut(duration: 0.2) : .timingCurve(0.45, 0, 0.75, 1, duration: 0.5),
-                        value: settled
-                    )
+                    .opacity(phase == .settling && settled ? 0 : 1)
+                    .offset(y: phase == .settling && settled ? 24 : 0)
+                    .animation(.easeIn(duration: 0.3), value: settled)
                     if listening {
                         listeningRow
                     }
@@ -220,10 +218,8 @@ struct FastCaptureSessionView: View {
                     if canRelease {
                         Button(action: saveTyped) {
                             Image(systemName: "arrow.up")
-                                .font(.subheadline.weight(.bold))
-                                .frame(width: 34, height: 34)
                         }
-                        .buttonStyle(ReleasePillStyle())
+                        .buttonStyle(.oceanPrimaryIcon)
                         .disabled(isSaving)
                         .accessibilityLabel("Release into the Ocean")
                         .transition(.scale.combined(with: .opacity))
@@ -312,25 +308,8 @@ struct FastCaptureSessionView: View {
     private var closeButton: some View {
         Button(action: cancel) {
             Image(systemName: "xmark")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(OceanTheme.mist)
-                .frame(width: 36, height: 36)
-                .background(.ultraThinMaterial, in: Circle())
-                .overlay(
-                    Circle().strokeBorder(
-                        LinearGradient(
-                            colors: [Color.white.opacity(0.12), Color.white.opacity(0)],
-                            startPoint: .top,
-                            endPoint: .center
-                        ),
-                        lineWidth: 0.5
-                    )
-                )
-                .shadow(color: .black.opacity(0.35), radius: 8, y: 4)
-                .frame(width: 44, height: 44)
-                .contentShape(Circle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.oceanIcon)
         .accessibilityLabel(listening ? Text("Cancel whisper") : Text("Close"))
     }
 
@@ -339,11 +318,8 @@ struct FastCaptureSessionView: View {
             Spacer()
             Button(action: undoFromMoment) {
                 Label("Undo", systemImage: "arrow.uturn.backward")
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(OceanTheme.mist)
-                    .padding(.horizontal, 14).padding(.vertical, 8)
-                    .background(.ultraThinMaterial, in: Capsule())
             }
+            .buttonStyle(.oceanSecondary)
             .accessibilityLabel("Undo capture")
             Spacer()
         }
@@ -458,8 +434,8 @@ struct FastCaptureSessionView: View {
         isSaving = true
         session.beginUnderstanding(nodeID: nodeID)
         CaptureFeedback.released()
-        withAnimation(reduceMotion ? .easeOut(duration: 0.2) : .easeIn(duration: 0.55)) { settled = true }
-        try? await Task.sleep(for: .milliseconds(reduceMotion ? 200 : 520))
+        withAnimation(.easeIn(duration: 0.3)) { settled = true }
+        try? await Task.sleep(for: .milliseconds(300))
         withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
             moment = .received(for: nodeID)
             phase = .moment
@@ -604,152 +580,47 @@ struct FastCaptureSessionView: View {
 
 // MARK: - Subtitles
 
-/// The words of a live take, laid on the water: large, unframed, the newest
-/// at the bottom, the oldest fading out above. Only the tail is kept so the
-/// block never grows past a few lines. Each word surfaces: it rises a little
-/// out of a soft blur, the way something comes up through water.
+/// The words of a live take, laid on the water: plain, unframed, newest at
+/// the bottom, the oldest fading out above. They appear as they are heard
+/// and leave in one piece when the take ends. Nothing performs.
 struct WhisperSubtitles: View {
     let text: String
-    var maxWords = 32
-    /// "Listening" while waiting for the first word. Off when no live words
-    /// are coming (the area stays empty) and while the words settle.
+    var maxWords = 40
+    /// "Listening" while waiting for the first word; off when no live words
+    /// are coming and while the words settle.
     var showsPlaceholder = true
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.calmAccessibility) private var calm
-
-    private var stilled: Bool { reduceMotion || calm }
-
-    private var words: [(id: Int, word: String)] {
-        let all = text.split(whereSeparator: \.isWhitespace).map(String.init)
-        let start = max(0, all.count - maxWords)
-        return all.enumerated().dropFirst(start).map { ($0.offset, $0.element) }
-    }
-
-    /// Brightness carries recency: the last few words are foam, older ones
-    /// ease back toward mist before the top mask takes them.
-    private func opacity(for id: Int, newest: Int) -> Double {
-        let age = Double(newest - id)
-        return max(0.6, 1 - max(0, age - 5) * 0.03)
-    }
-
-    private var surfacing: AnyTransition {
-        guard !stilled else { return .opacity }
-        return .asymmetric(
-            insertion: .modifier(
-                active: Surfacing(progress: 0),
-                identity: Surfacing(progress: 1)
-            ),
-            removal: .opacity
-        )
+    private var tail: String {
+        let all = text.split(whereSeparator: \.isWhitespace)
+        return all.suffix(maxWords).joined(separator: " ")
     }
 
     var body: some View {
-        let entries = words
-        let newest = entries.last?.id ?? 0
         Group {
-            if entries.isEmpty {
+            if tail.isEmpty {
                 if showsPlaceholder {
                     Text("Listening")
                         .font(.title2)
                         .foregroundStyle(OceanTheme.hint)
-                        .transition(.opacity)
                 }
             } else {
-                FlowLayout(spacing: 8) {
-                    ForEach(entries, id: \.id) { entry in
-                        Text(entry.word)
-                            .font(.title.weight(.medium))
-                            .foregroundStyle(OceanTheme.foam)
-                            .opacity(opacity(for: entry.id, newest: newest))
-                            .transition(surfacing)
-                    }
-                }
-                .animation(stilled ? .easeOut(duration: 0.2) : .easeOut(duration: 0.42), value: entries.map(\.id))
+                Text(tail)
+                    .font(.title2.weight(.medium))
+                    .foregroundStyle(OceanTheme.foam)
+                    .lineSpacing(3)
+                    .multilineTextAlignment(.leading)
+                    .animation(.easeOut(duration: 0.15), value: tail)
             }
         }
-        // Words lie on open water, unframed; a soft dark depth under them
-        // (never a glow) keeps them legible over the field's bodies.
-        .shadow(color: .black.opacity(0.55), radius: 10)
         .frame(maxWidth: .infinity, maxHeight: 220, alignment: .bottomLeading)
         .mask(
             LinearGradient(
-                stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.32), .init(color: .black, location: 1)],
+                stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.3), .init(color: .black, location: 1)],
                 startPoint: .top, endPoint: .bottom
             )
         )
+        .shadow(color: .black.opacity(0.5), radius: 8)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(text.isEmpty ? Text("Listening") : Text(text))
-    }
-}
-
-/// A word coming up through the water: from a little below, out of a soft
-/// blur, into focus.
-private struct Surfacing: ViewModifier {
-    var progress: Double
-
-    func body(content: Content) -> some View {
-        content
-            .opacity(progress)
-            .blur(radius: (1 - progress) * 6)
-            .offset(y: (1 - progress) * 10)
-            .scaleEffect(0.96 + 0.04 * progress, anchor: .bottom)
-    }
-}
-
-/// The words settling into the Ocean after release. They sink a short way
-/// and lose focus while a waterline rises through them from below, so the
-/// last line goes under first. Stilled (Reduce Motion, Calm Accessibility
-/// Mode) it is a plain fade.
-private struct SettleIntoWater: ViewModifier, Animatable {
-    var progress: Double
-    var stilled: Bool
-
-    var animatableData: Double {
-        get { progress }
-        set { progress = newValue }
-    }
-
-    func body(content: Content) -> some View {
-        if stilled {
-            content.opacity(1 - progress)
-        } else {
-            let line = 1 - 1.3 * progress
-            let edge = min(1, max(0, line))
-            let feather = min(1, max(edge, line + 0.28))
-            content
-                .scaleEffect(1 - 0.04 * progress, anchor: .bottom)
-                .offset(y: 30 * progress)
-                .blur(radius: 7 * progress)
-                .opacity(1 - 0.35 * progress)
-                .mask(
-                    LinearGradient(
-                        stops: [
-                            .init(color: .black, location: 0),
-                            .init(color: .black, location: edge),
-                            .init(color: .clear, location: feather)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-        }
-    }
-}
-
-/// The Release button. Ready, it is the accent with abyss ink, the same
-/// pairing the Ocean uses for landing; while saving it steps back to a
-/// readable grey. Pressed, it sinks a touch rather than dimming.
-struct ReleasePillStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .background(isEnabled ? OceanTheme.accent : Color.white.opacity(0.12), in: Circle())
-            .foregroundStyle(isEnabled ? OceanTheme.abyss : Color.white.opacity(0.62))
-            .shadow(color: .black.opacity(isEnabled && !configuration.isPressed ? 0.3 : 0), radius: 6, y: 3)
-            .scaleEffect(configuration.isPressed ? 0.9 : 1)
-            .animation(.spring(response: 0.22, dampingFraction: 0.7), value: configuration.isPressed)
-            .animation(.easeOut(duration: 0.15), value: isEnabled)
     }
 }

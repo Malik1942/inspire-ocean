@@ -38,6 +38,8 @@ struct LibraryView: View {
     #if DEBUG
     /// One-shot for `OCEAN_SHOW_RELATED_TITLE` (marketing recapture).
     @State private var didEngageScreenshotRelated = false
+    @State private var showSettings = false
+    @State private var showCurrents = false
     #endif
 
     /// True only while a focus reorder is animating, so cards drop their blurred
@@ -113,11 +115,22 @@ struct LibraryView: View {
                             }
                         }
                         Toggle("Show archived", isOn: $showArchived)
+                        Divider()
+                        Button {
+                            showCurrents = true
+                        } label: {
+                            Label("Currents", systemImage: "water.waves")
+                        }
                     } label: {
                         Image(systemName: "line.3.horizontal.decrease.circle")
                     }
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    SettingsGearButton(isPresented: $showSettings)
+                }
             }
+            .sheet(isPresented: $showSettings) { OceanSettingsView() }
+            .sheet(isPresented: $showCurrents) { CurrentsPage() }
             .navigationDestination(for: Node.self) { node in
                 NodeDetailContent(node: node)
             }
@@ -297,6 +310,7 @@ struct LibraryView: View {
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
+                .padding(.bottom, FastCaptureLayout.contentClearance)
             }
             // Fresh scroll view per arrangement. Lazy columns realize cells
             // incrementally from the top; carrying a deep scroll offset across an
@@ -326,13 +340,8 @@ struct LibraryView: View {
             appState.summarize(filtered.map(\.id), title: search.trimmed)
         } label: {
             Label(summarizeLabel, systemImage: "text.line.first.and.arrowtriangle.forward")
-                .font(.caption.weight(.medium))
-                .foregroundStyle(OceanTheme.foam)
-                .padding(.horizontal, 12).padding(.vertical, 8)
-                .background(.ultraThinMaterial, in: Capsule())
-                .overlay(Capsule().strokeBorder(Color.white.opacity(0.08), lineWidth: 0.5))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.oceanSecondary)
         .padding(.horizontal, 4)
     }
 

@@ -1,6 +1,126 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "All currents" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全部洋流"
+          }
+        }
+      }
+    },
+    "Drifts near" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "漂在附近"
+          }
+        }
+      }
+    },
+    "Let it rest" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "让它沉下去"
+          }
+        }
+      }
+    },
+    "Open current" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开洋流"
+          }
+        }
+      }
+    },
+    "Search currents and thoughts" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜索洋流和灵感"
+          }
+        }
+      }
+    },
+    "Collapses this current." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收起这条洋流。"
+          }
+        }
+      }
+    },
+    "Shows every thought in this current." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "展开这条洋流里的全部灵感。"
+          }
+        }
+      }
+    },
+    "Flip back" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "翻回正面"
+          }
+        }
+      }
+    },
+    "What drifts near" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "附近漂着什么"
+          }
+        }
+      }
+    },
+    "Double tap to flip. Hold to peek." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轻点两下翻面，按住预览。"
+          }
+        }
+      }
+    },
+    "Opens the thought." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开这条灵感。"
+          }
+        }
+      }
+    },
+    "Resurfacing · %@" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "浮现 · %@"
+          }
+        }
+      }
+    },
     "Capture a thought" : {
       "localizations" : {
         "zh-Hans" : {

@@ -19,6 +19,12 @@ final class AudioPlayback: NSObject, AVAudioPlayerDelegate {
         isPlaying && currentData == data
     }
 
+    /// 0...1 through the current recording; polled by whoever draws it.
+    var progress: Double {
+        guard let player, player.duration > 0 else { return 0 }
+        return player.currentTime / player.duration
+    }
+
     func toggle(data: Data) {
         if isPlaying(data) {
             pause()

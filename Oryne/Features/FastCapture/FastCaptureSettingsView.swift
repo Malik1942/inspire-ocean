@@ -32,13 +32,9 @@ struct FastCaptureSettingsView: View {
             ZStack {
                 OceanBackground(animated: false)
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
-                        shortcutSection
-                        inputSection
-                        setupSection
-                    }
-                    .padding(.horizontal)
-                    .padding(.vertical, 14)
+                    FastCaptureSettingsSections()
+                        .padding(.horizontal)
+                        .padding(.vertical, 14)
                 }
             }
             .navigationTitle("Fast Capture")
@@ -72,6 +68,35 @@ struct FastCaptureSettingsView: View {
                     }
                 )
             }
+        }
+    }
+}
+
+/// The Fast Capture sections, embedded in the one settings page (and kept
+/// as their own sheet for the onboarding replay).
+struct FastCaptureSettingsSections: View {
+    @AppStorage(
+        FastCapturePreferenceKeys.trigger,
+        store: FastCapturePreferences.defaults
+    ) private var triggerRaw = FastCaptureTrigger.actionButton.rawValue
+    @AppStorage(
+        FastCapturePreferenceKeys.inputPreference,
+        store: FastCapturePreferences.defaults
+    ) private var inputPreferenceRaw = FastCaptureInputPreference.voiceFirst.rawValue
+    @AppStorage(
+        FastCapturePreferenceKeys.autoScreenshot,
+        store: FastCapturePreferences.defaults
+    ) private var autoScreenshot = true
+
+    private var trigger: FastCaptureTrigger {
+        FastCaptureTrigger(rawValue: triggerRaw) ?? .actionButton
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            shortcutSection
+            inputSection
+            setupSection
         }
     }
 

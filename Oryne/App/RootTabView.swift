@@ -163,11 +163,16 @@ struct RootTabView: View {
     }
 }
 
-/// Shared capture geometry.
+/// Shared capture geometry: the bar is a 56 pt capsule, the disc 44 pt,
+/// inset 6 on every side so disc and capsule end are concentric, 12 pt
+/// above the tab bar. The overlay's disc is the same 44.
 enum FastCaptureLayout {
-    /// The disc inside the overlay's composer and listening row.
+    static let barHeight: CGFloat = 56
     static let buttonSize: CGFloat = 44
-    /// Clear of the tab bar (49pt) plus breathing room, for anything that
-    /// sits above it without the system's help.
+    static let discInset: CGFloat = 6
+    /// The tab bar (49 pt) plus the 12 pt gap under the bar.
     static let tabBarClearance: CGFloat = 49 + 12
+    /// What scrolling content under the bar leaves clear: bar, gap, and a
+    /// breath above it.
+    static let contentClearance: CGFloat = tabBarClearance + barHeight + 16
 }

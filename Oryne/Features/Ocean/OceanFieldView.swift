@@ -1,59 +1,72 @@
 import SwiftUI
 import SwiftData
 
-/// The Ocean on the phone: a surface, not a map
+/// The Ocean on the phone: a surface to glance at, not a map to explore
 /// (docs/plans/phone-refocus/SPEC.md, decision 5).
 ///
-/// People glance at a phone; they do not explore it. So the Ocean reads top
-/// to bottom in one look, every title legible on the water itself:
-///  1. **Today's resurfacing**: the one lit object, a large glass orb with
-///     its title, when it was caught, and a small "Resurfacing" label.
-///  2. **Newest**: the five most recent thoughts as smaller orbs drifting
-///     near the surface, each titled beneath, in a stable arrangement.
-///  3. **Currents**: a row of readable chips; each opens the current's
-///     stream.
-///
-/// No pan, no zoom, no counts (§8). The orbs breathe and drift a few points
-/// over tens of seconds; the titles never move, and motion carries nothing
-/// a label doesn't (§4). Reduce Motion and Calm Accessibility Mode still it
-/// completely.
+/// Top to bottom: today's resurfacing thought as the one lit card (the only
+/// warm color on the page), the newest thoughts as the Library's own cards,
+/// and the four most recently active currents with a way to all of them.
+/// Everything here is the app's existing material: GlassCard, NodeCard,
+/// chips. No orbs, no counts, no ambient motion.
 struct OceanFieldView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var context
+    @Environment(\.oceanAI) private var ai
     @Environment(\.calmAccessibility) private var calm
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Query(filter: #Predicate<Node> { !$0.isArchived }, sort: \Node.createdAt)
+    @Query(filter: #Predicate<Node> { !$0.isArchived }, sort: \Node.createdAt, order: .reverse)
     private var nodes: [Node]
 
     @State private var sheet: OceanSheet?
     @State private var showSettings = false
+    /// The resurfacing card's back is up: "Drifts near".
+    @State private var flipped = false
+    @State private var nearby: [Node] = []
+    /// A text thought peeked: its body shown in full on the card.
+    @State private var peekingText = false
+    /// Bumped by "Let it rest" so today's pick recomputes.
+    @State private var restTick = 0
 
-    /// How many of the newest thoughts float near the surface.
     private static let newestLimit = 5
-    /// How many currents get a chip.
-    private static let currentLimit = 8
-    /// Clear water under the content, so the capture bar that sits above the
-    /// tab bar never covers a title.
-    private static let captureBarClearance: CGFloat = 96
-
-    private var nodeByID: [UUID: Node] {
-        Dictionary(uniqueKeysWithValues: nodes.map { ($0.id, $0) })
-    }
+    private static let currentLimit = 4
 
     private enum OceanSheet: Identifiable {
         case thought(Node)
         case stream(theme: String)
+        case currents
+        case image(Data)
 
         var id: String {
             switch self {
             case .thought(let node): return node.id.uuidString
             case .stream(let theme): return "stream·\(theme)"
+            case .currents: return "currents"
+            case .image: return "image"
             }
         }
     }
 
-    /// Ambient motion's one off-switch (§4).
     private var still: Bool { reduceMotion || calm }
+
+    // MARK: Derived
+
+    private var resurfacing: Node? {
+        _ = restTick
+        return Resurfacing.pick(from: nodes)
+    }
+
+    /// The newest thoughts, the resurfacing one aside. A brand-new Ocean
+    /// shows the starter examples so the surface is never bare.
+    private var newest: [Node] {
+        let own = nodes.filter { !$0.isExample && $0.id != resurfacing?.id }
+        let pool = own.isEmpty ? nodes.filter { $0.isExample } : own
+        return Array(pool.prefix(Self.newestLimit))
+    }
+
+    private var currents: [CurrentGroup] {
+        CurrentGroup.build(from: nodes).filter { !$0.isAdrift }
+    }
 
     // MARK: Body
 
@@ -61,296 +74,232 @@ struct OceanFieldView: View {
         NavigationStack {
             ZStack {
                 OceanBackground()
-                oceanFog
-
                 if nodes.isEmpty {
-                    VStack(spacing: 0) {
-                        header
-                        Spacer()
-                        emptyState
-                        Spacer()
-                        Spacer().frame(height: Self.captureBarClearance)
-                    }
+                    emptyState
                 } else {
-                    surface
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 22) {
+                            if let resurfacing { resurfacingCard(resurfacing) }
+                            newestSection
+                            if !currents.isEmpty { currentsSection }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 4)
+                        .padding(.bottom, FastCaptureLayout.contentClearance)
+                    }
                 }
             }
-            .onAppear { consumePendingFocus() }
+            .navigationTitle("Ocean")
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    SettingsGearButton(isPresented: $showSettings)
+                }
+            }
+            .onAppear(perform: consumePendingFocus)
             .onChange(of: appState.pendingFocusNodeID) { _, _ in consumePendingFocus() }
-            .navigationBarHidden(true)
+            .onChange(of: resurfacing?.id) { _, _ in
+                flipped = false
+                peekingText = false
+                nearby = []
+            }
             .sheet(item: $sheet) { item in
                 switch item {
                 case .thought(let node):
                     ExpandedNodeView(node: node)
                 case .stream(let theme):
                     ClusterStreamView(theme: theme)
+                case .currents:
+                    CurrentsPage()
+                case .image(let data):
+                    ImagePeek(data: data)
                 }
             }
             .sheet(isPresented: $showSettings) {
                 OceanSettingsView()
             }
-            // Reported so the root view can hold back anything (the review
-            // ask) that must never appear over a sheet.
             .onChange(of: sheet?.id) { _, _ in updateOceanSheetPresence() }
             .onChange(of: showSettings) { _, _ in updateOceanSheetPresence() }
         }
     }
 
-    // MARK: Surface
+    // MARK: Resurfacing card
 
-    private var surface: some View {
-        // A just-deleted node can linger for one render pass; reading any
-        // attribute on a detached object faults, so only attached ones render.
-        let live = nodes.filter { $0.modelContext != nil }
-        let lit = Resurfacing.pick(from: live)
-        let newest = newestThoughts(in: live, excluding: lit?.id)
-        let currents = currentKeys(in: live)
+    /// The one lit object: the page's only warm color is this card's hairline
+    /// and label. The disc on the left is a handle: tap flips the card to
+    /// what drifts near; a long press peeks (plays a whisper, opens an image,
+    /// unfolds a text). The words on the right open the thought.
+    private func resurfacingCard(_ node: Node) -> some View {
+        ZStack {
+            resurfacingFront(node)
+                .opacity(flipped ? 0 : 1)
+                .rotation3DEffect(.degrees(flipped && !still ? 180 : 0), axis: (x: 0, y: 1, z: 0))
+            resurfacingBack(node)
+                .opacity(flipped ? 1 : 0)
+                .rotation3DEffect(.degrees(flipped || still ? 0 : -180), axis: (x: 0, y: 1, z: 0))
+        }
+        .animation(still ? .easeInOut(duration: 0.2) : .spring(response: 0.45, dampingFraction: 0.85), value: flipped)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous)
+                .strokeBorder(OceanTheme.glowWarm.opacity(0.28), lineWidth: 0.6)
+        )
+        .shadow(color: .black.opacity(0.3), radius: 18, y: 8)
+    }
 
-        return ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                header
-                    .padding(.bottom, 18)
-
-                if let lit {
-                    resurfacingRow(lit)
-                        .padding(.horizontal)
-                        .padding(.bottom, 34)
-                }
-
-                if !newest.isEmpty {
-                    sectionLabel("Newest")
-                        .padding(.horizontal)
-                        .padding(.bottom, 14)
-                    DriftLayout(count: newest.count) {
-                        ForEach(Array(newest.enumerated()), id: \.element.id) { index, node in
-                            newestItem(node, rank: index)
-                                .layoutValue(key: DriftSeed.self, value: NodeComposer.stableHash(node.id.uuidString))
-                        }
-                    }
-                    .padding(.horizontal)
-                    .padding(.bottom, 30)
-                }
-
-                if !currents.isEmpty {
-                    sectionLabel("Currents")
-                        .padding(.horizontal)
-                        .padding(.bottom, 10)
-                    currentChips(currents)
-                }
+    private func resurfacingFront(_ node: Node) -> some View {
+        HStack(alignment: .center, spacing: 14) {
+            ResurfacingDisc(node: node, flipped: false) {
+                flip(node)
+            } onPeek: {
+                peek(node)
             }
-            .padding(.bottom, Self.captureBarClearance)
-        }
-        .scrollBounceBehavior(.basedOnSize)
-        .scrollIndicators(.hidden)
-    }
 
-    /// The newest thoughts near the surface: the user's own captures, newest
-    /// first, minus today's resurfacing (it already has the lit place). A
-    /// brand-new Ocean that holds only the starter examples shows those, so
-    /// the first look is never bare water.
-    private func newestThoughts(in live: [Node], excluding litID: UUID?) -> [Node] {
-        let candidates = live.filter { $0.id != litID }
-        let own = candidates.filter { !$0.isExample }
-        let pool = own.isEmpty ? candidates : own
-        return Array(pool.sorted { $0.createdAt > $1.createdAt }.prefix(Self.newestLimit))
-    }
-
-    /// One chip per current, the most recently fed current first. Thoughts
-    /// with no current are not a chip.
-    private func currentKeys(in live: [Node]) -> [String] {
-        var newestByKey: [String: Date] = [:]
-        for node in live {
-            guard let key = OceanLayoutEngine.currentKey(for: node) else { continue }
-            if let seen = newestByKey[key], seen >= node.createdAt { continue }
-            newestByKey[key] = node.createdAt
-        }
-        return newestByKey
-            .sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }
-            .prefix(Self.currentLimit)
-            .map(\.key)
-    }
-
-    // MARK: Resurfacing
-
-    private func resurfacingRow(_ node: Node) -> some View {
-        Button {
-            open(node)
-        } label: {
-            HStack(alignment: .center, spacing: 20) {
-                DriftingOrb(
-                    diameter: 132,
-                    tint: OceanTheme.glowWarm,
-                    lit: true,
-                    symbol: glyph(for: node),
-                    seed: NodeComposer.stableHash(node.id.uuidString),
-                    still: still
-                )
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Resurfacing")
+            Button {
+                open(node)
+            } label: {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("Resurfacing · \(node.createdAt.formatted(.relative(presentation: .named)))")
                         .font(.caption2.weight(.semibold))
+                        .textCase(.uppercase)
+                        .kerning(0.4)
                         .foregroundStyle(OceanTheme.glowWarm)
+                        .lineLimit(1)
                     Text(node.displayTitle)
                         .font(.title3.weight(.semibold))
                         .foregroundStyle(OceanTheme.foam)
-                        .lineLimit(3)
+                        .lineLimit(peekingText ? nil : 3)
                         .multilineTextAlignment(.leading)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text(node.createdAt.formatted(.relative(presentation: .named)))
-                        .font(.footnote)
-                        .foregroundStyle(calm ? OceanTheme.foam : OceanTheme.mist)
+                    if !node.snippet.isEmpty {
+                        Text(peekingText ? node.rawContent : node.snippet)
+                            .font(.caption)
+                            .foregroundStyle(OceanTheme.mist)
+                            .lineLimit(peekingText ? nil : 2)
+                            .multilineTextAlignment(.leading)
+                    }
                 }
-                Spacer(minLength: 0)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            .accessibilityHint("Opens the thought.")
         }
-        .buttonStyle(SurfacePressStyle(still: still))
-        .accessibilityElement(children: .combine)
+        .padding(14)
+    }
+
+    private func resurfacingBack(_ node: Node) -> some View {
+        HStack(alignment: .center, spacing: 14) {
+            ResurfacingDisc(node: node, flipped: true) {
+                flip(node)
+            } onPeek: {
+                peek(node)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Drifts near")
+                    .font(.caption2.weight(.semibold))
+                    .textCase(.uppercase)
+                    .kerning(0.4)
+                    .foregroundStyle(OceanTheme.glowWarm)
+                if nearby.isEmpty {
+                    Text("Nothing drifts nearby yet.")
+                        .font(.subheadline)
+                        .foregroundStyle(OceanTheme.mist)
+                } else {
+                    ForEach(nearby) { near in
+                        Button { open(near) } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: near.kind.symbol)
+                                    .font(.caption2)
+                                    .foregroundStyle(OceanTheme.mist)
+                                Text(near.displayTitle)
+                                    .font(.subheadline)
+                                    .foregroundStyle(OceanTheme.foam)
+                                    .lineLimit(1)
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                if !Resurfacing.Rest.restedToday {
+                    Button("Let it rest") { rest(node) }
+                        .buttonStyle(.oceanSecondary)
+                        .padding(.top, 2)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(14)
     }
 
     // MARK: Newest
 
-    private func newestItem(_ node: Node, rank: Int) -> some View {
-        Button {
-            open(node)
-        } label: {
-            VStack(spacing: 9) {
-                DriftingOrb(
-                    // Size eases down with age: 72 for the newest, 56 by the fifth.
-                    diameter: 72 - CGFloat(rank) * 4,
-                    tint: OceanTheme.color(forHue: node.hue, brightness: 0.86),
-                    lit: false,
-                    symbol: glyph(for: node),
-                    seed: NodeComposer.stableHash(node.id.uuidString),
-                    still: still
-                )
-                Text(node.displayTitle)
-                    .font(.footnote.weight(.medium))
-                    .foregroundStyle(OceanTheme.foam)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
+    private var newestSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionLabel("Newest")
+            MasonryColumns(items: newest, columns: 2, spacing: 12,
+                           estimatedHeight: estimatedCardHeight) { node in
+                Button { open(node) } label: {
+                    NodeCard(node: node)
+                }
+                .buttonStyle(.plain)
             }
-            .contentShape(Rectangle())
         }
-        .buttonStyle(SurfacePressStyle(still: still))
-        .accessibilityElement(children: .combine)
-        .accessibilityValue(node.kind == .text ? Text(verbatim: "") : Text(node.kind.label))
     }
 
-    /// A voice, image, or link thought shows what it is; a plain thought
-    /// needs no glyph.
-    private func glyph(for node: Node) -> String? {
-        node.kind == .text ? nil : node.kind.symbol
+    private func estimatedCardHeight(_ node: Node) -> CGFloat {
+        let banner: CGFloat = (node.kind == .image || node.kind == .link || node.hasRichLink) ? 120 : 0
+        return 110 + banner + CGFloat(min(node.snippet.count, 160)) * 0.35
     }
 
     // MARK: Currents
 
-    private func currentChips(_ keys: [String]) -> some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 10) {
-                ForEach(keys, id: \.self) { key in
-                    Button {
-                        sheet = .stream(theme: key)
-                    } label: {
-                        Text(OceanLayoutEngine.displayLabel(for: key))
-                            .font(.subheadline.weight(.medium))
-                            .foregroundStyle(OceanTheme.foam)
-                            .lineLimit(1)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
-                            .background(.ultraThinMaterial, in: Capsule())
-                            .shadow(color: .black.opacity(0.35), radius: 8, y: 5)
-                            .contentShape(Capsule())
+    private var currentsSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                sectionLabel("Currents")
+                Spacer()
+                Button {
+                    sheet = .currents
+                } label: {
+                    HStack(spacing: 3) {
+                        Text("All currents")
+                        Image(systemName: "chevron.right").font(.caption2.weight(.semibold))
                     }
-                    .buttonStyle(SurfacePressStyle(still: still))
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(OceanTheme.accent)
                 }
+                .buttonStyle(.plain)
             }
-            .padding(.vertical, 6)
-        }
-        .contentMargins(.horizontal, 16, for: .scrollContent)
-        .scrollIndicators(.hidden)
-        .scrollClipDisabled()
-    }
-
-    private func sectionLabel(_ title: LocalizedStringKey) -> some View {
-        Text(title)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(calm ? OceanTheme.foam : OceanTheme.mist)
-            .accessibilityAddTraits(.isHeader)
-    }
-
-    /// Depth fog: faint brightening near the surface, darkening toward the
-    /// abyss. Static on purpose; the water's own life is the background's.
-    private var oceanFog: some View {
-        LinearGradient(
-            colors: [
-                OceanTheme.surface.opacity(0.05),
-                .clear,
-                OceanTheme.abyss.opacity(0.18)
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
-        .allowsHitTesting(false)
-        .ignoresSafeArea()
-    }
-
-    // MARK: Interaction
-
-    /// Opens a thought; meeting today's resurfaced fragment rests it, so the
-    /// rhythm moves on to another memory tomorrow.
-    private func open(_ node: Node) {
-        if node.id == resurfacing?.id {
-            Resurfacing.markMet(node, context: context)
-            // The core promise just paid off: arm the review ask once the old
-            // thought has had a couple of seconds to land, never during the open.
-            if !ReviewPrompt.shared.hasRequested {
-                Task { @MainActor in
-                    try? await Task.sleep(for: .seconds(2))
-                    ReviewPrompt.shared.recordResurfacedOpen()
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                ForEach(currents.prefix(Self.currentLimit)) { group in
+                    Button { sheet = .stream(theme: group.key) } label: {
+                        GlassCard(padding: 12) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(group.label)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(OceanTheme.foam)
+                                    .lineLimit(1)
+                                Text(group.newest?.displayTitle ?? "")
+                                    .font(.caption)
+                                    .foregroundStyle(OceanTheme.mist)
+                                    .lineLimit(1)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
-        sheet = .thought(node)
     }
 
-    private func updateOceanSheetPresence() {
-        appState.isPresentingOceanSheet = sheet != nil || showSettings
-    }
-
-    /// A deep link (e.g. the Resurfacing widget) queued a node: open it.
-    private func consumePendingFocus() {
-        guard let id = appState.pendingFocusNodeID else { return }
-        appState.pendingFocusNodeID = nil
-        guard let node = nodeByID[id] else { return }
-        open(node)
-    }
-
-    // MARK: Resurfacing (ambient rediscovery)
-
-    private var resurfacing: Node? { Resurfacing.pick(from: nodes) }
-
-    // MARK: Header
-
-    private var header: some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text("Ocean")
-                .font(.largeTitle.bold())
-                .foregroundStyle(OceanTheme.foam)
-            Spacer()
-            Button {
-                showSettings = true
-            } label: {
-                Image(systemName: "gearshape")
-                    .font(.subheadline)
-                    .foregroundStyle(OceanTheme.mist)
-                    .frame(width: 32, height: 32)
-                    .contentShape(Circle())
-            }
-            .accessibilityLabel("Ocean settings")
-        }
-        .padding(.horizontal)
-        .padding(.top, 8)
+    private func sectionLabel(_ key: LocalizedStringKey) -> some View {
+        Text(key)
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(OceanTheme.mist)
+            .padding(.leading, 4)
     }
 
     // MARK: Empty state
@@ -367,175 +316,146 @@ struct OceanFieldView: View {
                 .font(.subheadline)
                 .foregroundStyle(OceanTheme.mist)
         }
-        .frame(maxWidth: .infinity)
+    }
+
+    // MARK: Interaction
+
+    private func flip(_ node: Node) {
+        if !flipped {
+            let ids = ai.relatedNodeIDs(to: node, among: nodes, limit: 3)
+            let byID = Dictionary(uniqueKeysWithValues: nodes.map { ($0.id, $0) })
+            nearby = ids.compactMap { byID[$0] }
+        }
+        flipped.toggle()
+    }
+
+    private func peek(_ node: Node) {
+        switch node.kind {
+        case .voice:
+            if let data = node.audioData { AudioPlayback.shared.toggle(data: data) }
+        case .image, .link:
+            if let data = node.imageDatas.first ?? node.linkImageData { sheet = .image(data) }
+        case .text:
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { peekingText.toggle() }
+        }
+    }
+
+    /// Today's thought sinks; another rises. It counts as met, so it rests.
+    private func rest(_ node: Node) {
+        Resurfacing.markMet(node, context: context)
+        Resurfacing.Rest.rest(node.id)
+        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
+            flipped = false
+            restTick += 1
+        }
+    }
+
+    /// Opens a thought; meeting today's resurfaced fragment rests it, so the
+    /// rhythm moves on to another memory tomorrow.
+    private func open(_ node: Node) {
+        if node.id == resurfacing?.id {
+            Resurfacing.markMet(node, context: context)
+            if !ReviewPrompt.shared.hasRequested {
+                Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(2))
+                    ReviewPrompt.shared.recordResurfacedOpen()
+                }
+            }
+        }
+        sheet = .thought(node)
+    }
+
+    private func updateOceanSheetPresence() {
+        appState.isPresentingOceanSheet = sheet != nil || showSettings
+    }
+
+    /// A deep link (the Resurfacing widget) queued a node: open it.
+    private func consumePendingFocus() {
+        guard let id = appState.pendingFocusNodeID else { return }
+        appState.pendingFocusNodeID = nil
+        guard let node = nodes.first(where: { $0.id == id }) else { return }
+        open(node)
     }
 }
 
-// MARK: - Glass orb
+// MARK: - Disc
 
-/// A lifted glass body on the water (§4): frosted glass tinted by the
-/// thought, light caught softly across its upper face, and a soft depth
-/// shadow beneath. No halo, no luminous core, no rim.
-private struct GlassOrb: View {
-    let diameter: CGFloat
-    let tint: Color
-    let lit: Bool
-    let symbol: String?
+/// The flat disc on the resurfacing card: the thought's image, or its kind
+/// glyph. Tap flips the card; a long press peeks. While a whisper plays, a
+/// thin arc around the disc shows how far along it is. The arc is a fact,
+/// not a glow, and is absent when nothing plays.
+private struct ResurfacingDisc: View {
+    let node: Node
+    let flipped: Bool
+    let onFlip: () -> Void
+    let onPeek: () -> Void
+
+    private let size: CGFloat = 104
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 0.1)) { _ in
+            let playing = node.audioData.map { AudioPlayback.shared.isPlaying($0) } ?? false
+            ZStack {
+                Circle()
+                    .fill(Color.white.opacity(0.10))
+                    .overlay(Circle().strokeBorder(Color.white.opacity(0.08), lineWidth: 0.5))
+
+                if flipped {
+                    Image(systemName: "arrow.uturn.backward")
+                        .font(.system(size: 22, weight: .regular))
+                        .foregroundStyle(OceanTheme.mist)
+                } else if let data = node.imageDatas.first ?? node.linkImageData, let ui = UIImage(data: data) {
+                    Image(uiImage: ui)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: size, height: size)
+                        .clipShape(Circle())
+                } else {
+                    Image(systemName: node.kind.symbol)
+                        .font(.system(size: 28, weight: .regular))
+                        .foregroundStyle(OceanTheme.foam)
+                }
+
+                if playing {
+                    Circle()
+                        .trim(from: 0, to: max(0.02, AudioPlayback.shared.progress))
+                        .stroke(OceanTheme.glowWarm, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                        .padding(-5)
+                }
+            }
+            .frame(width: size, height: size)
+        }
+        .contentShape(Circle())
+        .onTapGesture(perform: onFlip)
+        .onLongPressGesture(minimumDuration: 0.4, perform: onPeek)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(flipped ? Text("Flip back") : Text("What drifts near"))
+        .accessibilityHint(Text("Double tap to flip. Hold to peek."))
+        .accessibilityAddTraits(.isButton)
+    }
+}
+
+/// A full-screen look at an image thought's picture, from a long press on
+/// the disc.
+private struct ImagePeek: View {
+    let data: Data
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         ZStack {
-            Circle().fill(.ultraThinMaterial)
-            // Body tint: lit from above, sinking toward the water.
-            Circle().fill(
-                LinearGradient(
-                    colors: [tint.opacity(lit ? 0.56 : 0.20), tint.opacity(lit ? 0.10 : 0.05)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-            // Soft sheen where the glass catches the light.
-            Ellipse()
-                .fill(
-                    LinearGradient(
-                        colors: [Color.white.opacity(lit ? 0.32 : 0.20), Color.white.opacity(0)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .frame(width: diameter * 0.64, height: diameter * 0.38)
-                .offset(y: -diameter * 0.22)
-                .blur(radius: diameter * 0.035)
-            if let symbol {
-                Image(systemName: symbol)
-                    .font(.system(size: diameter * (lit ? 0.22 : 0.28), weight: .medium))
-                    .foregroundStyle(OceanTheme.foam.opacity(0.85))
+            OceanTheme.abyss.ignoresSafeArea()
+            if let ui = UIImage(data: data) {
+                Image(uiImage: ui)
+                    .resizable()
+                    .scaledToFit()
+                    .padding(16)
             }
         }
-        .frame(width: diameter, height: diameter)
-        .clipShape(Circle())
-        .compositingGroup()
-        .shadow(
-            color: .black.opacity(lit ? 0.55 : 0.45),
-            radius: diameter * (lit ? 0.16 : 0.14),
-            y: diameter * (lit ? 0.13 : 0.11)
-        )
-        .accessibilityHidden(true)
-    }
-}
-
-/// A glass orb that breathes and drifts by a few points over tens of
-/// seconds, phase and period from its id hash. Its title sits outside, so
-/// words never move. Completely still when `still` is set.
-private struct DriftingOrb: View {
-    let diameter: CGFloat
-    let tint: Color
-    let lit: Bool
-    let symbol: String?
-    let seed: Int
-    let still: Bool
-
-    var body: some View {
-        TimelineView(.animation(paused: still)) { timeline in
-            let t = still ? 0 : timeline.date.timeIntervalSinceReferenceDate
-            let motion = drift(at: t)
-            GlassOrb(diameter: diameter, tint: tint, lit: lit, symbol: symbol)
-                .scaleEffect(motion.scale)
-                .offset(motion.offset)
-        }
-        .frame(width: diameter, height: diameter)
-    }
-
-    private func drift(at t: TimeInterval) -> (offset: CGSize, scale: CGFloat) {
-        guard !still else { return (.zero, 1) }
-        let unit = { (salt: Int) -> Double in Double((seed / salt) % 1000) / 1000 }
-        let phase = unit(1) * 2 * .pi
-        // Periods of 22 to 40 seconds: atmosphere, never a signal.
-        let swayPeriod = 22 + unit(7) * 18
-        let bobPeriod = 26 + unit(13) * 14
-        let breathPeriod = 9 + unit(17) * 5
-        let dx = sin(t * 2 * .pi / swayPeriod + phase) * 3
-        let dy = cos(t * 2 * .pi / bobPeriod + phase * 1.3) * 3.5
-        let breath = 1 + sin(t * 2 * .pi / breathPeriod + phase) * 0.018
-        return (CGSize(width: dx, height: dy), breath)
-    }
-}
-
-/// A gentle press: the orb or chip settles a touch under the finger.
-private struct SurfacePressStyle: ButtonStyle {
-    let still: Bool
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .opacity(configuration.isPressed ? 0.82 : 1)
-            .scaleEffect(configuration.isPressed && !still ? 0.97 : 1)
-            .animation(still ? nil : .easeOut(duration: 0.15), value: configuration.isPressed)
-    }
-}
-
-// MARK: - Drift arrangement
-
-/// Each newest thought's id hash, for its small stable offset from its slot.
-private struct DriftSeed: LayoutValueKey {
-    static let defaultValue = 0
-}
-
-/// The newest thoughts, placed as if drifting near the surface: three loose
-/// columns, the middle one riding lower, each thought nudged a few points by
-/// its id hash so the water never reads as a grid. Deterministic, so the
-/// arrangement is the same on every launch, and never overlapping: columns
-/// own disjoint widths and rows are spaced by the tallest item.
-private struct DriftLayout: Layout {
-    let count: Int
-
-    /// (column center as a fraction of width, row in units of item height).
-    private var slots: [(x: CGFloat, y: CGFloat)] {
-        switch count {
-        case 1: return [(0.5, 0)]
-        case 2: return [(0.27, 0), (0.73, 0.34)]
-        default:
-            return [(1.0 / 6, 0), (5.0 / 6, 0.16), (0.5, 0.6), (1.0 / 6, 1.06), (5.0 / 6, 1.22)]
-        }
-    }
-
-    /// Maximum hash nudge, in points, each way.
-    private let jitter: CGFloat = 5
-
-    private func columnWidth(_ width: CGFloat) -> CGFloat {
-        // Column cells are width / 3; leave room for the nudge on both sides.
-        max(60, width / 3 - 2 * jitter - 4)
-    }
-
-    private func frames(width: CGFloat, subviews: Subviews) -> [CGRect] {
-        let colW = columnWidth(width)
-        let sizes = subviews.map { $0.sizeThatFits(ProposedViewSize(width: colW, height: nil)) }
-        let tallest = sizes.map(\.height).max() ?? 0
-        let unit = tallest + 22
-        return subviews.indices.map { index in
-            let slot = slots[min(index, slots.count - 1)]
-            let seed = subviews[index][DriftSeed.self]
-            let dx = CGFloat(seed % 11) - jitter
-            let dy = CGFloat((seed / 11) % 11) - jitter
-            let size = sizes[index]
-            let centerX = slot.x * width + dx
-            let top = slot.y * unit + dy + jitter
-            return CGRect(x: centerX - size.width / 2, y: top, width: size.width, height: size.height)
-        }
-    }
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) -> CGSize {
-        let width = proposal.width ?? 360
-        let height = frames(width: width, subviews: subviews).map(\.maxY).max() ?? 0
-        return CGSize(width: width, height: height + jitter)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) {
-        let colW = columnWidth(bounds.width)
-        for (index, frame) in frames(width: bounds.width, subviews: subviews).enumerated() {
-            subviews[index].place(
-                at: CGPoint(x: bounds.minX + frame.minX, y: bounds.minY + frame.minY),
-                anchor: .topLeading,
-                proposal: ProposedViewSize(width: min(colW, frame.width), height: frame.height)
-            )
+        .overlay(alignment: .topTrailing) {
+            Button { dismiss() } label: { Image(systemName: "xmark") }
+                .buttonStyle(.oceanIcon)
+                .padding(12)
         }
     }
 }

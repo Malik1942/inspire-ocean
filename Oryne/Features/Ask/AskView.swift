@@ -33,6 +33,7 @@ struct AskView: View {
     @FocusState private var inputFocused: Bool
 
     @State private var openedNode: Node?
+    @State private var showSettings = false
 
     private var messages: [ChatMessage] { conversation?.orderedMessages ?? [] }
 
@@ -49,6 +50,12 @@ struct AskView: View {
             .navigationTitle("Ask the Ocean")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    SettingsGearButton(isPresented: $showSettings)
+                }
+            }
+            .sheet(isPresented: $showSettings) { OceanSettingsView() }
             .safeAreaInset(edge: .bottom) { inputBar }
             .sheet(item: $openedNode) { ExpandedNodeView(node: $0) }
             .onAppear {
@@ -167,12 +174,9 @@ struct AskView: View {
                 ForEach(sourceNodes(message), id: \.id) { node in
                     Button { openedNode = node } label: {
                         Label(node.displayTitle, systemImage: node.kind.symbol)
-                            .font(.caption2).lineLimit(1)
-                            .padding(.horizontal, 10).padding(.vertical, 6)
-                            .background(Color.white.opacity(0.07), in: Capsule())
-                            .overlay(Capsule().strokeBorder(Color.white.opacity(0.06), lineWidth: 0.5))
-                            .foregroundStyle(OceanTheme.mist)
-                    }.buttonStyle(.plain)
+                            .font(.caption).lineLimit(1)
+                    }
+                    .buttonStyle(.oceanSecondary)
                 }
             }
         }
@@ -224,10 +228,8 @@ struct AskView: View {
                 ForEach(samplePrompts, id: \.self) { prompt in
                     Button { input = prompt } label: {
                         Label(prompt, systemImage: "sparkle")
-                            .font(.caption).foregroundStyle(OceanTheme.accent)
-                            .padding(.horizontal, 12).padding(.vertical, 8)
-                            .background(Color.white.opacity(0.06), in: Capsule())
-                    }.buttonStyle(.plain)
+                    }
+                    .buttonStyle(.oceanSecondary)
                 }
             }
             .padding(.top, 4)
@@ -255,11 +257,11 @@ struct AskView: View {
                 .lineLimit(1...4)
 
             Button(action: send) {
-                Image(systemName: "arrow.up.circle.fill")
-                    .font(.system(size: 32))
-                    .foregroundStyle(canSend ? OceanTheme.accent : OceanTheme.faint)
+                Image(systemName: "arrow.up")
             }
+            .buttonStyle(.oceanPrimaryIcon)
             .disabled(!canSend)
+            .accessibilityLabel("Ask")
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
