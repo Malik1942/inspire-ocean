@@ -124,12 +124,12 @@ struct FastCaptureSettingsSections: View {
         GlassCard(padding: 16) {
             VStack(alignment: .leading, spacing: 14) {
                 settingsHeader(
-                    title: String(localized: "Capture"),
-                    subtitle: "Begin with the least resistance.",
+                    title: String(localized: "Opens with"),
+                    subtitle: "From the Action Button, Control Center and the widget. The bar itself always offers both.",
                     systemImage: "waveform.circle.fill"
                 )
 
-                Picker("Input", selection: $inputPreferenceRaw) {
+                Picker("Opens with", selection: $inputPreferenceRaw) {
                     ForEach(FastCaptureInputPreference.allCases) { preference in
                         Label(preference.label, systemImage: preference.symbol)
                             .tag(preference.rawValue)

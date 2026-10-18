@@ -48,8 +48,8 @@ enum FastCaptureInputPreference: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .voiceFirst: return String(localized: "Voice First")
-        case .typingFirst: return String(localized: "Typing First")
+        case .voiceFirst: return String(localized: "Whisper")
+        case .typingFirst: return String(localized: "Typing")
         }
     }
 

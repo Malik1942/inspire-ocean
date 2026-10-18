@@ -77,7 +77,7 @@ enum SeedData {
         let intro = NodeComposer.make(
             kind: .text,
             title: String(localized: "How Oryne works"),
-            text: String(localized: "Oryne is a quiet ocean for whatever crosses your mind. Tap the button to type a thought, or hold it and whisper, and it drifts in as a glowing mote. Thoughts that share a theme gather into currents like this one. Ask across the whole Ocean from the Ask tab, or summarize a current. Old thoughts resurface on their own when it matters, and the Library lays everything out when you want to browse. Seen enough? Clear these examples in Settings."),
+            text: String(localized: "Oryne is a quiet ocean for whatever crosses your mind. Tap the bar to type a thought, or hold the disc and whisper, and it drifts in. Thoughts that share a theme gather into currents like this one. Each day one older thought resurfaces here on Tide. Ask across the whole Ocean from the Ask tab, or summarize a current. The Library lays everything out when you want to browse. Seen enough? Clear these examples in Settings."),
             detectThemes: false
         )
         let example = NodeComposer.make(

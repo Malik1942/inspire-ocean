@@ -1,450 +1,117 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Tide" : {
+    "Tap the bar to type, or hold the disc and whisper. From the Action Button, Control Center or the widget, it is one press. The Ocean receives the thought without asking you to organize it first." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "潮汐"
+            "value" : "轻点输入栏打字，或按住圆钮说一段语音。从操作按钮、控制中心或小组件进来，只要一下。海洋会直接接住这条灵感，不必你先整理。"
           }
         }
       }
     },
-    "Drifted in" : {
+    "The tide brings them back." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "刚漂进来"
+            "value" : "潮水会把它们带回来。"
           }
         }
       }
     },
-    "Nearby" : {
+    "Each day one older thought resurfaces on Tide. Thoughts that belong together gather into currents. Ask a question, and the Ocean answers from what you have caught." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "附近"
+            "value" : "每天都有一条旧灵感在潮汐页浮上来。相近的灵感会聚成洋流。向海洋提问，它会从你捕捉过的一切中作答。"
           }
         }
       }
     },
-    "Play whisper" : {
+    "The Action Button and Camera Control shortcuts live in Settings, under the gear on any tab." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "播放语音"
+            "value" : "操作按钮与相机控制的快捷指令在设置里，任一页右上角的齿轮都能进。"
           }
         }
       }
     },
-    "Pause whisper" : {
+    "Tide opens with a short introduction current. Read it, then let it drift out." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "暂停语音"
+            "value" : "潮汐页备好了一条简短的介绍洋流，读完之后，让它漂走就好。"
           }
         }
       }
     },
-    "Surface" : {
+    "How a capture from the Action Button, Control Center or the widget should open." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "水面"
+            "value" : "从操作按钮、控制中心或小组件进来时，捕捉以哪种方式开始。"
           }
         }
       }
     },
-    "All currents" : {
+    "Opens with" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "全部洋流"
+            "value" : "起始方式"
           }
         }
       }
     },
-    "Drifts near" : {
+    "Typing" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "漂在附近"
+            "value" : "打字"
           }
         }
       }
     },
-    "Let it rest" : {
+    "From the Action Button, Control Center and the widget. The bar itself always offers both." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "让它沉下去"
+            "value" : "仅影响操作按钮、控制中心和小组件的入口。输入栏本身两种都有。"
           }
         }
       }
     },
-    "Open current" : {
+    "Stills the water, brightens the words that carry meaning, and widens every touch target. Nothing about your Ocean changes, only how it moves. The system Reduce Motion setting stills the water too." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "打开洋流"
+            "value" : "让水面静止，提亮承载意义的文字，并放大每个触控目标。你的海洋本身不会改变，只是不再流动。系统的“减弱动态效果”同样会让水面静止。"
           }
         }
       }
     },
-    "Search currents and thoughts" : {
+    "Oryne is a quiet ocean for whatever crosses your mind. Tap the bar to type a thought, or hold the disc and whisper, and it drifts in. Thoughts that share a theme gather into currents like this one. Each day one older thought resurfaces here on Tide. Ask across the whole Ocean from the Ask tab, or summarize a current. The Library lays everything out when you want to browse. Seen enough? Clear these examples in Settings." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "搜索洋流和灵感"
-          }
-        }
-      }
-    },
-    "Collapses this current." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "收起这条洋流。"
-          }
-        }
-      }
-    },
-    "Shows every thought in this current." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "展开这条洋流里的全部灵感。"
-          }
-        }
-      }
-    },
-    "Flip back" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "翻回正面"
-          }
-        }
-      }
-    },
-    "What drifts near" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "附近漂着什么"
-          }
-        }
-      }
-    },
-    "Double tap to flip. Hold to peek." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "轻点两下翻面，按住预览。"
-          }
-        }
-      }
-    },
-    "Opens the thought." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "打开这条灵感。"
-          }
-        }
-      }
-    },
-    "Resurfacing · %@" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "浮现 · %@"
-          }
-        }
-      }
-    },
-    "Capture a thought" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "捕捉一条灵感"
-          }
-        }
-      }
-    },
-    "Opens the keyboard. The button beside it whispers." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "打开键盘。旁边的按钮用来录语音。"
-          }
-        }
-      }
-    },
-    "Cancel whisper" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "取消语音"
-          }
-        }
-      }
-    },
-    "Stop whisper" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "停止语音"
-          }
-        }
-      }
-    },
-    "Tap to start or stop a whisper." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "轻点开始或停止语音。"
-          }
-        }
-      }
-    },
-    "Tap to type. Hold to whisper. Slide up to keep listening." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "轻点输入，按住录一段语音，上滑可持续聆听。"
-          }
-        }
-      }
-    },
-    "Words will follow." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "文字稍后就到。"
-          }
-        }
-      }
-    },
-    "Find a thought, or ask what a few of them mean together. Answers come from what you have captured." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "找一条灵感，或问问几条灵感合在一起意味着什么。答案都来自你捕捉过的内容。"
-          }
-        }
-      }
-    },
-    "Found" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "找到"
-          }
-        }
-      }
-    },
-    "Reading your Ocean…" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "正在读取你的海洋…"
-          }
-        }
-      }
-    },
-    "Summarize this current" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "总结这条洋流"
-          }
-        }
-      }
-    },
-    "Summarize these %lld" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "总结这 %lld 条灵感"
-          }
-        }
-      }
-    },
-    "Summarize “%@”" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "总结「%@」"
-          }
-        }
-      }
-    },
-    "Nothing to read across yet." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "暂时还没有可供穿行的内容。"
-          }
-        }
-      }
-    },
-    "The Action Button and Camera Control shortcuts live in Fast Capture settings, under the Ocean's gear." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "操作按钮与相机控制的快捷指令都在「快速捕捉」设置里，入口是海洋页的齿轮。"
-          }
-        }
-      }
-    },
-    "The Action Button, Control Center, and what a whisper opens with." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "操作按钮、控制中心，以及语音的起始方式。"
-          }
-        }
-      }
-    },
-    "Tap the button to type, hold it to whisper, or capture from anywhere. The Ocean receives the thought without asking you to organize it first." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "轻点按钮输入，按住按钮录一段语音，或在任何地方捕捉。海洋会直接接住这条灵感，不必你先整理。"
-          }
-        }
-      }
-    },
-    "Oryne is a quiet ocean for whatever crosses your mind. Tap the button to type a thought, or hold it and whisper, and it drifts in as a glowing mote. Thoughts that share a theme gather into currents like this one. Ask across the whole Ocean from the Ask tab, or summarize a current. Old thoughts resurface on their own when it matters, and the Library lays everything out when you want to browse. Seen enough? Clear these examples in Settings." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Oryne 是一片安放灵感的海洋。轻点按钮写下一条灵感，或按住按钮说一段语音，它就会化作一点微光汇入海洋。主题相近的灵感会聚成一条条洋流，就像这一条。在提问页可以向整片海洋发问，也可以为一条洋流生成摘要。被时间冲远的灵感，会在合适的时刻再次浮现；想翻看时，库把一切都铺在那里。看完了？到设置里清空示例就好。"
-          }
-        }
-      }
-    },
-    "The Ocean gives back." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "海洋会把它们还给你。"
-          }
-        }
-      }
-    },
-    "Thoughts gather into currents and resurface when they matter. Ask a question, and the Ocean answers from everything you have caught." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "灵感会聚成洋流，在合适的时刻再次浮现。向海洋提问，它会从你捕捉过的一切中作答。"
-          }
-        }
-      }
-    },
-    "The Ocean opens with a short introduction. Read it, then let it drift out." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "海洋里备好了一条简短的介绍，读完之后，让它漂走就好。"
-          }
-        }
-      }
-    },
-    "Oryne is a quiet ocean for whatever crosses your mind. Capture a thought in text, voice, or an image, and it drifts in as a glowing mote. Thoughts that share a theme gather into currents like this one. Open a thought to grow it with a question, or ask across the whole Ocean from the Ask tab. Old thoughts resurface on their own when it matters, and the Library lays everything out when you want to browse. Seen enough? Clear these examples in Settings." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Oryne 是一片安放灵感的海洋。用文字、语音或图片捕捉一个想法，它就会化作一点微光汇入海洋。主题相近的灵感会聚成一条条洋流，就像这一条。打开一条灵感，可以用一个问题把它延展下去；在提问页，则能向整片海洋发问。被时间冲远的灵感，会在合适的时刻再次浮现；想翻看时，库把一切都铺在那里。看完了？到设置里清空示例就好。"
-          }
-        }
-      }
-    },
-    "How Oryne works" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Oryne 怎么用"
-          }
-        }
-      }
-    },
-    "Ideas arrive in the shower" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "灵感总在洗澡时冒出来"
-          }
-        }
-      }
-    },
-    "introduction" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "介绍"
-          }
-        }
-      }
-    },
-    "When you have seen how the Ocean works, the introduction can drift out. Your own thoughts stay." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "看明白海洋怎么用之后，介绍就可以漂走了。你自己的灵感会留下。"
+            "value" : "Oryne 是一片安放灵感的海洋。轻点输入栏写下一条灵感，或按住圆钮说一段语音，它就会漂进来。主题相近的灵感会聚成一条条洋流，就像这一条。每天都有一条旧灵感在潮汐页浮上来。在提问页可以向整片海洋发问，也可以为一条洋流生成摘要。想翻看时，库把一切都铺在那里。看完了？到设置里清空示例就好。"
           }
         }
       }
     },
     "" : {
-
-    },
-    "?" : {
 
     },
     "· %@" : {
@@ -454,6 +121,7 @@
 
     },
     "%lld fragments" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -502,6 +170,7 @@
       }
     },
     "A few words, if needed" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -532,6 +201,7 @@
       }
     },
     "A reading list that only grows, never finishes. Maybe the point was never to finish, only to drift through." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -617,6 +287,16 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "漂流"
+          }
+        }
+      }
+    },
+    "All currents" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全部洋流"
           }
         }
       }
@@ -756,6 +436,7 @@
       }
     },
     "Bioluminescence: light that living things make in the dark. Like ideas that only glow once you stop looking for them." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -836,11 +517,22 @@
       }
     },
     "Cancel recording" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "取消录音"
+          }
+        }
+      }
+    },
+    "Cancel whisper" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消语音"
           }
         }
       }
@@ -851,6 +543,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "捕捉"
+          }
+        }
+      }
+    },
+    "Capture a thought" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "捕捉一条灵感"
           }
         }
       }
@@ -906,6 +608,7 @@
       }
     },
     "Catch a whisper" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -926,6 +629,7 @@
       }
     },
     "Catching a thought that drifted away" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -984,6 +688,7 @@
       }
     },
     "Close Fast Capture" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -994,6 +699,7 @@
       }
     },
     "Close: keeps the capture" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1003,7 +709,18 @@
         }
       }
     },
+    "Collapses this current." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收起这条洋流。"
+          }
+        }
+      }
+    },
     "Collide two of my thoughts" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1014,6 +731,7 @@
       }
     },
     "Color study: deep teal fading into violet at the horizon. I want a whole app to feel like dusk underwater." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1114,6 +832,7 @@
       }
     },
     "Couldn't save yet. Keep tries again." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1152,6 +871,10 @@
           }
         }
       }
+    },
+    "Currents" : {
+      "comment" : "A button that displays a page of current thoughts.",
+      "isCommentAutoGenerated" : true
     },
     "Delete" : {
       "localizations" : {
@@ -1203,12 +926,33 @@
         }
       }
     },
+    "Double tap to flip. Hold to peek." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轻点两下翻面，按住预览。"
+          }
+        }
+      }
+    },
     "Drawn from" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "取自"
+          }
+        }
+      }
+    },
+    "Drifted in" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刚漂进来"
           }
         }
       }
@@ -1239,6 +983,17 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "正从你的灵感漫出…"
+          }
+        }
+      }
+    },
+    "Drifts near" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "漂在附近"
           }
         }
       }
@@ -1274,6 +1029,7 @@
       }
     },
     "Edit link" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1374,6 +1130,7 @@
       }
     },
     "Fast Capture settings" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1393,7 +1150,18 @@
         }
       }
     },
+    "Find a thought, or ask what a few of them mean together. Answers come from what you have captured." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "找一条灵感，或问问几条灵感合在一起意味着什么。答案都来自你捕捉过的内容。"
+          }
+        }
+      }
+    },
     "Find my thought about beginnings" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1423,12 +1191,34 @@
         }
       }
     },
+    "Flip back" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "翻回正面"
+          }
+        }
+      }
+    },
     "Flows into “%@”" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "汇入「%@」"
+          }
+        }
+      }
+    },
+    "Found" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "找到"
           }
         }
       }
@@ -1514,6 +1304,7 @@
       }
     },
     "Help me grow my newest idea" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1534,11 +1325,22 @@
       }
     },
     "How has my thinking drifted lately?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "我的思绪最近漂向了何处？"
+          }
+        }
+      }
+    },
+    "How Oryne works" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oryne 怎么用"
           }
         }
       }
@@ -1557,11 +1359,22 @@
       }
     },
     "I keep meeting the same idea wearing different clothes. Maybe the repetition is the point, not the noise." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "同一个念头，总换着不同的模样与我相遇。也许这种重复本身就是信号，而不是杂音。"
+          }
+        }
+      }
+    },
+    "Ideas arrive in the shower" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "灵感总在洗澡时冒出来"
           }
         }
       }
@@ -1626,6 +1439,16 @@
         }
       }
     },
+    "introduction" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "介绍"
+          }
+        }
+      }
+    },
     "It will stay where you put it." : {
       "localizations" : {
         "zh-Hans" : {
@@ -1637,6 +1460,7 @@
       }
     },
     "Keep" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1672,6 +1496,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "类型"
+          }
+        }
+      }
+    },
+    "Let it rest" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "让它沉下去"
           }
         }
       }
@@ -1747,6 +1581,7 @@
       }
     },
     "Listening…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1757,6 +1592,7 @@
       }
     },
     "Live transcription is off: type the words, or keep just the audio." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1777,6 +1613,7 @@
       }
     },
     "Mode" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1792,6 +1629,16 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "移入洋流"
+          }
+        }
+      }
+    },
+    "Nearby" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "附近"
           }
         }
       }
@@ -1827,6 +1674,7 @@
       }
     },
     "No words caught, tap to add them" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1867,6 +1715,7 @@
       }
     },
     "Note to self: capture before consciousness. The thought before you judge the thought." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1936,7 +1785,18 @@
         }
       }
     },
+    "Nothing to read across yet." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂时还没有可供穿行的内容。"
+          }
+        }
+      }
+    },
     "Ocean" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1961,6 +1821,7 @@
       "isCommentAutoGenerated" : true
     },
     "Once you have thoughts of your own, the starter examples can drift out. Yours stay." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1996,6 +1857,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "仅添加了 %lld 张，最多 %lld 张图片。"
+          }
+        }
+      }
+    },
+    "Open current" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开洋流"
           }
         }
       }
@@ -2050,6 +1921,26 @@
         }
       }
     },
+    "Opens the keyboard. The button beside it whispers." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开键盘。旁边的按钮用来录语音。"
+          }
+        }
+      }
+    },
+    "Opens the thought." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开这条灵感。"
+          }
+        }
+      }
+    },
     "Original audio is temporarily preserved to improve understanding." : {
       "localizations" : {
         "zh-Hans" : {
@@ -2069,6 +1960,27 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Oryne 安放那些未竟的灵感、转瞬的信号，以及尚未化为计划的念头。"
+          }
+        }
+      }
+    },
+    "Oryne is a quiet ocean for whatever crosses your mind. Capture a thought in text, voice, or an image, and it drifts in as a glowing mote. Thoughts that share a theme gather into currents like this one. Open a thought to grow it with a question, or ask across the whole Ocean from the Ask tab. Old thoughts resurface on their own when it matters, and the Library lays everything out when you want to browse. Seen enough? Clear these examples in Settings." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oryne 是一片安放灵感的海洋。用文字、语音或图片捕捉一个想法，它就会化作一点微光汇入海洋。主题相近的灵感会聚成一条条洋流，就像这一条。打开一条灵感，可以用一个问题把它延展下去；在提问页，则能向整片海洋发问。被时间冲远的灵感，会在合适的时刻再次浮现；想翻看时，库把一切都铺在那里。看完了？到设置里清空示例就好。"
+          }
+        }
+      }
+    },
+    "Oryne is a quiet ocean for whatever crosses your mind. Tap the button to type a thought, or hold it and whisper, and it drifts in as a glowing mote. Thoughts that share a theme gather into currents like this one. Ask across the whole Ocean from the Ask tab, or summarize a current. Old thoughts resurface on their own when it matters, and the Library lays everything out when you want to browse. Seen enough? Clear these examples in Settings." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oryne 是一片安放灵感的海洋。轻点按钮写下一条灵感，或按住按钮说一段语音，它就会化作一点微光汇入海洋。主题相近的灵感会聚成一条条洋流，就像这一条。在提问页可以向整片海洋发问，也可以为一条洋流生成摘要。被时间冲远的灵感，会在合适的时刻再次浮现；想翻看时，库把一切都铺在那里。看完了？到设置里清空示例就好。"
           }
         }
       }
@@ -2103,6 +2015,26 @@
         }
       }
     },
+    "Pause whisper" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂停语音"
+          }
+        }
+      }
+    },
+    "Play whisper" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "播放语音"
+          }
+        }
+      }
+    },
     "Prepare archive" : {
       "localizations" : {
         "zh-Hans" : {
@@ -2114,6 +2046,7 @@
       }
     },
     "Preparing speech recognition…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -2235,6 +2168,16 @@
         }
       }
     },
+    "Reading your Ocean…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在读取你的海洋…"
+          }
+        }
+      }
+    },
     "Reading…" : {
       "localizations" : {
         "zh-Hans" : {
@@ -2250,6 +2193,7 @@
       "isCommentAutoGenerated" : true
     },
     "Record" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -2288,6 +2232,7 @@
       "isCommentAutoGenerated" : true
     },
     "Release" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -2428,6 +2373,17 @@
         }
       }
     },
+    "Resurfacing · %@" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "浮现 · %@"
+          }
+        }
+      }
+    },
     "Retry" : {
       "localizations" : {
         "zh-Hans" : {
@@ -2549,11 +2505,22 @@
       }
     },
     "Search a fragment, sense a pattern, or grow an idea. Responses come from what you've captured." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "搜寻一片碎片，察觉一种脉络，或培育一个灵感。回应都来自你捕捉过的内容。"
+          }
+        }
+      }
+    },
+    "Search currents and thoughts" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜索洋流和灵感"
           }
         }
       }
@@ -2662,6 +2629,16 @@
       "comment" : "A context menu action that shows related content.",
       "isCommentAutoGenerated" : true
     },
+    "Shows every thought in this current." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "展开这条洋流里的全部灵感。"
+          }
+        }
+      }
+    },
     "Skip" : {
       "localizations" : {
         "zh-Hans" : {
@@ -2683,6 +2660,7 @@
       }
     },
     "Speak, type, or capture from anywhere. The Ocean receives the thought without asking you to organize it first." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -2743,6 +2721,7 @@
       }
     },
     "Still preparing speech recognition: type the words, if you like" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -2753,11 +2732,52 @@
       }
     },
     "Stop" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "停止"
+          }
+        }
+      }
+    },
+    "Stop whisper" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "停止语音"
+          }
+        }
+      }
+    },
+    "Summarize “%@”" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "总结「%@」"
+          }
+        }
+      }
+    },
+    "Summarize these %lld" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "总结这 %lld 条灵感"
+          }
+        }
+      }
+    },
+    "Summarize this current" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "总结这条洋流"
           }
         }
       }
@@ -2792,6 +2812,17 @@
         }
       }
     },
+    "Surface" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "水面"
+          }
+        }
+      }
+    },
     "Synthesis" : {
       "localizations" : {
         "zh-Hans" : {
@@ -2812,6 +2843,26 @@
         }
       }
     },
+    "Tap the button to type, hold it to whisper, or capture from anywhere. The Ocean receives the thought without asking you to organize it first." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轻点按钮输入，按住按钮录一段语音，或在任何地方捕捉。海洋会直接接住这条灵感，不必你先整理。"
+          }
+        }
+      }
+    },
+    "Tap to start or stop a whisper." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轻点开始或停止语音。"
+          }
+        }
+      }
+    },
     "Tap to type the words or re-transcribe." : {
       "localizations" : {
         "zh-Hans" : {
@@ -2822,7 +2873,18 @@
         }
       }
     },
+    "Tap to type. Hold to whisper. Slide up to keep listening." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轻点输入，按住录一段语音，上滑可持续聆听。"
+          }
+        }
+      }
+    },
     "Tap words to keep editing" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -2843,11 +2905,33 @@
       }
     },
     "The Action Button and Camera Control shortcuts live in Fast Capture settings, the bolt on Capture." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "操作按钮与相机控制的快捷指令都在「快速捕捉」设置里，也就是「捕捉」上的那个闪电图标。"
+          }
+        }
+      }
+    },
+    "The Action Button and Camera Control shortcuts live in Fast Capture settings, under the Ocean's gear." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "操作按钮与相机控制的快捷指令都在「快速捕捉」设置里，入口是海洋页的齿轮。"
+          }
+        }
+      }
+    },
+    "The Action Button, Control Center, and what a whisper opens with." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "操作按钮、控制中心，以及语音的起始方式。"
           }
         }
       }
@@ -2858,6 +2942,16 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "海洋接住了它"
+          }
+        }
+      }
+    },
+    "The Ocean gives back." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "海洋会把它们还给你。"
           }
         }
       }
@@ -2873,11 +2967,22 @@
       }
     },
     "The ocean keeps every river that ever fed it. Maybe memory works the same way: nothing lost, only carried." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "海洋留住了曾汇入它的每一条河。也许记忆也是如此：什么都没丢，只是被一路带着。"
+          }
+        }
+      }
+    },
+    "The Ocean opens with a short introduction. Read it, then let it drift out." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "海洋里备好了一条简短的介绍，读完之后，让它漂走就好。"
           }
         }
       }
@@ -2893,6 +2998,7 @@
       }
     },
     "the on-device model is unavailable" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -3002,6 +3108,26 @@
         }
       }
     },
+    "Thoughts gather into currents and resurface when they matter. Ask a question, and the Ocean answers from everything you have caught." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "灵感会聚成洋流，在合适的时刻再次浮现。向海洋提问，它会从你捕捉过的一切中作答。"
+          }
+        }
+      }
+    },
+    "Tide" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "潮汐"
+          }
+        }
+      }
+    },
     "Title" : {
       "localizations" : {
         "zh-Hans" : {
@@ -3043,6 +3169,7 @@
       }
     },
     "Transcription is off: type the words, if you like" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -3073,6 +3200,7 @@
       }
     },
     "Turn into question" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -3083,6 +3211,7 @@
       }
     },
     "Type" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -3163,6 +3292,7 @@
       }
     },
     "Voice" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -3183,6 +3313,7 @@
       }
     },
     "Voice note: I keep returning to the feeling of the tide. Things leaving and coming back without me forcing them." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -3213,6 +3344,7 @@
       }
     },
     "What could this become physically?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -3233,6 +3365,7 @@
       }
     },
     "What did I capture last week?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -3243,6 +3376,7 @@
       }
     },
     "What did you say?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -3262,7 +3396,19 @@
         }
       }
     },
+    "What drifts near" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "附近漂着什么"
+          }
+        }
+      }
+    },
     "What field sits next to my obsessions?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -3273,6 +3419,7 @@
       }
     },
     "What is the one question all these disguises keep circling?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -3283,6 +3430,7 @@
       }
     },
     "What just drifted by?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -3382,6 +3530,16 @@
         }
       }
     },
+    "When you have seen how the Ocean works, the introduction can drift out. Your own thoughts stay." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "看明白海洋怎么用之后，介绍就可以漂走了。你自己的灵感会留下。"
+          }
+        }
+      }
+    },
     "Whisper" : {
       "localizations" : {
         "zh-Hans" : {
@@ -3393,6 +3551,7 @@
       }
     },
     "Whisper held" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -3403,6 +3562,7 @@
       }
     },
     "Who thinks about what I think about?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -3433,11 +3593,22 @@
       }
     },
     "Words appear as you speak…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "边说，文字边浮现…"
+          }
+        }
+      }
+    },
+    "Words will follow." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文字稍后就到。"
           }
         }
       }

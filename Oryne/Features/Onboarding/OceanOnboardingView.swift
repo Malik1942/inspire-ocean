@@ -7,8 +7,7 @@ import SwiftUI
 ///
 /// Deliberately not a tutorial: three short screens of orientation, one of
 /// setup. Skippable at any point; shown once (replayable from Fast Capture
-/// settings via the sparkle button). The bolt reference in the setup caption
-/// stays plain text — symbol glyphs inside Text render inconsistently here.
+/// settings via the sparkle button).
 struct OceanOnboardingView: View {
     @Environment(\.dismiss) private var dismiss
 
@@ -131,12 +130,12 @@ private struct OceanOnboardingPage {
         OceanOnboardingPage(
             visual: .capture,
             title: "Catch fragments before they disappear.",
-            text: "Tap the button to type, hold it to whisper, or capture from anywhere. The Ocean receives the thought without asking you to organize it first."
+            text: "Tap the bar to type, or hold the disc and whisper. From the Action Button, Control Center or the widget, it is one press. The Ocean receives the thought without asking you to organize it first."
         ),
         OceanOnboardingPage(
             visual: .resurface,
-            title: "The Ocean gives back.",
-            text: "Thoughts gather into currents and resurface when they matter. Ask a question, and the Ocean answers from everything you have caught."
+            title: "The tide brings them back.",
+            text: "Each day one older thought resurfaces on Tide. Thoughts that belong together gather into currents. Ask a question, and the Ocean answers from what you have caught."
         )
     ]
 }
@@ -145,33 +144,33 @@ private struct OceanOnboardingPageView: View {
     let page: OceanOnboardingPage
 
     var body: some View {
-        VStack {
-            Spacer(minLength: 12)
-
-            GlassCard(padding: 22) {
-                VStack(spacing: 20) {
-                    OceanOnboardingVisual(variant: page.visual)
-                        .frame(height: 130)
-                        .frame(maxWidth: .infinity)
-
-                    VStack(spacing: 8) {
-                        Text(page.title)
-                            .font(.title2.weight(.semibold))
-                            .multilineTextAlignment(.center)
-                            .foregroundStyle(OceanTheme.foam)
-
-                        Text(page.text)
-                            .font(.subheadline)
-                            .lineSpacing(3)
-                            .multilineTextAlignment(.center)
-                            .foregroundStyle(OceanTheme.mist)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-                .frame(maxWidth: .infinity)
-            }
-
+        VStack(alignment: .leading, spacing: 0) {
+            Spacer(minLength: 24)
+            Text(page.title)
+                .font(OceanType.resurfacingTitle)
+                .foregroundStyle(OceanTheme.foam)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(page.text)
+                .font(.subheadline)
+                .lineSpacing(3)
+                .foregroundStyle(OceanTheme.text)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 12)
             Spacer(minLength: 42)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 4)
+        // The same light Tide gives its resurfacing thought: one lamp in
+        // the water behind the words, warmest on the page about returning.
+        .background(alignment: .center) {
+            RadialGradient(
+                colors: [OceanTheme.glowWarm.opacity(page.visual == .resurface ? 0.12 : 0.06),
+                         OceanTheme.glowWarm.opacity(0.02), .clear],
+                center: .center, startRadius: 0, endRadius: 240
+            )
+            .frame(width: 520, height: 400)
+            .allowsHitTesting(false)
         }
     }
 }
@@ -213,14 +212,14 @@ private struct FastCaptureSetupPage: View {
                             .multilineTextAlignment(.center)
                             .foregroundStyle(OceanTheme.foam)
 
-                        Text("Choose how you want to catch thoughts quickly.")
+                        Text("How a capture from the Action Button, Control Center or the widget should open.")
                             .font(.subheadline)
                             .multilineTextAlignment(.center)
                             .foregroundStyle(OceanTheme.mist)
                     }
 
                     VStack(alignment: .leading, spacing: 14) {
-                        Picker("Input", selection: $inputPreferenceRaw) {
+                        Picker("Opens with", selection: $inputPreferenceRaw) {
                             ForEach(FastCaptureInputPreference.allCases) { preference in
                                 Label(preference.label, systemImage: preference.symbol)
                                     .tag(preference.rawValue)
@@ -235,14 +234,14 @@ private struct FastCaptureSetupPage: View {
                         }
                         .tint(OceanTheme.accent)
 
-                        Text("The Action Button and Camera Control shortcuts live in Fast Capture settings, under the Ocean's gear.")
+                        Text("The Action Button and Camera Control shortcuts live in Settings, under the gear on any tab.")
                             .font(.caption)
                             .foregroundStyle(OceanTheme.faint)
                             .fixedSize(horizontal: false, vertical: true)
 
                         // The handoff: the concrete tour lives in the Ocean
                         // itself, as the seeded Introduction current.
-                        Text("The Ocean opens with a short introduction. Read it, then let it drift out.")
+                        Text("Tide opens with a short introduction current. Read it, then let it drift out.")
                             .font(.caption)
                             .foregroundStyle(OceanTheme.mist)
                             .fixedSize(horizontal: false, vertical: true)
@@ -263,80 +262,13 @@ private struct FastCaptureSetupPage: View {
     }
 }
 
-// MARK: - Mini visuals
+// MARK: - Page kinds
 
-/// Small, quiet illustrations in the Ocean's own node language — soft orbs,
-/// hairline rims, one warm accent. Drawn with Canvas; the highlighted node
-/// breathes slowly, matching the field's motion language.
-private struct OceanOnboardingVisual: View {
+/// What each orientation page is about; the lamp warms on the returning page.
+private enum OceanOnboardingVisual {
     enum Variant {
-        case stillWater   // calm, even field
-        case capture      // one bright fragment entering from above
-        case resurface    // one warm fragment rising from the depth
-    }
-
-    let variant: Variant
-
-    /// (x, y) in unit space, radius in points, dim 0…1.
-    private var orbs: [(x: CGFloat, y: CGFloat, r: CGFloat, dim: CGFloat)] {
-        switch variant {
-        case .stillWater:
-            return [(0.22, 0.42, 13, 0.6), (0.46, 0.66, 10, 0.4), (0.62, 0.34, 15, 0.8),
-                    (0.81, 0.62, 11, 0.5), (0.38, 0.25, 8, 0.3)]
-        case .capture:
-            return [(0.28, 0.72, 11, 0.5), (0.5, 0.82, 9, 0.4), (0.72, 0.7, 12, 0.55)]
-        case .resurface:
-            return [(0.24, 0.8, 10, 0.4), (0.46, 0.88, 8, 0.3), (0.68, 0.82, 11, 0.45),
-                    (0.86, 0.74, 7, 0.3)]
-        }
-    }
-
-    var body: some View {
-        TimelineView(.animation) { timeline in
-            let t = timeline.date.timeIntervalSinceReferenceDate
-            Canvas { ctx, size in
-                let breathe = 1 + 0.04 * sin(t * 0.9)
-
-                // Quiet base fragments.
-                for orb in orbs {
-                    drawOrb(ctx, at: CGPoint(x: orb.x * size.width, y: orb.y * size.height),
-                            radius: orb.r, dim: orb.dim)
-                }
-
-                switch variant {
-                case .stillWater:
-                    break
-
-                case .capture:
-                    // A bright fragment entering from above, trail fading behind it.
-                    let p = CGPoint(x: 0.5 * size.width, y: 0.3 * size.height)
-                    for (i, fade) in [0.18, 0.10, 0.05].enumerated() {
-                        let trail = CGPoint(x: p.x, y: p.y - CGFloat(i + 1) * 14)
-                        ctx.fill(Path(ellipseIn: CGRect(x: trail.x - 2, y: trail.y - 2, width: 4, height: 4)),
-                                 with: .color(.white.opacity(fade)))
-                    }
-                    drawOrb(ctx, at: p, radius: 13 * breathe, dim: 1.0)
-
-                case .resurface:
-                    // One warm fragment rising out of the depth.
-                    let p = CGPoint(x: 0.5 * size.width, y: 0.34 * size.height)
-                    let glow = CGRect(x: p.x - 22, y: p.y - 22, width: 44, height: 44)
-                    ctx.fill(Path(ellipseIn: glow),
-                             with: .color(OceanTheme.glowWarm.opacity(0.10)))
-                    drawOrb(ctx, at: p, radius: 14 * breathe, dim: 1.0, warm: true)
-                }
-            }
-        }
-        .allowsHitTesting(false)
-    }
-
-    private func drawOrb(_ ctx: GraphicsContext, at p: CGPoint, radius: CGFloat,
-                         dim: CGFloat, warm: Bool = false) {
-        let rect = CGRect(x: p.x - radius, y: p.y - radius, width: radius * 2, height: radius * 2)
-        ctx.fill(Path(ellipseIn: rect), with: .color(.white.opacity(0.04 + 0.05 * dim)))
-        let rim: Color = warm ? OceanTheme.glowWarm : .white
-        ctx.stroke(Path(ellipseIn: rect),
-                   with: .color(rim.opacity(warm ? 0.45 : 0.10 + 0.16 * dim)),
-                   lineWidth: warm ? 0.75 : 0.5)
+        case stillWater
+        case capture
+        case resurface
     }
 }
