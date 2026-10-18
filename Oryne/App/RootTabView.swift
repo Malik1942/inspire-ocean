@@ -68,14 +68,19 @@ struct RootTabView: View {
                 )
                 .environment(appState)
                 .environment(control)
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
+                .transition(.opacity)
             }
         }
         // The capture bar rides above the tab bar (Ocean and Library). A
         // hold that begins on its disc keeps its finger while the overlay
         // rises; the overlay's own disc takes over once the finger lifts.
-        .modifier(CaptureBarPlacement(show: appState.selectedTab != .ask, control: control))
-        .animation(.spring(response: 0.36, dampingFraction: 0.86), value: appState.fastCaptureRequest?.id)
+        // The bar steps aside the moment the overlay is up (its composer is
+        // the bar, expanded), except while a hold that began on the bar's
+        // disc still has its finger down.
+        .modifier(CaptureBarPlacement(
+            show: appState.selectedTab != .ask && (appState.fastCaptureRequest == nil || control.touch != .up),
+            control: control
+        ))
         .sheet(isPresented: $showFastCaptureOnboarding) {
             OceanOnboardingView(
                 onComplete: {

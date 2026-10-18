@@ -46,14 +46,14 @@ struct CaptureBarPlacement: ViewModifier {
 
     func body(content: Content) -> some View {
         content.overlay(alignment: .bottom) {
-            if show {
-                CaptureBar()
-                    .environment(control)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, FastCaptureLayout.tabBarClearance)
-                    .ignoresSafeArea(.keyboard)
-                    .transition(.opacity)
-            }
+            CaptureBar()
+                .environment(control)
+                .padding(.horizontal, 16)
+                .padding(.bottom, FastCaptureLayout.tabBarClearance)
+                .ignoresSafeArea(.keyboard)
+                .opacity(show ? 1 : 0)
+                .allowsHitTesting(show)
+                .animation(.easeOut(duration: 0.18), value: show)
         }
     }
 }

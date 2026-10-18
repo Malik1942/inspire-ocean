@@ -549,6 +549,7 @@ struct FastCaptureSessionView: View {
 
     private func seeInOcean(_ moment: PostCaptureMoment) {
         fadeTask?.cancel()
+        textFocused = false
         onOpenNode?(moment.id)
         onFinish()
     }
@@ -557,6 +558,7 @@ struct FastCaptureSessionView: View {
     /// release it only closes, never deletes. Deleting is Undo's job.
     private func cancel() {
         fadeTask?.cancel()
+        textFocused = false
         if listening {
             Task { await session.transcriber.cancel() }
             control.isListening = false
