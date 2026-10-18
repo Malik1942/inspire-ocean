@@ -32,7 +32,7 @@ struct RootTabView: View {
     var body: some View {
         TabView(selection: $appState.selectedTab) {
             OceanFieldView()
-                .tabItem { tabLabel("Ocean", systemImage: "water.waves") }
+                .tabItem { tabLabel(OceanTab.homeTitle, systemImage: "water.waves") }
                 .tag(OceanTab.ocean)
 
             AskView()

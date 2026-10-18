@@ -39,7 +39,6 @@ struct OceanSecondaryButtonStyle: ButtonStyle {
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
             .background(Color.white.opacity(configuration.isPressed ? 0.12 : 0.08), in: Capsule())
-            .overlay(Capsule().strokeBorder(Color.white.opacity(0.08), lineWidth: 0.5))
     }
 }
 
@@ -50,7 +49,6 @@ struct OceanIconButtonStyle: ButtonStyle {
             .foregroundStyle(OceanTheme.mist)
             .frame(width: 36, height: 36)
             .background(.ultraThinMaterial, in: Circle())
-            .overlay(Circle().strokeBorder(Color.white.opacity(0.08), lineWidth: 0.5))
             .opacity(configuration.isPressed ? 0.7 : 1)
             .frame(width: 44, height: 44)
             .contentShape(Circle())

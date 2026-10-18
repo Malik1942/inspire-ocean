@@ -6,6 +6,10 @@ enum OceanTab: Hashable {
     case ocean
     case ask
     case library
+
+    /// The home tab's name: the Ocean is the whole water, this is what the
+    /// tide brings to its surface today. One place to rename it.
+    static let homeTitle: LocalizedStringKey = "Tide"
 }
 
 /// Lightweight cross-tab coordinator (e.g. "Ask Ocean about this node" jumps
@@ -41,7 +45,7 @@ final class AppState {
         switch ProcessInfo.processInfo.environment["OCEAN_START_TAB"]?.lowercased() {
         case "ask": selectedTab = .ask
         case "library": selectedTab = .library
-        case "ocean": selectedTab = .ocean
+        case "ocean", "surface", "tide": selectedTab = .ocean
         default: break
         }
     }

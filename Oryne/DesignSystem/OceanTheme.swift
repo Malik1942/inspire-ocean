@@ -40,6 +40,10 @@ enum OceanTheme {
     static let surface = Color(red: 0.24,  green: 0.245, blue: 0.27)
 
     static let foam  = Color.white.opacity(0.92)
+    /// Running text: the website's reading tone.
+    static let text  = Color.white.opacity(0.66)
+    /// The one surface fill for cards; no border.
+    static let fill  = Color.white.opacity(0.055)
     static let mist  = Color.white.opacity(0.50)
     static let faint = Color.white.opacity(0.26)
     /// Placeholder and helper text inside an input: quieter than `mist`, but it
@@ -148,10 +152,6 @@ struct GlassCard<Content: View>: View {
         content
             .padding(padding)
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.08), lineWidth: 0.5)
-            )
     }
 }
 

@@ -28,7 +28,6 @@ struct CaptureHoldButton: View {
         ZStack {
             Circle()
                 .fill(Color.white.opacity(listening ? 0.16 : 0.10))
-                .overlay(Circle().strokeBorder(Color.white.opacity(0.08), lineWidth: 0.5))
                 .opacity(isPressed ? 0.75 : 1)
 
             glyph

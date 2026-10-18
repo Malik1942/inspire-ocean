@@ -30,9 +30,10 @@ struct CaptureBar: View {
         .padding(.trailing, FastCaptureLayout.discInset)
         .frame(height: FastCaptureLayout.barHeight)
         .background(
+            // Dense enough to read over anything: material under a deep tint.
             Capsule()
-                .fill(.ultraThinMaterial)
-                .overlay(Capsule().strokeBorder(Color.white.opacity(0.08), lineWidth: 0.5))
+                .fill(.regularMaterial)
+                .overlay(Capsule().fill(OceanTheme.deep.opacity(0.55)))
                 .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
         )
     }
@@ -54,5 +55,27 @@ struct CaptureBarPlacement: ViewModifier {
                     .transition(.opacity)
             }
         }
+    }
+}
+
+/// The shore under the capture bar: content dims as it runs beneath the
+/// bar and the tab bar. Lives inside each tab's content so it sits under
+/// the tab bar, never over it.
+struct ShoreGradient: View {
+    var body: some View {
+        VStack {
+            Spacer()
+            LinearGradient(
+                stops: [
+                    .init(color: OceanTheme.abyss.opacity(0), location: 0),
+                    .init(color: OceanTheme.abyss.opacity(0.7), location: 0.5),
+                    .init(color: OceanTheme.abyss.opacity(0.92), location: 1)
+                ],
+                startPoint: .top, endPoint: .bottom
+            )
+            .frame(height: 200)
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
     }
 }

@@ -89,6 +89,7 @@ struct LibraryView: View {
                         grid
                     }
                 }
+                ShoreGradient()
             }
             .navigationTitle("Library")
             .searchable(text: $search, prompt: "Search the Ocean")
