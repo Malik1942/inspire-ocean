@@ -533,26 +533,24 @@ struct NodeDetailContent: View {
         }
     }
 
+    /// Two quiet actions. Nothing on a thought's page is the main action;
+    /// the thought is. Primary is kept for Release, Keep and Ask's send.
     private var actions: some View {
         HStack(spacing: 12) {
             Button { showBranchComposer = true } label: {
                 Label("Grow a branch", systemImage: "arrow.triangle.branch")
-                    .font(.subheadline.weight(.semibold))
-                    .frame(maxWidth: .infinity).padding(.vertical, 12)
+                    .frame(maxWidth: .infinity)
             }
-            .background(OceanTheme.accent.opacity(0.9), in: Capsule())
-            .foregroundStyle(OceanTheme.abyss)
+            .buttonStyle(.oceanSecondary)
 
             Button {
                 appState.ask("About “\(node.displayTitle)”: ")
                 dismiss()
             } label: {
                 Label("Ask Ocean", systemImage: "quote.bubble")
-                    .font(.subheadline.weight(.semibold))
-                    .frame(maxWidth: .infinity).padding(.vertical, 12)
+                    .frame(maxWidth: .infinity)
             }
-            .background(Color.white.opacity(0.10), in: Capsule())
-            .foregroundStyle(OceanTheme.foam)
+            .buttonStyle(.oceanSecondary)
         }
     }
 
