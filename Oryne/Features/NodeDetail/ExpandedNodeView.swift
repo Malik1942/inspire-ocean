@@ -187,22 +187,41 @@ struct NodeDetailContent: View {
 
     // MARK: Re-transcribe (BRIEF decision 8)
 
-    /// The escape hatch: recompute the transcript in an explicitly chosen
-    /// language when the automatic pass landed in the wrong one. Language names
-    /// are shown in their own script (endonyms), not localizable UI chrome.
+    /// Everything about the words' language lives behind the language itself:
+    /// switch to the other pass when one was kept, re-transcribe in a chosen
+    /// language while the recording exists, translate on demand. A user with
+    /// one language sees one item. Language names are endonyms, not chrome.
     @ViewBuilder
-    private func retranscribeMenu(_ data: Data) -> some View {
+    private func transcriptMenu(_ data: Data?) -> some View {
+        let transcription = node.transcription ?? ""
         Menu {
-            Section("Re-transcribe in") {
+            if let alt = node.alternateTranscription, !alt.isEmpty,
+               let altName = Self.languageName(node.alternateTranscriptLocale) {
                 Button {
-                    requestRetranscribe(data, locale: Locale(identifier: "zh-CN"))
+                    switchToAlternate()
                 } label: {
-                    Text(verbatim: "中文")
+                    Label(String(localized: "Switch to \(altName)"), systemImage: "arrow.2.squarepath")
                 }
+            }
+            if let data, !data.isEmpty {
+                Section("Re-transcribe in") {
+                    Button {
+                        requestRetranscribe(data, locale: Locale(identifier: "zh-CN"))
+                    } label: {
+                        Text(verbatim: "中文")
+                    }
+                    Button {
+                        requestRetranscribe(data, locale: Locale(identifier: "en-US"))
+                    } label: {
+                        Text(verbatim: "English")
+                    }
+                }
+            }
+            if !transcription.isEmpty {
                 Button {
-                    requestRetranscribe(data, locale: Locale(identifier: "en-US"))
+                    showTranslation = true
                 } label: {
-                    Text(verbatim: "English")
+                    Label("Translate", systemImage: "translate")
                 }
             }
         } label: {
@@ -220,7 +239,8 @@ struct NodeDetailContent: View {
             .foregroundStyle(OceanTheme.mist)
         }
         .disabled(retranscribing)
-        .accessibilityLabel("Re-transcribe in another language")
+        .accessibilityLabel("Transcript language")
+        .translationPresentation(isPresented: $showTranslation, text: transcription)
     }
 
     private func requestRetranscribe(_ data: Data, locale: Locale) {
@@ -297,65 +317,50 @@ struct NodeDetailContent: View {
                 if let transcription = node.transcription, !transcription.isEmpty {
                     if let summary = node.summary, !summary.isEmpty {
                         // The reading first, honest about its origin (§3); the
-                        // words themselves one tap below.
+                        // words themselves previewed under it, a tap away in full.
                         HStack {
                             Label("Summary", systemImage: "sparkles")
                                 .font(.caption).foregroundStyle(OceanTheme.mist)
                             Spacer()
                             if let data = node.audioData, !data.isEmpty {
                                 ListenChip(data: data)
-                                retranscribeMenu(data)
                             }
+                            transcriptMenu(node.audioData)
                         }
                         Text(summary).foregroundStyle(OceanTheme.foam)
 
+                        Label("Transcript", systemImage: "waveform")
+                            .font(.caption).foregroundStyle(OceanTheme.mist)
+                            .padding(.top, 6)
                         Button {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { transcriptOpen.toggle() }
                         } label: {
-                            HStack {
-                                Label("Transcript", systemImage: "waveform")
-                                    .font(.caption).foregroundStyle(OceanTheme.mist)
-                                Spacer()
-                                Image(systemName: "chevron.down")
-                                    .font(.caption2.weight(.semibold))
-                                    .foregroundStyle(OceanTheme.faint)
-                                    .rotationEffect(.degrees(transcriptOpen ? 180 : 0))
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(transcription)
+                                    .foregroundStyle(OceanTheme.text)
+                                    .lineLimit(transcriptOpen ? nil : 3)
+                                    .multilineTextAlignment(.leading)
+                                Text(transcriptOpen ? "Less" : "More")
+                                    .font(.subheadline.weight(.medium))
+                                    .foregroundStyle(OceanTheme.accent)
                             }
+                            .frame(maxWidth: .infinity, alignment: .leading)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .padding(.top, 4)
-                        if transcriptOpen {
-                            Text(transcription).foregroundStyle(OceanTheme.text)
-                        }
+                        .accessibilityHint(transcriptOpen ? Text("Collapses the transcript.") : Text("Shows the whole transcript."))
                     } else {
                         HStack {
                             Label("Transcript", systemImage: "waveform")
                                 .font(.caption).foregroundStyle(OceanTheme.mist)
                             Spacer()
-                            // The transcript is the thought; the recording is a
-                            // quiet receipt, present only while it's retained.
                             if let data = node.audioData, !data.isEmpty {
                                 ListenChip(data: data)
-                                // The words came out in the wrong language? The
-                                // language itself is the control (BRIEF decision 8).
-                                retranscribeMenu(data)
                             }
+                            transcriptMenu(node.audioData)
                         }
                         Text(transcription).foregroundStyle(OceanTheme.foam)
                     }
-
-                    HStack(spacing: 8) {
-                        if let alt = node.alternateTranscription, !alt.isEmpty,
-                           let altName = Self.languageName(node.alternateTranscriptLocale) {
-                            Button(String(localized: "Switch to \(altName)")) { switchToAlternate() }
-                                .buttonStyle(.oceanSecondary)
-                        }
-                        Button("Translate") { showTranslation = true }
-                            .buttonStyle(.oceanSecondary)
-                            .translationPresentation(isPresented: $showTranslation, text: transcription)
-                    }
-                    .padding(.top, 4)
                 } else if node.kind == .voice {
                     HStack {
                         // Honest about state: "transcribing" only while a pass
@@ -369,7 +374,7 @@ struct NodeDetailContent: View {
                         Spacer()
                         if let data = node.audioData, !data.isEmpty {
                             ListenChip(data: data)
-                            retranscribeMenu(data)
+                            transcriptMenu(data)
                         }
                     }
                     if node.createdAt.timeIntervalSinceNow <= -120 {
