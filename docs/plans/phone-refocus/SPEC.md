@@ -21,7 +21,7 @@ Decisions 1 to 4 are implemented first. Decisions 5 and 6 are direction, scoped 
 
 ## Navigation
 
-Visual language (Malik, 2026-10-17, after three rounds): the brand's serif (Instrument Serif, the website's display face) in three display moments only, the Tide title, the italic section labels and the resurfacing title, system type everywhere else (kept after a side-by-side on device); no rendered materials and no hairline borders, surfaces are flat fills; one lamp in the water behind Resurfacing is the page's only light and its label the only warm color; the capture bar is dense material over a deep tint with a shore gradient under it and the tab bar; three controls (Primary, Secondary, Icon) and nothing else. Decided on wireframes and mocks before code, each time.
+Visual language (Malik, 2026-10-17, after three rounds): New York (Apple's serif, no bundled font) in three display moments only, the Tide title, the italic section labels and the resurfacing title, system type everywhere else (kept after a side-by-side on device); no rendered materials and no hairline borders, surfaces are flat fills; one lamp in the water behind Resurfacing is the page's only light and its label the only warm color; the capture bar is dense material over a deep tint with a shore gradient under it and the tab bar; three controls (Primary, Secondary, Icon) and nothing else. Decided on wireframes and mocks before code, each time.
 
 
 Three tabs and one button.

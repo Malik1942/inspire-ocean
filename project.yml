@@ -56,9 +56,6 @@ targets:
       path: Oryne/Info.plist
       properties:
         CFBundleDisplayName: Oryne
-        UIAppFonts:
-          - InstrumentSerif-Regular.ttf
-          - InstrumentSerif-Italic.ttf
         # Version lives once in settings.base (MARKETING_VERSION /
         # CURRENT_PROJECT_VERSION); referencing it here is what makes the
         # generated Info.plist track it, instead of xcodegen's 1.0/1 default.
