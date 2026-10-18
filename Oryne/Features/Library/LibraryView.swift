@@ -6,6 +6,7 @@ import SwiftData
 /// accessibility and trust."
 struct LibraryView: View {
     @Environment(\.modelContext) private var context
+    @Environment(AppState.self) private var appState
     @Environment(\.oceanAI) private var ai
     @Query(sort: \Node.createdAt, order: .reverse) private var allNodes: [Node]
 
@@ -267,6 +268,9 @@ struct LibraryView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
                     Color.clear.frame(height: 0).id(Self.gridTopID)
+                    if !search.trimmed.isEmpty, filtered.count >= 2 {
+                        summarizeChip
+                    }
                     if arrangement == .recent, focusedAnchorID == nil {
                         // Recent, unfocused: keep the Today / This week / Earlier
                         // sections, one masonry each.
@@ -313,6 +317,27 @@ struct LibraryView: View {
         .safeAreaInset(edge: .top) {
             if focusedAnchorID != nil { focusChip }
         }
+    }
+
+    /// A search that found more than one thought can be read across in one
+    /// tap: the result set goes to Ask as a summary (SPEC, Ask: one mode).
+    private var summarizeChip: some View {
+        Button {
+            appState.summarize(filtered.map(\.id), title: search.trimmed)
+        } label: {
+            Label(summarizeLabel, systemImage: "text.line.first.and.arrowtriangle.forward")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(OceanTheme.foam)
+                .padding(.horizontal, 12).padding(.vertical, 8)
+                .background(.ultraThinMaterial, in: Capsule())
+                .overlay(Capsule().strokeBorder(Color.white.opacity(0.08), lineWidth: 0.5))
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 4)
+    }
+
+    private var summarizeLabel: String {
+        String(localized: "Summarize these \(filtered.count)")
     }
 
     /// The base order the focused masonry reorders over: the Related ribbon keeps

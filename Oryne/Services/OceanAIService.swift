@@ -73,6 +73,11 @@ protocol OceanAIService {
     /// Carry an Ocean Dialogue turn, grounded in the user's saved nodes.
     /// `history` is the last few turns (oldest first), for continuity.
     func respond(to query: String, history: [DialogueTurn], mode: DialogueMode, nodes: [Node]) async -> OceanResponse
+
+    /// Read across a gathered set of thoughts (a current, a search) and say
+    /// what runs through them. No retrieval: the set is the user's choice,
+    /// so every member is a source.
+    func summarize(_ nodes: [Node]) async -> OceanResponse
 }
 
 // MARK: - Environment injection

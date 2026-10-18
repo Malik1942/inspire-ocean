@@ -12,6 +12,7 @@ struct ClusterStreamView: View {
     let theme: String
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppState.self) private var appState
     @State private var showCapture = false
     @Query(filter: #Predicate<Node> { !$0.isArchived }, sort: \Node.createdAt, order: .reverse)
     private var allNodes: [Node]
@@ -63,19 +64,44 @@ struct ClusterStreamView: View {
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Close") { dismiss() }
+                    HStack(spacing: 14) {
+                        // Summarize is a verb, not a mode: the whole stream
+                        // goes to Ask as one grounded answer (SPEC, Ask: one mode).
+                        if members.count >= 2 {
+                            Button {
+                                let ids = members.map(\.id)
+                                let title = theme == OceanLayoutEngine.adriftKey
+                                    ? String(localized: "Adrift")
+                                    : OceanLayoutEngine.displayLabel(for: theme)
+                                dismiss()
+                                appState.summarize(ids, title: title)
+                            } label: {
+                                Image(systemName: "text.line.first.and.arrowtriangle.forward")
+                            }
+                            .accessibilityLabel("Summarize this current")
+                        }
+                        Button("Close") { dismiss() }
+                    }
                 }
             }
         }
         .presentationDetents([.medium, .large])
         .presentationBackground(.clear)
-        // The familiar capture surface, opened into this current: the saved
-        // node is anchored here (see CaptureView / CaptureSession.release), so
-        // the live @Query drops it at the top of this stream on save. CaptureView
-        // brings its own NavigationStack and, given the anchor context, its own
-        // Done button — so it's presented directly. Sheet-over-sheet, fine on 17+.
+        // The one capture surface, opened into this current: the saved node
+        // is anchored here (CaptureSession.release), so the live @Query drops
+        // it at the top of this stream on save. Sheet-over-sheet, fine on 17+.
         .sheet(isPresented: $showCapture) {
-            CaptureView(intoCurrentThemeKey: theme)
+            FastCaptureSessionView(
+                request: FastCaptureRequest(
+                    source: .inApp,
+                    inputPreference: .typingFirst,
+                    anchorThemeKey: theme
+                ),
+                onFinish: { showCapture = false },
+                asSheet: true
+            )
+            .presentationDetents([.large])
+            .presentationBackground(.clear)
         }
     }
 

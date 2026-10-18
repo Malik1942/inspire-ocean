@@ -97,9 +97,9 @@ This spec needs `PHILOSOPHY.md` amended before the code lands, not after:
 
 | Phase | Scope | Done when |
 | --- | --- | --- |
-| 1 | Voice capture in the Fast Capture overlay: hold gesture, lock, subtitles on the water, settle, Undo pill; review beat removed | Every entry point (widget, Action Button, Control Center, Siri, deep link, share sheet) lands on the new overlay; a whisper from press to settle needs one gesture |
-| 2 | Capture tab removed; floating capture button over the three tabs; `CaptureView` and `PostCaptureMoment` folded into the overlay | Three tabs; `OCEAN_START_TAB=capture` retired; onboarding and the Introduction copy no longer mention a Capture tab |
-| 3 | Ask merged into one mode with the fixed answer shape; Summarize verb on streams and search results | No mode picker; the four `DialogueMode` cases collapse behind one entry; summarize works offline with the grounded fallback |
+| 1 | Voice capture in the Fast Capture overlay: hold gesture, lock, subtitles on the water, settle, Undo pill; review beat removed | Every entry point (widget, Action Button, Control Center, Siri, deep link, share sheet) lands on the new overlay; a whisper from press to settle needs one gesture. **Built 2026-10-17 on `feat/phone-refocus`.** |
+| 2 | Capture tab removed; floating capture button over the three tabs; `CaptureView` and `PostCaptureMoment` folded into the overlay | Three tabs; `OCEAN_START_TAB=capture` retired; onboarding and the Introduction copy no longer mention a Capture tab. **Built 2026-10-17.** |
+| 3 | Ask merged into one mode with the fixed answer shape; Summarize verb on streams and search results | No mode picker; the four `DialogueMode` cases collapse behind one entry; summarize works offline with the grounded fallback. **Built 2026-10-17.** |
 | 4 | Ocean surface (own spec) | |
 | 5 | Exits: Markdown mirror, take-to-brainstorm (own spec) | |
 
@@ -111,6 +111,6 @@ iPad and Mac Oryne, direct manipulation of currents, bring-your-own-key chat, an
 
 ## Open questions
 
-- Hold-to-whisper from the Home Screen widget and Control Center: those entry points can only tap. They open the overlay already listening (today's voice-first path), so the first whisper from a widget is lift-to-catch without a hold. Acceptable, or should widget whispers lock by default?
+- ~~Hold-to-whisper from the Home Screen widget and Control Center~~: decided in Phase 1. Those entry points have no finger to hold, so the take opens locked and runs until Stop. The same happens when the finger leaves during the first-run permission ask.
 - Subtitle language for a bilingual take: show the resolved main locale's words only, or both passes as they land?
 - Where does the capture button sit relative to the tab bar on iOS 26 (liquid glass tab bar has its own accessory slot)?

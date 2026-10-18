@@ -3,7 +3,6 @@ import SwiftUI
 import Observation
 
 enum OceanTab: Hashable {
-    case capture
     case ocean
     case ask
     case library
@@ -15,6 +14,14 @@ enum OceanTab: Hashable {
 final class AppState {
     var selectedTab: OceanTab = .ocean
     var fastCaptureRequest: FastCaptureRequest?
+
+    /// The one capture gesture, shared by the floating button and the
+    /// overlay's own button.
+    let captureControl = CaptureControl()
+
+    /// A summary queued for the Ask tab: the thoughts to read across and
+    /// the name they were gathered under. Consumed when Ask appears.
+    var pendingSummary: (title: String, nodeIDs: [UUID])?
 
     /// A prompt queued for the Ask tab, consumed when Ask appears.
     var pendingAskPrompt: String?
@@ -32,7 +39,6 @@ final class AppState {
         // Testing seam: launch straight into a tab via the OCEAN_START_TAB env var
         // (e.g. `SIMCTL_CHILD_OCEAN_START_TAB=ask`). No effect in normal use.
         switch ProcessInfo.processInfo.environment["OCEAN_START_TAB"]?.lowercased() {
-        case "capture": selectedTab = .capture
         case "ask": selectedTab = .ask
         case "library": selectedTab = .library
         case "ocean": selectedTab = .ocean
@@ -45,17 +51,26 @@ final class AppState {
         selectedTab = .ask
     }
 
+    /// Summarize a gathered set of thoughts (a current, a search) in Ask:
+    /// one tap, no typing.
+    func summarize(_ nodeIDs: [UUID], title: String) {
+        pendingSummary = (title, nodeIDs)
+        selectedTab = .ask
+    }
+
     func startFastCapture(
         source: FastCaptureLaunchSource = .inApp,
         inputPreference: FastCaptureInputPreference? = nil,
         imageData: Data? = nil,
-        seedText: String = ""
+        seedText: String = "",
+        anchorThemeKey: String? = nil
     ) {
         fastCaptureRequest = FastCaptureRequest(
             source: source,
             inputPreference: inputPreference ?? FastCapturePreferences.inputPreference,
             imageData: imageData,
-            seedText: seedText
+            seedText: seedText,
+            anchorThemeKey: anchorThemeKey
         )
     }
 

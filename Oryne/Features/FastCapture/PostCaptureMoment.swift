@@ -6,7 +6,7 @@ import SwiftData
 /// After a fragment is released, the confirmation quietly evolves as on-device
 /// understanding lands:
 ///   received (poetic phrase) → understood (interpreted title)
-///   → optionally: one nearby fragment + two quiet actions.
+///   → optionally: one nearby fragment, and a way to see it in the Ocean.
 ///
 /// It is purely presentational and ephemeral — auto-fades if ignored, costs
 /// nothing to dismiss, and never blocks capture. If the title or related
@@ -78,7 +78,6 @@ struct PostCaptureMoment: Identifiable, Equatable {
 /// motion language used across the app.
 struct PostCaptureMomentView: View {
     let moment: PostCaptureMoment
-    var onTurnIntoQuestion: () -> Void
     /// nil when the surface can't meaningfully go to the Ocean — capture opened
     /// from inside a current, where the thought already sits atop the stream and
     /// the two sheets would just stay in the way. The action is hidden, not dead.
@@ -138,15 +137,11 @@ struct PostCaptureMomentView: View {
                     .lineLimit(1)
             }
 
-            if moment.related != nil || onUndo != nil {
+            if onSeeInOcean != nil || onUndo != nil {
                 HStack(spacing: 8) {
-                    if moment.related != nil {
-                        quietAction("Turn into question", system: "questionmark.circle",
-                                    action: onTurnIntoQuestion)
-                        if let onSeeInOcean {
-                            quietAction("See in Ocean", system: "water.waves",
-                                        action: onSeeInOcean)
-                        }
+                    if let onSeeInOcean {
+                        quietAction("See in Ocean", system: "water.waves",
+                                    action: onSeeInOcean)
                     }
                     if let onUndo {
                         quietAction("Undo", system: "arrow.uturn.backward", action: onUndo)

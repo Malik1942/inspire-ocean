@@ -48,12 +48,12 @@ Then select an iPhone simulator and press ⌘R (scheme: **Oryne**).
 
 | PRD | Feature | Where |
 | --- | --- | --- |
-| §7 | Drift Capture — text, voice, photo/screenshot, link | `Features/Capture` |
+| §7 | Drift Capture — one surface for text and voice: tap the floating button to type, hold to whisper | `Features/FastCapture` |
 | §7 | Share-sheet capture (screenshots, text, links from any app) | `ShareExtension/` |
 | §8 | Ocean Field v1 — legible atmospheric field: layered, theme-clustered, hierarchical, focus-isolating | `Features/Ocean` |
 | §9 | Expanded Node View — why it mattered, nearby thoughts, branch, ask | `Features/NodeDetail` |
 | §10 | Manual branching — question / concept / research / project | `Features/NodeDetail/BranchComposer.swift` |
-| §11 | Ocean Dialogue v1 — Search / Synthesis / Expansion / Research, grounded in nodes | `Features/Ask` |
+| §11 | Ask — one grounded answer (found, what it means, beyond your Ocean when thin); Summarize a current or a search | `Features/Ask` |
 | §13 | Library — structured fallback: search, filter, time-grouped | `Features/Library` |
 
 **Excluded from V1 (PRD §15):** collaboration, Vision Pro, social features.
@@ -120,7 +120,7 @@ Oryne/             # the app
   DesignSystem/    # OceanTheme, reusable components, NodeRow, FlowLayout
   Services/        # OceanAIService seam + Local/Cloud impls, audio, speech
   Intents/         # App Intents — Siri / Shortcuts / Spotlight capture
-  Features/        # Capture · Ocean · NodeDetail · Ask · Library
+  Features/        # FastCapture · Ocean · NodeDetail · Ask · Library
 ShareExtension/    # share-sheet capture
 project.yml        # XcodeGen project definition
 ```

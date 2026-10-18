@@ -37,6 +37,7 @@ struct OceanSettingsView: View {
     private var realNodes: [Node]
 
     @State private var pendingClearExamples = false
+    @State private var showFastCaptureSettings = false
 
     @State private var includeVoice = false
     @State private var exportState: ExportState = .idle
@@ -50,6 +51,7 @@ struct OceanSettingsView: View {
                 OceanBackground(animated: false)
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
+                        fastCaptureSection
                         calmSection
                         feedbackSection
                         // The introduction is meant to be read once and let go,
@@ -70,6 +72,9 @@ struct OceanSettingsView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
                 }
+            }
+            .sheet(isPresented: $showFastCaptureSettings) {
+                FastCaptureSettingsView()
             }
             .confirmationDialog(
                 "Clear examples?",
@@ -120,6 +125,40 @@ struct OceanSettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    /// The entry points outside the app: the Action Button, Camera Control,
+    /// Control Center, and whether a whisper opens listening or typing.
+    private var fastCaptureSection: some View {
+        Button {
+            showFastCaptureSettings = true
+        } label: {
+            GlassCard(padding: 16) {
+                HStack(spacing: 10) {
+                    Image(systemName: "bolt.circle")
+                        .font(.title3)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(OceanTheme.accent)
+                        .frame(width: 28)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Fast Capture")
+                            .font(.headline)
+                            .foregroundStyle(OceanTheme.foam)
+                        Text("The Action Button, Control Center, and what a whisper opens with.")
+                            .font(.caption)
+                            .foregroundStyle(OceanTheme.mist)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(OceanTheme.faint)
+                }
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     private var feedbackSection: some View {

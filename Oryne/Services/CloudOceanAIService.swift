@@ -110,7 +110,7 @@ final class CloudOceanAIService: OceanAIService {
         async let composedOutward = outwardIfNeeded(
             query: query, sources: sources,
             configuration: configuration,
-            enabled: mode == .research
+            enabled: LocalOceanAIService.looksOutward(mode: mode, sourceCount: sources.count)
         )
         async let composedBranches = branchesIfNeeded(
             query: query, sources: sources,
@@ -132,6 +132,24 @@ final class CloudOceanAIService: OceanAIService {
         }
         if let branches = await composedBranches {
             response.suggestedBranches = branches
+        }
+        return response
+    }
+
+    func summarize(_ nodes: [Node]) async -> OceanResponse {
+        let scaffold = await fallback.summarize(nodes)
+        guard let configuration, !scaffold.sourceNodeIDs.isEmpty else { return scaffold }
+        let byID = Dictionary(uniqueKeysWithValues: nodes.map { ($0.id, $0) })
+        let sources = scaffold.sourceNodeIDs.compactMap { byID[$0] }
+        var response = scaffold
+        if let reflection = await reflectIfNeeded(
+            query: LocalOceanAIService.summaryQuery, history: [], mode: .synthesis,
+            sources: sources, configuration: configuration, enabled: true
+        ) {
+            response.reflection = reflection
+            response.provenance = .cloud
+        } else {
+            response.provenance = .offlineFallback
         }
         return response
     }

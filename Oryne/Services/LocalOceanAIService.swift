@@ -232,7 +232,7 @@ final class LocalOceanAIService: OceanAIService {
         //    notes, composed on-device when the foundation model is available
         //    (the cloud service replaces this with Claude when configured).
         var outwardNote: String?
-        if mode == .research, #available(iOS 26, *) {
+        if Self.looksOutward(mode: mode, sourceCount: sources.count), #available(iOS 26, *) {
             outwardNote = await foundationModelOutward(query: query, sources: sources)
         }
 
@@ -245,6 +245,54 @@ final class LocalOceanAIService: OceanAIService {
             // A shortened question means the reply is a partial read; otherwise
             // this is an ordinary grounded on-device answer.
             provenance: degraded ? .degraded : .onDevice
+        )
+    }
+
+    /// When an answer steps beyond the user's notes. Research always does;
+    /// the one merged Ask mode (synthesis) does only when the water was thin,
+    /// so a question the Ocean can barely answer still gets a direction,
+    /// marked apart (docs/plans/phone-refocus/SPEC.md, "Ask: one mode").
+    static func looksOutward(mode: DialogueMode, sourceCount: Int) -> Bool {
+        switch mode {
+        case .research: return true
+        case .synthesis: return sourceCount <= 2
+        case .search, .expansion: return false
+        }
+    }
+
+    /// The fixed question behind Summarize: the set is already chosen, so the
+    /// model is asked only to read across it.
+    static let summaryQuery = "What runs through these thoughts? Say what they share, where they pull apart, and what sits underneath. Speak to me directly, as you, never as the user."
+
+    func summarize(_ nodes: [Node]) async -> OceanResponse {
+        let sources = Array(nodes.filter { !$0.isArchived }.prefix(12))
+        guard !sources.isEmpty else {
+            return OceanResponse(reflection: String(localized: "Nothing to read across yet."),
+                                 sourceNodeIDs: [], patternSummary: nil, suggestedBranches: [],
+                                 outwardNote: nil, provenance: .noSources)
+        }
+        let themeCounts = sources
+            .flatMap { $0.themes }
+            .reduce(into: [String: Int]()) { $0[$1, default: 0] += 1 }
+        let topThemes = themeCounts.sorted { $0.value > $1.value }.prefix(3).map { $0.key }
+
+        var reflection: String?
+        if #available(iOS 26, *) {
+            reflection = await foundationModelReflection(
+                query: Self.summaryQuery, history: [], mode: .synthesis, sources: sources
+            )
+        }
+        let finalReflection = reflection ?? compose(
+            mode: .synthesis, query: Self.summaryQuery, sources: sources,
+            themes: topThemes, totalNodes: nodes.count
+        )
+        return OceanResponse(
+            reflection: finalReflection,
+            sourceNodeIDs: sources.map { $0.id },
+            patternSummary: topThemes.isEmpty ? nil : "Recurring threads: " + topThemes.joined(separator: " · "),
+            suggestedBranches: [],
+            outwardNote: nil,
+            provenance: .onDevice
         )
     }
 
@@ -399,7 +447,8 @@ final class LocalOceanAIService: OceanAIService {
     called the Ocean. You answer ONLY from the user's own captured \
     fragments, provided below. Write 2 to 4 calm sentences in plain \
     prose — no lists, no headers, no advice-column tone, no exclamation \
-    marks. Refer to fragments by their quoted titles. Each fragment notes \
+    marks. Speak to the person directly as "you"; never write "the user" \
+    or describe them in the third person. Never exceed four sentences. Refer to fragments by their quoted titles. Each fragment notes \
     when it was captured and its mood — you may quietly draw on how the \
     thread has moved over time. If a pattern or question sits underneath \
     the fragments, name it plainly. Never invent fragments that are not \
