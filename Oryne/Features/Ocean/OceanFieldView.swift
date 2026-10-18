@@ -72,7 +72,8 @@ struct OceanFieldView: View {
                     emptyState
                 } else {
                     ScrollView {
-                        VStack(alignment: .leading, spacing: 28) {
+                        VStack(alignment: .leading, spacing: 32) {
+                            pageTitle
                             if let resurfacing { resurfacingSection(resurfacing) }
                             newestSection
                             if !currents.isEmpty { currentsSection }
@@ -86,12 +87,7 @@ struct OceanFieldView: View {
                 ShoreGradient()
             }
             .navigationTitle(OceanTab.homeTitle)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    SettingsGearButton(isPresented: $showSettings)
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
             .onAppear(perform: consumePendingFocus)
             .onChange(of: appState.pendingFocusNodeID) { _, _ in consumePendingFocus() }
             .onChange(of: resurfacing?.id) { _, _ in
@@ -109,6 +105,21 @@ struct OceanFieldView: View {
             .onChange(of: sheet?.id) { _, _ in updateOceanSheetPresence() }
             .onChange(of: showSettings) { _, _ in updateOceanSheetPresence() }
         }
+    }
+
+    /// The page title in the brand's display face, with the gear beside it
+    /// (the system bar is hidden here so the title can wear the serif).
+    private var pageTitle: some View {
+        HStack(alignment: .center) {
+            Text(OceanTab.homeTitle)
+                .font(OceanType.pageTitle)
+                .foregroundStyle(OceanTheme.foam)
+            Spacer()
+            SettingsGearButton(isPresented: $showSettings)
+                .buttonStyle(.oceanIcon)
+        }
+        .padding(.top, 8)
+        .padding(.bottom, -4)
     }
 
     /// One lamp in the water behind the resurfacing thought: ambient light,
@@ -131,12 +142,12 @@ struct OceanFieldView: View {
     private func resurfacingSection(_ node: Node) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             sectionLabel("Resurfacing", warm: true)
-                .padding(.bottom, 10)
+                .padding(.bottom, 8)
 
             Button { open(node) } label: {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 10) {
                     Text(node.displayTitle)
-                        .font(.title2.weight(.semibold))
+                        .font(OceanType.resurfacingTitle)
                         .foregroundStyle(OceanTheme.foam)
                         .lineLimit(3)
                         .multilineTextAlignment(.leading)
@@ -144,6 +155,7 @@ struct OceanFieldView: View {
                         Text(node.snippet)
                             .font(.subheadline)
                             .foregroundStyle(OceanTheme.text)
+                            .lineSpacing(3)
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
                     }
@@ -181,7 +193,7 @@ struct OceanFieldView: View {
                     PlayWhisperButton(data: data)
                 }
             }
-            .padding(.top, 16)
+            .padding(.top, 18)
 
             if nearbyOpen {
                 VStack(alignment: .leading, spacing: 0) {
@@ -236,7 +248,7 @@ struct OceanFieldView: View {
     // MARK: Drifted in
 
     private var newestSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             sectionLabel("Drifted in")
             MasonryColumns(items: newest, columns: 2, spacing: 12,
                            estimatedHeight: estimatedCardHeight) { node in
@@ -254,7 +266,7 @@ struct OceanFieldView: View {
     // MARK: Currents
 
     private var currentsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .firstTextBaseline) {
                 sectionLabel("Currents")
                 Spacer()
@@ -296,7 +308,7 @@ struct OceanFieldView: View {
 
     private func sectionLabel(_ key: LocalizedStringKey, warm: Bool = false) -> some View {
         Text(key)
-            .font(.subheadline.weight(.semibold))
+            .font(OceanType.sectionLabel)
             .foregroundStyle(warm ? OceanTheme.glowWarm : OceanTheme.mist)
             .padding(.leading, 2)
     }
