@@ -21,11 +21,14 @@ Decisions 1 to 4 are implemented first. Decisions 5 and 6 are direction, scoped 
 
 ## Navigation
 
+Visual language (Malik, 2026-10-17, after three rounds): system type only, no serif in the app; no rendered materials and no hairline borders, surfaces are flat fills; one lamp in the water behind Resurfacing is the page's only light and its label the only warm color; the capture bar is dense material over a deep tint with a shore gradient under it and the tab bar; three controls (Primary, Secondary, Icon) and nothing else. Decided on wireframes and mocks before code, each time.
+
+
 Three tabs and one button.
 
 | Surface | Job | Glance test |
 | --- | --- | --- |
-| Ocean | Today's resurfacing, the newest thoughts, the water | Three seconds: what came back, what I just caught |
+| Tide (was Ocean) | What the tide brought to the surface: Resurfacing, Drifted in, Currents. The Ocean stays the name of the whole water; the Library is its depth | Three seconds: what came back, what I just caught |
 | Ask | One question in, one grounded answer out | One question, one scroll |
 | Library | Find it: search, time, Related, current filter | Type two words, tap the card |
 | Capture bar | Above the tab bar on Ocean and Library (the iOS 26 tab bar accessory; a floating bar before 26): a field to tap and the disc to hold. Hidden on Ask, which has its own input | One gesture |
