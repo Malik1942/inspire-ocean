@@ -56,16 +56,18 @@ final class ImportLedgerTests: XCTestCase {
 
     func test_recentConfirmations_newestFirstCappedWithTitles() {
         var ledger = ImportLedger()
-        let ids = (0..<25).map { _ in UUID() }
+        let limit = ImportLedger.confirmationLimit
+        let ids = (0..<(limit + 5)).map { _ in UUID() }
         for (i, id) in ids.enumerated() {
             ledger.markImported(id, at: t0.addingTimeInterval(Double(i)))
         }
-        ledger.markUnderstood(ids[24], title: "Newest")
+        ledger.markUnderstood(ids[limit + 4], title: "Newest")
 
         let recent = ledger.recentConfirmations()
 
-        XCTAssertEqual(recent.count, ImportLedger.confirmationLimit)
-        XCTAssertEqual(recent.first, WatchConfirmation(id: ids[24], title: "Newest"))
+        XCTAssertEqual(limit, 200)
+        XCTAssertEqual(recent.count, limit)
+        XCTAssertEqual(recent.first, WatchConfirmation(id: ids[limit + 4], title: "Newest"))
         XCTAssertEqual(recent.last?.id, ids[5])
         XCTAssertNil(recent[1].title)
     }

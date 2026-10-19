@@ -23,7 +23,8 @@ struct ImportLedger: Codable, Equatable {
     }
 
     static let retention: TimeInterval = 90 * 24 * 60 * 60
-    static let confirmationLimit = 20
+    /// Enough to confirm a large batch caught away from the phone; a few KB of context.
+    static let confirmationLimit = 200
     static let defaultsKey = "watch.importLedger"
 
     private(set) var entries: [UUID: Entry] = [:]
