@@ -333,11 +333,10 @@ struct ThoughtLine: View {
 
 
 /// The one matte surface for everything in the content layer: tiles, link
-/// cards, the search field and the quiet buttons. Lit from above like the
-/// lamp in the water (a touch brighter at the top, settling lower down) and
-/// resting on a soft shadow, so it sits just above the water. No rim, no
-/// gloss. The shadow belongs to the shape alone, so it stays cheap even
-/// under a picture.
+/// cards, the search field and the quiet buttons. A single flat fill, no
+/// gradient, no rim, no gloss, resting on a soft shadow so it sits just
+/// above the water. The shadow belongs to the shape alone, so it stays
+/// cheap even under a picture.
 struct OceanSurface<S: Shape>: View {
     let shape: S
     /// Buttons sit a step brighter than tiles so they read as controls.
@@ -346,11 +345,8 @@ struct OceanSurface<S: Shape>: View {
     var shadow = true
 
     var body: some View {
-        let top = (raised ? 0.115 : 0.08) + (pressed ? 0.04 : 0)
-        let bottom = (raised ? 0.065 : 0.04) + (pressed ? 0.04 : 0)
         shape
-            .fill(LinearGradient(colors: [Color.white.opacity(top), Color.white.opacity(bottom)],
-                                 startPoint: .top, endPoint: .bottom))
-            .shadow(color: .black.opacity(shadow ? 0.32 : 0), radius: raised ? 8 : 14, y: raised ? 4 : 8)
+            .fill(Color.white.opacity((raised ? 0.08 : 0.055) + (pressed ? 0.04 : 0)))
+            .shadow(color: .black.opacity(shadow ? 0.28 : 0), radius: raised ? 8 : 14, y: raised ? 4 : 8)
     }
 }
