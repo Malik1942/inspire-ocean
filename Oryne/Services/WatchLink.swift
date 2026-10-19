@@ -1,5 +1,9 @@
 import Foundation
 import WatchConnectivity
+import os
+
+/// Failures only, and never user content: a take ID at most.
+private let log = Logger(subsystem: "com.inspireocean.app", category: "watch")
 
 /// The phone's end of WatchConnectivity. Receives wrist takes as files,
 /// answers the watch's wake ping, and tells the watch which takes are in the
@@ -22,6 +26,8 @@ final class WatchLink: NSObject, WCSessionDelegate {
         WCSession.isSupported() ? .default : nil
     }
 
+    var isSupported: Bool { WCSession.isSupported() }
+
     func activate() {
         guard let session else { return }
         session.delegate = self
@@ -34,7 +40,12 @@ final class WatchLink: NSObject, WCSessionDelegate {
         guard let session, session.activationState == .activated,
               session.isPaired, session.isWatchAppInstalled
         else { return }
-        try? session.updateApplicationContext(WatchWire.context(for: confirmations))
+        do {
+            try session.updateApplicationContext(WatchWire.context(for: confirmations))
+        } catch {
+            let error = error as NSError
+            log.error("updateApplicationContext failed (\(confirmations.count, privacy: .public) confirmations): \(error.domain, privacy: .public) \(error.code, privacy: .public)")
+        }
     }
 
     // MARK: WCSessionDelegate
@@ -55,11 +66,17 @@ final class WatchLink: NSObject, WCSessionDelegate {
     }
 
     func session(_ session: WCSession, didReceive file: WCSessionFile) {
-        guard let take = WatchWire.take(fromMetadata: file.metadata) else { return }
+        guard let take = WatchWire.take(fromMetadata: file.metadata) else {
+            log.error("A received file had undecodable metadata; the system deletes it")
+            return
+        }
         // Move before returning: the system deletes the file afterwards.
         do {
             try folder.accept(take, movingAudioFrom: file.fileURL)
         } catch {
+            // The watch keeps the take until it is confirmed: it falls back to iCloud.
+            let error = error as NSError
+            log.error("Couldn't accept take \(take.id.uuidString, privacy: .public): \(error.domain, privacy: .public) \(error.code, privacy: .public)")
             return
         }
         onArrival?()

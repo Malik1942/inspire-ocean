@@ -133,6 +133,14 @@ final class WatchTakeImporter {
                 await VoiceUnderstanding.run(nodeID: id, audioTempURL: nil, context: context, ai: ai)
             }
             if Task.isCancelled { return }
+            // A voice thought left with no transcript while Oryne wasn't on
+            // screen may only mean the recognizer wasn't available in the
+            // background: leave it imported, so the next foreground drain
+            // tries again. On screen, no words is the answer.
+            if let node = node(id), (node.transcription ?? "").isEmpty,
+               UIApplication.shared.applicationState != .active {
+                continue
+            }
             ledger.markUnderstood(id, title: node(id).flatMap(title(of:)))
             ledger.save(to: defaults)
             confirmationsChanged?(ledger.recentConfirmations())

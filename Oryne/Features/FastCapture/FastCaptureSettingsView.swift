@@ -152,8 +152,8 @@ struct FastCaptureSettingsView: View {
     }
 
     /// The Ultra's Action Button reaches Oryne through its Shortcut slot:
-    /// watchOS lists only workout and dive apps there directly. Confirmed on
-    /// device per docs/HARDWARE_CHECKLIST.md › Apple Watch.
+    /// watchOS lists only workout and dive apps there directly. To be
+    /// confirmed on device per docs/HARDWARE_CHECKLIST.md › Apple Watch.
     private var watchSection: some View {
         GlassCard(padding: 16) {
             VStack(alignment: .leading, spacing: 14) {

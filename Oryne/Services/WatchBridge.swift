@@ -14,9 +14,16 @@ final class WatchBridge {
     private var link: WatchLink?
     private var inboxReader: WatchInboxReader?
     private var inboxFolder: WatchInboxFolder?
+    private var activationKnown = false
+    private var activationWaiters: [CheckedContinuation<Void, Never>] = []
 
     func start(context: ModelContext, ai: any OceanAIService) {
         guard importer == nil else { return }
+        // Never import into a store that won't outlive the process: when the
+        // on-disk store failed and Persistence fell back to memory, confirming
+        // would delete the watch's and iCloud's copies of takes that are then
+        // gone at quit. The takes wait safely where they are.
+        guard !context.container.configurations.contains(where: \.isStoredInMemoryOnly) else { return }
         let folder = WatchInboxFolder.standard
         let importer = WatchTakeImporter(
             context: context,
@@ -25,6 +32,8 @@ final class WatchBridge {
             defaults: FastCapturePreferences.defaults
         )
         let link = WatchLink(folder: folder)
+        // An iPad never activates, so nothing may wait on it.
+        if !link.isSupported { activationKnown = true }
         importer.confirmationsChanged = { [weak link] confirmations in
             link?.send(confirmations)
         }
@@ -60,11 +69,14 @@ final class WatchBridge {
     /// Launch, foreground, and the inbox push: pull the iCloud inbox (once
     /// the reader runs), then import everything waiting. True when a take
     /// arrived from iCloud. Holds background time throughout, so a fetch
-    /// launched by a push is not suspended halfway.
+    /// launched by a push is not suspended halfway, and waits briefly for
+    /// WatchConnectivity on a cold launch so the reader can exist by then.
     @discardableResult
     func refresh() async -> Bool {
+        guard importer != nil else { return false }   // nothing was started
         let background = BackgroundTime(name: "Oryne.WatchInboxRefresh")
         defer { background.end() }
+        await waitForActivation()
         var arrived = false
         if let inboxReader {
             arrived = await inboxReader.fetch()
@@ -73,7 +85,31 @@ final class WatchBridge {
         return arrived
     }
 
+    /// Waits, at most `timeout`, until WatchConnectivity has said whether a
+    /// watch is paired, so a push that cold-launches the app can still read
+    /// the iCloud inbox (the reader exists only on the paired iPhone).
+    private func waitForActivation(timeout: Duration = .seconds(5)) async {
+        guard !activationKnown else { return }
+        await withCheckedContinuation { continuation in
+            activationWaiters.append(continuation)
+            Task { @MainActor [weak self] in
+                try? await Task.sleep(for: timeout)
+                self?.resumeActivationWaiters()
+            }
+        }
+    }
+
+    /// Resumes every waiter exactly once: each leaves the list before it is
+    /// resumed, so a later timeout or activation finds it gone.
+    private func resumeActivationWaiters() {
+        let waiters = activationWaiters
+        activationWaiters = []
+        waiters.forEach { $0.resume() }
+    }
+
     private func linkActivated(isPaired: Bool) {
+        activationKnown = true
+        defer { resumeActivationWaiters() }
         guard isPaired, let importer else { return }
         // A watch that missed an update catches up on activation.
         link?.send(importer.recentConfirmations)
