@@ -37,7 +37,6 @@ struct LibraryView: View {
     @State private var focusedAnchorID: UUID?
     @State private var focusRelatedRank: [UUID: Int] = [:]
 
-    @State private var showSettings = false
     @State private var showCurrents = false
     /// Where the grid last moved the way the capture bar already is; the bar
     /// changes only after real travel against it from here. A plain object,
@@ -96,7 +95,6 @@ struct LibraryView: View {
             }
             .navigationTitle("Library")
             .toolbar(.hidden, for: .navigationBar)
-            .sheet(isPresented: $showSettings) { OceanSettingsView() }
             .sheet(isPresented: $showCurrents) { CurrentsPage() }
             .navigationDestination(for: Node.self) { node in
                 NodeDetailContent(node: node)
@@ -495,28 +493,26 @@ struct LibraryView: View {
     /// group, then the page's own search field.
     private var header: some View {
         VStack(alignment: .leading, spacing: 20) {
+            // One tool: how the Library is arranged and what it shows, in
+            // one menu. Settings live on Tide.
             PageTitleRow(title: "Library") {
                 Menu {
-                    Picker("Arrangement", selection: $arrangement) {
-                        Label("Recent", systemImage: "clock").tag(Arrangement.recent)
-                        Label("Related", systemImage: "point.3.connected.trianglepath.dotted")
-                            .tag(Arrangement.related)
-                    }
-                } label: {
-                    OceanToolGlyph(systemName: arrangement == .related
-                        ? "point.3.connected.trianglepath.dotted"
-                        : "arrow.up.arrow.down")
-                }
-                .accessibilityLabel("Arrangement")
-
-                Menu {
-                    Picker("Kind", selection: $kindFilter) {
-                        Text("All kinds").tag(NodeKind?.none)
-                        ForEach(NodeKind.allCases) { k in
-                            Label(k.label, systemImage: k.symbol).tag(NodeKind?.some(k))
+                    Section("Sort") {
+                        Picker("Arrangement", selection: $arrangement) {
+                            Label("Recent", systemImage: "clock").tag(Arrangement.recent)
+                            Label("Related", systemImage: "point.3.connected.trianglepath.dotted")
+                                .tag(Arrangement.related)
                         }
                     }
-                    Toggle("Show archived", isOn: $showArchived)
+                    Section("Show") {
+                        Picker("Kind", selection: $kindFilter) {
+                            Text("All kinds").tag(NodeKind?.none)
+                            ForEach(NodeKind.allCases) { k in
+                                Label(k.label, systemImage: k.symbol).tag(NodeKind?.some(k))
+                            }
+                        }
+                        Toggle("Show archived", isOn: $showArchived)
+                    }
                     Divider()
                     Button {
                         showCurrents = true
@@ -526,11 +522,8 @@ struct LibraryView: View {
                 } label: {
                     OceanToolGlyph(systemName: "line.3.horizontal.decrease")
                 }
-                .accessibilityLabel("Filter")
-
-                SettingsTool(isPresented: $showSettings)
+                .accessibilityLabel("Sort and filter")
             }
-            .environment(\.oceanToolCellWidth, 50)
             .padding(.bottom, -4)
 
             OceanSearchField(text: $search, prompt: "Search the Ocean", focused: $searchFocused)
