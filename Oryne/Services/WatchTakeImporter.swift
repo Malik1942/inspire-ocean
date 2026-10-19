@@ -144,7 +144,7 @@ final class WatchTakeImporter {
             // screen may only mean the recognizer wasn't available in the
             // background: leave it imported, so the next foreground drain
             // tries again. On screen, no words is the answer.
-            if let node = node(id), (node.transcription ?? "").isEmpty,
+            if let node = node(id), WhisperRules.needsTranscription(node),
                UIApplication.shared.applicationState != .active {
                 continue
             }
@@ -165,7 +165,6 @@ final class WatchTakeImporter {
     /// the "Whisper" label the Library stamps on an untitled voice thought, in
     /// any language the app ships, which would pretend to be a name.
     private func title(of node: Node) -> String? {
-        let title = node.title.trimmed
-        return title.isEmpty || VoiceUnderstanding.whisperPlaceholders.contains(title) ? nil : title
+        WhisperRules.name(of: node, placeholders: VoiceUnderstanding.whisperPlaceholders)
     }
 }
