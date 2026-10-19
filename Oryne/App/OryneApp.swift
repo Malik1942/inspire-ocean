@@ -6,6 +6,7 @@ import Network
 @main
 struct OryneApp: App {
     let container = Persistence.shared
+    @Environment(\.scenePhase) private var scenePhase
 
     /// The cloud seam (§14) activates itself when an `ANTHROPIC_API_KEY` is
     /// present in the environment (or `AnthropicAPIKey` in Info.plist via a
@@ -20,6 +21,10 @@ struct OryneApp: App {
             FastCapturePreferences.defaults.set(true, forKey: FastCapturePreferenceKeys.onboardingCompleted)
         }
         #endif
+
+        // Wrist takes: start early so deliveries that arrive while the app is
+        // launched in the background reach the importer.
+        WatchBridge.shared.start(context: container.mainContext, ai: ai)
     }
 
     var body: some Scene {
@@ -34,12 +39,18 @@ struct OryneApp: App {
                     Self.migrateLegacyAudio(context: container.mainContext)
                     Self.migrateLegacyImages(context: container.mainContext)
                     Self.expireConfirmedAudio(context: container.mainContext)
+                    // Import any wrist takes that arrived while Oryne was closed.
+                    await WatchBridge.shared.refresh()
                 }
                 .task {
                     // Warm the iOS 26 speech models at launch on Wi-Fi so the
                     // first capture is instant, never a mid-capture download
                     // (BRIEF decision 12). Off the main-context work above.
                     if #available(iOS 26, *) { await Self.prefetchSpeechAssets() }
+                }
+                .onChange(of: scenePhase) { _, phase in
+                    guard phase == .active else { return }
+                    Task { await WatchBridge.shared.refresh() }
                 }
         }
         .modelContainer(container)
