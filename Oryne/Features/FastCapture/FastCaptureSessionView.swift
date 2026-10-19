@@ -174,106 +174,118 @@ struct FastCaptureSessionView: View {
             }
     }
 
+    /// Typing: the bar's own capsule, the field where its placeholder sits.
+    /// The way out floats above the capsule's end, centered on the disc,
+    /// off the container so it never reads as a badge on the words.
     private var composer: some View {
-        VStack(alignment: .trailing, spacing: 6) {
-            // The way out stands just above the card's corner, off its body,
-            // so it never reads as a badge on the words.
-            closeButton
-                .padding(.trailing, -4)
-            composerCard
-        }
-        .transition(.move(edge: .bottom).combined(with: .opacity))
-    }
-
-    private var composerCard: some View {
-        GlassCard(padding: 14) {
-            VStack(alignment: .leading, spacing: 10) {
-                if let imageData, let uiImage = UIImage(data: imageData) {
-                    screenshotPreview(uiImage)
-                }
-
-                HStack(alignment: .bottom, spacing: 10) {
-                    TextField("What are you noticing?", text: $text, axis: .vertical)
-                        .textFieldStyle(.plain)
-                        .font(.body)
-                        .lineLimit(1...6)
-                        .lineSpacing(2)
-                        .focused($textFocused)
-                        .foregroundStyle(OceanTheme.foam)
-                        .tint(OceanTheme.accent)
-                        .submitLabel(.return)
-                        .padding(.vertical, 6)
-                        .padding(.leading, 4)
-
-                    if canRelease {
-                        Button(action: saveTyped) {
-                            Image(systemName: "arrow.up")
-                        }
-                        .buttonStyle(.oceanPrimaryIcon)
-                        .disabled(isSaving)
-                        .accessibilityLabel("Release into the Ocean")
-                        .transition(.scale.combined(with: .opacity))
+        VStack(alignment: .trailing, spacing: 8) {
+            HStack(alignment: .bottom, spacing: 8) {
+                composerCaptions
+                Spacer(minLength: 8)
+                // Nothing to close while a finger holds the disc and the
+                // microphone wakes: lifting catches.
+                closeButton
+                    .padding(.trailing, FastCaptureLayout.discInset)
+                    .opacity(control.isHeld ? 0 : 1)
+                    .allowsHitTesting(!control.isHeld)
+            }
+            CaptureCapsule {
+                VStack(alignment: .leading, spacing: FastCaptureLayout.discInset) {
+                    if let imageData, let uiImage = UIImage(data: imageData) {
+                        screenshotPreview(uiImage)
                     }
 
-                    overlayDisc
-                }
+                    HStack(alignment: .bottom, spacing: 8) {
+                        // The bar's own words in its own color, so opening
+                        // the keyboard changes nothing but the cursor.
+                        TextField(
+                            "What are you noticing?",
+                            text: $text,
+                            prompt: Text("What are you noticing?").foregroundStyle(OceanTheme.hint),
+                            axis: .vertical
+                        )
+                            .textFieldStyle(.plain)
+                            .font(.body)
+                            .lineLimit(1...6)
+                            .lineSpacing(2)
+                            .focused($textFocused)
+                            .foregroundStyle(OceanTheme.foam)
+                            .tint(OceanTheme.accent)
+                            .submitLabel(.return)
+                            .padding(.vertical, 4)
+                            .padding(.leading, FastCaptureLayout.fieldLeading - FastCaptureLayout.discInset)
+                            .frame(minHeight: FastCaptureLayout.buttonSize)
 
-                if let message {
-                    Text(message)
-                        .font(.caption)
-                        .foregroundStyle(OceanTheme.mist)
-                }
+                        if canRelease {
+                            Button(action: saveTyped) {
+                                Image(systemName: "arrow.up")
+                            }
+                            .buttonStyle(.oceanPrimaryIcon)
+                            .disabled(isSaving)
+                            .accessibilityLabel("Release into the Ocean")
+                            .transition(.scale.combined(with: .opacity))
+                        }
 
-                if let anchor = request.anchorThemeKey {
-                    Text(String(localized: "Flows into “\(OceanLayoutEngine.displayLabel(for: anchor))”"))
-                        .font(.caption2)
-                        .foregroundStyle(OceanTheme.faint)
+                        overlayDisc
+                    }
                 }
+                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: canRelease)
             }
-            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: canRelease)
         }
-        // A lifted glass body: the depth shadow gives it presence over the
-        // water, no rim or glow (Philosophy §4).
-        .shadow(color: .black.opacity(0.35), radius: 24, y: 12)
-    }
-
-    /// Under the subtitles while listening: a note already typed stays
-    /// visible (it releases with the whisper), and the one honest line when
-    /// no live words are coming.
-    private var listeningRow: some View {
-        HStack(alignment: .center, spacing: 10) {
-            // The way out mid-take: cancels, nothing is saved yet. On the
-            // far side from the button, so the finger sliding up to lock
-            // never crosses it.
-            closeButton
-                .padding(.leading, -4)
-            listeningNotes
-            Spacer(minLength: 8)
-            overlayDisc
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .transition(.opacity)
     }
 
-    /// The overlay's own disc, in the composer row and the listening row.
+    /// What the capsule can't hold: a refusal, and the current a thought
+    /// added from a stream flows into. Above it, on the leading side.
+    private var composerCaptions: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if let message {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(OceanTheme.mist)
+            }
+            if let anchor = request.anchorThemeKey {
+                Text(String(localized: "Flows into “\(OceanLayoutEngine.displayLabel(for: anchor))”"))
+                    .font(.caption2)
+                    .foregroundStyle(OceanTheme.faint)
+            }
+        }
+        .padding(.leading, FastCaptureLayout.fieldLeading)
+    }
+
+    /// Listening: the same capsule in the same frame. The way out (cancel,
+    /// nothing is saved yet) is a glass disc at the leading end mirroring
+    /// the record disc, on the far side so the finger sliding up to lock
+    /// never crosses it. Between them, a note already typed (it releases
+    /// with the whisper) and the one honest line when no live words come.
+    private var listeningRow: some View {
+        CaptureCapsule {
+            HStack(alignment: .center, spacing: 10) {
+                closeButton
+                listeningNotes
+                Spacer(minLength: 8)
+                overlayDisc
+            }
+        }
+        .transition(.opacity)
+    }
+
+    /// The overlay's own disc, in the composer and the listening capsule.
     /// While the hold that opened this overlay still has its finger on the
-    /// capture bar's disc, that disc owns the gesture and this one stays
-    /// out of the way. Once the take locks, the bar steps aside and this is
-    /// the Stop.
+    /// capture bar's disc (invisible, in the same frame), that disc owns
+    /// the gesture; once the take locks this one is the Stop.
     private var overlayDisc: some View {
         CaptureHoldButton(size: FastCaptureLayout.buttonSize)
             .allowsHitTesting(asSheet || !control.isHeld)
-            .opacity(asSheet || !control.isHeld ? 1 : 0.35)
     }
 
     private var listeningNotes: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 2) {
             if !text.trimmed.isEmpty {
-                // The typed note riding along with the whisper.
                 Text(text)
                     .font(.footnote)
                     .foregroundStyle(OceanTheme.mist)
-                    .lineLimit(2)
+                    .lineLimit(1)
             }
             if wordsDelayed {
                 Text("Words will follow.")
@@ -281,8 +293,6 @@ struct FastCaptureSessionView: View {
                     .foregroundStyle(OceanTheme.hint)
             }
         }
-        // Depth, not glow: keeps small words legible over a body behind them.
-        .shadow(color: .black.opacity(0.55), radius: 8)
     }
 
     /// No live words are coming for this take (recognition preparing or
@@ -320,11 +330,11 @@ struct FastCaptureSessionView: View {
                 .scaledToFill()
                 .frame(height: 116)
                 .frame(maxWidth: .infinity)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.10), lineWidth: 0.5)
-                )
+                // Concentric with the capsule's end.
+                .clipShape(RoundedRectangle(
+                    cornerRadius: FastCaptureLayout.endRadius - FastCaptureLayout.discInset,
+                    style: .circular
+                ))
 
             Button {
                 withAnimation(.snappy) { imageData = nil }
