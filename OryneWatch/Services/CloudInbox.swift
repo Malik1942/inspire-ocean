@@ -63,3 +63,5 @@ final class CloudInbox {
         UserDefaults.standard.set(true, forKey: Self.zoneReadyKey)
     }
 }
+
+extension CloudInbox: CloudInboxUploading {}

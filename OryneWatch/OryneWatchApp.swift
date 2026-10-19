@@ -1,5 +1,6 @@
 import SwiftUI
 import AppIntents
+import WatchKit
 
 @main
 struct OryneWatchApp: App {
@@ -8,7 +9,12 @@ struct OryneWatchApp: App {
     init() {
         let queue = TakeQueue()
         let cloud = CloudInbox.makeIfAvailable()
-        let sync = TakeSync(queue: queue, link: PhoneLink(), cloud: cloud)
+        let sync = TakeSync(queue: queue, link: PhoneLink(), cloud: cloud) { date in
+            WKApplication.shared().scheduleBackgroundRefresh(
+                withPreferredDate: date,
+                userInfo: TakeSync.refreshIdentifier as NSString
+            ) { _ in }
+        }
         let model = WatchCaptureModel(queue: queue, sync: sync)
         self.model = model
         // The Action Button and Siri reach the same model the screen shows.

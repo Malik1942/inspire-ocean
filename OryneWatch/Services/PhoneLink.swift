@@ -78,3 +78,5 @@ final class PhoneLink: NSObject, WCSessionDelegate {
         Task { @MainActor in self.onTransferFinished?(id, delivered) }
     }
 }
+
+extension PhoneLink: PhoneLinking {}

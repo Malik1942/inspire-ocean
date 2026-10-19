@@ -1,27 +1,58 @@
 import Foundation
-import WatchKit
+
+/// The phone as `TakeSync` reaches it: `PhoneLink` (WatchConnectivity), or
+/// a test's fake.
+@MainActor
+protocol PhoneLinking: AnyObject {
+    var onConfirmations: (@MainActor ([WatchConfirmation]) -> Void)? { get set }
+    var onTransferFinished: (@MainActor (_ id: UUID, _ delivered: Bool) -> Void)? { get set }
+    var onActivated: (@MainActor () -> Void)? { get set }
+    var isReachable: Bool { get }
+    var outstandingTakeIDs: Set<UUID> { get }
+    func activate()
+    func send(_ take: WatchTake, audioURL: URL) -> Bool
+    func wake(_ id: UUID)
+}
+
+/// The iCloud inbox as `TakeSync` reaches it: `CloudInbox`, or a test's fake.
+@MainActor
+protocol CloudInboxUploading: AnyObject {
+    func upload(_ take: WatchTake, audioURL: URL) async -> Bool
+}
 
 /// Moves takes off the watch (spec §2): WatchConnectivity for every take,
 /// the iCloud inbox for takes the phone may not reach soon. It acts on what
 /// `TakeQueueState` says each take still needs, and holds back the take
 /// inside its Undo window.
+///
+/// No watch API in here: SharedTests compiles this file (see project.yml),
+/// so the background refresh is asked for through `scheduleRefresh`.
 @MainActor
 final class TakeSync {
     static let refreshIdentifier = "oryne.takes"
 
     private let queue: TakeQueue
-    private let link: PhoneLink
-    private let cloud: CloudInbox?
+    private let link: any PhoneLinking
+    private let cloud: (any CloudInboxUploading)?
+    private let scheduleRefresh: @MainActor (Date) -> Void
     private var flushTask: Task<Void, Never>?
     private var flushAgain = false
 
     /// The take inside its Undo window: never sent until released.
     var heldTakeID: UUID?
 
-    init(queue: TakeQueue, link: PhoneLink, cloud: CloudInbox?) {
+    /// `scheduleRefresh` asks the system to wake the app for
+    /// `refreshIdentifier` around the given date.
+    init(
+        queue: TakeQueue,
+        link: any PhoneLinking,
+        cloud: (any CloudInboxUploading)?,
+        scheduleRefresh: @escaping @MainActor (Date) -> Void
+    ) {
         self.queue = queue
         self.link = link
         self.cloud = cloud
+        self.scheduleRefresh = scheduleRefresh
         link.onConfirmations = { [weak self] confirmations in
             self?.queue.change { $0.apply(confirmations) }
         }
@@ -104,9 +135,6 @@ final class TakeSync {
     /// background refresh so the iCloud fallback runs without the app open.
     private func scheduleRefreshIfNeeded() {
         guard let next = queue.state.nextCloudAttempt(now: .now) else { return }
-        WKApplication.shared().scheduleBackgroundRefresh(
-            withPreferredDate: next,
-            userInfo: Self.refreshIdentifier as NSString
-        ) { _ in }
+        scheduleRefresh(next)
     }
 }
