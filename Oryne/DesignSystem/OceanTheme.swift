@@ -155,25 +155,6 @@ struct GlassCard<Content: View>: View {
     }
 }
 
-/// A small theme/keyword tag.
-struct ThemeTag: View {
-    let text: String
-    var hue: Double = 0.55
-
-    var body: some View {
-        Text(text)
-            .font(.caption2.weight(.medium))
-            .foregroundStyle(OceanTheme.foam)
-            .padding(.horizontal, 9)
-            .padding(.vertical, 4)
-            .background(
-                Capsule().fill(OceanTheme.color(forHue: hue).opacity(0.20))
-            )
-            .overlay(
-                Capsule().strokeBorder(OceanTheme.color(forHue: hue).opacity(0.30), lineWidth: 0.5)
-            )
-    }
-}
 
 extension View {
     /// Standard screen treatment: ocean background behind content.

@@ -23,9 +23,9 @@ struct NodeRow: View {
     /// whisper, a link or a picture), when, and which current. Pictures are
     /// for cards and the thought itself. A fill, no border, no chevron.
     private var row: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(node.displayTitle)
-                .font(.body.weight(.medium))
+                .font(.body.weight(.semibold))
                 .foregroundStyle(OceanTheme.foam)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
@@ -33,8 +33,8 @@ struct NodeRow: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(OceanTheme.fill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(OceanTheme.fill, in: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous))
     }
 }
 

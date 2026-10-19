@@ -8,7 +8,7 @@ import SwiftData
 /// Tap the button to type; hold it to whisper. While the finger is down the
 /// words land on the water as subtitles and the button breathes with the
 /// microphone. Lift, and the words settle into the Ocean: saved first, then
-/// the chime, then the card that names what the Ocean understood. No review
+/// the chime, then one toast above the bar with the way back. No review
 /// beat, no mode picker (docs/plans/phone-refocus/SPEC.md, Phase 1).
 struct FastCaptureSessionView: View {
     @Environment(\.modelContext) private var context
@@ -20,9 +20,6 @@ struct FastCaptureSessionView: View {
 
     let request: FastCaptureRequest
     var onFinish: () -> Void
-    /// Wired by the host so "See in Ocean" can focus the fragment after the
-    /// overlay dismisses (the overlay sits outside AppState's environment).
-    var onOpenNode: ((UUID) -> Void)? = nil
     /// Presented as a sheet (from inside a current) rather than over the
     /// tabs: no dim backdrop, and the button is the sheet's own.
     var asSheet = false
@@ -34,10 +31,8 @@ struct FastCaptureSessionView: View {
         case listening
         /// The finger lifted: the words sink while the save is verified.
         case settling
-        /// Saved. The card names what the Ocean understood.
-        case moment
-        /// The card is gone; only the way back remains until the undo
-        /// window closes.
+        /// Saved. The overlay is only its toast, above the bar, until the
+        /// undo window closes or the next capture starts.
         case linger
     }
 
@@ -54,19 +49,16 @@ struct FastCaptureSessionView: View {
     @State private var message: String?
     @State private var isSaving = false
     @State private var hasStarted = false
-    @State private var moment: PostCaptureMoment?
     @State private var fadeTask: Task<Void, Never>?
     @FocusState private var textFocused: Bool
 
     init(
         request: FastCaptureRequest,
         onFinish: @escaping () -> Void,
-        onOpenNode: ((UUID) -> Void)? = nil,
         asSheet: Bool = false
     ) {
         self.request = request
         self.onFinish = onFinish
-        self.onOpenNode = onOpenNode
         self.asSheet = asSheet
         _text = State(initialValue: request.seedText)
         _imageData = State(initialValue: request.imageData)
@@ -99,21 +91,17 @@ struct FastCaptureSessionView: View {
                     if listening {
                         listeningRow
                     }
-                case .moment:
-                    if let moment {
-                        PostCaptureMomentView(
-                            moment: moment,
-                            onSeeInOcean: request.anchorThemeKey == nil ? { seeInOcean(moment) } : nil,
-                            onUndo: session.undoAvailable(for: moment.id) ? { undoFromMoment() } : nil
-                        )
-                        .transition(.scale(scale: 0.96).combined(with: .opacity))
-                    }
                 case .linger:
-                    undoPill
+                    HStack {
+                        Spacer(minLength: 0)
+                        CaptureToast(onUndo: undoCapture)
+                        Spacer(minLength: 0)
+                    }
+                    .transition(.opacity.combined(with: .offset(y: 8)))
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, phase == .linger ? 24 : (asSheet || keyboardUp ? 12 : FastCaptureLayout.tabBarClearance))
+            .padding(.horizontal, OceanSpacing.gutter)
+            .padding(.bottom, bottomPadding(keyboardUp: keyboardUp))
             .frame(maxWidth: .infinity, alignment: .leading)
             .animation(.spring(response: 0.36, dampingFraction: 0.86), value: phase)
         }
@@ -121,9 +109,6 @@ struct FastCaptureSessionView: View {
         .task {
             control.overlayOpen = true
             session.configure(context: context, ai: ai)
-            session.onUnderstood = { nodeID, title in
-                advanceMoment(nodeID: nodeID, title: title)
-            }
             guard !hasStarted else { return }
             hasStarted = true
             if control.touch != .up {
@@ -140,6 +125,7 @@ struct FastCaptureSessionView: View {
         }
         .onDisappear {
             control.overlayOpen = false
+            control.toastShowing = false
             control.isListening = false
             control.level = 0
             if control.touch == .locked { control.touch = .up }
@@ -147,6 +133,8 @@ struct FastCaptureSessionView: View {
         .onChange(of: control.touch) { old, new in
             switch new {
             case .held, .locked:
+                // A hold on the bar while the toast shows starts the next take.
+                if phase == .linger { beginNextCapture() }
                 if phase == .composing { Task { await startListening() } }
             case .up:
                 if case .held = old, listening { Task { await catchTake() } }
@@ -156,6 +144,8 @@ struct FastCaptureSessionView: View {
             if listening { Task { await catchTake() } }
         }
         .onChange(of: control.tapCount) { _, _ in
+            // A tap on the bar while the toast shows starts the next thought.
+            if phase == .linger { beginNextCapture() }
             if phase == .composing { textFocused = true }
         }
         .onChange(of: session.transcriber.level) { _, level in
@@ -313,17 +303,13 @@ struct FastCaptureSessionView: View {
         .accessibilityLabel(listening ? Text("Cancel whisper") : Text("Close"))
     }
 
-    private var undoPill: some View {
-        HStack {
-            Spacer()
-            Button(action: undoFromMoment) {
-                Label("Undo", systemImage: "arrow.uturn.backward")
-            }
-            .buttonStyle(.oceanSecondary)
-            .accessibilityLabel("Undo capture")
-            Spacer()
+    /// Composing and listening clear the tab bar (or sit on the keyboard);
+    /// the toast sits above the capture bar, which stays usable under it.
+    private func bottomPadding(keyboardUp: Bool) -> CGFloat {
+        if phase == .linger {
+            return asSheet ? 24 : FastCaptureLayout.tabBarClearance + FastCaptureLayout.barHeight + 12
         }
-        .transition(.opacity)
+        return asSheet || keyboardUp ? 12 : FastCaptureLayout.tabBarClearance
     }
 
     private func screenshotPreview(_ uiImage: UIImage) -> some View {
@@ -436,11 +422,7 @@ struct FastCaptureSessionView: View {
         CaptureFeedback.released()
         withAnimation(.easeIn(duration: 0.3)) { settled = true }
         try? await Task.sleep(for: .milliseconds(300))
-        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
-            moment = .received(for: nodeID)
-            phase = .moment
-        }
-        scheduleFinish(after: 2.4)
+        showToast(for: nodeID)
     }
 
     // MARK: Typed release
@@ -470,55 +452,19 @@ struct FastCaptureSessionView: View {
         message = nil
         session.beginUnderstanding(nodeID: nodeID)
         textFocused = false
-        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
-            moment = .received(for: nodeID)
-            phase = .moment
-        }
+        showToast(for: nodeID)
         CaptureFeedback.released()
-        scheduleFinish(after: 2.4)
     }
 
-    // MARK: Understanding moment
+    // MARK: Toast
 
+    /// Saved. The overlay becomes its toast for as long as the thought can
+    /// be taken back, then closes. The capture bar is back the whole time.
     @MainActor
-    private func advanceMoment(nodeID: UUID, title: String) {
-        guard moment?.id == nodeID else { return }
-        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
-            moment?.title = title
-        }
-        scheduleFinish(after: 3.6)
-
-        if let hint = PostCaptureMoment.strongRelatedHint(for: nodeID, context: context, ai: ai),
-           moment?.id == nodeID {
-            withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
-                moment?.related = hint
-            }
-            scheduleFinish(after: 4.2)
-        }
-    }
-
-    private func scheduleFinish(after seconds: Double) {
+    private func showToast(for nodeID: UUID) {
+        control.toastShowing = true
+        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .linger }
         fadeTask?.cancel()
-        fadeTask = Task {
-            try? await Task.sleep(for: .seconds(seconds))
-            guard !Task.isCancelled else { return }
-            await MainActor.run { finishOrLinger() }
-        }
-    }
-
-    /// The card's beat is over. If the thought can still be taken back, the
-    /// overlay shrinks to a quiet Undo pill (backdrop gone) and finishes
-    /// only when the undo window actually closes.
-    @MainActor
-    private func finishOrLinger() {
-        guard let nodeID = moment?.id, session.undoAvailable(for: nodeID) else {
-            onFinish()
-            return
-        }
-        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
-            phase = .linger
-            moment = nil
-        }
         fadeTask = Task {
             while !Task.isCancelled, session.undoAvailable(for: nodeID) {
                 try? await Task.sleep(for: .seconds(0.5))
@@ -528,9 +474,24 @@ struct FastCaptureSessionView: View {
         }
     }
 
+    /// The bar was tapped or held while the toast showed: the toast steps
+    /// aside and the same overlay takes the next thought, empty.
+    private func beginNextCapture() {
+        fadeTask?.cancel()
+        isSaving = false
+        text = ""
+        imageData = nil
+        heldDraft = nil
+        message = nil
+        settlingWords = ""
+        settled = false
+        control.toastShowing = false
+        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .composing }
+    }
+
     /// Take the released thought back: it returns to the field, words,
     /// recording and image intact, and never entered the Ocean.
-    private func undoFromMoment() {
+    private func undoCapture() {
         fadeTask?.cancel()
         guard let draft = session.undoLastRelease() else {
             if phase == .linger { onFinish() }
@@ -540,18 +501,9 @@ struct FastCaptureSessionView: View {
         heldDraft = draft.audioData != nil ? draft : nil
         text = [draft.text, draft.transcript].map(\.trimmed).filter { !$0.isEmpty }.joined(separator: " ")
         imageData = draft.imageData
-        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
-            moment = nil
-            phase = .composing
-        }
+        control.toastShowing = false
+        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .composing }
         textFocused = true
-    }
-
-    private func seeInOcean(_ moment: PostCaptureMoment) {
-        fadeTask?.cancel()
-        textFocused = false
-        onOpenNode?(moment.id)
-        onFinish()
     }
 
     /// The X. Mid-take it cancels the take (nothing is saved yet); after a

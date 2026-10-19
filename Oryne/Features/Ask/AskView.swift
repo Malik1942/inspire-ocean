@@ -42,19 +42,14 @@ struct AskView: View {
             ZStack {
                 OceanBackground()
                 transcript
+                ShoreGradient()
             }
             .contentShape(Rectangle())
-            // Tapping open water folds the keyboard. Buttons, chips, and the
+            // Tapping open water folds the keyboard. Buttons, rows, and the
             // input bar sit above this gesture, so their taps still win.
             .onTapGesture { inputFocused = false }
-            .navigationTitle("Ask the Ocean")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    SettingsGearButton(isPresented: $showSettings)
-                }
-            }
+            .navigationTitle("Ask")
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showSettings) { OceanSettingsView() }
             .safeAreaInset(edge: .bottom) { inputBar }
             .sheet(item: $openedNode) { ExpandedNodeView(node: $0) }
@@ -69,20 +64,24 @@ struct AskView: View {
 
     // MARK: Transcript
 
+    /// The page reads like Tide: the title row, then each question in New
+    /// York with its answer under it as plain text. No bubbles, no boxes.
     private var transcript: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 0) {
+                    PageTitleRow(title: "Ask", showSettings: $showSettings)
                     if messages.isEmpty && searchPhase == nil { emptyState }
                     ForEach(messages) { message in
                         messageView(message).id(message.id)
                     }
-                    if let searchPhase { searchBubble(searchPhase).id("searching") }
+                    if let searchPhase { searchLine(searchPhase).id("searching") }
                 }
-                .padding()
-                // Clear of the floating capture button.
-                .padding(.bottom, 8)
+                .padding(.horizontal, OceanSpacing.gutter)
+                .padding(.top, 8)
+                .padding(.bottom, OceanSpacing.block)
             }
+            .scrollDismissesKeyboard(.interactively)
             .onChange(of: messages.count) { _, _ in
                 withAnimation { proxy.scrollTo(messages.last?.id, anchor: .bottom) }
             }
@@ -95,44 +94,41 @@ struct AskView: View {
     @ViewBuilder
     private func messageView(_ message: ChatMessage) -> some View {
         if message.role == .user {
-            HStack {
-                Spacer(minLength: 40)
-                Text(message.text)
-                    .foregroundStyle(OceanTheme.abyss)
-                    .padding(.horizontal, 14).padding(.vertical, 10)
-                    .background(OceanTheme.accent.opacity(0.92), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            }
+            // The question is the heading of what follows it.
+            Text(message.text)
+                .font(OceanType.subjectTitle)
+                .foregroundStyle(OceanTheme.foam)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, message.id == messages.first?.id ? 32 : OceanSpacing.section + 8)
         } else {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 0) {
                 Text(AnswerMarkdown.attributed(message.text))
-                    .font(.callout)
-                    .lineSpacing(3)
+                    .font(.body)
+                    .lineSpacing(5)
                     .foregroundStyle(OceanTheme.foam)
-                    .padding(.horizontal, 16).padding(.vertical, 13)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .strokeBorder(Color.white.opacity(0.07), lineWidth: 0.5)
-                    )
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
 
                 if let note = provenanceNote(message) {
                     Text(note)
-                        .font(.caption2)
-                        .foregroundStyle(OceanTheme.faint)
-                        .padding(.leading, 6)
+                        .font(.footnote)
+                        .foregroundStyle(OceanTheme.mist)
+                        .padding(.top, 10)
                 }
-                // Found: the thoughts the answer drew from, as chips that
-                // open the real thing.
+                // Found: the thoughts the answer drew from, each a line that
+                // opens the real thing.
                 if !message.referencedNodeIDs.isEmpty {
-                    sourceChips(for: message)
-                        .padding(.leading, 2)
+                    sources(for: message)
+                        .padding(.top, OceanSpacing.block)
                 }
                 if let outward = message.outwardText, !outward.isEmpty {
                     outwardView(outward)
+                        .padding(.top, OceanSpacing.block)
                 }
             }
-            .padding(.trailing, 24)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 14)
         }
     }
 
@@ -147,43 +143,39 @@ struct AskView: View {
         }
     }
 
-    /// Knowledge from beyond the user's notes. A warm whisper of a rim and
-    /// label set its provenance apart from the grounded reflection above it:
-    /// lit from the open sea, not their water.
+    /// Knowledge from beyond the user's notes, set apart by its warm label
+    /// alone: lit from the open sea, not their water.
     private func outwardView(_ text: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Beyond your Ocean", systemImage: "sparkles")
-                .font(.caption2.weight(.medium))
+                .font(OceanType.eyebrow)
                 .foregroundStyle(OceanTheme.glowWarm)
             Text(AnswerMarkdown.attributed(text))
-                .foregroundStyle(OceanTheme.foam)
+                .font(.subheadline)
+                .lineSpacing(4)
+                .foregroundStyle(OceanTheme.text)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.horizontal, 14).padding(.vertical, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .strokeBorder(OceanTheme.glowWarm.opacity(0.25), lineWidth: 0.6)
-        )
     }
 
-    private func sourceChips(for message: ChatMessage) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Drawn from").font(.caption2).foregroundStyle(OceanTheme.faint)
-            FlowLayout(spacing: 6) {
-                ForEach(sourceNodes(message), id: \.id) { node in
-                    Button { openedNode = node } label: {
-                        Label(node.displayTitle, systemImage: node.kind.symbol)
-                            .font(.caption).lineLimit(1)
-                    }
-                    .buttonStyle(.oceanSecondary)
+    private func sources(for message: ChatMessage) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Drawn from")
+                .font(OceanType.eyebrow)
+                .foregroundStyle(OceanTheme.mist)
+                .padding(.bottom, 4)
+            ForEach(sourceNodes(message), id: \.id) { node in
+                Button { openedNode = node } label: {
+                    ThoughtLine(node: node, showsChevron: true)
                 }
+                .buttonStyle(.plain)
             }
         }
     }
 
-    /// The finding, made visible — same capsule, two quiet beats.
-    private func searchBubble(_ phase: SearchPhase) -> some View {
+    /// The finding, made visible where the answer will land: the Ocean read
+    /// under a breathing lamp, then the find named for a beat.
+    private func searchLine(_ phase: SearchPhase) -> some View {
         HStack(spacing: 8) {
             switch phase {
             case .reading:
@@ -191,18 +183,18 @@ struct AskView: View {
 
             case .found(let count):
                 Image(systemName: "water.waves")
-                    .font(.caption2)
+                    .font(.footnote)
                     .foregroundStyle(OceanTheme.mist)
                 Text(foundLabel(count))
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundStyle(OceanTheme.mist)
             }
         }
-        .padding(.horizontal, 14).padding(.vertical, 12)
-        .background(.ultraThinMaterial, in: Capsule())
-        .background {
-            if case .reading = phase { ThinkingLamp() }
+        .padding(.vertical, 8)
+        .background(alignment: .leading) {
+            if case .reading = phase { ThinkingLamp().offset(x: -60) }
         }
+        .padding(.top, 14)
         .animation(.spring(response: 0.36, dampingFraction: 0.86), value: phase)
     }
 
@@ -214,22 +206,46 @@ struct AskView: View {
         }
     }
 
+    /// One line on what Ask is for, then three questions to start from, as
+    /// lines of text that fill the field.
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Find a thought, or ask what a few of them mean together. Answers come from what you have captured.")
-                .font(.subheadline).foregroundStyle(OceanTheme.mist)
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(samplePrompts, id: \.self) { prompt in
-                    Button { input = prompt } label: {
-                        Label(prompt, systemImage: "sparkle")
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Find a thought, or ask what a few of them mean together.")
+                .font(.body)
+                .foregroundStyle(OceanTheme.text)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 12)
+
+            Text("Try asking")
+                .font(OceanType.sectionLabel)
+                .foregroundStyle(OceanTheme.mist)
+                .padding(.leading, 2)
+                .padding(.top, OceanSpacing.section)
+                .padding(.bottom, 4)
+
+            ForEach(samplePrompts, id: \.self) { prompt in
+                Button {
+                    input = prompt
+                    inputFocused = true
+                } label: {
+                    HStack(alignment: .firstTextBaseline, spacing: 12) {
+                        Text(prompt)
+                            .font(.body)
+                            .foregroundStyle(OceanTheme.foam)
+                            .multilineTextAlignment(.leading)
+                        Spacer(minLength: 8)
+                        Image(systemName: "arrow.up.left")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(OceanTheme.faint)
                     }
-                    .buttonStyle(.oceanSecondary)
+                    .padding(.vertical, 12)
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .accessibilityHint("Puts this question in the field.")
             }
-            .padding(.top, 4)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.top, 30)
     }
 
     private var samplePrompts: [String] {
@@ -240,26 +256,34 @@ struct AskView: View {
 
     // MARK: Input
 
+    /// The capture bar's twin: the same capsule, material, height and place
+    /// above the tab bar, the send disc where the capture disc sits. It grows
+    /// into a rounded rectangle with the same end radius past one line.
     private var inputBar: some View {
-        HStack(spacing: 10) {
+        HStack(alignment: .bottom, spacing: 12) {
             TextField("Ask the Ocean", text: $input, axis: .vertical)
                 .textFieldStyle(.plain)
+                .font(.body)
                 .focused($inputFocused)
                 .foregroundStyle(OceanTheme.foam)
-                .padding(.horizontal, 14).padding(.vertical, 10)
-                .background(.ultraThinMaterial, in: Capsule())
+                .tint(OceanTheme.accent)
                 .lineLimit(1...4)
+                .padding(.vertical, 17)
 
             Button(action: send) {
                 Image(systemName: "arrow.up")
             }
-            .buttonStyle(.oceanPrimaryIcon)
+            .buttonStyle(OceanSendDiscStyle())
             .disabled(!canSend)
+            .padding(.bottom, FastCaptureLayout.discInset)
             .accessibilityLabel("Ask")
         }
-        .padding(.horizontal)
-        .padding(.vertical, 8)
-        .background(.ultraThinMaterial)
+        .padding(.leading, FastCaptureLayout.barHeight / 2 - 8)
+        .padding(.trailing, FastCaptureLayout.discInset)
+        .frame(minHeight: FastCaptureLayout.barHeight)
+        .background(OceanBarBackground(cornerRadius: FastCaptureLayout.barHeight / 2))
+        .padding(.horizontal, OceanSpacing.gutter)
+        .padding(.bottom, FastCaptureLayout.insetBarLift)
     }
 
     private var canSend: Bool { !input.trimmed.isEmpty && searchPhase == nil }
@@ -302,6 +326,8 @@ struct AskView: View {
         }
         let snapshot = nodes
         input = ""
+        // The answer is what to look at now; the keyboard would cover it.
+        inputFocused = false
         run(userText: query) {
             await ai.respond(to: query, history: history, mode: Self.mode, nodes: snapshot)
         }
@@ -379,18 +405,18 @@ private struct ThinkingText: View {
 
     var body: some View {
         if reduceMotion || calm {
-            Text(text).font(.caption).foregroundStyle(OceanTheme.mist)
+            Text(text).font(.subheadline).foregroundStyle(OceanTheme.mist)
         } else {
             TimelineView(.animation) { timeline in
                 let t = timeline.date.timeIntervalSinceReferenceDate
                 // One sweep every 1.8 s, left to right, a soft band.
                 let x = CGFloat((t.truncatingRemainder(dividingBy: 1.8)) / 1.8) * 1.6 - 0.3
                 Text(text)
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundStyle(OceanTheme.mist)
                     .overlay {
                         Text(text)
-                            .font(.caption)
+                            .font(.subheadline)
                             .foregroundStyle(OceanTheme.glowWarm)
                             .mask(
                                 LinearGradient(
@@ -408,7 +434,7 @@ private struct ThinkingText: View {
     }
 }
 
-/// The lamp behind the reading capsule, breathing: the same light Tide
+/// The lamp behind the reading line, breathing: the same light Tide
 /// gives its resurfacing thought, here telling you the water is awake.
 private struct ThinkingLamp: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion

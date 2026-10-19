@@ -29,13 +29,31 @@ struct CaptureBar: View {
         .padding(.leading, FastCaptureLayout.barHeight / 2 - 8)
         .padding(.trailing, FastCaptureLayout.discInset)
         .frame(height: FastCaptureLayout.barHeight)
-        .background(
-            // Dense enough to read over anything: material under a deep tint.
-            Capsule()
-                .fill(.regularMaterial)
-                .overlay(Capsule().fill(OceanTheme.deep.opacity(0.55)))
-                .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
-        )
+        .background(OceanBarBackground())
+    }
+}
+
+/// The surface every floating bar wears: the capture bar, Ask's bar, the
+/// capture toast. Dense enough to read over anything: material under a deep
+/// tint, one soft shadow. A capsule, or a rounded rectangle with the same
+/// end radius once a bar grows past one line.
+struct OceanBarBackground: View {
+    /// nil draws a capsule.
+    var cornerRadius: CGFloat? = nil
+
+    var body: some View {
+        if let cornerRadius {
+            surface(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        } else {
+            surface(Capsule())
+        }
+    }
+
+    private func surface<S: Shape>(_ shape: S) -> some View {
+        shape
+            .fill(.regularMaterial)
+            .overlay(shape.fill(OceanTheme.deep.opacity(0.55)))
+            .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
     }
 }
 
@@ -48,7 +66,7 @@ struct CaptureBarPlacement: ViewModifier {
         content.overlay(alignment: .bottom) {
             CaptureBar()
                 .environment(control)
-                .padding(.horizontal, 16)
+                .padding(.horizontal, OceanSpacing.gutter)
                 .padding(.bottom, FastCaptureLayout.tabBarClearance)
                 .ignoresSafeArea(.keyboard)
                 .opacity(show ? 1 : 0)

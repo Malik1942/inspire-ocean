@@ -8,12 +8,16 @@ import SwiftUI
 /// - Secondary: glass capsule, foam label. Chips, Undo, Summarize, Close.
 /// - Icon: a 36 pt glass circle in a 44 pt target, mist glyph. Gear, X.
 ///
-/// Radii: anything up to 48 pt tall is a full capsule; cards are 20 pt
-/// continuous; media inside a card 14 pt. Glyphs are SF Symbols, outline
-/// variants, regular weight, 17 pt; only the capture disc and Stop use fills.
+/// Radii: anything up to 56 pt tall is a full capsule; tiles (anything you
+/// open: a card, a row, a current) are 20 pt continuous; media at the top of
+/// a page 14 pt; a thumbnail inside a tile 10 pt. Glyphs are SF Symbols,
+/// outline variants, regular weight, 17 pt; only the capture disc and Stop
+/// use fills. The Icon style is for page chrome (the gear, a close), never
+/// inside a tile: a chevron in content is a bare glyph.
 enum OceanRadius {
     static let card: CGFloat = 20
     static let media: CGFloat = 14
+    static let thumbnail: CGFloat = 10
 }
 
 struct OceanPrimaryButtonStyle: ButtonStyle {
@@ -52,6 +56,74 @@ struct OceanIconButtonStyle: ButtonStyle {
             .opacity(configuration.isPressed ? 0.7 : 1)
             .frame(width: 44, height: 44)
             .contentShape(Circle())
+    }
+}
+
+/// The send disc in Ask's bar, the twin of the capture disc: 44 pt, flat.
+/// Matte while there is nothing to send, Primary once there is.
+struct OceanSendDiscStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 17, weight: .semibold))
+            .foregroundStyle(isEnabled ? OceanTheme.abyss : OceanTheme.mist)
+            .frame(width: FastCaptureLayout.buttonSize, height: FastCaptureLayout.buttonSize)
+            .background(isEnabled ? OceanTheme.accent : Color.white.opacity(0.10), in: Circle())
+            .opacity(configuration.isPressed ? 0.8 : 1)
+            .contentShape(Circle())
+            .animation(.easeOut(duration: 0.15), value: isEnabled)
+    }
+}
+
+/// The row every tab opens with: the tab's name in New York and the gear at
+/// the right, on one line. Tide and Ask draw it in their content; Library's
+/// system large title wears the same face (OceanType).
+struct PageTitleRow: View {
+    let title: LocalizedStringKey
+    @Binding var showSettings: Bool
+
+    var body: some View {
+        HStack(alignment: .center) {
+            Text(title)
+                .font(OceanType.pageTitle)
+                .foregroundStyle(OceanTheme.foam)
+                .accessibilityAddTraits(.isHeader)
+            Spacer()
+            SettingsGearButton(isPresented: $showSettings)
+                .buttonStyle(.oceanIcon)
+        }
+        .padding(.top, 8)
+    }
+}
+
+/// A thought mentioned inside something else (an answer's sources, the
+/// resurfacing thought's neighbours): its kind and its title, a line of
+/// text, no tile. A tile is for a list of thoughts; a line is a reference.
+struct ThoughtLine: View {
+    let node: Node
+    var showsChevron = false
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Image(systemName: node.kind.symbol)
+                .font(.footnote)
+                .foregroundStyle(OceanTheme.mist)
+                .frame(width: 18)
+            Text(node.displayTitle)
+                .font(.body)
+                .foregroundStyle(OceanTheme.foam)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+            Spacer(minLength: 8)
+            if showsChevron {
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(OceanTheme.faint)
+            }
+        }
+        .padding(.vertical, 10)
+        .contentShape(Rectangle())
     }
 }
 

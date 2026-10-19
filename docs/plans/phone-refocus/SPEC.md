@@ -23,6 +23,8 @@ Decisions 1 to 4 are implemented first. Decisions 5 and 6 are direction, scoped 
 
 Visual language (Malik, 2026-10-17, after three rounds): New York (Apple's serif, no bundled font) in three display moments only, the Tide title, the italic section labels and the resurfacing title, system type everywhere else (kept after a side-by-side on device); no rendered materials and no hairline borders, surfaces are flat fills; one lamp in the water behind Resurfacing is the page's only light and its label the only warm color; the capture bar is dense material over a deep tint with a shore gradient under it and the tab bar; three controls (Primary, Secondary, Icon) and nothing else. Decided on wireframes and mocks before code, each time.
 
+Refined 2026-10-18 (Malik: "delicate and well designed ... built by spacing, font, hierarchy and layout, not round corners"): New York names what a page is about, so each tab's title (Tide, Ask, and Library's large title), a thought's or a current's title on its own page, and the question in Ask; plus the italic section labels. Type and spacing do the grouping: one 20 pt gutter, items tight, sections 40 pt apart. Only things you open are tiles (flat fill, 20 pt corners, no tag capsules); a thought's page is text on the water in one order for every kind (picture or link, meta line, title, words, Summary, transcript). Settings is a native grouped list. Every destructive confirm is the system alert, centered and with Cancel.
+
 
 Three tabs and one button.
 
@@ -37,11 +39,11 @@ Deep links and intents keep working: `oryne://capture/thought` opens the overlay
 
 ## Ask: one mode
 
-One field. Placeholder: "Ask the Ocean". No mode picker.
+One field. Placeholder: "Ask the Ocean". No mode picker. The bar is the capture bar's twin (same capsule, height, material and place, the send disc where the capture disc sits), and the page reads like Tide: "Ask" in New York, each question in New York with its answer under it as text. No bubbles.
 
 The answer has a fixed shape, and every part is grounded or marked:
 
-1. **Found**: the fragments retrieval chose, as chips that open the real thing. Present whenever anything cleared the similarity floor.
+1. **Found**: the fragments retrieval chose, as lines that open the real thing. Present whenever anything cleared the similarity floor.
 2. **What it means**: one short paragraph composed from those fragments. This is today's Synthesis. When the question is a lookup ("that thing about ferries"), this paragraph is one sentence or absent; the chips are the answer.
 3. **Beyond your Ocean** (optional, marked apart): today's Research outward note, only when retrieval was thin or the question clearly asks for the outside world. Never mixed into the paragraph.
 
@@ -72,8 +74,8 @@ Words land directly on the water as subtitles: large, word by word, no frame aro
 
 1. The words shrink and settle into the water; the OceanReceived chime and swell play, as the typed path does today.
 2. The thought is saved before anything says so (Philosophy §5). The settle animation is the confirmation and runs only after the save is checked.
-3. An **Undo** pill holds for the same window the typed path uses, then goes. Tapping it removes the thought, by name.
-4. The Fast Capture result card ("Understood as … · Drifts near …") stays, because it is the one moment the Ocean answers a capture. It appears after the settle, and the overlay closes from it as today.
+3. One toast, centered above the capture bar: "Carried into the sea · Undo", held for the whole 10-second undo window, typed or whispered. The bar stays usable under it; a tap or a hold on it starts the next capture.
+4. Nothing else answers the capture (Malik, 2026-10-18): the "Understood as … · Drifts near …" card is gone.
 
 Gone: "Captured", "Tap words to keep editing", Edit, Keep, the auto-release countdown, the review transcript editor, the Listen chip at capture time. Editing words, re-transcribing, and listening to the audio live in the thought's expanded view, where they already exist.
 

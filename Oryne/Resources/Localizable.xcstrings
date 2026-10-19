@@ -1,22 +1,8 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Stills the water and its light, and makes the capture button tap to start and tap to stop instead of holding. The system Reduce Motion setting stills the water too." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "让水面和光静止，并把捕捉按钮改为轻点开始、再轻点停止，不必按住。系统的“减弱动态效果”同样会让水面静止。"
-          }
-        }
-      }
-    },
-    "" : {
-
-    },
-    "%lld" : {
-
-    },
+    "" : {},
+    "%lld" : {},
     "%lld fragments" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -144,6 +130,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "添加主题"
+          }
+        }
+      }
+    },
+    "Add a thought" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加一条灵感"
           }
         }
       }
@@ -354,6 +350,16 @@
         }
       }
     },
+    "Branches" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分支"
+          }
+        }
+      }
+    },
     "Branches grown from this" : {
       "localizations" : {
         "zh-Hans" : {
@@ -491,6 +497,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已捕捉"
+          }
+        }
+      }
+    },
+    "Carried into the sea" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已汇入大海"
           }
         }
       }
@@ -1069,6 +1085,16 @@
         }
       }
     },
+    "Find a thought, or ask what a few of them mean together." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "找一条灵感，或问问几条灵感合在一起意味着什么。"
+          }
+        }
+      }
+    },
     "Find a thought, or ask what a few of them mean together. Answers come from what you have captured." : {
       "localizations" : {
         "zh-Hans" : {
@@ -1168,6 +1194,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "仅影响操作按钮、控制中心和小组件的入口。输入栏本身两种都有。"
+          }
+        }
+      }
+    },
+    "From the page" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "来自网页"
           }
         }
       }
@@ -1285,9 +1321,7 @@
         }
       }
     },
-    "https://…" : {
-
-    },
+    "https://…" : {},
     "I didn't catch anything to capture." : {
       "localizations" : {
         "zh-Hans" : {
@@ -1922,9 +1956,7 @@
         }
       }
     },
-    "Oryne" : {
-
-    },
+    "Oryne" : {},
     "Oryne is a place for unfinished thoughts, passing signals, and ideas that are not ready to become plans yet." : {
       "localizations" : {
         "zh-Hans" : {
@@ -2054,6 +2086,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "项目"
+          }
+        }
+      }
+    },
+    "Puts this question in the field." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "把这个问题放进输入框。"
           }
         }
       }
@@ -2724,6 +2766,16 @@
         }
       }
     },
+    "Stills the water and its light, and makes the capture button tap to start and tap to stop instead of holding. The system Reduce Motion setting stills the water too." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "让水面和光静止，并把捕捉按钮改为轻点开始、再轻点停止，不必按住。系统的“减弱动态效果”同样会让水面静止。"
+          }
+        }
+      }
+    },
     "Stills the water, brightens the words that carry meaning, and widens every touch target. Nothing about your Ocean changes, only how it moves. The system Reduce Motion setting stills the water too." : {
       "localizations" : {
         "zh-Hans" : {
@@ -2755,12 +2807,12 @@
         }
       }
     },
-    "Summarize “%@”" : {
+    "Summarize" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "总结「%@」"
+            "value" : "总结"
           }
         }
       }
@@ -2781,6 +2833,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "总结这条洋流"
+          }
+        }
+      }
+    },
+    "Summarize “%@”" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "总结「%@」"
           }
         }
       }
@@ -3277,6 +3339,16 @@
         }
       }
     },
+    "Try asking" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "试着问问"
+          }
+        }
+      }
+    },
     "Turn into question" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3719,6 +3791,16 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "你的这条内容较长，我读取了其中的一部分"
+          }
+        }
+      }
+    },
+    "Your Ocean" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的海洋"
           }
         }
       }

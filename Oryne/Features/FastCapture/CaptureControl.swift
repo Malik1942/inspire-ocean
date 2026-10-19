@@ -37,6 +37,9 @@ final class CaptureControl {
     var isListening = false
     var level: Double = 0
     var overlayOpen = false
+    /// The overlay is only its toast now: the bar comes back, and a tap or a
+    /// hold on it starts the next capture in the same overlay.
+    var toastShowing = false
 
     /// VoiceOver, Switch Control and Calm Accessibility Mode make the button
     /// tap-to-start, tap-to-stop. The hold is an optimisation, never the only

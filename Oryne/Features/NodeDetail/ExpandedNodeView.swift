@@ -60,27 +60,28 @@ struct NodeDetailContent: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                contentCard
-                whyItMattered
-                if !node.themes.isEmpty { themesSection }
-                if !children.isEmpty { branchesSection }
-                relatedSection
-                if node.linkURL != nil { referenceSection }
-                actions
+            VStack(alignment: .leading, spacing: 0) {
+                subject
+                if !node.themes.isEmpty { themesSection.padding(.top, OceanSpacing.section) }
+                if !children.isEmpty { branchesSection.padding(.top, OceanSpacing.section) }
+                relatedSection.padding(.top, OceanSpacing.section)
+                actions.padding(.top, OceanSpacing.section)
             }
-            .padding()
-            .padding(.bottom, 40)
+            .padding(.horizontal, OceanSpacing.gutter)
+            .padding(.top, 8)
+            // Pushed in the Library this page has the capture bar over its
+            // foot: the last actions scroll fully clear of it.
+            .padding(.bottom, FastCaptureLayout.contentClearance + OceanSpacing.block)
         }
         .background(OceanBackground())
-        .navigationTitle(node.kind.label)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             // Only a sheet root needs its own dismiss control; a pushed view
             // already has the system back button on the leading side.
             if isSheetRoot {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Close") { dismiss() }
+                    Button { dismiss() } label: { Image(systemName: "xmark") }
+                        .accessibilityLabel("Close")
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
@@ -111,18 +112,11 @@ struct NodeDetailContent: View {
                 }
             }
         }
-        // The original system confirmation (the chat-bubble popover). A Liquid
-        // Glass alternative is kept in OceanConfirmationDialog.swift — to switch,
-        // replace this whole modifier with:
-        //   .oceanConfirmationDialog(
-        //       isPresented: $showDeleteConfirm,
-        //       title: "Delete this thought?",
-        //       message: "This drifts out of the Ocean for good.",
-        //       confirmTitle: "Delete", onConfirm: deleteNode)
-        .confirmationDialog(
+        // The system alert: centered within reach of the thumb, Cancel always
+        // there. Every destructive confirm in the app takes this one form.
+        .alert(
             "Delete this thought?",
-            isPresented: $showDeleteConfirm,
-            titleVisibility: .visible
+            isPresented: $showDeleteConfirm
         ) {
             Button("Delete", role: .destructive) { deleteNode() }
             Button("Cancel", role: .cancel) {}
@@ -140,10 +134,9 @@ struct NodeDetailContent: View {
         }
         // Words the user has touched are never overwritten by a re-transcribe
         // without asking (mirrors NodeEditSheet's transcript-edit guard).
-        .confirmationDialog(
+        .alert(
             "Replace transcript?",
-            isPresented: $showReplaceConfirm,
-            titleVisibility: .visible
+            isPresented: $showReplaceConfirm
         ) {
             Button("Replace", role: .destructive) {
                 if let pending = pendingRetranscribe {
@@ -233,10 +226,12 @@ struct NodeDetailContent: View {
                 } else {
                     Image(systemName: "character.bubble")
                 }
-                Image(systemName: "chevron.down").font(.system(size: 8, weight: .semibold))
+                Image(systemName: "chevron.down").font(.system(size: 10, weight: .semibold))
             }
-            .font(.caption)
+            .font(.footnote.weight(.semibold))
             .foregroundStyle(OceanTheme.mist)
+            .frame(minHeight: 32)
+            .contentShape(Rectangle())
         }
         .disabled(retranscribing)
         .accessibilityLabel("Transcript language")
@@ -308,114 +303,58 @@ struct NodeDetailContent: View {
         return Locale.current.localizedString(forIdentifier: localeID)
     }
 
-    // MARK: Sections
+    // MARK: The thought
 
-    private var contentCard: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: 12) {
-                imageContent
-                if let transcription = node.transcription, !transcription.isEmpty {
-                    if let summary = node.summary, !summary.isEmpty {
-                        // The reading first, honest about its origin (§3); the
-                        // words themselves previewed under it, a tap away in full.
-                        HStack {
-                            Label("Summary", systemImage: "sparkles")
-                                .font(.caption).foregroundStyle(OceanTheme.mist)
-                            Spacer()
-                            if let data = node.audioData, !data.isEmpty {
-                                ListenChip(data: data)
-                            }
-                            transcriptMenu(node.audioData)
-                        }
-                        Text(summary).foregroundStyle(OceanTheme.foam)
-
-                        Label("Transcript", systemImage: "waveform")
-                            .font(.caption).foregroundStyle(OceanTheme.mist)
-                            .padding(.top, 6)
-                        Button {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { transcriptOpen.toggle() }
-                        } label: {
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text(transcription)
-                                    .foregroundStyle(OceanTheme.text)
-                                    .lineLimit(transcriptOpen ? nil : 3)
-                                    .multilineTextAlignment(.leading)
-                                Text(transcriptOpen ? "Less" : "More")
-                                    .font(.subheadline.weight(.medium))
-                                    .foregroundStyle(OceanTheme.accent)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityHint(transcriptOpen ? Text("Collapses the transcript.") : Text("Shows the whole transcript."))
-                    } else {
-                        HStack {
-                            Label("Transcript", systemImage: "waveform")
-                                .font(.caption).foregroundStyle(OceanTheme.mist)
-                            Spacer()
-                            if let data = node.audioData, !data.isEmpty {
-                                ListenChip(data: data)
-                            }
-                            transcriptMenu(node.audioData)
-                        }
-                        Text(transcription).foregroundStyle(OceanTheme.foam)
-                    }
-                } else if node.kind == .voice {
-                    HStack {
-                        // Honest about state: "transcribing" only while a pass
-                        // can plausibly still be running; after that, the words
-                        // are simply missing and the recovery is one tap away.
-                        Label(
-                            (node.createdAt.timeIntervalSinceNow > -120 ? "Transcribing…" : "No words yet") as LocalizedStringKey,
-                            systemImage: "waveform"
-                        )
-                        .font(.caption).foregroundStyle(OceanTheme.mist)
-                        Spacer()
-                        if let data = node.audioData, !data.isEmpty {
-                            ListenChip(data: data)
-                            transcriptMenu(data)
-                        }
-                    }
-                    if node.createdAt.timeIntervalSinceNow <= -120 {
-                        Text("Tap to type the words or re-transcribe.")
-                            .font(.caption2).foregroundStyle(OceanTheme.faint)
-                    }
-                }
-                if !node.text.isEmpty {
-                    Text(node.text)
-                        .font(.body).foregroundStyle(OceanTheme.foam)
-                }
-                // A pure-link node has no words of its own — lead with what the
-                // link is about (the AI-derived title + summary/description) so
-                // the top never reads blank. The link itself is demoted to the
-                // "Reference" section at the bottom.
-                if !hasOwnContent, node.linkURL != nil {
-                    linkLead
-                }
+    /// The thought itself, in one order for every kind: what it shows (its
+    /// picture, or its link when there is no picture), what it is and when,
+    /// its title, its words, then the device's reading and the transcript.
+    /// Text on the water; only the picture and the link are framed.
+    private var subject: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if node.hasImages || node.linkURL != nil {
+                media.padding(.bottom, 20)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        // Tapping the words themselves is how corrections will actually be
-        // discovered — same sheet as the toolbar pencil, text focused.
-        .onTapGesture {
-            editFocusesBody = true
-            showEditSheet = true
+            NodeMeta(node: node, detail: metaDetail)
+            Text(node.displayTitle)
+                .font(OceanType.subjectTitle)
+                .foregroundStyle(OceanTheme.foam)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 8)
+                .contentShape(Rectangle())
+                // Tapping the words is how corrections are found: the same
+                // sheet as the toolbar pencil.
+                .onTapGesture { edit(focusingBody: false) }
+                .accessibilityAddTraits(.isHeader)
+            if showsWords {
+                Text(node.text)
+                    .font(.body)
+                    .lineSpacing(4)
+                    .foregroundStyle(OceanTheme.foam)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 12)
+                    .contentShape(Rectangle())
+                    .onTapGesture { edit(focusingBody: true) }
+            }
+            if node.hasImages, node.linkURL != nil {
+                // A picture leads; the link it came with follows the words.
+                LinkCard(node: node)
+                    .padding(.top, OceanSpacing.block)
+            }
+            readingBlock
+            transcriptBlock
         }
     }
 
-    /// All of the node's images. A single image renders large (fit); several
-    /// render as a horizontal strip of square thumbnails. Any is tappable to a
-    /// full-screen, paged viewer.
+    /// The picture at the page's full width, in its own shape up to a limit
+    /// (portrait 3:4, panorama 1.9:1) so a tall photo never fills the
+    /// screen. Several pictures make a strip. The viewer shows each whole.
     @ViewBuilder
-    private var imageContent: some View {
+    private var media: some View {
         let datas = node.imageDatas
         if datas.count == 1, let ui = UIImage(data: datas[0]) {
-            Image(uiImage: ui)
-                .resizable().scaledToFit()
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .onTapGesture { viewerIndex = 0; showImageViewer = true }
+            picture(ui)
         } else if datas.count > 1 {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
@@ -423,90 +362,198 @@ struct NodeDetailContent: View {
                         if let ui = UIImage(data: data) {
                             Image(uiImage: ui)
                                 .resizable().scaledToFill()
-                                .frame(width: 150, height: 150)
-                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .frame(width: 176, height: 220)
+                                .clipShape(RoundedRectangle(cornerRadius: OceanRadius.media, style: .continuous))
+                                .contentShape(RoundedRectangle(cornerRadius: OceanRadius.media, style: .continuous))
                                 .onTapGesture { viewerIndex = index; showImageViewer = true }
                         }
                     }
                 }
             }
+            .scrollClipDisabled()
+        } else if node.linkURL != nil {
+            LinkCard(node: node)
         }
     }
 
-    /// Whether the fragment carries content of its own (an image or words), as
-    /// opposed to a bare link whose meaning lives entirely in its enrichment.
-    private var hasOwnContent: Bool {
-        node.hasImages
-            || node.kind == .voice
-            || node.transcription?.isEmpty == false
-            || !node.text.isEmpty
+    private func picture(_ ui: UIImage) -> some View {
+        let aspect = ui.size.height > 0 ? ui.size.width / ui.size.height : 1
+        let shape = RoundedRectangle(cornerRadius: OceanRadius.media, style: .continuous)
+        return Color.clear
+            .aspectRatio(min(max(aspect, 0.75), 1.9), contentMode: .fit)
+            .frame(maxWidth: .infinity)
+            .overlay { Image(uiImage: ui).resizable().scaledToFill() }
+            .clipShape(shape)
+            .contentShape(shape)
+            .onTapGesture { viewerIndex = 0; showImageViewer = true }
+            .accessibilityElement()
+            .accessibilityLabel(Text(NodeKind.image.label))
+            .accessibilityAddTraits(.isButton)
     }
 
-    /// Leading content for a pure-link node: what the link is about, drawn from
-    /// enrichment — the AI-derived title and the summary (or description). Falls
-    /// back to the URL so the top is never blank before enrichment lands.
+    /// The meta line's lead on a thought's own page: the kind by name, a
+    /// whisper's length, a branch's kind.
+    private var metaDetail: String {
+        var parts = [node.kind.label]
+        if node.kind == .voice, let data = node.audioData,
+           let seconds = AudioDurations.seconds(for: data, id: node.id) {
+            parts.append(AudioDurations.format(seconds))
+        }
+        if let branchType = node.branchType { parts.append(branchType.label) }
+        return parts.joined(separator: " · ")
+    }
+
+    /// The user's own words, unless they already are the title.
+    private var showsWords: Bool {
+        let words = node.text.trimmed
+        return !words.isEmpty && words != node.displayTitle.trimmed
+    }
+
+    private func edit(focusingBody: Bool) {
+        editFocusesBody = focusingBody
+        showEditSheet = true
+    }
+
+    /// What the device read, said to be a reading (§3): the summary of a
+    /// long whisper or of the page a link points to, under one label in one
+    /// place. A page's own description, when there is no summary, says so.
+    private enum Reading {
+        case summary(String)
+        case page(String)
+    }
+
+    private var reading: Reading? {
+        if node.transcription?.isEmpty == false, let summary = node.summary, !summary.isEmpty {
+            return .summary(summary)
+        }
+        guard node.linkURL != nil else { return nil }
+        if let summary = node.linkSummary, !summary.isEmpty { return .summary(summary) }
+        if let description = node.linkDescription, !description.isEmpty { return .page(description) }
+        return nil
+    }
+
     @ViewBuilder
-    private var linkLead: some View {
-        if !node.title.isEmpty {
-            Text(node.title)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(OceanTheme.foam)
-        }
-        if let body = node.linkSummary ?? node.linkDescription, !body.isEmpty {
-            Text(body)
-                .font(.body).foregroundStyle(OceanTheme.foam)
-                .fixedSize(horizontal: false, vertical: true)
-        } else if node.title.isEmpty {
-            Text(node.linkURL?.absoluteString ?? "")
-                .font(.callout).foregroundStyle(OceanTheme.mist).lineLimit(2)
+    private var readingBlock: some View {
+        if let reading {
+            VStack(alignment: .leading, spacing: 8) {
+                switch reading {
+                case .summary(let text):
+                    eyebrow("Summary", systemImage: "sparkles")
+                    readingText(text)
+                case .page(let text):
+                    eyebrow("From the page", systemImage: "doc.text")
+                    readingText(text)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, OceanSpacing.block)
         }
     }
 
-    /// The link, demoted to a bottom reference. The same rich card — only its
-    /// position changes. Its summary block shows only when the node has its own
-    /// content above (otherwise that summary already leads the view).
-    private var referenceSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionTitle("Reference")
-            LinkCard(node: node, showSummary: hasOwnContent)
+    private func readingText(_ text: String) -> some View {
+        Text(text)
+            .font(.body)
+            .lineSpacing(4)
+            .foregroundStyle(OceanTheme.text)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// A whisper's words with its controls on the label's line: listen, and
+    /// the language menu. Under a summary they fold to three lines; without
+    /// one they are the thought's words, in full.
+    @ViewBuilder
+    private var transcriptBlock: some View {
+        if let transcription = node.transcription, !transcription.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 12) {
+                    eyebrow("Transcript", systemImage: "waveform")
+                    Spacer(minLength: 8)
+                    if let data = node.audioData, !data.isEmpty {
+                        ListenChip(data: data)
+                    }
+                    transcriptMenu(node.audioData)
+                }
+                if node.summary?.isEmpty == false {
+                    Button {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { transcriptOpen.toggle() }
+                    } label: {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(transcription)
+                                .font(.body)
+                                .lineSpacing(4)
+                                .foregroundStyle(OceanTheme.text)
+                                .lineLimit(transcriptOpen ? nil : 3)
+                                .multilineTextAlignment(.leading)
+                            Text(transcriptOpen ? "Less" : "More")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(OceanTheme.accent)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint(transcriptOpen ? Text("Collapses the transcript.") : Text("Shows the whole transcript."))
+                } else {
+                    Text(transcription)
+                        .font(.body)
+                        .lineSpacing(4)
+                        .foregroundStyle(OceanTheme.foam)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                        .onTapGesture { edit(focusingBody: true) }
+                }
+            }
+            .padding(.top, OceanSpacing.block)
+        } else if node.kind == .voice {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 12) {
+                    // Honest about state: "transcribing" only while a pass
+                    // can plausibly still be running; after that the words
+                    // are simply missing and the recovery is one tap away.
+                    eyebrow(node.createdAt.timeIntervalSinceNow > -120
+                            ? LocalizedStringKey("Transcribing…")
+                            : LocalizedStringKey("No words yet"),
+                            systemImage: "waveform")
+                    Spacer(minLength: 8)
+                    if let data = node.audioData, !data.isEmpty {
+                        ListenChip(data: data)
+                        transcriptMenu(data)
+                    }
+                }
+                if node.createdAt.timeIntervalSinceNow <= -120 {
+                    Text("Tap to type the words or re-transcribe.")
+                        .font(.footnote)
+                        .foregroundStyle(OceanTheme.mist)
+                        .contentShape(Rectangle())
+                        .onTapGesture { edit(focusingBody: true) }
+                }
+            }
+            .padding(.top, OceanSpacing.block)
         }
     }
 
-    private var whyItMattered: some View {
-        HStack(spacing: 14) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Captured")
-                    .font(.caption2).foregroundStyle(OceanTheme.faint)
-                Text(node.createdAt.formatted(.relative(presentation: .named)))
-                    .font(.subheadline).foregroundStyle(OceanTheme.foam)
-            }
-            if let branchType = node.branchType {
-                Divider().frame(height: 28).overlay(OceanTheme.faint)
-                Label(branchType.label, systemImage: branchType.symbol)
-                    .font(.caption).foregroundStyle(OceanTheme.accent)
-            }
-            if let mood = node.mood {
-                Divider().frame(height: 28).overlay(OceanTheme.faint)
-                Label(mood, systemImage: mood == "bright" ? "sun.max" : "moon.stars")
-                    .font(.caption).foregroundStyle(OceanTheme.glowWarm)
-            }
-            Spacer()
-        }
-        .padding(.horizontal, 4)
+    private func eyebrow(_ text: LocalizedStringKey, systemImage: String) -> some View {
+        Label(text, systemImage: systemImage)
+            .font(OceanType.eyebrow)
+            .foregroundStyle(OceanTheme.mist)
     }
+
+    // MARK: Sections
 
     private var themesSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             sectionTitle("Themes")
-            FlowLayout(spacing: 8) {
-                ForEach(node.themes, id: \.self) { ThemeTag(text: $0, hue: node.hue) }
-            }
+            Text(node.themes.joined(separator: "  ·  "))
+                .font(.body)
+                .foregroundStyle(OceanTheme.text)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     private var branchesSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionTitle("Branches grown from this")
+        VStack(alignment: .leading, spacing: OceanSpacing.item) {
+            sectionTitle("Branches")
             ForEach(children) { child in
                 NavigationLink { NodeDetailContent(node: child) } label: {
                     NodeRow(node: child)
@@ -517,11 +564,11 @@ struct NodeDetailContent: View {
     }
 
     private var relatedSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionTitle("Nearby thoughts")
+        VStack(alignment: .leading, spacing: OceanSpacing.item) {
+            sectionTitle("Nearby")
             if related.isEmpty {
                 Text("Nothing drifts nearby yet.")
-                    .font(.subheadline).foregroundStyle(OceanTheme.faint)
+                    .font(.subheadline).foregroundStyle(OceanTheme.mist)
             } else {
                 ForEach(related) { other in
                     NavigationLink { NodeDetailContent(node: other) } label: {
@@ -554,9 +601,12 @@ struct NodeDetailContent: View {
         }
     }
 
+    /// Section labels as on Tide: New York italic, mist.
     private func sectionTitle(_ text: LocalizedStringKey) -> some View {
         Text(text)
-            .font(.headline).foregroundStyle(OceanTheme.foam)
+            .font(OceanType.sectionLabel)
+            .foregroundStyle(OceanTheme.mist)
+            .padding(.leading, 2)
     }
 }
 

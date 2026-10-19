@@ -92,7 +92,7 @@ struct OceanFieldView: View {
                             newestSection
                             if !currents.isEmpty { currentsSection }
                         }
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, OceanSpacing.gutter)
                         .padding(.top, 8)
                         .padding(.bottom, FastCaptureLayout.contentClearance)
                     }
@@ -124,16 +124,8 @@ struct OceanFieldView: View {
     /// The page title in the brand's display face, with the gear beside it
     /// (the system bar is hidden here so the title can wear the serif).
     private var pageTitle: some View {
-        HStack(alignment: .center) {
-            Text(OceanTab.homeTitle)
-                .font(OceanType.pageTitle)
-                .foregroundStyle(OceanTheme.foam)
-            Spacer()
-            SettingsGearButton(isPresented: $showSettings)
-                .buttonStyle(.oceanIcon)
-        }
-        .padding(.top, 8)
-        .padding(.bottom, -4)
+        PageTitleRow(title: OceanTab.homeTitle, showSettings: $showSettings)
+            .padding(.bottom, -4)
     }
 
     /// One lamp in the water behind the resurfacing thought: ambient light,
@@ -218,23 +210,8 @@ struct OceanFieldView: View {
                             .padding(.vertical, 10)
                     } else {
                         ForEach(nearby) { near in
-                            Button { open(near) } label: {
-                                HStack(alignment: .firstTextBaseline, spacing: 10) {
-                                    Image(systemName: near.kind.symbol)
-                                        .font(.footnote)
-                                        .foregroundStyle(OceanTheme.mist)
-                                        .frame(width: 18)
-                                    Text(near.displayTitle)
-                                        .font(.subheadline)
-                                        .foregroundStyle(OceanTheme.foam)
-                                        .lineLimit(2)
-                                        .multilineTextAlignment(.leading)
-                                    Spacer(minLength: 0)
-                                }
-                                .padding(.vertical, 10)
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
+                            Button { open(near) } label: { ThoughtLine(node: near) }
+                                .buttonStyle(.plain)
                         }
                     }
                 }
@@ -264,7 +241,7 @@ struct OceanFieldView: View {
     }
 
     private func estimatedCardHeight(_ node: Node) -> CGFloat {
-        let banner: CGFloat = node.hasImages || node.linkImageData != nil ? 104 : 0
+        let banner: CGFloat = node.hasImages || node.linkImageData != nil ? 120 : 0
         return 92 + banner + (node.displayTitle.count > 22 ? 22 : 0)
     }
 
@@ -407,27 +384,32 @@ private struct GlanceCard: View {
         if node.modelContext == nil {
             Color.clear.frame(width: 0, height: 0)
         } else {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 0) {
+                // Full-bleed at the top, as in the Library: the card's corner
+                // rounds the picture.
                 if let data = node.imageDatas.first ?? node.linkImageData, let ui = UIImage(data: data) {
-                    Image(uiImage: ui)
-                        .resizable()
-                        .scaledToFill()
+                    Color.clear
+                        .frame(height: 120)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 96)
-                        .clipShape(RoundedRectangle(cornerRadius: OceanRadius.media, style: .continuous))
-                        .padding(.bottom, 4)
+                        .overlay { Image(uiImage: ui).resizable().scaledToFill() }
+                        .clipped()
                 }
-                Text(node.displayTitle)
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(OceanTheme.foam)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
-                NodeMeta(node: node, detail: duration, showsCurrent: false)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(node.displayTitle)
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(OceanTheme.foam)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                    NodeMeta(node: node, detail: duration ?? node.linkDomain, showsCurrent: false)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
-            .background(OceanTheme.fill, in: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous))
+            .background(OceanTheme.fill)
+            .clipShape(RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous))
         }
     }
 

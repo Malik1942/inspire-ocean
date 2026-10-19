@@ -35,9 +35,10 @@ struct CurrentGroup: Identifiable {
     }
 }
 
-/// All currents, readable and searchable. Each current is a card: collapsed
-/// it shows the name and its newest thought in full; tapped, it opens in
-/// place to every thought as a full-width row. Any thought is two taps away.
+/// All currents, readable and searchable. Each current is its name, set as
+/// a heading in New York italic, and its newest thought as a tile under it.
+/// Tapping the name opens the current in place to its newest eight; "Open
+/// current" goes to all of it. No cards around currents, no counts.
 struct CurrentsPage: View {
     @Environment(\.dismiss) private var dismiss
     @Query(filter: #Predicate<Node> { !$0.isArchived }, sort: \Node.createdAt, order: .reverse)
@@ -47,7 +48,7 @@ struct CurrentsPage: View {
     @State private var expanded: String?
     @State private var stream: StreamSelection?
 
-    /// Rows shown inside an expanded current before "Open current".
+    /// Thoughts shown inside an open current before "Open current".
     private static let expandedLimit = 8
 
     private var groups: [CurrentGroup] { CurrentGroup.build(from: nodes) }
@@ -55,7 +56,7 @@ struct CurrentsPage: View {
     private var query: String { search.trimmed }
 
     /// Searching: a current stays when its name or one of its thoughts
-    /// matches, and shows only the matching thoughts, expanded.
+    /// matches, and shows only the matching thoughts, open.
     private var visible: [(group: CurrentGroup, rows: [Node], forced: Bool)] {
         guard !query.isEmpty else {
             return groups.map { ($0, $0.members, false) }
@@ -74,26 +75,27 @@ struct CurrentsPage: View {
             ZStack {
                 OceanBackground(animated: false)
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 10) {
+                    LazyVStack(alignment: .leading, spacing: OceanSpacing.section - 8) {
                         if visible.isEmpty {
                             Text("Nothing drifts near this yet")
                                 .font(.subheadline)
                                 .foregroundStyle(OceanTheme.mist)
-                                .padding(.top, 24)
+                                .padding(.top, OceanSpacing.block)
                                 .frame(maxWidth: .infinity)
                         }
                         ForEach(visible, id: \.group.id) { entry in
-                            card(entry.group, rows: entry.rows, forced: entry.forced)
+                            current(entry.group, rows: entry.rows, forced: entry.forced)
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .padding(.bottom, 24)
+                    .padding(.horizontal, OceanSpacing.gutter)
+                    .padding(.top, 8)
+                    .padding(.bottom, OceanSpacing.section)
                 }
             }
+            // No custom bar background: it would swap in its own appearance
+            // and drop the New York large title Library wears.
             .navigationTitle("Currents")
             .navigationBarTitleDisplayMode(.large)
-            .toolbarBackground(.hidden, for: .navigationBar)
             .searchable(text: $search, prompt: "Search currents and thoughts")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -110,84 +112,59 @@ struct CurrentsPage: View {
         }
     }
 
-    // MARK: Card
+    // MARK: Current
 
-    private func card(_ group: CurrentGroup, rows: [Node], forced: Bool) -> some View {
+    private func current(_ group: CurrentGroup, rows: [Node], forced: Bool) -> some View {
         let isOpen = forced || expanded == group.key
-        return GlassCard(padding: 14) {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 10) {
-                    Button {
-                        guard !forced else { return }
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
-                            expanded = isOpen ? nil : group.key
-                        }
-                    } label: {
-                        HStack {
-                            Text(group.label)
-                                .font(.body.weight(.semibold))
-                                .foregroundStyle(group.isAdrift ? OceanTheme.mist : OceanTheme.foam)
-                                .lineLimit(1)
-                            Spacer()
-                        }
-                        .contentShape(Rectangle())
+        let shown = Array(rows.prefix(isOpen ? Self.expandedLimit : 1))
+        return VStack(alignment: .leading, spacing: OceanSpacing.item) {
+            Button {
+                guard !forced else { return }
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                    expanded = isOpen ? nil : group.key
+                }
+            } label: {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(group.label)
+                        .font(OceanType.sectionLabel)
+                        .foregroundStyle(group.isAdrift ? OceanTheme.mist : OceanTheme.foam)
+                        .lineLimit(1)
+                        .padding(.leading, 2)
+                    Spacer(minLength: 8)
+                    if !forced, group.members.count > 1 {
+                        Image(systemName: "chevron.down")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(OceanTheme.mist)
+                            .rotationEffect(.degrees(isOpen ? 180 : 0))
                     }
+                }
+                .padding(.vertical, 4)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint(isOpen ? Text("Collapses this current.") : Text("Shows every thought in this current."))
+
+            ForEach(shown) { node in
+                NavigationLink(value: node) { NodeRow(node: node) }
                     .buttonStyle(.plain)
-                    .accessibilityHint(isOpen ? Text("Collapses this current.") : Text("Shows every thought in this current."))
+            }
 
-                    Button { stream = StreamSelection(theme: group.key) } label: {
-                        Image(systemName: "chevron.right")
+            if isOpen {
+                Button { stream = StreamSelection(theme: group.key) } label: {
+                    HStack(spacing: 4) {
+                        Text("Open current")
+                        Image(systemName: "chevron.right").font(.footnote.weight(.semibold))
                     }
-                    .buttonStyle(.oceanIcon)
-                    .accessibilityLabel("Open current")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(OceanTheme.accent)
+                    .padding(.vertical, 6)
+                    .padding(.leading, 2)
+                    .contentShape(Rectangle())
                 }
-
-                if isOpen {
-                    ForEach(Array(rows.prefix(Self.expandedLimit).enumerated()), id: \.element.id) { index, node in
-                        if index > 0 { Divider().overlay(Color.white.opacity(0.08)) }
-                        row(node)
-                    }
-                    if rows.count > Self.expandedLimit {
-                        Divider().overlay(Color.white.opacity(0.08))
-                        Button { stream = StreamSelection(theme: group.key) } label: {
-                            HStack(spacing: 4) {
-                                Text("Open current")
-                                Image(systemName: "chevron.right").font(.caption)
-                            }
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(OceanTheme.accent)
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.top, 8)
-                    }
-                } else if let newest = group.newest {
-                    row(newest)
-                }
+                .buttonStyle(.plain)
             }
         }
-        .opacity(group.isAdrift ? 0.7 : 1)
-    }
-
-    /// A thought as one full-width row: glyph and the whole title, two lines
-    /// at most. The complete title, never a clipped chip.
-    private func row(_ node: Node) -> some View {
-        NavigationLink(value: node) {
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Image(systemName: node.kind.symbol)
-                    .font(.caption2)
-                    .foregroundStyle(OceanTheme.mist)
-                    .frame(width: 14)
-                Text(node.displayTitle)
-                    .font(.subheadline)
-                    .foregroundStyle(OceanTheme.foam)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                Spacer(minLength: 0)
-            }
-            .padding(.vertical, 7)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
+        .opacity(group.isAdrift ? 0.75 : 1)
     }
 }
 

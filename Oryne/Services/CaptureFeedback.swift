@@ -4,7 +4,7 @@ import UIKit
 
 /// The quiet confirmation that the Ocean received a capture: a soft two-note
 /// chime (OceanReceived.caf) and a swell-shaped haptic, fired at the instant
-/// the PostCaptureMoment appears. Foreground, on-screen captures only; the
+/// the capture toast appears. Foreground, on-screen captures only; the
 /// background App Intent paths stay silent.
 ///
 /// Deliberately outside the AVAudioSession choreography owned by

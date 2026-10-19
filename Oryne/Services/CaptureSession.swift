@@ -71,9 +71,6 @@ final class CaptureSession {
     private(set) var lastReleased: (nodeID: UUID, draft: CaptureDraft, at: Date)?
     private var understandingTask: Task<Void, Never>?
 
-    /// The interpreted title landed — the surface advances its moment.
-    var onUnderstood: ((UUID, String) -> Void)?
-
     func configure(context: ModelContext, ai: any OceanAIService) {
         self.context = context
         self.ai = ai
@@ -244,7 +241,6 @@ final class CaptureSession {
         guard !Task.isCancelled, let fresh = fetch(nodeID) else { return }
         NodeComposer.applyUnderstanding(understanding, to: fresh)
         try? context?.save()
-        onUnderstood?(nodeID, understanding.essence)
         await summarizeIfLong(nodeID: nodeID, ai: ai)
     }
 

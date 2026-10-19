@@ -19,6 +19,9 @@ struct RootTabView: View {
     @State private var appState = AppState()
     @State private var showFastCaptureOnboarding = false
     @State private var reviewFulfillTask: Task<Void, Never>?
+    /// Another field has the keyboard (Library's search, a sheet's field):
+    /// the capture bar steps aside rather than ride on top of it.
+    @State private var keyboardUp = false
 
     private var control: CaptureControl { appState.captureControl }
 
@@ -54,16 +57,6 @@ struct RootTabView: View {
                         withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
                             appState.fastCaptureRequest = nil
                         }
-                    },
-                    onOpenNode: { nodeID in
-                        appState.selectedTab = .ocean
-                        // Let the overlay's dismissal animation finish first —
-                        // presenting the node sheet in the same transaction as
-                        // the overlay teardown drops the presentation.
-                        Task { @MainActor in
-                            try? await Task.sleep(for: .milliseconds(420))
-                            appState.pendingFocusNodeID = nodeID
-                        }
                     }
                 )
                 .environment(appState)
@@ -76,9 +69,12 @@ struct RootTabView: View {
         // rises; the overlay's own disc takes over once the finger lifts.
         // The bar steps aside the moment the overlay is up (its composer is
         // the bar, expanded), except while a hold that began on the bar's
-        // disc still has its finger down.
+        // disc still has its finger down, and while the overlay is only its
+        // toast, which sits above the bar.
         .modifier(CaptureBarPlacement(
-            show: appState.selectedTab != .ask && (appState.fastCaptureRequest == nil || control.touch != .up),
+            show: appState.selectedTab != .ask
+                && !keyboardUp
+                && (appState.fastCaptureRequest == nil || control.touch != .up || control.toastShowing),
             control: control
         ))
         .sheet(isPresented: $showFastCaptureOnboarding) {
@@ -100,6 +96,12 @@ struct RootTabView: View {
             guard !fastCaptureOnboardingCompleted else { return }
             try? await Task.sleep(for: .milliseconds(650))
             showFastCaptureOnboarding = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            keyboardUp = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            keyboardUp = false
         }
         .onReceive(NotificationCenter.default.publisher(for: UIAccessibility.voiceOverStatusDidChangeNotification)) { _ in
             control.tapToToggle = CaptureControl.assistiveTechnologyRunning
@@ -181,4 +183,7 @@ enum FastCaptureLayout {
     /// What scrolling content under the bar leaves clear: bar, gap, and a
     /// breath above it.
     static let contentClearance: CGFloat = tabBarClearance + barHeight + 16
+    /// Ask's bar lives in its page's bottom safe-area inset, which already
+    /// clears the tab bar; this lifts it to the capture bar's exact height.
+    static let insetBarLift: CGFloat = 12
 }

@@ -35,11 +35,12 @@ struct LibraryView: View {
     @State private var focusedAnchorID: UUID?
     @State private var focusRelatedRank: [UUID: Int] = [:]
 
+    @State private var showSettings = false
+    @State private var showCurrents = false
+
     #if DEBUG
     /// One-shot for `OCEAN_SHOW_RELATED_TITLE` (marketing recapture).
     @State private var didEngageScreenshotRelated = false
-    @State private var showSettings = false
-    @State private var showCurrents = false
     #endif
 
     /// True only while a focus reorder is animating, so cards drop their blurred
@@ -135,16 +136,13 @@ struct LibraryView: View {
             .navigationDestination(for: Node.self) { node in
                 NodeDetailContent(node: node)
             }
-            // The original system confirmation (the chat-bubble popover). Swap
-            // for `.oceanConfirmationDialog` (OceanConfirmationDialog.swift) to
-            // use the kept Liquid Glass alternative.
-            .confirmationDialog(
+            // The system alert, as on a thought's page.
+            .alert(
                 "Delete this thought?",
                 isPresented: Binding(
                     get: { pendingDelete != nil },
                     set: { if !$0 { pendingDelete = nil } }
-                ),
-                titleVisibility: .visible
+                )
             ) {
                 Button("Delete", role: .destructive) {
                     if let node = pendingDelete { delete(node) }
@@ -319,7 +317,7 @@ struct LibraryView: View {
                         }
                     }
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, OceanSpacing.gutter)
                 .padding(.vertical, 8)
                 .padding(.bottom, FastCaptureLayout.contentClearance)
             }
@@ -353,7 +351,6 @@ struct LibraryView: View {
             Label(summarizeLabel, systemImage: "text.line.first.and.arrowtriangle.forward")
         }
         .buttonStyle(.oceanSecondary)
-        .padding(.horizontal, 4)
     }
 
     private var summarizeLabel: String {
@@ -512,19 +509,19 @@ struct LibraryView: View {
     /// kind is the hint for a banner), because this runs over the whole set.
     private func estimatedCardHeight(_ node: Node) -> CGFloat {
         var height: CGFloat = 92
-        if node.kind == .image || node.linkImageData != nil { height += 140 }
-        if !node.snippet.isEmpty { height += CGFloat(min(4, node.snippet.count / 32)) * 15 }
-        if node.linkURLString != nil { height += 18 }
-        if !node.themes.isEmpty || node.isExample { height += 24 }
+        if node.kind == .image || node.linkImageData != nil { height += 120 }
+        if !node.snippet.isEmpty { height += CGFloat(min(4, node.snippet.count / 24)) * 20 }
         return height
     }
 
+    /// Time sections wear Tide's labels: New York italic, mist.
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
-            .font(.subheadline)
+            .font(OceanType.sectionLabel)
             .foregroundStyle(OceanTheme.mist)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 4)
+            .padding(.leading, 2)
+            .padding(.top, 12)
     }
 
     /// A grid cell: the card, a value-based NavigationLink for tap (no List
