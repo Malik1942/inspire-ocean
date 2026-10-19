@@ -89,7 +89,11 @@ enum OceanTheme {
 /// `TimelineView(.animation)` runs uncapped, so ProMotion devices update at
 /// their full refresh rate (60/120 Hz) and the flow is silky.
 struct OceanBackground: View {
-    var animated: Bool = true
+    /// Off by default (Malik, 2026-10-18): the drift moved at most 3/255 per
+    /// channel, invisible, yet redrew the whole screen every frame and made
+    /// every glass control above it recompute; the app idled at 30 to 55%
+    /// CPU. The still water is the same picture. Onboarding may opt in.
+    var animated: Bool = false
 
     @Environment(\.calmAccessibility) private var calm
     @Environment(\.accessibilityReduceMotion) private var reduceMotion

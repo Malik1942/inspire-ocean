@@ -1,7 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {},
+    "" : {
+
+    },
     "%lld fragments" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1016,6 +1018,7 @@
       }
     },
     "Edit thought" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1128,6 +1131,7 @@
       }
     },
     "Filter" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1384,7 +1388,9 @@
         }
       }
     },
-    "https://…" : {},
+    "https://…" : {
+
+    },
     "I didn't catch anything to capture." : {
       "localizations" : {
         "zh-Hans" : {
@@ -2035,7 +2041,9 @@
         }
       }
     },
-    "Oryne" : {},
+    "Oryne" : {
+
+    },
     "Oryne is a place for unfinished thoughts, passing signals, and ideas that are not ready to become plans yet." : {
       "localizations" : {
         "zh-Hans" : {
@@ -2980,6 +2988,16 @@
         }
       }
     },
+    "Summarize “%@”" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "总结「%@」"
+          }
+        }
+      }
+    },
     "Summarize these %lld" : {
       "localizations" : {
         "zh-Hans" : {
@@ -2997,16 +3015,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "总结这条洋流"
-          }
-        }
-      }
-    },
-    "Summarize “%@”" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "总结「%@」"
           }
         }
       }

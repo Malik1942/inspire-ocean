@@ -246,6 +246,26 @@ struct OceanSearchField: View {
     var focused: FocusState<Bool>.Binding
 
     var body: some View {
+        // The system's search pattern: while the field has the keyboard a
+        // Cancel sits beside it and folds the keyboard; Search does too.
+        HStack(spacing: 12) {
+            field
+            if focused.wrappedValue {
+                Button("Cancel") {
+                    text = ""
+                    focused.wrappedValue = false
+                }
+                .font(.body)
+                .foregroundStyle(OceanTheme.foam)
+                .buttonStyle(.plain)
+                .frame(minHeight: OceanControlSize.height)
+                .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
+        }
+        .animation(OceanMotion.standard, value: focused.wrappedValue)
+    }
+
+    private var field: some View {
         HStack(spacing: 10) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 17, weight: .regular))
@@ -259,6 +279,7 @@ struct OceanSearchField: View {
             .submitLabel(.search)
             .autocorrectionDisabled()
             .focused(focused)
+            .onSubmit { focused.wrappedValue = false }
             if !text.isEmpty {
                 Button { text = "" } label: {
                     Image(systemName: "xmark.circle.fill")
@@ -278,7 +299,7 @@ struct OceanSearchField: View {
     }
 }
 
-/// Every page stands on the same water and the same light: the moving
+/// Every page stands on the same water and the same light: the still
 /// ocean and one warm lamp high on the left. The lamp is a radial light
 /// across the whole screen, so it has no edge to show.
 struct PageBackground: View {

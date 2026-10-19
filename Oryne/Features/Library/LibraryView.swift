@@ -44,6 +44,9 @@ struct LibraryView: View {
     /// the grid re-render (that was the pull-down stutter).
     @State private var foldTracker = FoldTracker()
     @FocusState private var searchFocused: Bool
+    /// The Library's navigation. A thought on screen keeps the capture bar
+    /// open; only reading the grid folds it.
+    @State private var path = NavigationPath()
 
     #if DEBUG
     /// One-shot for `OCEAN_SHOW_RELATED_TITLE` (marketing recapture).
@@ -87,7 +90,7 @@ struct LibraryView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ZStack {
                 PageBackground()
                 grid
@@ -295,7 +298,7 @@ struct LibraryView: View {
             // node anyway, so returning to the top is also the honest UX.
             .id(arrangement)
             .opacity(gridOpacity)
-            .scrollDismissesKeyboard(.interactively)
+            .scrollDismissesKeyboard(.immediately)
             // Reading down folds the capture bar into its disc.
             .onScrollGeometryChange(for: CGFloat.self) { geometry in
                 geometry.contentOffset.y + geometry.contentInsets.top
@@ -303,6 +306,9 @@ struct LibraryView: View {
                 scrollMoved(from: old, to: new)
             }
             .onDisappear { setBarFolded(false) }
+            .onChange(of: path.count) { _, count in
+                if count > 0 { setBarFolded(false) }
+            }
             // Engage and clear put the front at offset 0. Focus is not an
             // arrangement change, so `.id` does not reset scroll; steer explicitly
             // or the viewport strands past realized content (the spike's mid-reorder
@@ -506,12 +512,14 @@ struct LibraryView: View {
                     }
                     Section("Show") {
                         Picker("Kind", selection: $kindFilter) {
-                            Text("All kinds").tag(NodeKind?.none)
+                            Label("All kinds", systemImage: "square.grid.2x2").tag(NodeKind?.none)
                             ForEach(NodeKind.allCases) { k in
                                 Label(k.label, systemImage: k.symbol).tag(NodeKind?.some(k))
                             }
                         }
-                        Toggle("Show archived", isOn: $showArchived)
+                        Toggle(isOn: $showArchived) {
+                            Label("Show archived", systemImage: "archivebox")
+                        }
                     }
                     Divider()
                     Button {
@@ -538,6 +546,8 @@ struct LibraryView: View {
     /// against its current state, so a bounce or a small correction never
     /// makes it flicker.
     private func scrollMoved(from old: CGFloat, to new: CGFloat) {
+        // Only the grid itself folds the bar, never a thought pushed over it.
+        guard path.isEmpty else { return }
         if new < 40 {
             setBarFolded(false)
             foldTracker.anchor = new
