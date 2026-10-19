@@ -85,7 +85,9 @@ final class LocalOceanAIService: OceanAIService {
         }
 
         if #available(iOS 26, *), Self.foundationModelAvailable {
-            let modelTitle = await foundationModelTitle(for: cleaned).map(TitleDistiller.tidy)
+            let modelTitle = await foundationModelTitle(for: cleaned)
+                .map(TitleDistiller.tidy)
+                .flatMap { TitleDistiller.speaksLike($0, entry: cleaned) ? $0 : nil }
             let essence = modelTitle ?? TitleDistiller.essence(from: cleaned)
             async let pick = FoundationCurrentPicker.pick(entry: cleaned, candidates: currents)
             let modelThemes = await foundationModelThemes(for: cleaned)
