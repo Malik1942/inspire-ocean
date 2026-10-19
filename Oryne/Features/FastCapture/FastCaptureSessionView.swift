@@ -258,11 +258,12 @@ struct FastCaptureSessionView: View {
     /// The overlay's own disc, in the composer row and the listening row.
     /// While the hold that opened this overlay still has its finger on the
     /// capture bar's disc, that disc owns the gesture and this one stays
-    /// out of the way (the bar is still drawn beneath the backdrop).
+    /// out of the way. Once the take locks, the bar steps aside and this is
+    /// the Stop.
     private var overlayDisc: some View {
         CaptureHoldButton(size: FastCaptureLayout.buttonSize)
-            .allowsHitTesting(asSheet || control.touch == .up)
-            .opacity(asSheet || control.touch == .up ? 1 : 0.35)
+            .allowsHitTesting(asSheet || !control.isHeld)
+            .opacity(asSheet || !control.isHeld ? 1 : 0.35)
     }
 
     private var listeningNotes: some View {

@@ -27,6 +27,13 @@ final class CaptureControl {
 
     var touch: Touch = .up
 
+    /// A finger is down on a disc right now. A locked take has no finger:
+    /// the overlay's own Stop runs it.
+    var isHeld: Bool {
+        if case .held = touch { return true }
+        return false
+    }
+
     /// Bumped by a short press when no take is live. The host opens the
     /// overlay typing-first; an open overlay focuses its field.
     private(set) var tapCount = 0

@@ -84,7 +84,7 @@ struct RootTabView: View {
             show: appState.selectedTab != .ask
                 && !(appState.selectedTab == .library && control.readingThought)
                 && !keyboardUp
-                && (appState.fastCaptureRequest == nil || control.touch != .up || control.toastShowing),
+                && (appState.fastCaptureRequest == nil || control.isHeld || control.toastShowing),
             // Only the Library folds the bar, while reading down its grid.
             folded: control.barFolded && appState.selectedTab == .library,
             control: control
