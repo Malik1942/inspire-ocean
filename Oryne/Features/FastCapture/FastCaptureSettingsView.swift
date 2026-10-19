@@ -36,6 +36,7 @@ struct FastCaptureSettingsView: View {
                         shortcutSection
                         inputSection
                         setupSection
+                        watchSection
                     }
                     .padding(.horizontal)
                     .padding(.vertical, 14)
@@ -148,6 +149,40 @@ struct FastCaptureSettingsView: View {
                 .foregroundStyle(OceanTheme.foam)
             }
         }
+    }
+
+    /// The Ultra's Action Button reaches Oryne through its Shortcut slot:
+    /// watchOS lists only workout and dive apps there directly. Confirmed on
+    /// device per docs/HARDWARE_CHECKLIST.md › Apple Watch.
+    private var watchSection: some View {
+        GlassCard(padding: 16) {
+            VStack(alignment: .leading, spacing: 14) {
+                settingsHeader(
+                    title: String(localized: "Apple Watch"),
+                    subtitle: "Catch a whisper from your wrist.",
+                    systemImage: "applewatch"
+                )
+
+                VStack(spacing: 10) {
+                    ForEach(Array(Self.watchSteps.enumerated()), id: \.offset) { index, title in
+                        FastCaptureSetupStep(number: index + 1, title: title)
+                    }
+                }
+
+                Text("No Action Button? Add the Oryne complication to a watch face.")
+                    .font(.caption)
+                    .foregroundStyle(OceanTheme.mist)
+            }
+        }
+    }
+
+    private static var watchSteps: [String] {
+        [
+            String(localized: "Settings on your watch"),
+            String(localized: "Action Button"),
+            String(localized: "Shortcut"),
+            String(localized: "Catch a thought")
+        ]
     }
 
     private func settingsHeader(title: String, subtitle: LocalizedStringKey, systemImage: String) -> some View {

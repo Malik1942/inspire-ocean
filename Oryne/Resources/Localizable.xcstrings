@@ -3111,6 +3111,56 @@
           }
         }
       }
+    },
+    "Apple Watch" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple Watch"
+          }
+        }
+      }
+    },
+    "Catch a whisper from your wrist." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在手腕上记一段语音。"
+          }
+        }
+      }
+    },
+    "Settings on your watch" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "手表上的「设置」"
+          }
+        }
+      }
+    },
+    "Catch a thought" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "记一条灵感"
+          }
+        }
+      }
+    },
+    "No Action Button? Add the Oryne complication to a watch face." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "没有操作按钮？把 Oryne 复杂功能添加到表盘上。"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

@@ -67,3 +67,66 @@ crash".
   "Transcribing…" forever).
 - [ ] **Mic denied** — Fast Capture falls back to typing with "Typing is
   ready."; Capture tab mic button does nothing destructive.
+
+## Apple Watch
+
+Signed build on a real watch paired with a real iPhone. Simulator cannot
+deliver WatchConnectivity files, press the Action Button, or prove
+wrist-down recording.
+
+- [ ] **Action Button setup** — on an Ultra: Settings › Action Button ›
+  Shortcut. Confirm "Catch a thought" can be chosen directly; if it must be
+  wrapped in a user shortcut, update the setup card in Fast Capture settings
+  and this item. A press opens Oryne recording.
+- [ ] **Second press stops** — press the Action Button again while recording:
+  the take is caught. If the press doesn't reach the app, record that, and
+  the setup card must say stop with a tap or Double Tap.
+- [ ] **Complication tap** — tap the Oryne complication (circular, corner,
+  rectangular, and the Smart Stack): Oryne opens recording; tap again while
+  recording: the take is caught. (The watch simulator's LaunchServices
+  ignores declared URL schemes, so `oryne://watch/catch` could only be
+  checked on a real watch.)
+- [ ] **Double Tap stop** — Series 9+ or Ultra 2+: Double Tap while recording
+  catches the take.
+- [ ] **Wrist down keeps recording** — start a take, lower the wrist, keep
+  talking 20 s, raise, stop: the take holds all of it. If recording stops
+  when the app suspends, fall back to "wrist down ends the take" (spec §9.3).
+- [ ] **Always On** — wrist down while recording shows the timer alone, and
+  Double Tap still stops the take.
+- [ ] **5 minute cap** — a haptic and the take is caught at 5:00.
+- [ ] **Call mid take** — a call ends and catches the take; no stuck screen.
+- [ ] **Interrupted take keeps its length** — a call or lost mic mid-take:
+  the caught take keeps the time actually recorded (not dropped as a reflex
+  press).
+- [ ] **Caught off screen** — a take that ends by the cap or a call while the
+  wrist is down sends at once (no Undo hold); raising the wrist shows the
+  idle screen and the status line.
+- [ ] **Delivery with the phone app force quit** — catch a take with Oryne
+  force quit on the phone, phone nearby: within a minute the thought is in
+  Library (does the wake ping deliver the file?). Record the latency.
+- [ ] **iCloud fallback** — phone in airplane mode, watch on Wi-Fi or LTE:
+  catch a take; the watch says "On its way"; turn the phone back on; the
+  thought arrives and the watch says "In your Ocean" with its title.
+- [ ] **Background refresh** — with a take waiting and the phone unreachable,
+  the iCloud fallback runs roughly 2 minutes after the take stopped without
+  opening the app (watchOS treats the time as a hint; record the actual
+  delay).
+- [ ] **Both paths, one thought** — catch a take that goes over both paths:
+  exactly one thought in Library; the iCloud record is gone afterwards.
+- [ ] **Many takes at once** — catch more than 20 takes away from the phone,
+  then bring it back: every one is confirmed and the watch ends on "In your
+  Ocean" (the phone confirms its newest 200; check that the application
+  context with titled entries arrives).
+- [ ] **Undo** — Undo within 5 s: nothing reaches the phone or iCloud.
+- [ ] **Microphone denied** — deny on first use: the one-line message, no
+  loop; allow in Settings, return: the idle screen is back. Confirm the
+  Settings path the message names.
+- [ ] **Cold launch with the mic undecided** — fresh install, trigger from
+  the Action Button and from Siri ("Whisper to Oryne"): the mic prompt
+  appears; after allowing, recording starts; after denying, the one-line
+  denied screen shows.
+- [ ] **SwiftData sync unaffected** — after installing this build (it adds an
+  app delegate for the inbox push), run the CloudKit two-device sync item
+  above again.
+- [ ] **Production schema** — before release, deploy the `WatchTake` record
+  type in CloudKit Console (development creates it on first write).

@@ -41,12 +41,20 @@ copy).
   ever hit them. (The genuine correctness bug in the same area — `&amp;`
   double-decoding — was fixed.)
 
-## 2026-06-28 — watchOS Phase 1 (committed on `feat/watchos-quick-capture`)
+## 2026-10-18 — Apple Watch capture (branch `am/oryne-apple-watch-app-177fc5`)
 
-- **Still owes on-device runtime verification** (simulator can't prove it):
-  a decodable, non-empty recording on the wrist; the denied-microphone-permission
-  UI/recovery; and the always-on-display / wrist-down recording lifecycle. See
-  `docs/HARDWARE_CHECKLIST.md` for the broader device pass.
+- Built from the 2026-10-18 spec; supersedes `feat/watchos-quick-capture`,
+  which is not to be merged (its icon was copied). Simulator verified:
+  recorder, queue, Undo, cap, screens in both languages, and the phone import
+  end to end (`Scripts/watch-inbox-e2e`).
+- Still owes the device pass in `docs/HARDWARE_CHECKLIST.md` › Apple Watch:
+  Action Button second press, wake ping delivery, wrist-down recording, and
+  the iCloud fallback cannot be proven in Simulator.
+- The watch simulator cannot verify the deep link: its LaunchServices ignores
+  declared URL schemes, so `oryne://watch/catch` (the complication tap) is
+  only checkable on a real watch.
+- Chinese strings for the watch and the new phone strings (the Apple Watch
+  setup card in Fast Capture settings) are drafts (`needs_review`).
 
 ## 2026-06-28 — Dev machine: no-passphrase SSH key (deliberate)
 
