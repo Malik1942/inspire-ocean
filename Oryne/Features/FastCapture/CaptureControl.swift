@@ -40,6 +40,9 @@ final class CaptureControl {
     /// The overlay is only its toast now: the bar comes back, and a tap or a
     /// hold on it starts the next capture in the same overlay.
     var toastShowing = false
+    /// Reading down the Library folds the bar into its disc; heading back
+    /// up, or reaching the top, unfolds it.
+    var barFolded = false
 
     /// VoiceOver, Switch Control and Calm Accessibility Mode make the button
     /// tap-to-start, tap-to-stop. The hold is an optimisation, never the only

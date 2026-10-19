@@ -8,6 +8,8 @@ struct LibraryView: View {
     @Environment(\.modelContext) private var context
     @Environment(AppState.self) private var appState
     @Environment(\.oceanAI) private var ai
+    @Environment(CaptureControl.self) private var control
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(sort: \Node.createdAt, order: .reverse) private var allNodes: [Node]
 
     @State private var search = ""
@@ -37,6 +39,9 @@ struct LibraryView: View {
 
     @State private var showSettings = false
     @State private var showCurrents = false
+    /// Where the grid last moved the way the capture bar already is; the bar
+    /// changes only after real travel against it from here.
+    @State private var foldAnchor: CGFloat = 0
 
     #if DEBUG
     /// One-shot for `OCEAN_SHOW_RELATED_TITLE` (marketing recapture).
@@ -95,40 +100,47 @@ struct LibraryView: View {
             .navigationTitle("Library")
             .searchable(text: $search, prompt: "Search the Ocean")
             .toolbar {
+                // One group of three equal tools: the same glyph size and
+                // outline style in the same cell, a tight even gap.
                 ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Picker("Arrangement", selection: $arrangement) {
-                            Label("Recent", systemImage: "clock").tag(Arrangement.recent)
-                            Label("Related", systemImage: "point.3.connected.trianglepath.dotted")
-                                .tag(Arrangement.related)
-                        }
-                    } label: {
-                        Image(systemName: arrangement == .related
-                            ? "point.3.connected.trianglepath.dotted"
-                            : "arrow.up.arrow.down")
-                    }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Picker("Kind", selection: $kindFilter) {
-                            Text("All kinds").tag(NodeKind?.none)
-                            ForEach(NodeKind.allCases) { k in
-                                Label(k.label, systemImage: k.symbol).tag(NodeKind?.some(k))
+                    HStack(spacing: 2) {
+                        Menu {
+                            Picker("Arrangement", selection: $arrangement) {
+                                Label("Recent", systemImage: "clock").tag(Arrangement.recent)
+                                Label("Related", systemImage: "point.3.connected.trianglepath.dotted")
+                                    .tag(Arrangement.related)
                             }
-                        }
-                        Toggle("Show archived", isOn: $showArchived)
-                        Divider()
-                        Button {
-                            showCurrents = true
                         } label: {
-                            Label("Currents", systemImage: "water.waves")
+                            toolbarGlyph(arrangement == .related
+                                ? "point.3.connected.trianglepath.dotted"
+                                : "arrow.up.arrow.down")
                         }
-                    } label: {
-                        Image(systemName: "line.3.horizontal.decrease.circle")
+                        .accessibilityLabel("Arrangement")
+
+                        Menu {
+                            Picker("Kind", selection: $kindFilter) {
+                                Text("All kinds").tag(NodeKind?.none)
+                                ForEach(NodeKind.allCases) { k in
+                                    Label(k.label, systemImage: k.symbol).tag(NodeKind?.some(k))
+                                }
+                            }
+                            Toggle("Show archived", isOn: $showArchived)
+                            Divider()
+                            Button {
+                                showCurrents = true
+                            } label: {
+                                Label("Currents", systemImage: "water.waves")
+                            }
+                        } label: {
+                            toolbarGlyph("line.3.horizontal.decrease")
+                        }
+                        .accessibilityLabel("Filter")
+
+                        Button { showSettings = true } label: {
+                            toolbarGlyph("gearshape")
+                        }
+                        .accessibilityLabel("Ocean settings")
                     }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    SettingsGearButton(isPresented: $showSettings)
                 }
             }
             .sheet(isPresented: $showSettings) { OceanSettingsView() }
@@ -328,6 +340,13 @@ struct LibraryView: View {
             // node anyway, so returning to the top is also the honest UX.
             .id(arrangement)
             .opacity(gridOpacity)
+            // Reading down folds the capture bar into its disc.
+            .onScrollGeometryChange(for: CGFloat.self) { geometry in
+                geometry.contentOffset.y + geometry.contentInsets.top
+            } action: { old, new in
+                scrollMoved(from: old, to: new)
+            }
+            .onDisappear { setBarFolded(false) }
             // Engage and clear put the front at offset 0. Focus is not an
             // arrangement change, so `.id` does not reset scroll; steer explicitly
             // or the viewport strands past realized content (the spike's mid-reorder
@@ -512,6 +531,43 @@ struct LibraryView: View {
         if node.kind == .image || node.linkImageData != nil { height += 120 }
         if !node.snippet.isEmpty { height += CGFloat(min(4, node.snippet.count / 24)) * 20 }
         return height
+    }
+
+    /// A toolbar tool: one glyph size and weight in one cell size, so the
+    /// three read as a set.
+    private func toolbarGlyph(_ systemName: String) -> some View {
+        Image(systemName: systemName)
+            .font(.system(size: 17, weight: .regular))
+            .frame(width: 36, height: 36)
+            .contentShape(Rectangle())
+    }
+
+    // MARK: Folding the capture bar
+
+    /// Reading down folds the capture bar into its disc; heading back up, or
+    /// reaching the top, unfolds it. It changes only after 24 pt of travel
+    /// against its current state, so a bounce or a small correction never
+    /// makes it flicker.
+    private func scrollMoved(from old: CGFloat, to new: CGFloat) {
+        if new < 40 {
+            setBarFolded(false)
+            foldAnchor = new
+            return
+        }
+        let goingDown = new > old
+        if goingDown == control.barFolded {
+            foldAnchor = new
+        } else if abs(new - foldAnchor) > 24 {
+            setBarFolded(goingDown)
+            foldAnchor = new
+        }
+    }
+
+    private func setBarFolded(_ fold: Bool) {
+        guard control.barFolded != fold else { return }
+        withAnimation(reduceMotion ? .easeInOut(duration: 0.2) : .smooth(duration: 0.38)) {
+            control.barFolded = fold
+        }
     }
 
     /// Time sections wear Tide's labels: New York italic, mist.

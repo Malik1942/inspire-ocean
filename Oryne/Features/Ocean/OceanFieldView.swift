@@ -31,6 +31,16 @@ struct OceanFieldView: View {
     @State private var lampLift: Double = 0
     /// The lamp dims while a thought sinks.
     @State private var lampDim: Double = 1
+    /// "Let it rest", beat one: today's thought is going under.
+    @State private var lettingGo = false
+    /// Beat two: the next thought, already in place, held just below and
+    /// unseen until it surfaces.
+    @State private var surfacing = false
+    /// The thought being let go stays on screen until it has gone under;
+    /// resting it re-picks today's thought at once.
+    @State private var goingUnder: Node?
+
+    private var stilled: Bool { calm || reduceMotion }
 
     private static let newestLimit = 5
     private static let currentLimit = 4
@@ -80,14 +90,13 @@ struct OceanFieldView: View {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 32) {
                             pageTitle
-                            if let resurfacing {
-                                resurfacingSection(resurfacing)
-                                    // Sinks when let go, rises when it arrives.
-                                    .id(resurfacing.id)
-                                    .transition(.asymmetric(
-                                        insertion: .opacity.combined(with: .offset(y: -12)),
-                                        removal: .opacity.combined(with: .offset(y: 16))
-                                    ))
+                            if let shown = goingUnder ?? resurfacing {
+                                // One thought goes under, then the next comes
+                                // up: never both on screen at once.
+                                resurfacingSection(shown)
+                                    .opacity(lettingGo || surfacing ? 0 : 1)
+                                    .blur(radius: !stilled && (lettingGo || surfacing) ? 4 : 0)
+                                    .offset(y: stilled ? 0 : (lettingGo ? 6 : (surfacing ? 8 : 0)))
                             }
                             newestSection
                             if !currents.isEmpty { currentsSection }
@@ -191,7 +200,7 @@ struct OceanFieldView: View {
                 Button(nearbyOpen ? "Nearby" : "Nearby") { toggleNearby(node) }
                     .buttonStyle(.oceanSecondary)
                     .opacity(nearbyOpen ? 1 : 0.9)
-                if !Resurfacing.Rest.restedToday {
+                if !Resurfacing.Rest.restedToday || goingUnder != nil {
                     Button("Let it rest") { rest(node) }
                         .buttonStyle(.oceanSecondary)
                 }
@@ -322,26 +331,39 @@ struct OceanFieldView: View {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { nearbyOpen.toggle() }
     }
 
-    /// Today's thought sinks; another rises. It counts as met, so it rests.
-    /// The lamp dims as it goes under, then warms past its resting glow as
-    /// the next one comes up, and settles.
+    /// Today's thought goes under; the next one surfaces. It counts as met,
+    /// so it rests. Two quiet beats, never a crossfade: the thought fades,
+    /// drifts a few points down and softens while the lamp lowers a little;
+    /// unseen, the next takes its place and the page eases to its height;
+    /// then it rises out of the same softness as the lamp comes back and
+    /// warms a touch before settling. Calm and Reduce Motion: a plain fade.
     private func rest(_ node: Node) {
+        goingUnder = node
         Resurfacing.markMet(node, context: context)
         Resurfacing.Rest.rest(node.id)
-        let stilled = calm || reduceMotion
+        let stilled = self.stilled
         Task { @MainActor in
-            withAnimation(stilled ? .easeOut(duration: 0.2) : .easeIn(duration: 0.5)) {
+            withAnimation(.easeIn(duration: stilled ? 0.2 : 0.4)) {
                 nearbyOpen = false
-                lampDim = 0.2
+                lettingGo = true
+                if !stilled { lampDim = 0.55 }
             }
-            try? await Task.sleep(for: .milliseconds(stilled ? 200 : 650))
-            withAnimation(stilled ? .easeOut(duration: 0.2) : .easeOut(duration: 0.7)) {
+            try? await Task.sleep(for: .milliseconds(stilled ? 200 : 400))
+            withAnimation(.smooth(duration: stilled ? 0.2 : 0.35)) {
+                goingUnder = nil
                 restTick += 1
-                lampDim = 1
-                lampLift = stilled ? 0 : 0.08
+                lettingGo = false
+                surfacing = true
             }
+            if !stilled { try? await Task.sleep(for: .milliseconds(120)) }
+            withAnimation(.easeOut(duration: stilled ? 0.2 : 0.7)) {
+                surfacing = false
+                lampDim = 1
+                if !stilled { lampLift = 0.04 }
+            }
+            guard !stilled else { return }
             try? await Task.sleep(for: .milliseconds(700))
-            withAnimation(.easeInOut(duration: 1.0)) { lampLift = 0 }
+            withAnimation(.easeInOut(duration: 1.4)) { lampLift = 0 }
         }
     }
 

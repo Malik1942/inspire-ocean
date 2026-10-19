@@ -1,35 +1,74 @@
 import SwiftUI
 
-/// The capture bar above the tab bar on Ocean and Library, like a message
+/// The capture bar above the tab bar on Tide and Library, like a message
 /// composer: a field to tap and the disc to hold. Its geometry is fixed so
 /// the disc sits concentric with the capsule's end (FastCaptureLayout).
+///
+/// Folded, it is only the disc in a 56 pt circle at the same spot: the
+/// capsule's leading edge slides in to meet it and the words fade first,
+/// so they are clipped, never squashed. The disc itself never moves, and
+/// it still taps to type and holds to whisper.
 struct CaptureBar: View {
     @Environment(CaptureControl.self) private var control
+    var folded = false
 
     var body: some View {
-        HStack(spacing: 12) {
+        ZStack(alignment: .trailing) {
             Button {
                 control.tap()
             } label: {
-                HStack {
-                    Text("What are you noticing?")
-                        .font(.body)
-                        .foregroundStyle(OceanTheme.hint)
-                        .lineLimit(1)
-                    Spacer(minLength: 0)
-                }
-                .contentShape(Rectangle())
+                Text("What are you noticing?")
+                    .font(.body)
+                    .foregroundStyle(OceanTheme.hint)
+                    .lineLimit(1)
+                    .fixedSize()
+                    .padding(.leading, FastCaptureLayout.barHeight / 2 - 8)
+                    // minWidth 0: the words keep their width and overflow
+                    // into the clip instead of widening the bar.
+                    .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .opacity(folded ? 0 : 1)
+            .animation(folded ? .easeOut(duration: 0.1) : .easeOut(duration: 0.2).delay(0.3), value: folded)
+            .allowsHitTesting(!folded)
+            .accessibilityHidden(folded)
             .accessibilityLabel("Capture a thought")
             .accessibilityHint("Opens the keyboard. The button beside it whispers.")
 
             CaptureHoldButton(size: FastCaptureLayout.buttonSize)
+                .padding(.trailing, FastCaptureLayout.discInset)
         }
-        .padding(.leading, FastCaptureLayout.barHeight / 2 - 8)
-        .padding(.trailing, FastCaptureLayout.discInset)
+        .frame(maxWidth: folded ? FastCaptureLayout.barHeight : .infinity, alignment: .trailing)
         .frame(height: FastCaptureLayout.barHeight)
+        // Words out first, then the fold; unfolding, the words return only
+        // once the capsule is wide again. They never slide with the edge.
+        .animation(folded ? .smooth(duration: 0.4).delay(0.1) : .smooth(duration: 0.4), value: folded)
+        // The words never spill past the folding edge; the surface and its
+        // shadow sit outside the clip.
+        .clipShape(Capsule())
         .background(OceanBarBackground())
+        .frame(maxWidth: .infinity, alignment: .trailing)
+    }
+}
+
+/// Places the bar above the tab bar. Hidden on Ask, which has its own input.
+struct CaptureBarPlacement: ViewModifier {
+    let show: Bool
+    var folded = false
+    let control: CaptureControl
+
+    func body(content: Content) -> some View {
+        content.overlay(alignment: .bottom) {
+            CaptureBar(folded: folded)
+                .environment(control)
+                .padding(.horizontal, OceanSpacing.gutter)
+                .padding(.bottom, FastCaptureLayout.tabBarClearance)
+                .ignoresSafeArea(.keyboard)
+                .opacity(show ? 1 : 0)
+                .allowsHitTesting(show)
+                .animation(.easeOut(duration: 0.18), value: show)
+        }
     }
 }
 
@@ -54,25 +93,6 @@ struct OceanBarBackground: View {
             .fill(.regularMaterial)
             .overlay(shape.fill(OceanTheme.deep.opacity(0.55)))
             .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
-    }
-}
-
-/// Places the bar above the tab bar. Hidden on Ask, which has its own input.
-struct CaptureBarPlacement: ViewModifier {
-    let show: Bool
-    let control: CaptureControl
-
-    func body(content: Content) -> some View {
-        content.overlay(alignment: .bottom) {
-            CaptureBar()
-                .environment(control)
-                .padding(.horizontal, OceanSpacing.gutter)
-                .padding(.bottom, FastCaptureLayout.tabBarClearance)
-                .ignoresSafeArea(.keyboard)
-                .opacity(show ? 1 : 0)
-                .allowsHitTesting(show)
-                .animation(.easeOut(duration: 0.18), value: show)
-        }
     }
 }
 

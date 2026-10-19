@@ -75,6 +75,8 @@ struct RootTabView: View {
             show: appState.selectedTab != .ask
                 && !keyboardUp
                 && (appState.fastCaptureRequest == nil || control.touch != .up || control.toastShowing),
+            // Only the Library folds the bar, while reading down its grid.
+            folded: control.barFolded && appState.selectedTab == .library,
             control: control
         ))
         .sheet(isPresented: $showFastCaptureOnboarding) {
