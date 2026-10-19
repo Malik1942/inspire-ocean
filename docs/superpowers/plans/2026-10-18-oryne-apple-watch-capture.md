@@ -480,12 +480,20 @@ final class TakeQueueStateTests: XCTestCase {
         XCTAssertEqual(state.needingCloudUpload(now: t0).map(\.id), [a.id])
     }
 
-    func test_needingCloudUpload_reachableAtStop_waitsForTheDelay() {
+    func test_needingCloudUpload_reachableAtStop_waitsForTheDelayAfterStop() {
         var state = TakeQueueState()
-        let a = take()
+        let a = take()   // 3 s long: it stopped at t0 + 3
         state.add(a, phoneReachableAtStop: true)
-        XCTAssertTrue(state.needingCloudUpload(now: t0.addingTimeInterval(119)).isEmpty)
-        XCTAssertEqual(state.needingCloudUpload(now: t0.addingTimeInterval(120)).map(\.id), [a.id])
+        XCTAssertTrue(state.needingCloudUpload(now: t0.addingTimeInterval(122)).isEmpty)
+        XCTAssertEqual(state.needingCloudUpload(now: t0.addingTimeInterval(123)).map(\.id), [a.id])
+    }
+
+    func test_needingCloudUpload_longTake_isNotUploadedTheMomentItsCaught() {
+        var state = TakeQueueState()
+        let long = WatchTake(id: UUID(), createdAt: t0, duration: 300)
+        state.add(long, phoneReachableAtStop: true)
+        XCTAssertTrue(state.needingCloudUpload(now: t0.addingTimeInterval(310)).isEmpty)
+        XCTAssertEqual(state.needingCloudUpload(now: t0.addingTimeInterval(420)).map(\.id), [long.id])
     }
 
     func test_needingCloudUpload_skipsTakesOffTheWatch() {
@@ -534,7 +542,7 @@ final class TakeQueueStateTests: XCTestCase {
         XCTAssertFalse(state.audioDisposable(cloudWhileSending.id), "a pending transfer still reads the file")
         XCTAssertTrue(state.audioDisposable(cloudDone.id))
         XCTAssertTrue(state.audioDisposable(confirmed.id))
-        XCTAssertTrue(state.audioDisposable(UUID()), "an unknown take has nothing worth keeping")
+        XCTAssertFalse(state.audioDisposable(UUID()), "a recording the queue can't account for is never deleted")
     }
 
     func test_prune_keepsNewestConfirmedAndEveryUnconfirmed() {
@@ -746,20 +754,25 @@ struct TakeQueueState: Codable, Equatable {
     }
 
     /// Takes to upload to the iCloud inbox: still only on the watch, and
-    /// either caught out of the phone's reach or waiting too long.
+    /// either caught out of the phone's reach or waiting too long. The wait
+    /// is timed from when the take ended (`createdAt` is when recording
+    /// began), so a long take isn't uploaded the moment it's caught.
     func needingCloudUpload(now: Date) -> [QueuedTake] {
         takes.filter {
-            $0.status == .onWatch
+            let stoppedAt = $0.take.createdAt.addingTimeInterval($0.take.duration)
+            return $0.status == .onWatch
                 && (!$0.phoneReachableAtStop
-                    || now.timeIntervalSince($0.take.createdAt) >= Self.cloudFallbackDelay)
+                    || now.timeIntervalSince(stoppedAt) >= Self.cloudFallbackDelay)
         }
     }
 
     /// Whether the watch may delete this take's audio: it's confirmed, or
     /// it's in iCloud with no WatchConnectivity transfer still reading the
-    /// file. An unknown ID (undone, pruned) has nothing worth keeping.
+    /// file. A recording the queue can't account for (an unreadable index,
+    /// a crash mid-recording) is never deleted: guessing wrong loses a
+    /// caught take. Undo deletes its own file.
     func audioDisposable(_ id: UUID) -> Bool {
-        guard let item = item(id) else { return true }
+        guard let item = item(id) else { return false }
         switch item.status {
         case .onWatch: return false
         case .inICloud: return item.phoneTransfer != .pending
@@ -828,7 +841,7 @@ enum WatchStatusLine: Equatable {
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `xcodegen generate`, then the same test command.
-Expected: `** TEST SUCCEEDED **`, 19 tests passed.
+Expected: `** TEST SUCCEEDED **`, 20 tests passed.
 
 - [ ] **Step 5: Commit**
 
@@ -1085,7 +1098,8 @@ git commit -m "Watch: the phone's import ledger, so a take lands exactly once"
 - Consumes: `WatchTake`, `WatchWire.encode/decodeTake`, `WatchInboxSchema.appGroupID` (Task 1); `TakeQueueState` (Task 2).
 - Produces:
   - `struct WatchInboxFolder`: `init(directory:)`, `static var standard`, `directory`, `audioURL(for:)`, `metadataURL(for:)`, `accept(_:movingAudioFrom:) throws`, `accept(_:copyingAudioFrom:) throws`, `pending() -> [WatchTake]` (oldest first), `remove(_:)`
-  - `struct TakeQueueStore`: `init(directory:)`, `static var standard`, `indexURL`, `audioURL(for:)`, `load() -> TakeQueueState`, `save(_:)`, `sweep(_:keeping:)`
+  - `struct TakeQueueStore`: `init(directory:)`, `static var standard`, `indexURL`, `audioURL(for:)`, `load() -> TakeQueueState`, `save(_:)`, `sweep(_:)`, `deleteAudio(_:)`
+- Decision (Malik, 2026-10-18): a recording the index doesn't list is never deleted by a sweep (`TakeQueueState.audioDisposable` returns false for unknown IDs), so an unreadable index can't cost a waiting take. Callers delete such files explicitly (Undo, a discarded recording).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1227,22 +1241,41 @@ final class TakeQueueStoreTests: XCTestCase {
         XCTAssertEqual(store.load(), TakeQueueState())
     }
 
-    func test_sweep_keepsOnlyAudioStillNeeded() throws {
+    func test_sweep_deletesOnlyAudioSafeElsewhere() throws {
         var state = TakeQueueState()
         let waiting = take(), clouded = take(1), confirmed = take(2)
-        let orphan = UUID(), recording = UUID()
+        let unlisted = UUID()
         [waiting, clouded, confirmed].forEach { state.add($0, phoneReachableAtStop: true) }
         state.markInICloud(clouded.id)
         state.apply([WatchConfirmation(id: confirmed.id, title: nil)])
-        for id in [waiting.id, clouded.id, confirmed.id, orphan, recording] { try writeAudio(id) }
+        for id in [waiting.id, clouded.id, confirmed.id, unlisted] { try writeAudio(id) }
 
-        store.sweep(state, keeping: [recording])
+        store.sweep(state)
 
         XCTAssertTrue(audioExists(waiting.id))
         XCTAssertFalse(audioExists(clouded.id))
         XCTAssertFalse(audioExists(confirmed.id))
-        XCTAssertFalse(audioExists(orphan))
-        XCTAssertTrue(audioExists(recording), "the take being recorded is protected")
+        XCTAssertTrue(audioExists(unlisted), "a recording the index doesn't list is never guessed away")
+    }
+
+    func test_unreadableIndex_neverCostsAWaitingTake() throws {
+        let waiting = take()
+        var state = TakeQueueState()
+        state.add(waiting, phoneReachableAtStop: true)
+        store.save(state)
+        try writeAudio(waiting.id)
+        try Data("corrupt".utf8).write(to: store.indexURL)
+
+        store.sweep(store.load())
+
+        XCTAssertTrue(audioExists(waiting.id))
+    }
+
+    func test_deleteAudio_removesTheFile() throws {
+        let id = UUID()
+        try writeAudio(id)
+        store.deleteAudio(id)
+        XCTAssertFalse(audioExists(id))
     }
 
     func test_sweep_neverTouchesTheIndex() {
@@ -1375,20 +1408,23 @@ struct TakeQueueStore {
         try? data.write(to: indexURL, options: .atomic)
     }
 
-    /// Deletes audio the state says is safe elsewhere, plus any recording the
-    /// index doesn't know (an undone take, a crash before indexing).
-    /// `protected` holds a take still being recorded, which isn't indexed yet.
-    func sweep(_ state: TakeQueueState, keeping protected: Set<UUID> = []) {
+    /// Deletes audio the state says is safe elsewhere. A recording the index
+    /// doesn't list (one being recorded, an unreadable index, a crash
+    /// mid-recording) is kept: `audioDisposable` never guesses about it.
+    func sweep(_ state: TakeQueueState) {
         let files = (try? FileManager.default.contentsOfDirectory(
             at: directory, includingPropertiesForKeys: nil
         )) ?? []
         for file in files where file.pathExtension == "m4a" {
             guard let id = UUID(uuidString: file.deletingPathExtension().lastPathComponent),
-                  !protected.contains(id),
                   state.audioDisposable(id)
             else { continue }
             try? FileManager.default.removeItem(at: file)
         }
+    }
+
+    func deleteAudio(_ id: UUID) {
+        try? FileManager.default.removeItem(at: audioURL(for: id))
     }
 }
 ```
@@ -1396,7 +1432,7 @@ struct TakeQueueStore {
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `xcodegen generate`, then the same test command.
-Expected: `** TEST SUCCEEDED **`, 12 tests passed.
+Expected: `** TEST SUCCEEDED **`, 14 tests passed.
 
 - [ ] **Step 5: Commit**
 
@@ -2775,7 +2811,7 @@ git commit -m "Watch: the wrist target and a recorder that finishes its file"
 **Interfaces:**
 - Consumes: `TakeQueueState`, `TakeQueueStore` (Tasks 2, 4); `WatchWire`, `WatchInboxSchema` (Task 1).
 - Produces:
-  - `@MainActor @Observable final class TakeQueue`: `init(store:)`, `state: TakeQueueState` (read-only), `protected: Set<UUID>`, `audioURL(for:)`, `change(_ mutate: (inout TakeQueueState) -> Void)`, DEBUG `showDemo(_:)`
+  - `@MainActor @Observable final class TakeQueue`: `init(store:)`, `state: TakeQueueState` (read-only), `audioURL(for:)`, `change(_ mutate: (inout TakeQueueState) -> Void)`, `deleteAudio(_:)`, DEBUG `showDemo(_:)`
   - `final class PhoneLink: NSObject, WCSessionDelegate`: `activate()`, `isActivated`, `isReachable`, `outstandingTakeIDs: Set<UUID>`, `send(_:audioURL:) -> Bool`, `wake(_:)`, `onConfirmations`, `onTransferFinished`, `onActivated` (all `@MainActor` closures)
   - `final class CloudInbox`: `static func makeIfAvailable() -> CloudInbox?`, `upload(_:audioURL:) async -> Bool`
   - `@MainActor final class TakeSync`: `init(queue:link:cloud:)`, `static let refreshIdentifier = "oryne.takes"`, `heldTakeID: UUID?`, `isPhoneReachable: Bool`, `start()`, `flush() async`
@@ -2789,14 +2825,14 @@ import Observation
 /// The watch's queue of takes: the only place `TakeQueueState` is mutated.
 /// Every change saves at once and sweeps audio the state says is safe
 /// elsewhere, so a take is never lost to a crash and never kept longer than
-/// it needs to be.
+/// it needs to be. A sweep never touches a recording the index doesn't list
+/// (see `TakeQueueState.audioDisposable`); a take that leaves the queue
+/// takes its audio with it only if that audio was already safe elsewhere.
 @MainActor
 @Observable
 final class TakeQueue {
     private(set) var state: TakeQueueState
     private let store: TakeQueueStore
-    /// The take being recorded: its file isn't indexed yet, so sweeps skip it.
-    @ObservationIgnored var protected: Set<UUID> = []
 
     init(store: TakeQueueStore = .standard) {
         self.store = store
@@ -2809,9 +2845,21 @@ final class TakeQueue {
     }
 
     func change(_ mutate: (inout TakeQueueState) -> Void) {
+        let before = state
         mutate(&state)
         store.save(state)
-        store.sweep(state, keeping: protected)
+        // Pruned confirmed takes leave the index: delete their audio here,
+        // since the sweep keeps anything it can't account for.
+        for item in before.takes where state.item(item.id) == nil && before.audioDisposable(item.id) {
+            store.deleteAudio(item.id)
+        }
+        store.sweep(state)
+    }
+
+    /// Deletes a recording outright: Undo, or a take discarded before it was
+    /// ever queued.
+    func deleteAudio(_ id: UUID) {
+        store.deleteAudio(id)
     }
 
     #if DEBUG
@@ -3252,7 +3300,6 @@ final class WatchCaptureModel {
         stage = .starting
         let id = UUID()
         current = (id, .now)
-        queue.protected.insert(id)
         switch await recorder.start(writingTo: queue.audioURL(for: id)) {
         case .started:
             stage = .recording
@@ -3292,7 +3339,6 @@ final class WatchCaptureModel {
 
         let take = WatchTake(id: current.id, createdAt: current.startedAt, duration: finished.duration)
         queue.change { $0.add(take, phoneReachableAtStop: reachable) }
-        queue.protected.remove(take.id)   // indexed now, so sweeps keep it
         sync.heldTakeID = take.id
         WKInterfaceDevice.current().play(.success)
         stage = .caught(take.id)
@@ -3310,7 +3356,8 @@ final class WatchCaptureModel {
         guard case .caught(let id) = stage else { return }
         undoTask?.cancel()
         sync.heldTakeID = nil
-        queue.change { $0.remove(id) }   // the sweep deletes the file
+        queue.change { $0.remove(id) }
+        queue.deleteAudio(id)   // sweeps never delete what the index doesn't list
         stage = .idle
     }
 
@@ -3343,8 +3390,7 @@ final class WatchCaptureModel {
     // MARK: Helpers
 
     private func discardRecording(_ id: UUID) {
-        queue.protected.remove(id)
-        try? FileManager.default.removeItem(at: queue.audioURL(for: id))
+        queue.deleteAudio(id)
     }
 
     private func showNothingCaught() {
