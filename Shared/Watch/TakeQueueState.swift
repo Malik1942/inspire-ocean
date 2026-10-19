@@ -2,7 +2,7 @@ import Foundation
 
 /// Where a wrist take stands on its way to the Ocean.
 enum TakeStatus: String, Codable {
-    /// Exists only on the watch.
+    /// Not yet in iCloud or confirmed: the watch holds the only copy it can count on.
     case onWatch
     /// Safe in the iCloud inbox; the phone hasn't confirmed it yet.
     case inICloud
@@ -91,20 +91,25 @@ struct TakeQueueState: Codable, Equatable {
     }
 
     /// Takes to upload to the iCloud inbox: still only on the watch, and
-    /// either caught out of the phone's reach or waiting too long.
+    /// either caught out of the phone's reach or waiting too long. The wait
+    /// is timed from when the take ended (`createdAt` is when recording
+    /// began), so a long take isn't uploaded the moment it's caught.
     func needingCloudUpload(now: Date) -> [QueuedTake] {
         takes.filter {
-            $0.status == .onWatch
+            let stoppedAt = $0.take.createdAt.addingTimeInterval($0.take.duration)
+            return $0.status == .onWatch
                 && (!$0.phoneReachableAtStop
-                    || now.timeIntervalSince($0.take.createdAt) >= Self.cloudFallbackDelay)
+                    || now.timeIntervalSince(stoppedAt) >= Self.cloudFallbackDelay)
         }
     }
 
     /// Whether the watch may delete this take's audio: it's confirmed, or
     /// it's in iCloud with no WatchConnectivity transfer still reading the
-    /// file. An unknown ID (undone, pruned) has nothing worth keeping.
+    /// file. A recording the queue can't account for (an unreadable index,
+    /// a crash mid-recording) is never deleted: guessing wrong loses a
+    /// caught take. Undo deletes its own file.
     func audioDisposable(_ id: UUID) -> Bool {
-        guard let item = item(id) else { return true }
+        guard let item = item(id) else { return false }
         switch item.status {
         case .onWatch: return false
         case .inICloud: return item.phoneTransfer != .pending

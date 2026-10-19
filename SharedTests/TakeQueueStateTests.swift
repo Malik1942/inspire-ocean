@@ -46,6 +46,14 @@ final class TakeQueueStateTests: XCTestCase {
         XCTAssertEqual(state.needingPhoneSend().map(\.id), [a.id])
     }
 
+    func test_deliveredTake_isNotSentAgain() {
+        var state = TakeQueueState()
+        let a = take()
+        state.add(a, phoneReachableAtStop: true)
+        state.markPhoneTransfer(a.id, .delivered)
+        XCTAssertTrue(state.needingPhoneSend().isEmpty)
+    }
+
     func test_needingCloudUpload_unreachableAtStop_goesAtOnce() {
         var state = TakeQueueState()
         let a = take()
@@ -53,12 +61,20 @@ final class TakeQueueStateTests: XCTestCase {
         XCTAssertEqual(state.needingCloudUpload(now: t0).map(\.id), [a.id])
     }
 
-    func test_needingCloudUpload_reachableAtStop_waitsForTheDelay() {
+    func test_needingCloudUpload_reachableAtStop_waitsForTheDelayAfterStop() {
         var state = TakeQueueState()
-        let a = take()
+        let a = take()   // 3 s long: it stopped at t0 + 3
         state.add(a, phoneReachableAtStop: true)
-        XCTAssertTrue(state.needingCloudUpload(now: t0.addingTimeInterval(119)).isEmpty)
-        XCTAssertEqual(state.needingCloudUpload(now: t0.addingTimeInterval(120)).map(\.id), [a.id])
+        XCTAssertTrue(state.needingCloudUpload(now: t0.addingTimeInterval(122)).isEmpty)
+        XCTAssertEqual(state.needingCloudUpload(now: t0.addingTimeInterval(123)).map(\.id), [a.id])
+    }
+
+    func test_needingCloudUpload_longTake_isNotUploadedTheMomentItsCaught() {
+        var state = TakeQueueState()
+        let long = WatchTake(id: UUID(), createdAt: t0, duration: 300)
+        state.add(long, phoneReachableAtStop: true)
+        XCTAssertTrue(state.needingCloudUpload(now: t0.addingTimeInterval(310)).isEmpty)
+        XCTAssertEqual(state.needingCloudUpload(now: t0.addingTimeInterval(420)).map(\.id), [long.id])
     }
 
     func test_needingCloudUpload_skipsTakesOffTheWatch() {
@@ -107,7 +123,7 @@ final class TakeQueueStateTests: XCTestCase {
         XCTAssertFalse(state.audioDisposable(cloudWhileSending.id), "a pending transfer still reads the file")
         XCTAssertTrue(state.audioDisposable(cloudDone.id))
         XCTAssertTrue(state.audioDisposable(confirmed.id))
-        XCTAssertTrue(state.audioDisposable(UUID()), "an unknown take has nothing worth keeping")
+        XCTAssertFalse(state.audioDisposable(UUID()), "a recording the queue can't account for is never deleted")
     }
 
     func test_prune_keepsNewestConfirmedAndEveryUnconfirmed() {

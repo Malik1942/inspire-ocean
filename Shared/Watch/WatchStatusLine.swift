@@ -6,7 +6,7 @@ import Foundation
 enum WatchStatusLine: Equatable {
     /// Nothing ever caught: no line at all.
     case empty
-    /// Takes that exist only on the watch.
+    /// Takes not yet in iCloud or confirmed (the watch holds the only copy it can count on).
     case waiting(count: Int)
     /// Nothing is only on the watch, but not everything is confirmed.
     case onItsWay
