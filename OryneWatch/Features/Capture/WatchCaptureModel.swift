@@ -30,7 +30,6 @@ final class WatchCaptureModel {
     private let sync: TakeSync
     @ObservationIgnored private var current: (id: UUID, startedAt: Date)?
     @ObservationIgnored private var undoTask: Task<Void, Never>?
-    @ObservationIgnored private var noticeTask: Task<Void, Never>?
     @ObservationIgnored private var sceneIsActive = true
     #if DEBUG
     /// The demo `caught` screen waits for the scene to go active: the view's
@@ -69,7 +68,6 @@ final class WatchCaptureModel {
         // start must never replace the take in progress.
         guard stage != .starting, stage != .recording else { return }
         releaseHeldTake()
-        noticeTask?.cancel()
         stage = .starting
         let id = UUID()
         switch await recorder.start(writingTo: queue.audioURL(for: id)) {
@@ -147,6 +145,12 @@ final class WatchCaptureModel {
         if wasHolding { Task { await sync.flush() } }
     }
 
+    /// A tap on "Nothing was caught". The notice never leaves on its own
+    /// (PHILOSOPHY: failure never auto-fades).
+    func dismissNotice() {
+        if stage == .nothingCaught { stage = .idle }
+    }
+
     /// Wrist down: a recording keeps going (spec §1); a take held for Undo
     /// sends now.
     func sceneBecameInactive() {
@@ -177,14 +181,10 @@ final class WatchCaptureModel {
         queue.deleteAudio(id)
     }
 
+    /// Stays until tapped (`dismissNotice()`) or a new take begins.
     private func showNothingCaught() {
         stage = .nothingCaught
-        noticeTask?.cancel()
-        noticeTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(2))
-            guard !Task.isCancelled, self?.stage == .nothingCaught else { return }
-            self?.stage = .idle
-        }
+        WKInterfaceDevice.current().play(.failure)
     }
 
     private static func isDecodable(_ url: URL) -> Bool {

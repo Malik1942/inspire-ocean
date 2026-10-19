@@ -18,7 +18,7 @@ struct WatchCaptureView: View {
             case .caught: caught
             case .denied: denied
             case .failed: failed
-            case .nothingCaught: notice(Text("Nothing was caught"))
+            case .nothingCaught: nothingCaught
             }
         }
         .animation(.snappy, value: model.stage)
@@ -129,12 +129,19 @@ struct WatchCaptureView: View {
         .padding(.horizontal)
     }
 
-    private func notice(_ text: Text) -> some View {
-        text
-            .font(.footnote)
-            .foregroundStyle(OceanTheme.foam)
-            .multilineTextAlignment(.center)
-            .padding(.horizontal)
+    /// Stays until tapped: a failure never fades on its own. The whole
+    /// screen is the button.
+    private var nothingCaught: some View {
+        Button { model.dismissNotice() } label: {
+            Text("Nothing was caught")
+                .font(.footnote)
+                .foregroundStyle(OceanTheme.foam)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: Pieces

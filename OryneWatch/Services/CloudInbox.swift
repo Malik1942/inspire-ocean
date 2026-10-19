@@ -1,5 +1,9 @@
 import Foundation
 import CloudKit
+import os
+
+/// Failures only, and never user content: a take ID at most.
+private let log = Logger(subsystem: "com.inspireocean.app.watchkitapp", category: "sync")
 
 /// Uploads takes to the iCloud inbox when the phone is out of reach. Upload
 /// only: the watch never fetches the Ocean or any other record.
@@ -29,14 +33,28 @@ final class CloudInbox {
             case .success:
                 return true
             case .failure(let error as CKError) where error.code == .zoneNotFound || error.code == .userDeletedZone:
+                log.error("Upload of take \(take.id.uuidString, privacy: .public) failed: the inbox zone is gone (CKError \(error.code.rawValue, privacy: .public))")
                 UserDefaults.standard.set(false, forKey: Self.zoneReadyKey)
                 return false
-            default:
+            case .failure(let error):
+                log.error("Upload of take \(take.id.uuidString, privacy: .public) failed: \(Self.describe(error), privacy: .public)")
+                return false
+            case nil:
+                log.error("Upload of take \(take.id.uuidString, privacy: .public) returned no result")
                 return false
             }
         } catch {
+            log.error("Upload of take \(take.id.uuidString, privacy: .public) failed: \(Self.describe(error), privacy: .public)")
             return false
         }
+    }
+
+    /// The CKError code, or an error's domain and code: never a description,
+    /// which can carry a file path.
+    private static func describe(_ error: Error) -> String {
+        if let error = error as? CKError { return "CKError \(error.code.rawValue)" }
+        let error = error as NSError
+        return "\(error.domain) \(error.code)"
     }
 
     private func ensureZone() async throws {

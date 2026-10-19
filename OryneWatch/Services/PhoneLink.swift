@@ -1,5 +1,9 @@
 import Foundation
 import WatchConnectivity
+import os
+
+/// Failures only, and never user content: a take ID at most.
+private let log = Logger(subsystem: "com.inspireocean.app.watchkitapp", category: "sync")
 
 /// The watch's end of WatchConnectivity: hands takes to the system as file
 /// transfers, pings the phone awake, and receives the phone's confirmations
@@ -67,6 +71,9 @@ final class PhoneLink: NSObject, WCSessionDelegate {
 
     func session(_ session: WCSession, didFinish fileTransfer: WCSessionFileTransfer, error: Error?) {
         guard let id = WatchWire.take(fromMetadata: fileTransfer.file.metadata)?.id else { return }
+        if let error = error as NSError? {
+            log.error("Transfer of take \(id.uuidString, privacy: .public) finished with an error: \(error.domain, privacy: .public) \(error.code, privacy: .public)")
+        }
         let delivered = error == nil
         Task { @MainActor in self.onTransferFinished?(id, delivered) }
     }

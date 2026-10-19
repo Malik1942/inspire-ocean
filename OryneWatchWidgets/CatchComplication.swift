@@ -53,12 +53,14 @@ struct CatchComplicationView: View {
         case .accessoryCorner:
             Image(systemName: "waveform")
                 .font(.title3)
+                .accessibilityLabel(Text("Catch a thought"))
                 .widgetLabel { Text(verbatim: "Oryne") }
         default:
             ZStack {
                 AccessoryWidgetBackground()
                 Image(systemName: "waveform")
                     .font(.title3)
+                    .accessibilityLabel(Text("Catch a thought"))
             }
         }
     }
