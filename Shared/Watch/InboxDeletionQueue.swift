@@ -7,10 +7,20 @@ import Foundation
 struct InboxDeletionQueue: Equatable {
     static let defaultsKey = "watch.inboxPendingDeletions"
 
+    /// CloudKit refuses more than 400 items in one modify; stay well under.
+    static let maxPerModify = 200
+
     /// Oldest first, no duplicates.
     private(set) var ids: [UUID] = []
 
     var isEmpty: Bool { ids.isEmpty }
+
+    /// The queue in modify-sized batches, oldest first.
+    func batches() -> [[UUID]] {
+        stride(from: 0, to: ids.count, by: Self.maxPerModify).map {
+            Array(ids[$0..<min($0 + Self.maxPerModify, ids.count)])
+        }
+    }
 
     mutating func add(_ id: UUID) {
         guard !ids.contains(id) else { return }

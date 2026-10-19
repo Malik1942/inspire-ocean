@@ -22,9 +22,6 @@ final class WatchInboxReader {
     private var isFlushing = false
     private var flushAgain = false
 
-    /// CloudKit refuses more than 400 items in one modify; stay well under.
-    private static let deletionChunkSize = 200
-
     private static let tokenKey = "watch.inboxChangeToken"
     private static let preparedKey = "watch.inboxPrepared"
 
@@ -115,9 +112,7 @@ final class WatchInboxReader {
     }
 
     private func flushOnce() async {
-        let ids = InboxDeletionQueue.load(from: defaults).ids
-        for start in stride(from: 0, to: ids.count, by: Self.deletionChunkSize) {
-            let chunk = Array(ids[start..<min(start + Self.deletionChunkSize, ids.count)])
+        for chunk in InboxDeletionQueue.load(from: defaults).batches() {
             let results: [CKRecord.ID: Result<Void, Error>]
             do {
                 // Not atomic: one record already gone must not fail the others.
@@ -199,18 +194,19 @@ final class WatchInboxReader {
     }
 
     private func accept(_ record: CKRecord) -> InboxRecordOutcome {
-        guard let take = WatchInboxSchema.take(from: record) else { return .invalid }
-        // The watch always writes an audio asset: a record without one is
-        // malformed, and must not hold the token forever.
-        guard record[WatchInboxSchema.Field.audio] is CKAsset else { return .invalid }
-        // No file yet: the asset has not finished downloading.
-        guard let audio = WatchInboxSchema.audioURL(in: record) else { return .failedForNow }
-        do {
-            try folder.accept(take, copyingAudioFrom: audio)
-            return .accepted
-        } catch {
-            log.error("Couldn't copy take \(take.id.uuidString, privacy: .public) from the inbox: \(Self.describe(error), privacy: .public)")
+        switch WatchInboxSchema.check(record) {
+        case .invalid:
+            return .invalid
+        case .notDownloaded:
             return .failedForNow
+        case .ready(let take, let audio):
+            do {
+                try folder.accept(take, copyingAudioFrom: audio)
+                return .accepted
+            } catch {
+                log.error("Couldn't copy take \(take.id.uuidString, privacy: .public) from the inbox: \(Self.describe(error), privacy: .public)")
+                return .failedForNow
+            }
         }
     }
 
