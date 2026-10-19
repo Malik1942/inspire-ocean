@@ -1,0 +1,146 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Catch a thought" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "记一条灵感"
+          }
+        }
+      }
+    },
+    "Stop and catch" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "停止并接住"
+          }
+        }
+      }
+    },
+    "Listening…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "聆听中…"
+          }
+        }
+      }
+    },
+    "Caught" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "接住了"
+          }
+        }
+      }
+    },
+    "Undo" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "撤销"
+          }
+        }
+      }
+    },
+    "Undo this take" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "撤销这一条"
+          }
+        }
+      }
+    },
+    "%lld waiting for iPhone" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%lld 条在等 iPhone"
+          }
+        }
+      }
+    },
+    "On its way" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "正在汇入"
+          }
+        }
+      }
+    },
+    "In your Ocean" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "已汇入你的海洋"
+          }
+        }
+      }
+    },
+    "Last: %@" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "上一条：%@"
+          }
+        }
+      }
+    },
+    "Couldn't start. Tap to try again." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "没能开始。轻点再试一次。"
+          }
+        }
+      }
+    },
+    "Nothing was caught" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "什么也没接住"
+          }
+        }
+      }
+    },
+    "Allow the microphone for Oryne in Settings on your watch." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "请在手表的「设置」中允许 Oryne 使用麦克风。"
+          }
+        }
+      }
+    },
+    "Start or stop a whisper on your wrist." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在手腕上开始或停止一段语音。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.1"
+}

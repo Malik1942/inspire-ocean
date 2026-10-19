@@ -2,27 +2,27 @@ import SwiftUI
 
 @main
 struct OryneWatchApp: App {
-    private let queue: TakeQueue
-    private let sync: TakeSync
+    private let model: WatchCaptureModel
 
     init() {
         let queue = TakeQueue()
         let cloud = CloudInbox.makeIfAvailable()
         let sync = TakeSync(queue: queue, link: PhoneLink(), cloud: cloud)
-        self.queue = queue
-        self.sync = sync
+        let model = WatchCaptureModel(queue: queue, sync: sync)
+        self.model = model
         sync.start()
         #if DEBUG
-        WatchSelfTest.runIfRequested(sync: sync, cloudAvailable: cloud != nil)
+        model.applyDemoEnvironment()
+        WatchSelfTest.runIfRequested(model: model, cloudAvailable: cloud != nil)
         #endif
     }
 
     var body: some Scene {
         WindowGroup {
-            OceanTheme.abyss.ignoresSafeArea()
+            WatchCaptureView(model: model)
         }
-        .backgroundTask(.appRefresh(TakeSync.refreshIdentifier)) { [sync] in
-            await sync.flush()
+        .backgroundTask(.appRefresh(TakeSync.refreshIdentifier)) { [model] in
+            await model.backgroundRefresh()
         }
     }
 }
