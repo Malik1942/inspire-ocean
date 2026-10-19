@@ -16,7 +16,7 @@
 - Frozen identifiers, never renamed: App Group `group.com.inspireocean.shared`; CloudKit container `iCloud.com.inspireocean.app`; phone `com.inspireocean.app`; watch app `com.inspireocean.app.watchkitapp`; watch widgets `com.inspireocean.app.watchkitapp.widgets`.
 - CloudKit inbox: private database, zone **`WatchInbox`**, record type **`WatchTake`**, `recordName = id.uuidString`, fields `createdAt` (Date), `duration` (Double), `version` (Int64), `audio` (CKAsset). Subscription ID `watch-inbox`.
 - Audio: AAC `.m4a`, mono, 12 kHz, `AVAudioQuality.medium` (identical to the phone recorder).
-- Timings: Undo window **5 s**; minimum take **0.6 s**; cap **5 min**; iCloud fallback delay **120 s**; watch keeps the newest **20** confirmed takes; phone sends the newest **20** confirmations; ledger retention **90 days**.
+- Timings: Undo window **5 s**; minimum take **0.6 s**; cap **5 min**; iCloud fallback delay **120 s**; watch keeps the newest **20** confirmed takes; phone sends the newest **200** confirmations (Malik, 2026-10-18: 20 stranded the oldest of a large batch); ledger retention **90 days**.
 - The watch target compiles only `OryneWatch/`, `Shared/Watch/`, and `Oryne/DesignSystem/OceanTheme.swift`. Never the rest of `Shared/` (no SwiftData, no `Node`, no `Persistence`).
 - UI copy: no em or en dashes in any user-facing string; string catalogs are value-as-key (the English text is the key); every user-facing watch string ships with zh-Hans, flagged `needs_review`, using the glossary (`docs/localization-glossary.md`: Whisper 语音, Thought 灵感, Ocean 海洋).
 - Visuals: OceanTheme tokens only; near monochrome and matte; the only circle is a flat control disc; no gloss, rim light, or hairline borders on watch screens.
