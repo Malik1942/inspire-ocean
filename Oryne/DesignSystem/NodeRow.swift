@@ -3,6 +3,8 @@ import SwiftUI
 /// Compact representation of a fragment, used in lists and detail sections.
 struct NodeRow: View {
     let node: Node
+    /// Off inside a current, where every row shares it.
+    var showsCurrent = true
 
     var body: some View {
         // A just-deleted node can linger for one render pass before its @Query
@@ -29,7 +31,7 @@ struct NodeRow: View {
                 .foregroundStyle(OceanTheme.foam)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
-            NodeMeta(node: node)
+            NodeMeta(node: node, showsCurrent: showsCurrent)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)

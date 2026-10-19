@@ -41,7 +41,7 @@ struct ClusterStreamView: View {
                         .padding(.bottom, OceanSpacing.block - OceanSpacing.item)
                     ForEach(members) { node in
                         NavigationLink { NodeDetailContent(node: node) } label: {
-                            NodeRow(node: node)
+                            NodeRow(node: node, showsCurrent: false)
                         }
                         .buttonStyle(.plain)
                     }

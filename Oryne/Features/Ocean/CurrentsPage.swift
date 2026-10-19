@@ -36,9 +36,9 @@ struct CurrentGroup: Identifiable {
 }
 
 /// All currents, readable and searchable. Each current is its name, set as
-/// a heading in New York italic, and its newest thought as a tile under it.
-/// Tapping the name opens the current in place to its newest eight; "Open
-/// current" goes to all of it. No cards around currents, no counts.
+/// a heading in New York italic with a ›, and its two newest thoughts as
+/// tiles under it. The name opens the whole current; a tile opens its
+/// thought. No cards around currents, no counts, no expanding in place.
 struct CurrentsPage: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AppState.self) private var appState
@@ -46,11 +46,10 @@ struct CurrentsPage: View {
     private var nodes: [Node]
 
     @State private var search = ""
-    @State private var expanded: String?
     @State private var stream: StreamSelection?
 
-    /// Thoughts shown inside an open current before "Open current".
-    private static let expandedLimit = 8
+    /// Newest thoughts previewed under each current's name.
+    private static let previewCount = 2
 
     private var groups: [CurrentGroup] { CurrentGroup.build(from: nodes) }
 
@@ -120,72 +119,34 @@ struct CurrentsPage: View {
 
     // MARK: Current
 
-    private func toggle(_ group: CurrentGroup, isOpen: Bool, forced: Bool) {
-        guard !forced else { return }
-        withAnimation(OceanMotion.standard) {
-            expanded = isOpen ? nil : group.key
-        }
-    }
-
+    /// One current, one entry: its name and a › open the whole current
+    /// (Summarize and Add a thought at the top, every thought below); its
+    /// two newest thoughts sit under the name as a preview, each a way into
+    /// that thought. Searching, every match is listed.
     private func current(_ group: CurrentGroup, rows: [Node], forced: Bool) -> some View {
-        let isOpen = forced || expanded == group.key
-        let shown = Array(rows.prefix(isOpen ? Self.expandedLimit : 1))
+        let shown = forced ? rows : Array(rows.prefix(Self.previewCount))
         return VStack(alignment: .leading, spacing: OceanSpacing.item) {
-            HStack(alignment: .center, spacing: 10) {
-                Button { toggle(group, isOpen: isOpen, forced: forced) } label: {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text(group.label)
-                            .font(OceanType.sectionLabel)
-                            .foregroundStyle(group.isAdrift ? OceanTheme.mist : OceanTheme.foam)
-                            .lineLimit(1)
-                            .padding(.leading, 2)
-                        Spacer(minLength: 8)
-                    }
-                    .frame(minHeight: OceanControlSize.height)
-                    .contentShape(Rectangle())
+            Button { stream = StreamSelection(theme: group.key) } label: {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(group.label)
+                        .font(OceanType.sectionLabel)
+                        .foregroundStyle(group.isAdrift ? OceanTheme.mist : OceanTheme.foam)
+                        .lineLimit(1)
+                        .padding(.leading, 2)
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.right")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(OceanTheme.mist)
                 }
-                .buttonStyle(.plain)
-                .accessibilityHint(isOpen ? Text("Collapses this current.") : Text("Shows every thought in this current."))
-
-                // Summarize, the anchor use of Ask, on every current that
-                // has more than one thought to read across.
-                if group.members.count > 1 {
-                    Button {
-                        appState.summarize(group.members.map(\.id), title: group.label)
-                    } label: {
-                        Label("Summarize", systemImage: "text.line.first.and.arrowtriangle.forward")
-                    }
-                    .buttonStyle(.oceanSecondary)
-                }
-
-                if !forced, group.members.count > 1 {
-                    Button { toggle(group, isOpen: isOpen, forced: forced) } label: {
-                        Image(systemName: "chevron.down")
-                            .rotationEffect(.degrees(isOpen ? 180 : 0))
-                    }
-                    .buttonStyle(.oceanIcon)
-                    .accessibilityLabel(isOpen ? Text("Collapse") : Text("Expand"))
-                }
+                .frame(minHeight: OceanControlSize.height)
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+            .accessibilityHint("Opens every thought in this current.")
 
             ForEach(shown) { node in
-                NavigationLink(value: node) { NodeRow(node: node) }
+                NavigationLink(value: node) { NodeRow(node: node, showsCurrent: false) }
                     .buttonStyle(.plain)
-            }
-
-            if isOpen {
-                Button { stream = StreamSelection(theme: group.key) } label: {
-                    HStack(spacing: 4) {
-                        Text("Open current")
-                        Image(systemName: "chevron.right").font(.footnote.weight(.semibold))
-                    }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(OceanTheme.accent)
-                    .padding(.vertical, 6)
-                    .padding(.leading, 2)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
             }
         }
         .opacity(group.isAdrift ? 0.75 : 1)

@@ -1979,6 +1979,16 @@
         }
       }
     },
+    "Opens every thought in this current." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开这条洋流里的所有灵感。"
+          }
+        }
+      }
+    },
     "Opens the keyboard. The button beside it whispers." : {
       "localizations" : {
         "zh-Hans" : {
