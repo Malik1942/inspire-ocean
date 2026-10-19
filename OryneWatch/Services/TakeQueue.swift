@@ -13,6 +13,9 @@ import Observation
 final class TakeQueue {
     private(set) var state: TakeQueueState
     private let store: TakeQueueStore
+    #if DEBUG
+    @ObservationIgnored private var isShowingDemo = false
+    #endif
 
     init(store: TakeQueueStore = .standard) {
         self.store = store
@@ -40,13 +43,17 @@ final class TakeQueue {
     func change(_ mutate: (inout TakeQueueState) -> Void) {
         let before = state
         mutate(&state)
+        #if DEBUG
+        // A screenshot demo never touches the real queue on disk.
+        if isShowingDemo { return }
+        #endif
         store.save(state)
         // A take leaves the index only by Undo or by being pruned once
         // confirmed (even when confirmed and pruned in the same change):
         // either way its audio goes now, since the sweep keeps anything the
         // index doesn't list.
-        for item in before.takes where state.item(item.id) == nil {
-            store.deleteAudio(item.id)
+        for id in state.idsRemoved(since: before) {
+            store.deleteAudio(id)
         }
         store.sweep(state)
     }
@@ -60,6 +67,7 @@ final class TakeQueue {
     #if DEBUG
     /// Screenshot seam: show a queue without touching disk.
     func showDemo(_ demo: TakeQueueState) {
+        isShowingDemo = true
         state = demo
     }
     #endif

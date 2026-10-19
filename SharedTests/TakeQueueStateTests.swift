@@ -142,6 +142,57 @@ final class TakeQueueStateTests: XCTestCase {
         XCTAssertNotNil(state.item(confirmed[24].id))
     }
 
+    func test_nextCloudAttempt_isNilWhenNothingWaitsOnTheWatch() {
+        var state = TakeQueueState()
+        XCTAssertNil(state.nextCloudAttempt(now: t0))
+        let a = take()
+        state.add(a, phoneReachableAtStop: true)
+        state.apply([WatchConfirmation(id: a.id, title: nil)])
+        XCTAssertNil(state.nextCloudAttempt(now: t0.addingTimeInterval(10)))
+    }
+
+    func test_nextCloudAttempt_reachableTake_wakesWhenItBecomesEligible() {
+        var state = TakeQueueState()
+        state.add(take(), phoneReachableAtStop: true)   // 3 s long: eligible at t0 + 3 + 120
+        XCTAssertEqual(state.nextCloudAttempt(now: t0.addingTimeInterval(10)), t0.addingTimeInterval(123))
+    }
+
+    func test_nextCloudAttempt_unreachableTake_retriesAfterTheInterval() {
+        var state = TakeQueueState()
+        state.add(take(), phoneReachableAtStop: false)   // already eligible: its upload failed
+        let now = t0.addingTimeInterval(10)
+        XCTAssertEqual(state.nextCloudAttempt(now: now), now.addingTimeInterval(TakeQueueState.cloudRetryInterval))
+        XCTAssertEqual(state.nextCloudAttempt(now: now), t0.addingTimeInterval(10 + 900))
+    }
+
+    func test_nextCloudAttempt_takesTheSoonerOfEligibleAndRetry() {
+        var state = TakeQueueState()
+        state.add(take(), phoneReachableAtStop: true)
+        state.add(take(1), phoneReachableAtStop: false)
+        XCTAssertEqual(state.nextCloudAttempt(now: t0.addingTimeInterval(10)), t0.addingTimeInterval(123))
+    }
+
+    func test_idsRemoved_listsUndoneTakes() {
+        var state = TakeQueueState()
+        let a = take(), b = take(1)
+        state.add(a, phoneReachableAtStop: true)
+        state.add(b, phoneReachableAtStop: true)
+        let before = state
+        state.remove(a.id)
+        XCTAssertEqual(state.idsRemoved(since: before), [a.id])
+    }
+
+    func test_idsRemoved_listsExactlyThePrunedTakes() {
+        var state = TakeQueueState()
+        let confirmed = (0..<25).map { take(TimeInterval($0)) }
+        confirmed.forEach { state.add($0, phoneReachableAtStop: true) }
+        let before = state
+        state.apply(confirmed.map { WatchConfirmation(id: $0.id, title: nil) })
+        XCTAssertEqual(Set(state.idsRemoved(since: before)), Set(confirmed.prefix(5).map(\.id)))
+        XCTAssertEqual(state.idsRemoved(since: before).count, 5)
+        XCTAssertTrue(TakeQueueState().idsRemoved(since: TakeQueueState()).isEmpty)
+    }
+
     func test_codableRoundTrip() throws {
         var state = TakeQueueState()
         let a = take(), b = take(1)

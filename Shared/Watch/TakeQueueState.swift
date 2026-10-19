@@ -41,6 +41,10 @@ struct TakeQueueState: Codable, Equatable {
     /// How long a take may wait for the phone before also going to iCloud.
     static let cloudFallbackDelay: TimeInterval = 120
 
+    /// How long to wait before trying the iCloud fallback again for a take
+    /// whose upload already failed.
+    static let cloudRetryInterval: TimeInterval = 15 * 60
+
     /// Oldest first.
     private(set) var takes: [QueuedTake]
 
@@ -101,6 +105,28 @@ struct TakeQueueState: Codable, Equatable {
                 && (!$0.phoneReachableAtStop
                     || now.timeIntervalSince(stoppedAt) >= Self.cloudFallbackDelay)
         }
+    }
+
+    /// When the watch should next wake to try the iCloud fallback: when the
+    /// earliest waiting take becomes eligible, or `cloudRetryInterval` from
+    /// now for takes already eligible (their upload failed), whichever is
+    /// sooner. Nil when nothing waits on the watch.
+    func nextCloudAttempt(now: Date) -> Date? {
+        let waiting = takes.filter { $0.status == .onWatch }
+        guard !waiting.isEmpty else { return nil }
+        let retry = now.addingTimeInterval(Self.cloudRetryInterval)
+        let upcoming = waiting.compactMap { item -> Date? in
+            guard item.phoneReachableAtStop else { return nil }
+            let eligible = item.take.createdAt.addingTimeInterval(item.take.duration + Self.cloudFallbackDelay)
+            return eligible > now ? eligible : nil
+        }
+        return min(upcoming.min() ?? retry, retry)
+    }
+
+    /// Takes that were in `before` and are gone now (Undo, or pruned once
+    /// confirmed): their audio leaves with them.
+    func idsRemoved(since before: TakeQueueState) -> [UUID] {
+        before.takes.map(\.id).filter { item($0) == nil }
     }
 
     /// Whether the watch may delete this take's audio: it's confirmed, or

@@ -49,7 +49,9 @@ final class WatchRecorder: NSObject {
     @ObservationIgnored private var meterTask: Task<Void, Never>?
     @ObservationIgnored private var finishWaiter: CheckedContinuation<Bool, Never>?
     @ObservationIgnored private var finishedFlag: Bool?
+    @ObservationIgnored private var fallbackTask: Task<Void, Never>?
     @ObservationIgnored private var isStarting = false
+    @ObservationIgnored private var isStopping = false
     @ObservationIgnored private var interruptionObserver: NSObjectProtocol?
 
     private static let settings: [String: Any] = [
@@ -70,6 +72,7 @@ final class WatchRecorder: NSObject {
     }
 
     func start(writingTo url: URL) async -> StartResult {
+        guard !isStopping else { return .failed }
         guard !isRecording, !isStarting else { return .started }
         isStarting = true
         defer { isStarting = false }
@@ -107,7 +110,10 @@ final class WatchRecorder: NSObject {
     /// nothing was recording or the encoder reported failure.
     func stop() async -> Finished? {
         guard let recorder, isRecording else { return nil }
-        let duration = recorder.currentTime   // only valid while running
+        isStopping = true
+        // `currentTime` reads 0 once the system has stopped the recorder; the
+        // metered `elapsed` keeps a long take from being dropped as a reflex press.
+        let duration = max(recorder.currentTime, elapsed)
         let url = recorder.url
         stopMetering()
         isRecording = false
@@ -122,15 +128,17 @@ final class WatchRecorder: NSObject {
                 finishWaiter = continuation
                 recorder.stop()
                 // Never hang on a finish callback that doesn't come.
-                Task { @MainActor [weak self] in
+                fallbackTask = Task { @MainActor [weak self] in
                     try? await Task.sleep(for: .seconds(2))
-                    self?.finished(successfully: FileManager.default.fileExists(atPath: url.path))
+                    guard !Task.isCancelled else { return }
+                    self?.finished(recorder, successfully: FileManager.default.fileExists(atPath: url.path))
                 }
             }
         }
-        self.recorder = nil
+        if self.recorder === recorder { self.recorder = nil }
         removeInterruptionObserver()
         deactivateSession()
+        isStopping = false
         return succeeded ? Finished(url: url, duration: duration) : nil
     }
 
@@ -189,19 +197,32 @@ final class WatchRecorder: NSObject {
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 
-    fileprivate func finished(successfully flag: Bool) {
+    fileprivate func finished(_ finishedRecorder: AVAudioRecorder, successfully flag: Bool) {
+        // Only the current take's recorder counts: a late callback or fallback
+        // from an earlier take must never decide this one.
+        guard finishedRecorder === recorder else { return }
+        fallbackTask?.cancel()
+        fallbackTask = nil
         if finishedFlag == nil { finishedFlag = flag }
-        finishWaiter?.resume(returning: flag)
-        finishWaiter = nil
+        if let waiter = finishWaiter {
+            finishWaiter = nil
+            waiter.resume(returning: flag)
+        } else if isRecording {
+            // The system closed the file without a stop from the user, a lost
+            // mic: end the take like stop.
+            onEndedBySystem?()
+        }
     }
 }
 
 extension WatchRecorder: AVAudioRecorderDelegate {
     nonisolated func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
-        Task { @MainActor in self.finished(successfully: flag) }
+        Task { @MainActor in self.finished(recorder, successfully: flag) }
     }
 
     nonisolated func audioRecorderEncodeErrorDidOccur(_ recorder: AVAudioRecorder, error: Error?) {
-        Task { @MainActor in self.onEndedBySystem?() }
+        Task { @MainActor in
+            if recorder === self.recorder { self.onEndedBySystem?() }
+        }
     }
 }

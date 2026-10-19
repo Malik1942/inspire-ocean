@@ -12,7 +12,7 @@ final class TakeSync {
     private let queue: TakeQueue
     private let link: PhoneLink
     private let cloud: CloudInbox?
-    private var isFlushing = false
+    private var flushTask: Task<Void, Never>?
     private var flushAgain = false
 
     /// The take inside its Undo window: never sent until released.
@@ -44,14 +44,27 @@ final class TakeSync {
         link.activate()
     }
 
-    /// Sends what each take still needs.
+    /// Sends what each take still needs. A call that arrives while a pass
+    /// is running asks for one more pass and waits for it, so a background
+    /// refresh never returns before its work is done.
     func flush() async {
-        guard !isFlushing else {
+        if let running = flushTask {
             flushAgain = true
+            await running.value
             return
         }
-        isFlushing = true
-        defer { isFlushing = false }
+        let task = Task { @MainActor in
+            await self.runPasses()
+            self.flushTask = nil
+        }
+        flushTask = task
+        await task.value
+    }
+
+    private func runPasses() async {
+        // Re-arm before working, so a run the system cuts short still has
+        // its next wake.
+        scheduleRefreshIfNeeded()
         repeat {
             flushAgain = false
             var sent: UUID?
@@ -64,6 +77,8 @@ final class TakeSync {
             if let sent { link.wake(sent) }
             if let cloud {
                 for item in queue.state.needingCloudUpload(now: .now) where item.id != heldTakeID {
+                    // A take undone mid-flush is gone from the queue.
+                    guard queue.state.item(item.id) != nil else { continue }
                     if await cloud.upload(item.take, audioURL: queue.audioURL(for: item.id)) {
                         queue.change { $0.markInICloud(item.id) }
                     }
@@ -88,9 +103,9 @@ final class TakeSync {
     /// While any take is still only on the watch, ask watchOS for a
     /// background refresh so the iCloud fallback runs without the app open.
     private func scheduleRefreshIfNeeded() {
-        guard queue.state.takes.contains(where: { $0.status == .onWatch }) else { return }
+        guard let next = queue.state.nextCloudAttempt(now: .now) else { return }
         WKApplication.shared().scheduleBackgroundRefresh(
-            withPreferredDate: Date(timeIntervalSinceNow: 15 * 60),
+            withPreferredDate: next,
             userInfo: Self.refreshIdentifier as NSString
         ) { _ in }
     }
