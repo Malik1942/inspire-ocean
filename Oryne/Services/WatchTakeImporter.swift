@@ -5,8 +5,9 @@ import UIKit
 /// Turns wrist takes waiting in the inbox folder into ordinary voice
 /// thoughts, exactly once each, then understands them the way an in-app
 /// whisper is understood. Both delivery paths (WatchConnectivity and the
-/// iCloud inbox) and the launch sweep call `drain()`. One pass runs at a
-/// time; a call that arrives mid-pass gets another pass.
+/// iCloud inbox) and the launch sweep call `drain()`. Import is synchronous
+/// and runs on every call; one understanding pass runs at a time and picks up
+/// takes imported while it works.
 @MainActor
 final class WatchTakeImporter {
     private let context: ModelContext
@@ -14,8 +15,8 @@ final class WatchTakeImporter {
     private let folder: WatchInboxFolder
     private let defaults: UserDefaults
     private var ledger: ImportLedger
-    private var isDraining = false
-    private var needsAnotherPass = false
+    private var isUnderstanding = false
+    private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
 
     /// The watch should hear about these: after each import and each title.
     var confirmationsChanged: (([WatchConfirmation]) -> Void)?
@@ -38,29 +39,34 @@ final class WatchTakeImporter {
     }
 
     func drain() async {
-        guard !isDraining else {
-            needsAnotherPass = true
-            return
-        }
-        isDraining = true
+        // Import never waits behind understanding; transcription can sit on
+        // the speech permission prompt for as long as the user takes.
+        importWaitingTakes()
+        guard !isUnderstanding else { return }
+        isUnderstanding = true
         // Transcription can take seconds; a background delivery shouldn't be
         // cut off mid-pass. If iOS ends it anyway, the next drain resumes.
-        let backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "Oryne.WatchTakeImport")
-        defer {
-            isDraining = false
-            if backgroundTask != .invalid { UIApplication.shared.endBackgroundTask(backgroundTask) }
+        // The expiration handler runs on the main thread.
+        backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "Oryne.WatchTakeImport") { [weak self] in
+            MainActor.assumeIsolated { self?.endBackgroundTask() }
         }
-        repeat {
-            needsAnotherPass = false
-            importWaitingTakes()
-            await understandImported()
-        } while needsAnotherPass
+        defer {
+            isUnderstanding = false
+            endBackgroundTask()
+        }
+        await understandImported()
+    }
+
+    private func endBackgroundTask() {
+        guard backgroundTask != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(backgroundTask)
+        backgroundTask = .invalid
     }
 
     // MARK: Import
 
     private func importWaitingTakes() {
-        var imported = false
+        var changed = false
         for take in folder.pending() {
             if !ledger.hasSeen(take.id), let existing = node(take.id) {
                 // Already in the store, from before this ledger existed (a
@@ -71,12 +77,23 @@ final class WatchTakeImporter {
             }
             if ledger.hasSeen(take.id) {
                 // A second copy (the other path, a retry) or a thought the
-                // user already deleted: never recreate it.
+                // user already deleted: never recreate it. Confirm again, the
+                // watch resends only when it hasn't heard back.
                 folder.remove(take.id)
                 didSettle?(take.id)
+                changed = true
                 continue
             }
-            guard let audio = try? Data(contentsOf: folder.audioURL(for: take.id)), !audio.isEmpty else {
+            let audio: Data
+            do {
+                audio = try Data(contentsOf: folder.audioURL(for: take.id))
+            } catch {
+                // Unreadable right now (protected until first unlock, an I/O
+                // error): leave the files for the next pass. After an iCloud
+                // delivery this may be the only copy.
+                continue
+            }
+            if audio.isEmpty {
                 // An empty delivery holds nothing to keep. The watch still has
                 // the take and will send it again over iCloud.
                 folder.remove(take.id)
@@ -98,18 +115,24 @@ final class WatchTakeImporter {
             ledger.save(to: defaults)
             folder.remove(take.id)
             didSettle?(take.id)
-            imported = true
+            changed = true
         }
-        if imported { confirmationsChanged?(ledger.recentConfirmations()) }
+        if changed { confirmationsChanged?(ledger.recentConfirmations()) }
     }
 
     // MARK: Understanding
 
+    /// Understands every imported take, including ones imported while this
+    /// pass runs. A cancelled pass leaves its take `imported`, so the next
+    /// drain or launch finishes it.
     private func understandImported() async {
-        for id in ledger.awaitingUnderstanding {
+        var attempted: Set<UUID> = []
+        while let id = ledger.awaitingUnderstanding.first(where: { !attempted.contains($0) }) {
+            attempted.insert(id)
             if node(id) != nil {
                 await VoiceUnderstanding.run(nodeID: id, audioTempURL: nil, context: context, ai: ai)
             }
+            if Task.isCancelled { return }
             ledger.markUnderstood(id, title: node(id).flatMap(title(of:)))
             ledger.save(to: defaults)
             confirmationsChanged?(ledger.recentConfirmations())
