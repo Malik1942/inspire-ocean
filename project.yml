@@ -180,6 +180,9 @@ targets:
       - path: OryneWatch
       - path: Shared/Watch
       - path: Oryne/DesignSystem/OceanTheme.swift
+    dependencies:
+      - target: OryneWatchWidgets
+        embed: true
     scheme:
       configVariants: []
     settings:
@@ -223,3 +226,26 @@ targets:
         UIBackgroundModes:
           - audio
         NSMicrophoneUsageDescription: "Oryne uses the microphone to catch a whisper from your wrist before it disappears."
+
+  # Watch face complications and the Smart Stack: static launchers into a
+  # hot mic (oryne://watch/catch). No App Group or iCloud: they show no data.
+  OryneWatchWidgets:
+    type: app-extension
+    platform: watchOS
+    sources:
+      - path: OryneWatchWidgets
+      - path: Shared/Watch/WatchDeepLink.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.inspireocean.app.watchkitapp.widgets
+    info:
+      path: OryneWatchWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: Oryne
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        CFBundleLocalizations:
+          - en
+          - zh-Hans
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
