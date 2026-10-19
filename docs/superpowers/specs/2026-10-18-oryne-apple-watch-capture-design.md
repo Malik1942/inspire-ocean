@@ -229,11 +229,13 @@ development environment creates them on first write.
 - **Launch sweep** (in `OryneApp`'s launch task): import any file in
   `WatchInbox/` not in the ledger; finish understanding for ledger entries
   still `imported`.
-- **`VoiceUnderstanding`** (`Oryne/Services`): the transcribe-then-understand
-  steps now private in `CaptureSession` (`transcribeThenUnderstand`,
-  `understand`, lines 196 to 230) move here, taking a node ID, an optional
-  temp audio URL, a context, and the AI service. `CaptureSession` calls it and
-  keeps its `onUnderstood` callback; behavior is unchanged. Ownership checks
+- **`VoiceUnderstanding`** (`Oryne/Services`): the phone's whisper pipeline
+  lives here, taking a node ID, an optional temp audio URL, a context, the AI
+  service, and the user's vocabulary: vocabulary-aware transcription that
+  keeps both languages, joining an existing current, and a summary for long
+  whispers. `CaptureSession.beginUnderstanding` and `WatchTakeImporter` both
+  call it, so a wrist take is understood exactly like an in-app whisper, and
+  a stamped "Whisper" placeholder never leads the title. Ownership checks
   (`transcriptEditedByUser`, `NodeComposer.applyUnderstanding`) stay intact.
 - **No Node schema change.** Pending state lives in the ledger. The thought
   shows in Library and the Ocean at once as "Whisper" until named, exactly

@@ -191,7 +191,10 @@ final class CaptureSession {
     func beginUnderstanding(nodeID: UUID) {
         guard let ai, let context else { return }
         let tempURL = lastReleased?.nodeID == nodeID ? lastReleased?.draft.audioTempURL : nil
-        ensureVocabulary()
+        // Only a whisper still to be transcribed needs the user's words as hints.
+        if let node = fetch(nodeID), node.kind == .voice, (node.transcription ?? "").isEmpty {
+            ensureVocabulary()
+        }
         let vocabulary = self.vocabulary
         understandingTask?.cancel()
         understandingTask = Task {

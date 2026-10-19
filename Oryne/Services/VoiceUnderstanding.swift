@@ -15,6 +15,19 @@ import SwiftData
 @MainActor
 enum VoiceUnderstanding {
 
+    /// The labels the Library backfill can have stamped on an untitled voice
+    /// thought, in every language the app ships ("Whisper", 语音): a
+    /// placeholder, never a name.
+    static let whisperPlaceholders: Set<String> = {
+        var labels: Set<String> = ["Whisper", NodeKind.voice.label]
+        for language in Bundle.main.localizations {
+            guard let path = Bundle.main.path(forResource: language, ofType: "lproj"),
+                  let bundle = Bundle(path: path) else { continue }
+            labels.insert(bundle.localizedString(forKey: "Whisper", value: nil, table: nil))
+        }
+        return labels
+    }()
+
     /// Returns the essence (the interpreted title), or nil when there were no
     /// words to understand (no recording, the recognizer heard nothing or
     /// failed), the user owns the transcript, the pass was cancelled, or the
@@ -78,6 +91,12 @@ enum VoiceUnderstanding {
 
     private static func understand(nodeID: UUID, context: ModelContext, ai: any OceanAIService) async -> String? {
         guard let node = fetch(nodeID, in: context) else { return nil }
+        // A voice thought understood late may carry the Library's "Whisper"
+        // stamp: a placeholder, not words, so it never leads the basis or
+        // becomes part of the title.
+        if node.kind == .voice, !node.titleEditedByUser, whisperPlaceholders.contains(node.title.trimmed) {
+            node.title = ""
+        }
         let basis = node.meaningText
         guard !basis.isEmpty else { return nil }
         let currents = CurrentSnap.candidates(in: context, excluding: nodeID, forEntry: basis)

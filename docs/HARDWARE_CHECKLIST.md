@@ -134,9 +134,9 @@ wrist-down recording.
   denied screen shows.
 - [ ] **Nothing was caught** — a take that can't be decoded shows "Nothing was
   caught" with a failure haptic, and it stays until tapped.
-- [ ] **Phone capture unchanged** — on the phone, record a whisper in the
-  Capture tab and in Fast Capture; the transcript and title still land (the
-  understanding step moved into `VoiceUnderstanding`).
+- [ ] **Phone capture unchanged** — on the phone, hold the capture bar to
+  whisper, and whisper from the Fast Capture overlay; the transcript and title
+  still land (the understanding step moved into `VoiceUnderstanding`).
 - [ ] **SwiftData sync unaffected** — after installing this build (it adds an
   app delegate for the inbox push), run the CloudKit two-device sync item
   above again.
