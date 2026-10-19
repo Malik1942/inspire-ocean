@@ -228,17 +228,20 @@ struct AskView: View {
                     input = prompt
                     inputFocused = true
                 } label: {
-                    HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    // The same line as an answer's sources: a quiet glyph in
+                    // a fixed slot, the words a step below content.
+                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+                        Image(systemName: "text.bubble")
+                            .font(.footnote)
+                            .foregroundStyle(OceanTheme.mist)
+                            .frame(width: 18)
                         Text(prompt)
-                            .font(.body)
-                            .foregroundStyle(OceanTheme.foam)
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundStyle(OceanTheme.text)
                             .multilineTextAlignment(.leading)
-                        Spacer(minLength: 8)
-                        Image(systemName: "arrow.up.left")
-                            .font(.footnote.weight(.semibold))
-                            .foregroundStyle(OceanTheme.faint)
+                        Spacer(minLength: 0)
                     }
-                    .padding(.vertical, 12)
+                    .frame(minHeight: OceanControlSize.height)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)

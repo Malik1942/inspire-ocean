@@ -242,12 +242,16 @@ struct OceanFieldView: View {
                 Button {
                     sheet = .currents
                 } label: {
+                    // A quiet accessory to the section label, never louder
+                    // than it: the label's mist, regular weight.
                     HStack(spacing: 3) {
                         Text("All currents")
-                        Image(systemName: "chevron.right").font(.caption2.weight(.semibold))
+                        Image(systemName: "chevron.right").font(.caption2)
                     }
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(OceanTheme.accent)
+                    .font(.subheadline)
+                    .foregroundStyle(OceanTheme.mist)
+                    .frame(minHeight: OceanControlSize.height)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
