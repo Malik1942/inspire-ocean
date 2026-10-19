@@ -1089,6 +1089,8 @@ git commit -m "Watch: the phone's import ledger, so a take lands exactly once"
 
 ### Task 4: File stores for both ends
 
+> **Amended after review (Malik, 2026-10-18):** `WatchInboxFolder` writes a second delivery beside the first and swaps it in (a failed redelivery never removes a good copy); `TakeQueueStore.load()` sets an unreadable index aside instead of letting the next save overwrite it, and `TakeQueueStore.unlistedTakes(in:duration:)` returns playable recordings the index doesn't list so `TakeQueue` (Task 10) can queue them again at launch. Shipped in the Task 4 fix commit; the code below is the original task text.
+
 **Files:**
 - Create: `Shared/Watch/WatchInboxFolder.swift`
 - Create: `Shared/Watch/TakeQueueStore.swift`
@@ -2820,6 +2822,7 @@ git commit -m "Watch: the wrist target and a recorder that finishes its file"
 
 ```swift
 import Foundation
+import AVFoundation
 import Observation
 
 /// The watch's queue of takes: the only place `TakeQueueState` is mutated.
@@ -2836,7 +2839,19 @@ final class TakeQueue {
 
     init(store: TakeQueueStore = .standard) {
         self.store = store
-        self.state = store.load()
+        var state = store.load()
+        // Recordings caught but missing from the index (a failed save, an
+        // unreadable index) go back in the queue rather than sit stuck.
+        // Launch only: nothing is being recorded yet.
+        let recovered = store.unlistedTakes(in: state) { url in
+            let length = (try? AVAudioPlayer(contentsOf: url))?.duration ?? 0
+            return length > 0 ? length : nil
+        }
+        for take in recovered {
+            state.add(take, phoneReachableAtStop: false)
+        }
+        self.state = state
+        if !recovered.isEmpty { store.save(state) }
         store.sweep(state)
     }
 
