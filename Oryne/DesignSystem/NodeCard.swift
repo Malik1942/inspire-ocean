@@ -88,10 +88,12 @@ struct NodeCard: View {
             .padding(16)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(OceanTheme.fill)
-        // Clip the whole card (not just the fill) so the banner's top corners
-        // round with it: every tile is 20 pt continuous.
+        // Clip the content so the banner's top corners round with the card;
+        // the lit surface and its shadow sit behind, outside the clip, and
+        // the shadow rests while the card moves in a reorder.
         .clipShape(RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous))
+        .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous),
+                                 shadow: !suppressShadow))
         .overlay {
             if isAnchor {
                 RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous)

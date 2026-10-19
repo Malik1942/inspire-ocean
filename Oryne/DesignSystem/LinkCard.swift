@@ -62,7 +62,7 @@ struct LinkCard: View {
         }
         // Flat, like every tile; media radius, since it stands where a
         // picture would at the top of a thought.
-        .background(OceanTheme.fill, in: RoundedRectangle(cornerRadius: OceanRadius.media, style: .continuous))
+        .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.media, style: .continuous)))
     }
 
     @ViewBuilder
@@ -152,7 +152,7 @@ struct LinkCard: View {
             }
             if let onRemove { removeButton(onRemove).padding(.trailing, 6) }
         }
-        .background(OceanTheme.fill, in: RoundedRectangle(cornerRadius: OceanRadius.media, style: .continuous))
+        .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.media, style: .continuous)))
     }
 
     private func removeButton(_ action: @escaping () -> Void) -> some View {

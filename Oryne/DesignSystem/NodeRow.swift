@@ -35,7 +35,7 @@ struct NodeRow: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(OceanTheme.fill, in: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous))
+        .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous)))
         .contentShape(RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous))
     }
 }

@@ -267,7 +267,7 @@ struct OceanFieldView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(16)
                         .frame(height: 72)
-                        .background(OceanTheme.fill, in: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous))
+                        .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous)))
                     }
                     .buttonStyle(.plain)
                 }
@@ -408,8 +408,8 @@ private struct GlanceCard: View {
                 .padding(16)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(OceanTheme.fill)
             .clipShape(RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous))
+            .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous)))
             .contentShape(RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous))
         }
     }

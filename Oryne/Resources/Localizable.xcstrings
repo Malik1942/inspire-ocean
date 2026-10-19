@@ -1539,6 +1539,7 @@
       }
     },
     "Less" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1672,6 +1673,7 @@
       }
     },
     "More" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -3051,6 +3053,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "轻点按钮输入，按住按钮录一段语音，或在任何地方捕捉。海洋会直接接住这条灵感，不必你先整理。"
+          }
+        }
+      }
+    },
+    "Tap to edit this thought." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轻点以编辑这条灵感。"
           }
         }
       }

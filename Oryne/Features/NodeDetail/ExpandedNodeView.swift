@@ -93,18 +93,9 @@ struct NodeDetailContent: View {
                 Button {
                     showMovePicker = true
                 } label: {
-                    Image(systemName: "arrow.turn.up.right")
+                    Image(systemName: "folder")
                 }
                 .accessibilityLabel("Move to a current")
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    editFocusesBody = false
-                    showEditSheet = true
-                } label: {
-                    Image(systemName: "pencil")
-                }
-                .accessibilityLabel("Edit thought")
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Button(role: .destructive) {
@@ -333,6 +324,9 @@ struct NodeDetailContent: View {
                 // sheet as the toolbar pencil.
                 .onTapGesture { edit(focusingBody: false) }
                 .accessibilityAddTraits(.isHeader)
+                // The words are the way to edit; no separate pencil.
+                .accessibilityHint("Tap to edit this thought.")
+                .accessibilityAction(named: Text("Edit")) { edit(focusingBody: false) }
             if showsWords {
                 Text(node.text)
                     .font(.body)
