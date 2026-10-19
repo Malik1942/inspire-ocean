@@ -57,12 +57,28 @@ protocol OceanAIService {
     /// Transcribe a recorded voice drift. Returns nil if transcription fails.
     func transcribe(audioURL: URL) async -> String?
 
+    /// The capture pipeline's pass: both of a bilingual user's languages,
+    /// the user's own vocabulary as hints, and the runner-up kept when the
+    /// two were too close to call. Always on-device.
+    func transcribeDetailed(audioURL: URL, vocabulary: [String]) async -> TranscriptOutcome?
+
+    /// Two or three sentences for a long whisper, in its own language, by the
+    /// on-device model only. nil when the device has no model.
+    func summarizeTranscript(_ text: String) async -> String?
+
     /// The understanding step — run when a thought is saved or updated, before
     /// anything is labelled or matched: interpret the fragment's meaning into
     /// a concise essence (its title), 1–3 conceptual themes, and a soft mood.
     /// Uses the on-device foundation model when available; the fallback still
     /// reasons about meaning (concept-space embeddings), never bare keywords.
-    func understand(_ text: String) async -> ThoughtUnderstanding
+    ///
+    /// `currents` are the existing currents the thought may join
+    /// (`CurrentSnap.candidates`). Currents group by exact theme strings, so
+    /// a thought themed in isolation founds its own current even when one
+    /// already fits; an implementation that can ask a model puts the chosen
+    /// current's key first. Empty means no joining (a fresh Ocean, or a
+    /// re-derive of a thought that already has its place).
+    func understand(_ text: String, currents: [CurrentCandidate]) async -> ThoughtUnderstanding
 
     /// Nodes related to `node` *by meaning* — blended embedding similarity,
     /// conceptual-theme overlap and mood — used for rediscovery and Expanded
@@ -73,6 +89,19 @@ protocol OceanAIService {
     /// Carry an Ocean Dialogue turn, grounded in the user's saved nodes.
     /// `history` is the last few turns (oldest first), for continuity.
     func respond(to query: String, history: [DialogueTurn], mode: DialogueMode, nodes: [Node]) async -> OceanResponse
+
+    /// Read across a gathered set of thoughts (a current, a search) and say
+    /// what runs through them. No retrieval: the set is the user's choice,
+    /// so every member is a source.
+    func summarize(_ nodes: [Node]) async -> OceanResponse
+}
+
+extension OceanAIService {
+    /// Understanding with no currents to join (re-derives, where the thought
+    /// already has its place).
+    func understand(_ text: String) async -> ThoughtUnderstanding {
+        await understand(text, currents: [])
+    }
 }
 
 // MARK: - Environment injection

@@ -168,8 +168,11 @@ enum OceanExport {
         }
     }
 
-    struct OceanBackup: Encodable {
-        let format = "oryne-export-v1"
+    struct OceanBackup: Codable {
+        static let currentFormat = "oryne-export-v1"
+        /// Written as the current format; decodable so an older archive can
+        /// say which format it is.
+        var format = OceanBackup.currentFormat
         let exportedAt: Date
         let nodeCount: Int
         let nodes: [NodeBackup]

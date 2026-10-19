@@ -30,7 +30,7 @@ struct TranscriptEditor: View {
         ScrollView {
             (text.isEmpty ? Text(placeholder) : Text(text))
                 .font(.callout)
-                .foregroundStyle(text.isEmpty ? OceanTheme.faint : OceanTheme.mist)
+                .foregroundStyle(text.isEmpty ? OceanTheme.hint : OceanTheme.mist)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
@@ -63,7 +63,7 @@ struct TranscriptEditor: View {
                 if text.trimmed.isEmpty {
                     Text(placeholder)
                         .font(.subheadline)
-                        .foregroundStyle(OceanTheme.faint)
+                        .foregroundStyle(OceanTheme.hint)
                         .padding(.top, 8)
                         .padding(.leading, 5)
                         .allowsHitTesting(false)

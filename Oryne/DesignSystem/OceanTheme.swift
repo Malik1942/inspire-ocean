@@ -40,8 +40,16 @@ enum OceanTheme {
     static let surface = Color(red: 0.24,  green: 0.245, blue: 0.27)
 
     static let foam  = Color.white.opacity(0.92)
+    /// Running text: the website's reading tone.
+    static let text  = Color.white.opacity(0.66)
+    /// The one surface fill for cards; no border.
+    static let fill  = Color.white.opacity(0.055)
     static let mist  = Color.white.opacity(0.50)
     static let faint = Color.white.opacity(0.26)
+    /// Placeholder and helper text inside an input: quieter than `mist`, but it
+    /// still has to be read. `faint` measured about 2.2:1 over a field on the
+    /// glass card; this clears 4.5:1 (WCAG AA for text).
+    static let hint  = Color.white.opacity(0.58)
 
     /// Soft near-white for interactive accents — kept monochrome.
     static let accent   = Color(red: 0.82, green: 0.84, blue: 0.88)
@@ -81,7 +89,11 @@ enum OceanTheme {
 /// `TimelineView(.animation)` runs uncapped, so ProMotion devices update at
 /// their full refresh rate (60/120 Hz) and the flow is silky.
 struct OceanBackground: View {
-    var animated: Bool = true
+    /// Off by default (Malik, 2026-10-18): the drift moved at most 3/255 per
+    /// channel, invisible, yet redrew the whole screen every frame and made
+    /// every glass control above it recompute; the app idled at 30 to 55%
+    /// CPU. The still water is the same picture. Onboarding may opt in.
+    var animated: Bool = false
 
     @Environment(\.calmAccessibility) private var calm
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -144,32 +156,9 @@ struct GlassCard<Content: View>: View {
         content
             .padding(padding)
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.08), lineWidth: 0.5)
-            )
     }
 }
 
-/// A small theme/keyword tag.
-struct ThemeTag: View {
-    let text: String
-    var hue: Double = 0.55
-
-    var body: some View {
-        Text(text)
-            .font(.caption2.weight(.medium))
-            .foregroundStyle(OceanTheme.foam)
-            .padding(.horizontal, 9)
-            .padding(.vertical, 4)
-            .background(
-                Capsule().fill(OceanTheme.color(forHue: hue).opacity(0.20))
-            )
-            .overlay(
-                Capsule().strokeBorder(OceanTheme.color(forHue: hue).opacity(0.30), lineWidth: 0.5)
-            )
-    }
-}
 
 extension View {
     /// Standard screen treatment: ocean background behind content.

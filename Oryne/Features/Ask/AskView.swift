@@ -1,9 +1,14 @@
 import SwiftUI
 import SwiftData
 
-/// Ocean Dialogue (§11): converse with your inspiration memory. Responses
-/// include a reflection, source nodes, pattern summaries, and suggested
-/// branches — and are grounded in the user's saved fragments.
+/// Ask the Ocean: one question in, one grounded answer out. The four lenses
+/// (Search, Synthesis, Expansion, Research) are gone from the phone; every
+/// answer has the same shape: what was found (chips), what it means (one
+/// short paragraph), and, only when the water was thin, a marked note from
+/// beyond the Ocean (docs/plans/phone-refocus/SPEC.md, "Ask: one mode").
+///
+/// Summarize is a verb: a current's stream or a Library search arrives here
+/// as a gathered set and is read across with a fixed question.
 struct AskView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.oceanAI) private var ai
@@ -12,108 +17,71 @@ struct AskView: View {
     @Query(filter: #Predicate<Node> { !$0.isArchived }) private var nodes: [Node]
 
     /// The visible "ask → find → answer" beat: the Ocean is read, then the
-    /// find is named, then the reply lands. Reading carries the mode — each
-    /// lens works differently, so each waits differently.
+    /// find is named, then the reply lands.
     private enum SearchPhase: Equatable {
-        case reading(DialogueMode)
+        case reading
         case found(Int)
-
-        var isReading: Bool {
-            if case .reading = self { return true }
-            return false
-        }
     }
 
+    /// The one lens left. Stored on messages for continuity with older
+    /// conversations; never shown.
+    private static let mode: DialogueMode = .synthesis
+
     @State private var conversation: Conversation?
-    @State private var mode: DialogueMode = .synthesis
     @State private var input: String = ""
     @State private var searchPhase: SearchPhase?
     @FocusState private var inputFocused: Bool
 
-    /// Everything the branch sheet needs, carried in the sheet item itself.
-    /// Reading companion @State inside `.sheet(item:)` is racy: the closure
-    /// can run against a pre-presentation state snapshot where it's still nil.
-    private struct BranchRequest: Identifiable {
-        let id = UUID()
-        let parent: Node
-        let suggestion: SuggestedBranch
-    }
-
     @State private var openedNode: Node?
-    @State private var branchRequest: BranchRequest?
 
     private var messages: [ChatMessage] { conversation?.orderedMessages ?? [] }
 
     var body: some View {
         NavigationStack {
             ZStack {
-                OceanBackground()
-                VStack(spacing: 0) {
-                    modePicker
-                    transcript
-                }
+                PageBackground()
+                transcript
+                ShoreGradient()
             }
             .contentShape(Rectangle())
-            // Tapping open water folds the keyboard. Buttons, chips, and the
+            // Tapping open water folds the keyboard. Buttons, rows, and the
             // input bar sit above this gesture, so their taps still win.
             .onTapGesture { inputFocused = false }
-            .navigationTitle("Ask the Ocean")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
+            .navigationTitle("Ask")
+            .toolbar(.hidden, for: .navigationBar)
             .safeAreaInset(edge: .bottom) { inputBar }
             .sheet(item: $openedNode) { ExpandedNodeView(node: $0) }
-            .sheet(item: $branchRequest) { request in
-                BranchComposer(
-                    parent: request.parent,
-                    prefill: request.suggestion.title,
-                    prefillType: request.suggestion.type
-                )
+            .onAppear {
+                consumePendingPrompt()
+                consumePendingSummary()
             }
-            .onAppear(perform: consumePendingPrompt)
             .onChange(of: appState.pendingAskPrompt) { _, _ in consumePendingPrompt() }
+            .onChange(of: appState.pendingSummary?.title) { _, _ in consumePendingSummary() }
         }
-    }
-
-    // MARK: Mode
-
-    private var modePicker: some View {
-        VStack(spacing: 6) {
-            Picker("Mode", selection: $mode) {
-                ForEach(DialogueMode.allCases) { m in
-                    Text(m.label).tag(m)
-                }
-            }
-            .pickerStyle(.segmented)
-
-            // The lens, whispered: a small reminder that each mode is a
-            // different way of looking, not a different tone.
-            HStack(spacing: 5) {
-                Image(systemName: mode.symbol)
-                    .font(.caption2)
-                Text(mode.lens)
-                    .font(.caption2)
-                    .kerning(0.3)
-            }
-            .foregroundStyle(OceanTheme.mist)
-            .animation(.easeInOut(duration: 0.2), value: mode)
-        }
-        .padding(.horizontal).padding(.vertical, 8)
     }
 
     // MARK: Transcript
 
+    /// The page reads like Tide: the title row, then each question in New
+    /// York with its answer under it as plain text. No bubbles, no boxes.
     private var transcript: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 0) {
+                    // No gear here: Ask is for asking. Settings live on Tide
+                    // and the Library.
+                    PageTitleRow(title: "Ask")
                     if messages.isEmpty && searchPhase == nil { emptyState }
                     ForEach(messages) { message in
                         messageView(message).id(message.id)
                     }
-                    if let searchPhase { searchBubble(searchPhase).id("searching") }
+                    if let searchPhase { searchLine(searchPhase).id("searching") }
                 }
-                .padding()
+                .padding(.horizontal, OceanSpacing.gutter)
+                .padding(.top, 0)
+                .padding(.bottom, OceanSpacing.block)
             }
+            .scrollDismissesKeyboard(.interactively)
             .onChange(of: messages.count) { _, _ in
                 withAnimation { proxy.scrollTo(messages.last?.id, anchor: .bottom) }
             }
@@ -126,38 +94,41 @@ struct AskView: View {
     @ViewBuilder
     private func messageView(_ message: ChatMessage) -> some View {
         if message.role == .user {
-            HStack {
-                Spacer(minLength: 40)
-                Text(message.text)
-                    .foregroundStyle(OceanTheme.abyss)
-                    .padding(.horizontal, 14).padding(.vertical, 10)
-                    .background(OceanTheme.accent.opacity(0.92), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            }
+            // The question is the heading of what follows it.
+            Text(message.text)
+                .font(OceanType.subjectTitle)
+                .foregroundStyle(OceanTheme.foam)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, message.id == messages.first?.id ? 32 : OceanSpacing.section + 8)
         } else {
-            VStack(alignment: .leading, spacing: 10) {
-                Text(message.text)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(AnswerMarkdown.attributed(message.text))
+                    .font(.body)
+                    .lineSpacing(5)
                     .foregroundStyle(OceanTheme.foam)
-                    .padding(.horizontal, 14).padding(.vertical, 12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
 
                 if let note = provenanceNote(message) {
                     Text(note)
-                        .font(.caption2)
-                        .foregroundStyle(OceanTheme.faint)
-                        .padding(.leading, 4)
+                        .font(.footnote)
+                        .foregroundStyle(OceanTheme.mist)
+                        .padding(.top, 10)
+                }
+                // Found: the thoughts the answer drew from, each a line that
+                // opens the real thing.
+                if !message.referencedNodeIDs.isEmpty {
+                    sources(for: message)
+                        .padding(.top, OceanSpacing.block)
                 }
                 if let outward = message.outwardText, !outward.isEmpty {
                     outwardView(outward)
-                }
-                if !message.referencedNodeIDs.isEmpty {
-                    sourceChips(for: message)
-                }
-                if !message.suggestedBranches.isEmpty {
-                    suggestedBranches(for: message)
+                        .padding(.top, OceanSpacing.block)
                 }
             }
-            .padding(.trailing, 30)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 14)
         }
     }
 
@@ -172,92 +143,58 @@ struct AskView: View {
         }
     }
 
-    /// Research's outward beat — knowledge from beyond the user's notes. A
-    /// warm whisper of a rim and label set its provenance apart from the
-    /// grounded reflection above it: lit from the open sea, not their water.
+    /// Knowledge from beyond the user's notes, set apart by its warm label
+    /// alone: lit from the open sea, not their water.
     private func outwardView(_ text: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Beyond your Ocean", systemImage: "sparkles")
-                .font(.caption2.weight(.medium))
+                .font(OceanType.eyebrow)
                 .foregroundStyle(OceanTheme.glowWarm)
-            Text(text)
-                .foregroundStyle(OceanTheme.foam)
+            Text(AnswerMarkdown.attributed(text))
+                .font(.subheadline)
+                .lineSpacing(4)
+                .foregroundStyle(OceanTheme.text)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.horizontal, 14).padding(.vertical, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .strokeBorder(OceanTheme.glowWarm.opacity(0.25), lineWidth: 0.6)
-        )
     }
 
-    private func sourceChips(for message: ChatMessage) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Drawn from").font(.caption2).foregroundStyle(OceanTheme.faint)
-            FlowLayout(spacing: 8) {
-                ForEach(sourceNodes(message), id: \.id) { node in
-                    Button { openedNode = node } label: {
-                        Label(node.displayTitle, systemImage: node.kind.symbol)
-                            .font(.caption2).lineLimit(1)
-                            .padding(.horizontal, 10).padding(.vertical, 6)
-                            .background(Color.white.opacity(0.08), in: Capsule())
-                            .foregroundStyle(OceanTheme.foam)
-                    }.buttonStyle(.plain)
+    private func sources(for message: ChatMessage) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Drawn from")
+                .font(OceanType.eyebrow)
+                .foregroundStyle(OceanTheme.mist)
+                .padding(.bottom, 4)
+            ForEach(sourceNodes(message), id: \.id) { node in
+                Button { openedNode = node } label: {
+                    ThoughtLine(node: node, showsChevron: true)
                 }
+                .buttonStyle(.plain)
             }
         }
     }
 
-    private func suggestedBranches(for message: ChatMessage) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Grow a branch").font(.caption2).foregroundStyle(OceanTheme.faint)
-            ForEach(parsedBranches(message)) { branch in
-                Button {
-                    guard let parent = sourceNodes(message).first ?? nodes.first else { return }
-                    branchRequest = BranchRequest(parent: parent, suggestion: branch)
-                } label: {
-                    HStack {
-                        Image(systemName: branch.type.symbol)
-                        Text(branch.title).font(.caption).lineLimit(2)
-                        Spacer()
-                        Image(systemName: "plus.circle.fill").foregroundStyle(OceanTheme.accent)
-                    }
-                    .padding(.horizontal, 12).padding(.vertical, 9)
-                    .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
-                    .foregroundStyle(OceanTheme.foam)
-                }.buttonStyle(.plain)
-            }
-        }
-    }
-
-    /// The finding, made visible — same capsule, two quiet beats.
-    private func searchBubble(_ phase: SearchPhase) -> some View {
+    /// The finding, made visible where the answer will land: the Ocean read
+    /// under a breathing lamp, then the find named for a beat.
+    private func searchLine(_ phase: SearchPhase) -> some View {
         HStack(spacing: 8) {
             switch phase {
-            case .reading(let readingMode):
-                ForEach(0..<3, id: \.self) { i in
-                    Circle().fill(OceanTheme.mist).frame(width: 5, height: 5)
-                        .opacity(0.4)
-                        .scaleEffect(searchPhase?.isReading == true ? 1 : 0.6)
-                        .animation(.easeInOut(duration: 0.6).repeatForever().delay(Double(i) * 0.2),
-                                   value: searchPhase)
-                }
-                Text(readingMode.searching)
-                    .font(.caption)
-                    .foregroundStyle(OceanTheme.mist)
+            case .reading:
+                ThinkingText(text: String(localized: "Reading your Ocean…"))
 
             case .found(let count):
                 Image(systemName: "water.waves")
-                    .font(.caption2)
+                    .font(.footnote)
                     .foregroundStyle(OceanTheme.mist)
                 Text(foundLabel(count))
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundStyle(OceanTheme.mist)
             }
         }
-        .padding(.horizontal, 14).padding(.vertical, 12)
-        .background(.ultraThinMaterial, in: Capsule())
+        .padding(.vertical, 8)
+        .background(alignment: .leading) {
+            if case .reading = phase { ThinkingLamp().offset(x: -60) }
+        }
+        .padding(.top, 14)
         .animation(.spring(response: 0.36, dampingFraction: 0.86), value: phase)
     }
 
@@ -269,72 +206,87 @@ struct AskView: View {
         }
     }
 
+    /// One line on what Ask is for, then three questions to start from, as
+    /// lines of text that fill the field.
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Ask the Ocean")
-                .font(.title3.weight(.semibold)).foregroundStyle(OceanTheme.foam)
-            Text("Search a fragment, sense a pattern, or grow an idea. Responses come from what you've captured.")
-                .font(.subheadline).foregroundStyle(OceanTheme.mist)
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(samplePrompts, id: \.self) { prompt in
-                    Button { input = prompt } label: {
-                        Label(prompt, systemImage: "sparkle")
-                            .font(.caption).foregroundStyle(OceanTheme.accent)
-                            .padding(.horizontal, 12).padding(.vertical, 8)
-                            .background(Color.white.opacity(0.06), in: Capsule())
-                    }.buttonStyle(.plain)
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Find a thought, or ask what a few of them mean together.")
+                .font(.body)
+                .foregroundStyle(OceanTheme.text)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 12)
+
+            Text("Try asking")
+                .font(OceanType.sectionLabel)
+                .foregroundStyle(OceanTheme.mist)
+                .padding(.leading, 2)
+                .padding(.top, OceanSpacing.section)
+                .padding(.bottom, 4)
+
+            ForEach(samplePrompts, id: \.self) { prompt in
+                Button {
+                    input = prompt
+                    inputFocused = true
+                } label: {
+                    // The same line as an answer's sources: a quiet glyph in
+                    // a fixed slot, the words a step below content.
+                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+                        Image(systemName: "text.bubble")
+                            .font(.footnote)
+                            .foregroundStyle(OceanTheme.mist)
+                            .frame(width: 18)
+                        Text(prompt)
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundStyle(OceanTheme.text)
+                            .multilineTextAlignment(.leading)
+                        Spacer(minLength: 0)
+                    }
+                    .frame(minHeight: OceanControlSize.height)
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .accessibilityHint("Puts this question in the field.")
             }
-            .padding(.top, 4)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.top, 30)
     }
 
-    /// Sample prompts speak each lens's language, so switching modes on the
-    /// empty shore already shows what kind of looking this is.
     private var samplePrompts: [String] {
-        switch mode {
-        case .search:
-            return [String(localized: "That idea I had about water"),
-                    String(localized: "What did I capture last week?"),
-                    String(localized: "Find my thought about beginnings")]
-        case .synthesis:
-            return [String(localized: "What patterns keep resurfacing?"),
-                    String(localized: "How has my thinking drifted lately?"),
-                    String(localized: "What tension am I circling?")]
-        case .expansion:
-            return [String(localized: "Help me grow my newest idea"),
-                    String(localized: "Collide two of my thoughts"),
-                    String(localized: "What could this become physically?")]
-        case .research:
-            return [String(localized: "What should I explore next?"),
-                    String(localized: "Who thinks about what I think about?"),
-                    String(localized: "What field sits next to my obsessions?")]
-        }
+        [String(localized: "That idea I had about water"),
+         String(localized: "What patterns keep resurfacing?"),
+         String(localized: "What tension am I circling?")]
     }
 
     // MARK: Input
 
+    /// The capture bar's twin: the same capsule, material, height and place
+    /// above the tab bar, the send disc where the capture disc sits. It grows
+    /// into a rounded rectangle with the same end radius past one line.
     private var inputBar: some View {
-        HStack(spacing: 10) {
-            TextField(mode.placeholder, text: $input, axis: .vertical)
+        HStack(alignment: .bottom, spacing: 12) {
+            TextField("Ask the Ocean", text: $input, axis: .vertical)
                 .textFieldStyle(.plain)
+                .font(.body)
                 .focused($inputFocused)
                 .foregroundStyle(OceanTheme.foam)
-                .padding(.horizontal, 14).padding(.vertical, 10)
-                .background(.ultraThinMaterial, in: Capsule())
+                .tint(OceanTheme.accent)
                 .lineLimit(1...4)
+                .padding(.vertical, 17)
 
             Button(action: send) {
-                Image(systemName: "arrow.up.circle.fill")
-                    .font(.system(size: 32))
-                    .foregroundStyle(canSend ? OceanTheme.accent : OceanTheme.faint)
+                Image(systemName: "arrow.up")
             }
+            .buttonStyle(OceanSendDiscStyle())
             .disabled(!canSend)
+            .padding(.bottom, FastCaptureLayout.discInset)
+            .accessibilityLabel("Ask")
         }
-        .padding(.horizontal).padding(.vertical, 8)
-        .background(.ultraThinMaterial)
+        .padding(.leading, FastCaptureLayout.barHeight / 2 - 8)
+        .padding(.trailing, FastCaptureLayout.discInset)
+        .frame(minHeight: FastCaptureLayout.barHeight)
+        .background(OceanBarBackground(cornerRadius: FastCaptureLayout.barHeight / 2))
+        .padding(.horizontal, OceanSpacing.gutter)
+        .padding(.bottom, FastCaptureLayout.insetBarLift)
     }
 
     private var canSend: Bool { !input.trimmed.isEmpty && searchPhase == nil }
@@ -345,6 +297,17 @@ struct AskView: View {
         if let prompt = appState.pendingAskPrompt {
             input = prompt
             appState.pendingAskPrompt = nil
+        }
+    }
+
+    private func consumePendingSummary() {
+        guard let pending = appState.pendingSummary else { return }
+        appState.pendingSummary = nil
+        let wanted = Set(pending.nodeIDs)
+        let set = nodes.filter { wanted.contains($0.id) }
+        guard !set.isEmpty else { return }
+        run(userText: String(localized: "Summarize “\(pending.title)”")) {
+            await ai.summarize(set)
         }
     }
 
@@ -359,40 +322,41 @@ struct AskView: View {
     private func send() {
         let query = input.trimmed
         guard !query.isEmpty else { return }
-        let convo = ensureConversation()
 
         // Prior turns (before this one), for follow-up continuity.
         let history = messages.suffix(4).map {
             DialogueTurn(isUser: $0.role == .user, text: $0.text)
         }
+        let snapshot = nodes
+        input = ""
+        // The answer is what to look at now; the keyboard would cover it.
+        inputFocused = false
+        run(userText: query) {
+            await ai.respond(to: query, history: history, mode: Self.mode, nodes: snapshot)
+        }
+    }
 
-        let userMessage = ChatMessage(role: .user, text: query, mode: mode)
+    /// One beat for every answer: the user's line lands, the Ocean is read,
+    /// the find is named, the reply arrives.
+    private func run(userText: String, _ answer: @escaping () async -> OceanResponse) {
+        guard searchPhase == nil else { return }
+        let convo = ensureConversation()
+
+        let userMessage = ChatMessage(role: .user, text: userText, mode: Self.mode)
         userMessage.conversation = convo
         context.insert(userMessage)
         convo.updatedAt = .now
         try? context.save()
 
-        input = ""
-        let currentMode = mode
-        let snapshot = nodes
-        withAnimation { searchPhase = .reading(currentMode) }
-
-        // Each lens has its own rhythm: Search snaps back like recall;
-        // Research holds a longer, considered beat — it looked further.
-        let (readingFloor, foundBeat): (Duration, Duration) = switch currentMode {
-        case .search:   (.milliseconds(250), .milliseconds(450))
-        case .research: (.milliseconds(650), .milliseconds(850))
-        default:        (.milliseconds(500), .milliseconds(700))
-        }
+        withAnimation { searchPhase = .reading }
 
         Task {
             let started = ContinuousClock.now
-            let response = await ai.respond(
-                to: query, history: history, mode: currentMode, nodes: snapshot
-            )
+            let response = await answer()
 
             // Let the reading beat breathe even when retrieval is instant,
             // then name the find for a beat before the reply lands.
+            let readingFloor: Duration = .milliseconds(500)
             let elapsed = started.duration(to: .now)
             if elapsed < readingFloor {
                 try? await Task.sleep(for: readingFloor - elapsed)
@@ -400,15 +364,14 @@ struct AskView: View {
             await MainActor.run {
                 withAnimation { searchPhase = .found(response.sourceNodeIDs.count) }
             }
-            try? await Task.sleep(for: foundBeat)
+            try? await Task.sleep(for: .milliseconds(700))
 
             await MainActor.run {
                 let oceanMessage = ChatMessage(
                     role: .ocean,
                     text: composeText(response),
                     referencedNodeIDs: response.sourceNodeIDs,
-                    suggestedBranches: response.suggestedBranches.map { "\($0.type.rawValue)|\($0.title)" },
-                    mode: currentMode,
+                    mode: Self.mode,
                     outwardText: response.outwardNote,
                     provenanceRaw: response.provenance.rawValue
                 )
@@ -421,25 +384,82 @@ struct AskView: View {
         }
     }
 
+    /// The answer is the reflection alone; the recurring-threads line that
+    /// used to ride under it is noise on a phone (SPEC, Ask: one mode).
     private func composeText(_ response: OceanResponse) -> String {
-        if let summary = response.patternSummary {
-            return response.reflection + "\n\n" + summary
-        }
-        return response.reflection
+        response.reflection
     }
-
-    // MARK: Decode helpers
 
     private func sourceNodes(_ message: ChatMessage) -> [Node] {
         let byID = Dictionary(uniqueKeysWithValues: nodes.map { ($0.id, $0) })
         return message.referencedNodeIDs.compactMap { byID[$0] }
     }
+}
 
-    private func parsedBranches(_ message: ChatMessage) -> [SuggestedBranch] {
-        message.suggestedBranches.compactMap { raw in
-            let parts = raw.split(separator: "|", maxSplits: 1).map(String.init)
-            guard parts.count == 2, let type = BranchType(rawValue: parts[0]) else { return nil }
-            return SuggestedBranch(title: parts[1], type: type)
+// MARK: - Thinking
+
+/// The Ocean reading: a warm light passes slowly through the words, the
+/// way light moves through water. No dots, no spinner. Still under Reduce
+/// Motion and Calm Accessibility Mode.
+private struct ThinkingText: View {
+    let text: String
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.calmAccessibility) private var calm
+
+    var body: some View {
+        if reduceMotion || calm {
+            Text(text).font(.subheadline).foregroundStyle(OceanTheme.mist)
+        } else {
+            TimelineView(.animation) { timeline in
+                let t = timeline.date.timeIntervalSinceReferenceDate
+                // One sweep every 1.8 s, left to right, a soft band.
+                let x = CGFloat((t.truncatingRemainder(dividingBy: 1.8)) / 1.8) * 1.6 - 0.3
+                Text(text)
+                    .font(.subheadline)
+                    .foregroundStyle(OceanTheme.mist)
+                    .overlay {
+                        Text(text)
+                            .font(.subheadline)
+                            .foregroundStyle(OceanTheme.glowWarm)
+                            .mask(
+                                LinearGradient(
+                                    stops: [
+                                        .init(color: .clear, location: max(0, x - 0.25)),
+                                        .init(color: .white, location: x),
+                                        .init(color: .clear, location: min(1, x + 0.25))
+                                    ],
+                                    startPoint: .leading, endPoint: .trailing
+                                )
+                            )
+                    }
+            }
         }
+    }
+}
+
+/// The lamp behind the reading line, breathing: the same light Tide
+/// gives its resurfacing thought, here telling you the water is awake.
+private struct ThinkingLamp: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.calmAccessibility) private var calm
+
+    var body: some View {
+        if reduceMotion || calm {
+            lamp(0.07)
+        } else {
+            TimelineView(.animation(minimumInterval: 1 / 30)) { timeline in
+                let t = timeline.date.timeIntervalSinceReferenceDate
+                lamp(0.075 + 0.025 * sin(t * (2 * .pi / 2.4)))
+            }
+        }
+    }
+
+    private func lamp(_ opacity: Double) -> some View {
+        RadialGradient(
+            colors: [OceanTheme.glowWarm.opacity(opacity), OceanTheme.glowWarm.opacity(opacity * 0.35), .clear],
+            center: .center, startRadius: 0, endRadius: 140
+        )
+        .frame(width: 320, height: 200)
+        .allowsHitTesting(false)
     }
 }

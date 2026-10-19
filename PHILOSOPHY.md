@@ -15,10 +15,13 @@ judging it is the product. Anything that lengthens that moment — a required
 field, a category picker, a confirmation step — is a regression, whatever it
 adds.
 
-- Capture must work in under two seconds from any entry point (tab, overlay,
-  Action Button, widget, Siri, share sheet).
-- A whisper is caught the moment recording stops. Review refines what was
-  caught; it never gates whether it was caught.
+- Capture must work in under two seconds from any entry point (the capture
+  button, Action Button, widget, Siri, share sheet). On the phone it is one
+  gesture: tap to type, hold to whisper. Voice is never a mode to pick first.
+- A whisper is caught the moment the finger lifts. There is no review beat
+  between the words and the water: editing happens later, in the thought,
+  and the only thing that stands between a capture and the Ocean is a named
+  Undo.
 - Interruptions (a call, Siri, a lost mic) end a take the way a tap on stop
   does — capture what was caught. The app never sits stuck "Listening…".
 - Mode switches, tab switches, and backgrounding never discard words. If the
@@ -61,6 +64,11 @@ the user wrote? Then no.
   Ocean") — grounded water and open sea never mix in one voice.
 - The AI is a reflective partner, not an oracle: it suggests, hints, and
   resurfaces. It never assigns, schedules, or nags.
+- On the phone, Ask is one question and one grounded answer: what was
+  found, what it means, and, only when the water was thin, what lies beyond
+  it, marked apart. Growing an idea (branches, leaps, research threads) is
+  desk work and belongs to the desktop and iPad environments the Ocean can
+  be taken to, not to a dialogue room in a phone app.
 
 **Test:** if the network died mid-session, would the user be told anything
 untrue — by words *or by omission*? Then no.
@@ -127,8 +135,10 @@ get* them? Returning is the product.
 - The field is for ambient encounter: clusters, density, the day's
   resurfacing. It deliberately shows a curated fraction of the water.
 - Anything the user deliberately looks for must be reachable through
-  structure: the Library (search, filter, time), cluster streams, and Ask.
-  Position in the field is never the only path to a thought.
+  structure: the Library (search, filter, time, a current's stream) and Ask.
+  Position in the field is never the only path to a thought. When the
+  Library grows past what can be scanned, a question is the faster path,
+  and Summarize reads a gathered set in one tap.
 - Ask answers from the user's fragments first, names what it found, and shows
   its sources as chips that open the real thing.
 
@@ -151,6 +161,9 @@ layout, reach every thought? They must.
 
 **Test:** would this feature make Oryne feel like a tool that needs tending?
 Then it belongs in some other app.
+
+**Phone test:** does this need more than a glance or one gesture on a phone?
+Then it belongs on the desk, and the phone's job is to get the thought there.
 
 ---
 

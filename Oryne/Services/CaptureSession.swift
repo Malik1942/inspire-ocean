@@ -23,6 +23,12 @@ struct CaptureDraft {
     var imageDatas: [Data] = []
     var linkURLString: String? = nil
 
+    /// When set, the released node is spatially anchored to this current
+    /// (`Node.anchorThemeKey`) at creation — placement is the user's intent;
+    /// AI understanding still adds theme chips but never relocates it.
+    /// Not part of `isEmpty`: an anchor alone is not content.
+    var anchorThemeKey: String? = nil
+
     var isEmpty: Bool {
         text.trimmed.isEmpty
             && transcript.trimmed.isEmpty
@@ -65,9 +71,6 @@ final class CaptureSession {
     private(set) var lastReleased: (nodeID: UUID, draft: CaptureDraft, at: Date)?
     private var understandingTask: Task<Void, Never>?
 
-    /// The interpreted title landed — the surface advances its moment.
-    var onUnderstood: ((UUID, String) -> Void)?
-
     func configure(context: ModelContext, ai: any OceanAIService) {
         self.context = context
         self.ai = ai
@@ -81,8 +84,21 @@ final class CaptureSession {
         case failed
     }
 
+    /// The user's own words, built once per session and handed to every
+    /// recognizer pass as hints.
+    private var vocabulary: [String] = []
+    private var vocabularyBuilt = false
+
+    private func ensureVocabulary() {
+        guard !vocabularyBuilt, let context else { return }
+        vocabularyBuilt = true
+        vocabulary = CaptureVocabulary.build(context: context)
+        transcriber.contextualStrings = vocabulary
+    }
+
     func startRecording(onInterruption: @escaping () -> Void) async -> RecordingStart {
         guard !transcriber.isRecording else { return .started }
+        ensureVocabulary()
         guard await transcriber.requestMicPermission() else { return .permissionDenied }
         transcriber.onInterruption = onInterruption
         let url = AudioRecorder.url(for: "drift-\(UUID().uuidString).m4a")
@@ -120,6 +136,11 @@ final class CaptureSession {
             imageDatas: imageDatas,
             detectThemes: !meaning.isEmpty
         )
+        // The user's placement intent, applied before insert and independent of
+        // understanding: nil for ordinary capture (unchanged), a current's key
+        // when captured into one. Understanding still runs and adds chips, but
+        // layout groups by `anchorThemeKey` first, so the node never relocates.
+        node.anchorThemeKey = draft.anchorThemeKey
         context.insert(node)
         do {
             try context.save()
@@ -197,11 +218,15 @@ final class CaptureSession {
         }
         defer { try? FileManager.default.removeItem(at: url) }
 
-        guard let transcript = await ai.transcribe(audioURL: url), !transcript.isEmpty else { return }
+        ensureVocabulary()
+        guard let outcome = await ai.transcribeDetailed(audioURL: url, vocabulary: vocabulary) else { return }
         guard !Task.isCancelled, let node = fetch(nodeID) else { return }
         // Ownership: never overwrite words the user has touched.
         guard !node.transcriptEditedByUser else { return }
-        node.transcription = transcript
+        node.transcription = outcome.text
+        node.transcriptLocale = outcome.localeID
+        node.alternateTranscription = outcome.alternateText
+        node.alternateTranscriptLocale = outcome.alternateLocaleID
         node.updatedAt = .now
         try? context?.save()
         await understand(nodeID: nodeID, ai: ai)
@@ -211,11 +236,26 @@ final class CaptureSession {
         guard let node = fetch(nodeID) else { return }
         let basis = node.meaningText
         guard !basis.isEmpty else { return }
-        let understanding = await ai.understand(basis)
+        let currents = context.map { CurrentSnap.candidates(in: $0, excluding: nodeID, forEntry: basis) } ?? []
+        let understanding = await ai.understand(basis, currents: currents)
         guard !Task.isCancelled, let fresh = fetch(nodeID) else { return }
         NodeComposer.applyUnderstanding(understanding, to: fresh)
         try? context?.save()
-        onUnderstood?(nodeID, understanding.essence)
+        await summarizeIfLong(nodeID: nodeID, ai: ai)
+    }
+
+    /// A long whisper gets a reading above its words. Only voice thoughts,
+    /// only when long, only once; the user's own text is never summarized.
+    static let summaryThreshold = 240
+
+    func summarizeIfLong(nodeID: UUID, ai: any OceanAIService) async {
+        guard let node = fetch(nodeID), node.kind == .voice, node.summary == nil,
+              let transcript = node.transcription, transcript.count >= Self.summaryThreshold
+        else { return }
+        guard let summary = await ai.summarizeTranscript(transcript), !Task.isCancelled,
+              let fresh = fetch(nodeID), fresh.summary == nil else { return }
+        fresh.summary = summary
+        try? context?.save()
     }
 
     // MARK: Undo

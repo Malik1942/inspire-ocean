@@ -1,14 +1,13 @@
 import XCTest
-@testable import Oryne
+import Foundation
 
 /// Unit tests for `LanguageResolver`, exercised entirely through the
 /// parameterized `resolve(preferredLanguages:supportedLocales:)` overload so
 /// they don't depend on the live device's iOS Settings › Language or on
 /// `SFSpeechRecognizer.supportedLocales()` (which varies by OS/simulator).
 ///
-/// NOTE: this file has no test target to run in yet — see the delivery
-/// summary for that gap. It's written to the standard XCTest shape so it can
-/// be dropped into a `SharedTests` target the moment one exists.
+/// No app-module import: the SharedTests target compiles Shared/ sources
+/// directly into the test bundle, so its types are same-module visible.
 final class LanguageResolverTests: XCTestCase {
 
     /// A representative slice of what `SFSpeechRecognizer.supportedLocales()`

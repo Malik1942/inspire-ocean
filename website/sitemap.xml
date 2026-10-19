@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://oryne.malikzhang.com/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://oryne.malikzhang.com/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://oryne.malikzhang.com/zh/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://oryne.malikzhang.com/"/>
+  </url>
+  <url>
+    <loc>https://oryne.malikzhang.com/privacy.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://oryne.malikzhang.com/privacy.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://oryne.malikzhang.com/zh/privacy.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://oryne.malikzhang.com/privacy.html"/>
+  </url>
+  <url>
+    <loc>https://oryne.malikzhang.com/support.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://oryne.malikzhang.com/support.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://oryne.malikzhang.com/zh/support.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://oryne.malikzhang.com/support.html"/>
+  </url>
+  <url>
+    <loc>https://oryne.malikzhang.com/zh/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://oryne.malikzhang.com/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://oryne.malikzhang.com/zh/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://oryne.malikzhang.com/"/>
+  </url>
+  <url>
+    <loc>https://oryne.malikzhang.com/zh/privacy.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://oryne.malikzhang.com/privacy.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://oryne.malikzhang.com/zh/privacy.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://oryne.malikzhang.com/privacy.html"/>
+  </url>
+  <url>
+    <loc>https://oryne.malikzhang.com/zh/support.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://oryne.malikzhang.com/support.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://oryne.malikzhang.com/zh/support.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://oryne.malikzhang.com/support.html"/>
+  </url>
+</urlset>

@@ -26,9 +26,37 @@ enum Resurfacing {
     /// How long a met fragment rests before it may rise again.
     static let restAfterMeeting: TimeInterval = 60 * 60 * 24 * 14
 
+    /// "Let it rest": the thought the user sent back down today. It is
+    /// excluded from today's pick (and marked met), so another rises; the
+    /// widget reads the same key, so every surface agrees. One per day.
+    enum Rest {
+        static let idKey = "resurfacing.restedID"
+        static let dayKey = "resurfacing.restedDay"
+
+        static func restedID(now: Date = .now) -> UUID? {
+            let defaults = FastCapturePreferences.defaults
+            guard let raw = defaults.string(forKey: idKey), let id = UUID(uuidString: raw),
+                  let day = defaults.object(forKey: dayKey) as? Date,
+                  Calendar.current.isDate(day, inSameDayAs: now)
+            else { return nil }
+            return id
+        }
+
+        static var restedToday: Bool { restedID() != nil }
+
+        static func rest(_ id: UUID, now: Date = .now) {
+            let defaults = FastCapturePreferences.defaults
+            defaults.set(id.uuidString, forKey: idKey)
+            defaults.set(now, forKey: dayKey)
+        }
+    }
+
     /// Today's resurfacing fragment, or nil when the Ocean is too young.
     static func pick(from nodes: [Node], now: Date = .now) -> Node? {
-        let live = nodes.filter { !$0.isArchived }
+        // Seeded starter content never resurfaces as if it were a rediscovered
+        // thought: the moment only means something when it is the user's own.
+        let restedToday = Rest.restedID(now: now)
+        let live = nodes.filter { !$0.isArchived && !$0.isExample && $0.id != restedToday }
         guard live.count > 3 else { return nil }
 
         let calendar = Calendar.current

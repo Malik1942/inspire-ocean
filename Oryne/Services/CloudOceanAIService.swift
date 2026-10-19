@@ -70,6 +70,15 @@ final class CloudOceanAIService: OceanAIService {
         await fallback.transcribe(audioURL: audioURL)
     }
 
+    func transcribeDetailed(audioURL: URL, vocabulary: [String]) async -> TranscriptOutcome? {
+        await fallback.transcribeDetailed(audioURL: audioURL, vocabulary: vocabulary)
+    }
+
+    /// A whisper's words never leave the device, so neither does their summary.
+    func summarizeTranscript(_ text: String) async -> String? {
+        await fallback.summarizeTranscript(text)
+    }
+
     func relatedNodeIDs(to node: Node, among nodes: [Node], limit: Int) -> [UUID] {
         fallback.relatedNodeIDs(to: node, among: nodes, limit: limit)
     }
@@ -110,7 +119,7 @@ final class CloudOceanAIService: OceanAIService {
         async let composedOutward = outwardIfNeeded(
             query: query, sources: sources,
             configuration: configuration,
-            enabled: mode == .research
+            enabled: LocalOceanAIService.looksOutward(mode: mode, sourceCount: sources.count)
         )
         async let composedBranches = branchesIfNeeded(
             query: query, sources: sources,
@@ -132,6 +141,24 @@ final class CloudOceanAIService: OceanAIService {
         }
         if let branches = await composedBranches {
             response.suggestedBranches = branches
+        }
+        return response
+    }
+
+    func summarize(_ nodes: [Node]) async -> OceanResponse {
+        let scaffold = await fallback.summarize(nodes)
+        guard let configuration, !scaffold.sourceNodeIDs.isEmpty else { return scaffold }
+        let byID = Dictionary(uniqueKeysWithValues: nodes.map { ($0.id, $0) })
+        let sources = scaffold.sourceNodeIDs.compactMap { byID[$0] }
+        var response = scaffold
+        if let reflection = await reflectIfNeeded(
+            query: LocalOceanAIService.summaryQuery, history: [], mode: .synthesis,
+            sources: sources, configuration: configuration, enabled: true
+        ) {
+            response.reflection = reflection
+            response.provenance = .cloud
+        } else {
+            response.provenance = .offlineFallback
         }
         return response
     }
@@ -268,10 +295,13 @@ final class CloudOceanAIService: OceanAIService {
     /// One Claude call interprets the fragment into essence + conceptual
     /// themes; mood stays on-device. Any failure or unusable reply falls back
     /// to the local understanding path unchanged.
-    func understand(_ text: String) async -> ThoughtUnderstanding {
+    ///
+    /// `currents` reach only that fallback: the cloud prompt doesn't join
+    /// currents yet (Debug-only path; see `Configuration.fromEnvironment`).
+    func understand(_ text: String, currents: [CurrentCandidate]) async -> ThoughtUnderstanding {
         let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let configuration, !cleaned.isEmpty else {
-            return await fallback.understand(text)
+            return await fallback.understand(text, currents: currents)
         }
 
         let system = """
@@ -298,10 +328,10 @@ final class CloudOceanAIService: OceanAIService {
                 .split(whereSeparator: \.isNewline)
                 .map { $0.trimmingCharacters(in: .whitespaces) }
                 .filter { !$0.isEmpty }
-            guard let titleLine = lines.first else { return await fallback.understand(text) }
+            guard let titleLine = lines.first else { return await fallback.understand(text, currents: currents) }
 
             let essence = TitleDistiller.tidy(titleLine)
-            guard !essence.isEmpty else { return await fallback.understand(text) }
+            guard !essence.isEmpty else { return await fallback.understand(text, currents: currents) }
 
             let themes = lines.dropFirst().first.map(SemanticThemes.tidyThemeList) ?? []
             return ThoughtUnderstanding(
@@ -312,7 +342,7 @@ final class CloudOceanAIService: OceanAIService {
                 mood: ThemeDetector.mood(from: cleaned)
             )
         } catch {
-            return await fallback.understand(text)
+            return await fallback.understand(text, currents: currents)
         }
     }
 
