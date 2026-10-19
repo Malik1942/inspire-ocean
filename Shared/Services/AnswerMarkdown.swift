@@ -1,4 +1,24 @@
 import Foundation
+import NaturalLanguage
+
+/// An answer is a glance: the prompt asks for at most four sentences, and the
+/// small on-device model sometimes runs on (and drifts from the fragments as
+/// it does). Everything after the fourth sentence is cut, in any language.
+enum AnswerLength {
+    static let maxSentences = 4
+
+    static func capped(_ text: String, sentences limit: Int = maxSentences) -> String {
+        let tokenizer = NLTokenizer(unit: .sentence)
+        tokenizer.string = text
+        var ends: [String.Index] = []
+        tokenizer.enumerateTokens(in: text.startIndex..<text.endIndex) { range, _ in
+            ends.append(range.upperBound)
+            return ends.count < limit + 1
+        }
+        guard ends.count > limit else { return text }
+        return String(text[..<ends[limit - 1]]).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
 
 /// Ocean answers arrive as markdown — the model leans on **emphasis** to
 /// shape a reply — but SwiftUI's plain-String `Text` shows the markers

@@ -1,26 +1,10 @@
 /* Oryne website.
    Tokens follow OceanTheme (Oryne/DesignSystem/OceanTheme.swift): near-black and
-   spatial, brightness carries hierarchy. Surfaces follow GlassCard. Type:
-   Instrument Serif for headlines (Songti for Chinese), Inter for text, both
-   self-hosted (assets/fonts, SIL Open Font License). */
-
-@font-face {
-  font-family: "Instrument Serif";
-  src: url("../fonts/instrument-serif.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-
-@font-face {
-  font-family: "Instrument Serif";
-  src: url("../fonts/instrument-serif-italic.woff2") format("woff2");
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
+   spatial, brightness carries hierarchy. Surfaces follow GlassCard. Type, as
+   in the app: New York for headlines and SF for text, both the visitor's own
+   system fonts (ui-serif and -apple-system; Apple's license does not allow
+   hosting them). Elsewhere Georgia and Inter (self-hosted, assets/fonts, SIL
+   Open Font License) stand in. Chinese headlines are Songti. */
 
 @font-face {
   font-family: "Inter";
@@ -48,10 +32,10 @@
   --rim: #9fb2d6;
   --glass: rgba(255, 255, 255, 0.045);
   --glass-strong: rgba(255, 255, 255, 0.07);
-  --font: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+  --font: -apple-system, BlinkMacSystemFont, "Inter", "Helvetica Neue",
     "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
-  --font-display: "Instrument Serif", "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC",
-    "Noto Serif SC", Georgia, serif;
+  --font-display: ui-serif, Georgia, "Noto Serif", "Songti SC", "STSong", "Noto Serif CJK SC",
+    "Source Han Serif SC", "Noto Serif SC", serif;
   --italic: #d9e1f0;
   --gutter: clamp(16px, 4vw, 32px);
   --max: 1120px;
@@ -167,9 +151,9 @@ main, .footer { position: relative; z-index: 1; }
 
 .display {
   font-family: var(--font-display);
-  font-size: clamp(52px, 8.4vw, 112px);
-  line-height: 0.98;
-  letter-spacing: -0.012em;
+  font-size: clamp(44px, 6.6vw, 88px);
+  line-height: 1.04;
+  letter-spacing: -0.015em;
   font-weight: 400;
   color: var(--foam);
 }
@@ -177,9 +161,9 @@ main, .footer { position: relative; z-index: 1; }
 .headline {
   max-width: 16em;
   font-family: var(--font-display);
-  font-size: clamp(40px, 5.8vw, 76px);
-  line-height: 1.02;
-  letter-spacing: -0.01em;
+  font-size: clamp(34px, 4.6vw, 60px);
+  line-height: 1.08;
+  letter-spacing: -0.012em;
   font-weight: 400;
   color: var(--foam);
 }
@@ -227,9 +211,9 @@ html:lang(zh-Hans) .lead { font-weight: 400; }
   align-items: center;
   gap: 9px;
   font-family: var(--font-display);
-  font-size: 25px;
+  font-size: 22px;
   font-weight: 400;
-  letter-spacing: 0.005em;
+  letter-spacing: 0;
   line-height: 1;
   color: var(--foam);
   text-decoration: none;
@@ -360,6 +344,8 @@ html:lang(zh-Hans) .lead { font-weight: 400; }
 .hero { padding-top: clamp(64px, 11vh, 128px); padding-bottom: clamp(40px, 8vh, 96px); text-align: center; }
 .hero__copy { display: flex; flex-direction: column; align-items: center; }
 .hero .display { max-width: 12em; }
+/* Twelve characters and their tracking: at 12em the closing 。 fell to a line alone. */
+html:lang(zh-Hans) .hero .display { max-width: 13em; }
 .hero .lead { margin-inline: auto; }
 .hero__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 14px; margin-top: 32px; }
 .hero__stage { display: flex; justify-content: center; margin-top: clamp(72px, 12vh, 128px); }
@@ -390,7 +376,7 @@ html:lang(zh-Hans) .lead { font-weight: 400; }
 /* The card's visual bleeds to its edges; the scene itself fades out before them. */
 .vignette { display: block; width: calc(100% + 36px); height: 140px; margin: -16px -18px 4px; }
 .card__label { font-size: 13px; font-weight: 500; letter-spacing: 0.04em; color: var(--rim); }
-.card h3 { font-family: var(--font-display); font-size: 28px; line-height: 1.1; font-weight: 400; }
+.card h3 { font-family: var(--font-display); font-size: 24px; line-height: 1.15; font-weight: 400; }
 .card p:not(.card__label) { font-size: 15px; font-weight: 300; }
 .more { display: inline-flex; align-items: center; margin-top: auto; padding-top: 10px; font-size: 15px; color: var(--accent); text-decoration: none; }
 .more:hover { text-decoration: underline; text-underline-offset: 4px; }
@@ -494,8 +480,8 @@ html:lang(zh-Hans) .lead { font-weight: 400; }
 .panel__title {
   max-width: 14em;
   font-family: var(--font-display);
-  font-size: clamp(32px, 3.4vw, 46px);
-  line-height: 1.06;
+  font-size: clamp(28px, 2.8vw, 38px);
+  line-height: 1.1;
   letter-spacing: -0.008em;
   font-weight: 400;
   color: var(--foam);
@@ -526,7 +512,7 @@ html:lang(zh-Hans) .lead { font-weight: 400; }
 .tabs__panel + .tabs__panel { margin-top: 64px; }
 .tabs--ready .tabs__panel + .tabs__panel { margin-top: 28px; }
 .tabs__title { margin-bottom: 12px; font-size: 22px; }
-.moment { max-width: 30em; font-family: var(--font-display); font-size: clamp(24px, 2.6vw, 32px); line-height: 1.3; color: var(--foam); }
+.moment { max-width: 30em; font-family: var(--font-display); font-size: clamp(21px, 2.2vw, 27px); line-height: 1.35; color: var(--foam); }
 .thoughts { display: grid; gap: 14px; margin-top: 28px; }
 @media (min-width: 720px) { .thoughts { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .thought {
@@ -542,21 +528,12 @@ html:lang(zh-Hans) .lead { font-weight: 400; }
 .thought__image--sunset { background: linear-gradient(180deg, #232447 0%, #5b3a6b 36%, #c9694a 70%, #f0ad68 100%); }
 .thought__image--dusk { background: linear-gradient(180deg, #e7b392 0%, #b88675 40%, #5c6072 78%, #3a3f4c 100%); }
 .thought__image--dumplings { background: radial-gradient(60% 50% at 50% 60%, #efe5d3 0%, #cbb89a 45%, #3a3129 100%); }
-.thought__kind { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: var(--mist); }
-.thought__kind .i { font-size: 14px; }
 .thought__title { font-size: 16px; font-weight: 500; line-height: 1.35; color: var(--foam); }
 .thought__text { font-size: 14px; line-height: 1.5; }
 .thought__source { font-size: 12px; color: var(--hint); }
-.thought__current {
-  align-self: flex-start;
-  margin-top: auto;
-  padding: 3px 9px;
-  border: 0.5px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.07);
-  font-size: 12px;
-  color: var(--foam);
-}
+/* The app's card meta: the kind icon and a relative time, no tag pill. */
+.thought__meta { display: flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 4px; font-size: 12px; color: var(--hint); }
+.thought__meta .i { font-size: 14px; }
 
 /* ---------------------------------------------------------- comparison */
 
@@ -565,7 +542,7 @@ html:lang(zh-Hans) .lead { font-weight: 400; }
 .compare thead th { font-size: 14px; font-weight: 500; color: var(--mist); }
 .compare tbody th { width: 24%; font-weight: 500; color: var(--foam); }
 .compare td { font-weight: 300; color: var(--mist); }
-.compare thead .is-oryne { font-family: var(--font-display); font-size: 22px; font-style: italic; font-weight: 400; }
+.compare thead .is-oryne { font-family: var(--font-display); font-size: 19px; font-style: italic; font-weight: 400; }
 .compare .is-oryne { background: rgba(255, 255, 255, 0.04); color: var(--foam); }
 .compare thead .is-oryne { border-radius: 14px 14px 0 0; }
 @media (max-width: 719px) {
@@ -621,7 +598,7 @@ html:lang(zh-Hans) .lead { font-weight: 400; }
   padding: 22px 0;
   list-style: none;
   font-family: var(--font-display);
-  font-size: 24px;
+  font-size: 21px;
   font-weight: 400;
   color: var(--foam);
   cursor: pointer;
@@ -685,9 +662,9 @@ html:lang(zh-Hans) .lead { font-weight: 400; }
 html:lang(zh-Hans) .prose { max-width: calc(38em + var(--gutter) * 2); }
 .prose__title {
   font-family: var(--font-display);
-  font-size: clamp(48px, 7vw, 84px);
-  line-height: 1;
-  letter-spacing: -0.01em;
+  font-size: clamp(40px, 5.6vw, 68px);
+  line-height: 1.04;
+  letter-spacing: -0.012em;
   font-weight: 400;
   color: var(--foam);
 }
@@ -700,7 +677,7 @@ html:lang(zh-Hans) .prose { max-width: calc(38em + var(--gutter) * 2); }
   background: var(--glass-strong);
   color: var(--foam);
 }
-.prose h2 { margin-top: 56px; font-family: var(--font-display); font-size: 32px; line-height: 1.15; font-weight: 400; color: var(--foam); }
+.prose h2 { margin-top: 56px; font-family: var(--font-display); font-size: 27px; line-height: 1.2; font-weight: 400; color: var(--foam); }
 .prose p, .prose li { font-weight: 300; }
 .prose h3 { margin-top: 28px; }
 .prose p, .prose ul { margin-top: 14px; }

@@ -8,7 +8,7 @@ crash".
 ## Recording interruptions
 
 - [ ] **Phone call mid-recording** — receive a call while a whisper is
-  recording (Capture tab and Fast Capture). The take must end like a tap on
+  recording (the capture button and every Fast Capture entry point). The take must end like a tap on
   stop: captured capsule / review appears with the words caught so far; never
   a stuck "Listening…" with a frozen timer. Audio recorded up to the
   interruption must play back.
@@ -37,7 +37,7 @@ crash".
   node, not lost.
 - [ ] **Undo window** — after a capture releases, Undo must stay reachable
   for ~10 seconds: in the capsule, through the post-capture moment, and via
-  the quiet Undo pill that outlives the moment (both Capture tab and Fast
+  the quiet Undo pill that outlives the moment (the capture overlay, both typed and whispered; Fast
   Capture — Fast Capture's overlay shrinks to the pill, backdrop gone, before
   closing). A late Undo within the window deletes the node AND restores the
   words/recording to the surface.
@@ -66,7 +66,7 @@ crash".
   transcription quietly absent ("No words yet" after 2 min, not
   "Transcribing…" forever).
 - [ ] **Mic denied** — Fast Capture falls back to typing with "Typing is
-  ready."; Capture tab mic button does nothing destructive.
+  ready."; the capture button falls back to typing and does nothing destructive.
 
 ## Apple Watch
 

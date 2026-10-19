@@ -1,5 +1,8 @@
 name: Oryne
 options:
+  # Keeps Xcode's "Update to recommended settings" prompt quiet: the
+  # project is generated, so the settings are what this file says.
+  xcodeVersion: "27.1"
   # Bundle ids, the App Group, and the store name keep the original
   # com.inspireocean identifiers: changing them would orphan user data,
   # placed widgets, and existing Shortcuts automations.

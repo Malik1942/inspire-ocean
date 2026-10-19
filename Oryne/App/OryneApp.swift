@@ -17,6 +17,7 @@ struct OryneApp: App {
     private let ai: any OceanAIService = CloudOceanAIService(configuration: .fromEnvironment())
 
     init() {
+        OceanType.applyLargeTitleAppearance()
         #if DEBUG
         if ProcessInfo.processInfo.environment["OCEAN_SCREENSHOT_SEED"] == "1" {
             FastCapturePreferences.defaults.set(true, forKey: FastCapturePreferenceKeys.onboardingCompleted)

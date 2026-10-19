@@ -19,6 +19,12 @@ final class AudioPlayback: NSObject, AVAudioPlayerDelegate {
         isPlaying && currentData == data
     }
 
+    /// 0...1 through the current recording; polled by whoever draws it.
+    var progress: Double {
+        guard let player, player.duration > 0 else { return 0 }
+        return player.currentTime / player.duration
+    }
+
     func toggle(data: Data) {
         if isPlaying(data) {
             pause()
@@ -66,11 +72,11 @@ struct ListenChip: View {
             AudioPlayback.shared.toggle(data: data)
         } label: {
             Label((playing ? "Pause" : "Listen") as LocalizedStringKey, systemImage: playing ? "pause.fill" : "play.fill")
-                .font(.caption2.weight(.medium))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
+                .font(.footnote.weight(.semibold))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
                 .background(Color.white.opacity(0.08), in: Capsule())
-                .foregroundStyle(OceanTheme.mist)
+                .foregroundStyle(OceanTheme.foam)
         }
         .accessibilityLabel((playing ? "Pause recording" : "Listen to recording") as LocalizedStringKey)
     }

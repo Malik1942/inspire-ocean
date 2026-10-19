@@ -46,35 +46,65 @@ struct OceanSettingsView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                OceanBackground(animated: false)
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
-                        calmSection
-                        feedbackSection
-                        // The introduction is meant to be read once and let go,
-                        // so the clear affordance is there from the first launch.
-                        if !exampleNodes.isEmpty {
-                            examplesSection
-                        }
-                        exportSection
-                    }
-                    .padding(.horizontal)
-                    .padding(.vertical, 14)
+            Form {
+                Section {
+                    FastCaptureOpensWithRows()
+                    Toggle("Sound", isOn: $captureSound)
+                    Toggle("Haptics", isOn: $captureHaptics)
+                } header: {
+                    Text("Capture")
+                } footer: {
+                    Text("From the Action Button, Control Center and the widget. The bar itself always offers both.")
                 }
+                .listRowBackground(OceanTheme.fill)
+
+                FastCaptureShortcutSection()
+                    .listRowBackground(OceanTheme.fill)
+
+                Section {
+                    Toggle("Calm Accessibility", isOn: $calmMode)
+                } footer: {
+                    Text("Stills the water and its light, and makes the capture button tap to start and tap to stop instead of holding. The system Reduce Motion setting stills the water too.")
+                }
+                .listRowBackground(OceanTheme.fill)
+
+                Section {
+                    Toggle("Include voice recordings", isOn: $includeVoice)
+                    exportRow
+                    // The introduction is meant to be read once and let go,
+                    // so the clear affordance is there from the first launch.
+                    if !exampleNodes.isEmpty {
+                        Button("Clear examples") { pendingClearExamples = true }
+                    }
+                } header: {
+                    Text("Your Ocean")
+                } footer: {
+                    Text("One zip: a Markdown file per current, a full JSON backup, and your images. Examples stay behind.")
+                }
+                .listRowBackground(OceanTheme.fill)
             }
+            .tint(OceanTheme.accent)
+            .listRowSeparatorTint(Color.white.opacity(0.08))
+            .scrollContentBackground(.hidden)
+            .background(OceanBackground(animated: false))
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
+                    Button { dismiss() } label: { Image(systemName: "xmark") }
+                        .accessibilityLabel("Close")
                 }
             }
-            .confirmationDialog(
+            // A built archive reflects the toggle at build time; changing it
+            // invalidates the archive so the user rebuilds with the new choice.
+            .onChange(of: includeVoice) { _, _ in
+                exportState = .idle
+                zipURL = nil
+            }
+            .alert(
                 "Clear examples?",
-                isPresented: $pendingClearExamples,
-                titleVisibility: .visible
+                isPresented: $pendingClearExamples
             ) {
                 Button("Clear examples", role: .destructive) {
                     clearExamples()
@@ -83,118 +113,6 @@ struct OceanSettingsView: View {
                 Button("Cancel", role: .cancel) { pendingClearExamples = false }
             } message: {
                 Text("The starter thoughts drift out for good.")
-            }
-        }
-    }
-
-    private var calmSection: some View {
-        GlassCard(padding: 16) {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 10) {
-                    Image(systemName: "water.waves.slash")
-                        .font(.title3)
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(OceanTheme.accent)
-                        .frame(width: 28)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Calm Accessibility")
-                            .font(.headline)
-                            .foregroundStyle(OceanTheme.foam)
-                        Text("The same Ocean, stilled.")
-                            .font(.caption)
-                            .foregroundStyle(OceanTheme.mist)
-                    }
-                }
-
-                Toggle(isOn: $calmMode) {
-                    Label("Calm Accessibility Mode", systemImage: "figure.mind.and.body")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(OceanTheme.foam)
-                }
-                .tint(OceanTheme.accent)
-
-                Text("Holds the water still, brightens the words that carry meaning, and widens every touch target. Nothing about your Ocean changes, only how it moves. The system Reduce Motion setting stills the water too.")
-                    .font(.caption)
-                    .foregroundStyle(OceanTheme.mist)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-    }
-
-    private var feedbackSection: some View {
-        GlassCard(padding: 16) {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 10) {
-                    Image(systemName: "checkmark.seal")
-                        .font(.title3)
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(OceanTheme.accent)
-                        .frame(width: 28)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Capture feedback")
-                            .font(.headline)
-                            .foregroundStyle(OceanTheme.foam)
-                        Text("A quiet sign the Ocean received it.")
-                            .font(.caption)
-                            .foregroundStyle(OceanTheme.mist)
-                    }
-                }
-
-                Toggle(isOn: $captureSound) {
-                    Label("Sound", systemImage: "speaker.wave.2")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(OceanTheme.foam)
-                }
-                .tint(OceanTheme.accent)
-
-                Toggle(isOn: $captureHaptics) {
-                    Label("Haptics", systemImage: "hand.tap")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(OceanTheme.foam)
-                }
-                .tint(OceanTheme.accent)
-
-                Text("A soft chime and a gentle swell when a thought is released. The ring/silent switch quiets the chime.")
-                    .font(.caption)
-                    .foregroundStyle(OceanTheme.mist)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-    }
-
-    private var examplesSection: some View {
-        GlassCard(padding: 16) {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 10) {
-                    Image(systemName: "sparkles")
-                        .font(.title3)
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(OceanTheme.accent)
-                        .frame(width: 28)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Starter examples")
-                            .font(.headline)
-                            .foregroundStyle(OceanTheme.foam)
-                        Text("The thoughts that came with your Ocean.")
-                            .font(.caption)
-                            .foregroundStyle(OceanTheme.mist)
-                    }
-                }
-
-                Button(role: .destructive) {
-                    pendingClearExamples = true
-                } label: {
-                    Label("Clear examples", systemImage: "trash")
-                        .font(.subheadline.weight(.medium))
-                }
-
-                Text("When you have seen how the Ocean works, the introduction can drift out. Your own thoughts stay.")
-                    .font(.caption)
-                    .foregroundStyle(OceanTheme.mist)
-                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -215,79 +133,39 @@ struct OceanSettingsView: View {
         try? context.save()
     }
 
-    private var exportSection: some View {
-        GlassCard(padding: 16) {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 10) {
-                    Image(systemName: "arrow.up.doc")
-                        .font(.title3)
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(OceanTheme.accent)
-                        .frame(width: 28)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Export the Ocean")
-                            .font(.headline)
-                            .foregroundStyle(OceanTheme.foam)
-                        Text("Your thoughts, ready to take with you.")
-                            .font(.caption)
-                            .foregroundStyle(OceanTheme.mist)
-                    }
-                }
-
-                Toggle(isOn: $includeVoice) {
-                    Label("Include voice recordings", systemImage: "waveform")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(OceanTheme.foam)
-                }
-                .tint(OceanTheme.accent)
-
-                switch exportState {
-                case .idle:
-                    Button { buildExport() } label: {
-                        Label("Prepare archive", systemImage: "shippingbox")
-                            .font(.subheadline.weight(.medium))
-                            .foregroundStyle(OceanTheme.accent)
-                    }
-                    .disabled(realNodes.isEmpty)
-                case .building:
-                    HStack(spacing: 8) {
-                        ProgressView().controlSize(.small)
-                        Text("Packing your Ocean…")
-                            .font(.subheadline)
-                            .foregroundStyle(OceanTheme.mist)
-                    }
-                case .ready:
-                    if let zipURL {
-                        ShareLink(item: zipURL) {
-                            Label("Share archive", systemImage: "square.and.arrow.up")
-                                .font(.subheadline.weight(.medium))
-                                .foregroundStyle(OceanTheme.accent)
-                        }
-                    }
-                case .failed:
-                    VStack(alignment: .leading, spacing: 8) {
-                        Label("Could not pack the archive.", systemImage: "exclamationmark.triangle")
-                            .font(.subheadline)
-                            .foregroundStyle(OceanTheme.mist)
-                        Button { buildExport() } label: {
-                            Label("Try again", systemImage: "arrow.clockwise")
-                                .font(.subheadline.weight(.medium))
-                                .foregroundStyle(OceanTheme.accent)
-                        }
-                    }
-                }
-
-                Text("One zip: a Markdown file per current, a full JSON backup, and your images. Examples stay behind.")
-                    .font(.caption)
+    /// One row that walks the archive through its states: export, packing,
+    /// share, or try again.
+    @ViewBuilder
+    private var exportRow: some View {
+        switch exportState {
+        case .idle:
+            Button("Export the Ocean") { buildExport() }
+                .disabled(realNodes.isEmpty)
+        case .building:
+            HStack(spacing: 10) {
+                ProgressView().controlSize(.small)
+                Text("Packing your Ocean…")
                     .foregroundStyle(OceanTheme.mist)
-                    .fixedSize(horizontal: false, vertical: true)
             }
-            // A built archive reflects the toggle at build time; changing it
-            // invalidates the archive so the user rebuilds with the new choice.
-            .onChange(of: includeVoice) { _, _ in
-                exportState = .idle
-                zipURL = nil
+        case .ready:
+            if let zipURL {
+                ShareLink(item: zipURL) {
+                    HStack {
+                        Text("Share archive")
+                        Spacer()
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(OceanTheme.mist)
+                    }
+                }
+            }
+        case .failed:
+            HStack {
+                Text("Could not pack the archive.")
+                    .foregroundStyle(OceanTheme.mist)
+                Spacer()
+                Button("Try again") { buildExport() }
+                    .buttonStyle(.borderless)
             }
         }
     }

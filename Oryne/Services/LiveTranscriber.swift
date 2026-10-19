@@ -41,6 +41,8 @@ final class LiveTranscriber {
     /// 0...1 input level for the live waveform.
     private(set) var level: Double = 0
     private(set) var speechAvailability: SpeechAvailability = .unknown
+    /// The user's own words, as hints to the recognizer (CaptureVocabulary).
+    var contextualStrings: [String] = []
 
     private let engine = AVAudioEngine()
     private var file: AVAudioFile?
@@ -466,6 +468,7 @@ final class LiveTranscriber {
     private func startRecognitionTask(with recognizer: SFSpeechRecognizer) {
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
+        if !contextualStrings.isEmpty { request.contextualStrings = contextualStrings }
         // On-device wherever supported: privacy, and a bus with no signal
         // both want it. Server recognition is the fallback.
         if recognizer.supportsOnDeviceRecognition {

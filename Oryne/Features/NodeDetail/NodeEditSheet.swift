@@ -120,10 +120,9 @@ struct NodeEditSheet: View {
                         .fontWeight(.semibold)
                 }
             }
-            .confirmationDialog(
+            .alert(
                 "Discard changes?",
-                isPresented: $showDiscardConfirm,
-                titleVisibility: .visible
+                isPresented: $showDiscardConfirm
             ) {
                 Button("Discard", role: .destructive) { dismiss() }
                 Button("Keep editing", role: .cancel) {}
@@ -224,10 +223,9 @@ struct NodeEditSheet: View {
             Text("Original audio is temporarily preserved to improve understanding.")
                 .font(.caption2).foregroundStyle(OceanTheme.faint)
         }
-        .confirmationDialog(
+        .alert(
             "Replace your edited words?",
-            isPresented: $showReplaceConfirm,
-            titleVisibility: .visible
+            isPresented: $showReplaceConfirm
         ) {
             Button("Re-transcribe and replace") {
                 Task { await retranscribe(data) }

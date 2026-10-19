@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import SafariServices
 
 /// A link rendered the way Oryne renders everything else: dark, glassy, calm.
@@ -10,9 +11,6 @@ import SafariServices
 /// failed enrichment.
 struct LinkCard: View {
     let node: Node
-    /// Detail/read view sets this to surface the device-made summary under the
-    /// card — so the enrichment is visible, not only consumed by the AI.
-    var showSummary: Bool = false
     /// Provided only in editors; renders a removal control.
     var onRemove: (() -> Void)? = nil
 
@@ -23,14 +21,11 @@ struct LinkCard: View {
     private var state: LinkEnrichmentState { node.linkEnrichmentState }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        Group {
             if node.hasRichLink || state.isInProgress {
                 richCard
             } else {
                 plainRow
-            }
-            if showSummary, let summary = node.linkSummary, !summary.isEmpty {
-                summaryBlock(summary)
             }
         }
         .sheet(isPresented: $showSafari) {
@@ -43,11 +38,11 @@ struct LinkCard: View {
     private var richCard: some View {
         HStack(spacing: 0) {
             Button(action: open) {
-                HStack(spacing: 12) {
+                HStack(spacing: 14) {
                     thumbnail
                     VStack(alignment: .leading, spacing: 4) {
                         Text(node.linkTitle ?? node.linkURL?.absoluteString ?? String(localized: "Link"))
-                            .font(.subheadline.weight(.semibold))
+                            .font(.body.weight(.semibold))
                             .foregroundStyle(OceanTheme.foam)
                             .multilineTextAlignment(.leading)
                             .lineLimit(2)
@@ -55,7 +50,7 @@ struct LinkCard: View {
                     }
                     Spacer(minLength: 0)
                 }
-                .padding(10)
+                .padding(12)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -65,18 +60,16 @@ struct LinkCard: View {
                     .padding(.trailing, 8)
             }
         }
-        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.08), lineWidth: 0.5)
-        )
+        // Flat, like every tile; media radius, since it stands where a
+        // picture would at the top of a thought.
+        .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.media, style: .continuous)))
     }
 
     @ViewBuilder
     private var thumbnail: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(OceanTheme.color(forHue: node.hue).opacity(0.18))
+            RoundedRectangle(cornerRadius: OceanRadius.thumbnail, style: .continuous)
+                .fill(Color.white.opacity(0.06))
             if let data = node.linkImageData, let ui = UIImage(data: data) {
                 Image(uiImage: ui)
                     .resizable().scaledToFill()
@@ -86,8 +79,8 @@ struct LinkCard: View {
                     .foregroundStyle(OceanTheme.mist)
             }
         }
-        .frame(width: 56, height: 56)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .frame(width: 64, height: 64)
+        .clipShape(RoundedRectangle(cornerRadius: OceanRadius.thumbnail, style: .continuous))
     }
 
     /// The quiet, progressive line under the title: domain + where enrichment is.
@@ -95,7 +88,7 @@ struct LinkCard: View {
     private var statusLine: some View {
         HStack(spacing: 6) {
             if let domain = node.linkDomain {
-                Text(domain).font(.caption2).foregroundStyle(OceanTheme.mist).lineLimit(1)
+                Text(domain).font(.footnote).foregroundStyle(OceanTheme.mist).lineLimit(1)
             }
             switch state {
             case .fetchingMeta, .fetchingContent:
@@ -103,15 +96,13 @@ struct LinkCard: View {
             case .summarizing:
                 progressTag("Summarizing…")
             case .enriched:
-                if node.linkSummary?.isEmpty == false {
-                    Label("Summary", systemImage: "sparkles")
-                        .font(.caption2).labelStyle(.titleAndIcon)
-                        .foregroundStyle(OceanTheme.faint)
-                }
+                // The summary itself sits under the title on the thought's
+                // page, labelled there.
+                EmptyView()
             case .failed(let reason):
                 Button(action: retry) {
                     Label("Retry", systemImage: "arrow.clockwise")
-                        .font(.caption2.weight(.medium))
+                        .font(.footnote.weight(.medium))
                         .foregroundStyle(OceanTheme.accent)
                 }
                 .buttonStyle(.plain)
@@ -125,7 +116,7 @@ struct LinkCard: View {
     private func progressTag(_ text: LocalizedStringKey) -> some View {
         HStack(spacing: 4) {
             ProgressView().controlSize(.mini).tint(OceanTheme.mist)
-            Text(text).font(.caption2).foregroundStyle(OceanTheme.faint)
+            Text(text).font(.footnote).foregroundStyle(OceanTheme.mist)
         }
     }
 
@@ -161,22 +152,7 @@ struct LinkCard: View {
             }
             if let onRemove { removeButton(onRemove).padding(.trailing, 6) }
         }
-        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-
-    // MARK: Summary surface (detail view)
-
-    private func summaryBlock(_ summary: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Label("What this link is about", systemImage: "sparkles")
-                .font(.caption2.weight(.medium)).foregroundStyle(OceanTheme.mist)
-            Text(summary)
-                .font(.footnote).foregroundStyle(OceanTheme.foam.opacity(0.9))
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.media, style: .continuous)))
     }
 
     private func removeButton(_ action: @escaping () -> Void) -> some View {

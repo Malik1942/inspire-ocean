@@ -127,10 +127,17 @@ final class WatchTakeImporter {
     /// drain or launch finishes it.
     private func understandImported() async {
         var attempted: Set<UUID> = []
+        // The user's own words help the recognizer, exactly as for a whisper
+        // caught on the phone. Built once per pass, and only when needed.
+        var vocabulary: [String]?
         while let id = ledger.awaitingUnderstanding.first(where: { !attempted.contains($0) }) {
             attempted.insert(id)
             if node(id) != nil {
-                await VoiceUnderstanding.run(nodeID: id, audioTempURL: nil, context: context, ai: ai)
+                let words = vocabulary ?? CaptureVocabulary.build(context: context)
+                vocabulary = words
+                await VoiceUnderstanding.run(
+                    nodeID: id, audioTempURL: nil, context: context, ai: ai, vocabulary: words
+                )
             }
             if Task.isCancelled { return }
             // A voice thought left with no transcript while Oryne wasn't on

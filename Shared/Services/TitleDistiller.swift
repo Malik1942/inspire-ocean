@@ -8,6 +8,13 @@ import Foundation
 /// model access (the share extension) call `essence(from:)` directly.
 enum TitleDistiller {
 
+    /// A model title must be in the entry's own language. The on-device model
+    /// can drift to the system's other language (an English note titled in
+    /// Chinese); such a title is dropped so the entry's own words lead.
+    static func speaksLike(_ title: String, entry: String) -> Bool {
+        CurrentSnap.isChinese(title) == CurrentSnap.isChinese(entry)
+    }
+
     /// Lightly cleans a model-produced title (already short) without truncating meaning.
     static func tidy(_ raw: String) -> String {
         var s = firstLine(of: cleanedQuotes(raw))

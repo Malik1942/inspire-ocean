@@ -71,9 +71,6 @@ final class CaptureSession {
     private(set) var lastReleased: (nodeID: UUID, draft: CaptureDraft, at: Date)?
     private var understandingTask: Task<Void, Never>?
 
-    /// The interpreted title landed — the surface advances its moment.
-    var onUnderstood: ((UUID, String) -> Void)?
-
     func configure(context: ModelContext, ai: any OceanAIService) {
         self.context = context
         self.ai = ai
@@ -87,8 +84,21 @@ final class CaptureSession {
         case failed
     }
 
+    /// The user's own words, built once per session and handed to every
+    /// recognizer pass as hints.
+    private var vocabulary: [String] = []
+    private var vocabularyBuilt = false
+
+    private func ensureVocabulary() {
+        guard !vocabularyBuilt, let context else { return }
+        vocabularyBuilt = true
+        vocabulary = CaptureVocabulary.build(context: context)
+        transcriber.contextualStrings = vocabulary
+    }
+
     func startRecording(onInterruption: @escaping () -> Void) async -> RecordingStart {
         guard !transcriber.isRecording else { return .started }
+        ensureVocabulary()
         guard await transcriber.requestMicPermission() else { return .permissionDenied }
         transcriber.onInterruption = onInterruption
         let url = AudioRecorder.url(for: "drift-\(UUID().uuidString).m4a")
@@ -181,14 +191,19 @@ final class CaptureSession {
     func beginUnderstanding(nodeID: UUID) {
         guard let ai, let context else { return }
         let tempURL = lastReleased?.nodeID == nodeID ? lastReleased?.draft.audioTempURL : nil
+        ensureVocabulary()
+        let vocabulary = self.vocabulary
         understandingTask?.cancel()
-        understandingTask = Task { [weak self] in
-            guard let essence = await VoiceUnderstanding.run(
-                nodeID: nodeID, audioTempURL: tempURL, context: context, ai: ai
-            ) else { return }
-            self?.onUnderstood?(nodeID, essence)
+        understandingTask = Task {
+            await VoiceUnderstanding.run(
+                nodeID: nodeID, audioTempURL: tempURL, context: context, ai: ai, vocabulary: vocabulary
+            )
         }
     }
+
+    /// A long whisper gets a reading above its words (`VoiceUnderstanding`
+    /// writes it; the Library backfill and the thought page read the bar).
+    static let summaryThreshold = 240
 
     // MARK: Undo
 

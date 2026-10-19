@@ -12,8 +12,9 @@ import { drawLamp } from './lamps.js';
 
 const TAU = Math.PI * 2;
 const noise = createNoise2D(0x0cea);
-// Released words are set like the headlines: Instrument Serif italic, or Songti upright for Chinese.
-const WORDS_FONT = 'italic 400 21px "Instrument Serif", Georgia, serif';
+// Released words are set like the headlines: New York italic (Georgia where the
+// system has no New York), or Songti upright for Chinese.
+const WORDS_FONT = 'italic 400 19px ui-serif, Georgia, serif';
 const WORDS_FONT_ZH = '400 18px "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", serif';
 
 function fract(v) {

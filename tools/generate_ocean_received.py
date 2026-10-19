@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Generate OceanReceived.caf, the capture-received chime.
+"""Generate the retired capture chime (the original OceanReceived.caf).
+
+Retired 2026-10-19: the app's capture sound, and the website's release chime, now come
+from design/sound/render_capture.py (a landed note over a faint bed of a real wave). This
+script stays because the launch film's release frame uses the old chime. It no longer
+writes into the app: --out is required.
 
 The sound the Ocean makes when it quietly receives a thought: two soft
 glassy notes a perfect fifth apart (D5 then A5), no hard transients,
@@ -10,17 +15,17 @@ Pure Python standard library (no numpy/soundfile), then afconvert (ships
 with macOS) packs the rendered WAV into an IMA4-compressed CAF, which is
 what AudioServicesCreateSystemSoundID plays and keeps the file small.
 
-Regenerate the bundled asset:
+Render the old chime somewhere outside the app:
 
-    python3 tools/generate_ocean_received.py
+    python3 tools/generate_ocean_received.py --wav-out /tmp/chime.wav --out /tmp/chime.caf
 
 Tune the feel:
 
     # different notes (Hz): a major third instead of a fifth
-    python3 tools/generate_ocean_received.py --notes 587.33 739.99
+    python3 tools/generate_ocean_received.py --notes 587.33 739.99 --out /tmp/chime.caf
 
     # longer, wetter tail
-    python3 tools/generate_ocean_received.py --reverb-time 1.6 --wet 0.6 --total 1.8
+    python3 tools/generate_ocean_received.py --reverb-time 1.6 --wet 0.6 --total 1.8 --out /tmp/chime.caf
 
     # audition without touching the bundle
     python3 tools/generate_ocean_received.py --wav-out /tmp/chime.wav --out /tmp/chime.caf
@@ -178,7 +183,6 @@ def write_wav(path: Path, channels) -> None:
 
 
 def main() -> int:
-    repo = Path(__file__).resolve().parent.parent
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--notes", nargs=2, type=float, default=[D5, A5],
                    metavar=("HZ1", "HZ2"), help="the two note frequencies in Hz")
@@ -187,8 +191,9 @@ def main() -> int:
     p.add_argument("--wet", type=float, default=0.5, help="reverb mix, 0..1")
     p.add_argument("--total", type=float, default=1.4, help="total length, seconds")
     p.add_argument("--peak-db", type=float, default=-12.0, help="peak level, dBFS")
-    p.add_argument("--out", type=Path,
-                   default=repo / "Oryne" / "Resources" / "OceanReceived.caf")
+    # Required, never the app bundle by default: the app's sound is design/sound/render_capture.py.
+    p.add_argument("--out", type=Path, required=True,
+                   help="where to write the CAF (not Oryne/Resources: that is the new capture sound)")
     p.add_argument("--wav-out", type=Path, default=None,
                    help="also keep the intermediate WAV here (for auditioning)")
     args = p.parse_args()

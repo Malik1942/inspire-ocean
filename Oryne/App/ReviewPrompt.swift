@@ -4,7 +4,11 @@ import SwiftUI
 
 /// The single, once-ever App Store review ask, armed only when value has just
 /// landed: the 5th verified capture (capture becoming a habit), or a couple of
-/// seconds after a resurfaced thought is opened (the core promise paying off).
+/// seconds after a real resurfaced thought is opened (the core promise paying
+/// off). Never in the first sessions: a trigger arms the ask only once
+/// `ReviewEligibility` holds (seven days since first launch, three active
+/// days). Where it may appear is the root view's call: Tide or the Library,
+/// nothing on screen, after two still seconds; never over Ask.
 ///
 /// Fire-and-forget by design: the system, not the app, decides whether the sheet
 /// actually appears and caps how often, so nothing here gates UI on it and the ask
@@ -27,6 +31,30 @@ final class ReviewPrompt {
     private enum Keys {
         static let captureCount = "review.captureCount"
         static let hasRequested = "review.hasRequested"
+        static let firstLaunch = "review.firstLaunch"
+        static let activeDays = "review.activeDays"
+        static let lastActiveDay = "review.lastActiveDay"
+    }
+
+    /// Called whenever the app becomes active: stamps first launch and
+    /// counts distinct days of use.
+    func noteActive(now: Date = .now) {
+        if store.object(forKey: Keys.firstLaunch) == nil {
+            store.set(now, forKey: Keys.firstLaunch)
+        }
+        let last = store.object(forKey: Keys.lastActiveDay) as? Date
+        if ReviewEligibility.isNewActiveDay(last: last, now: now) {
+            store.set(store.integer(forKey: Keys.activeDays) + 1, forKey: Keys.activeDays)
+            store.set(now, forKey: Keys.lastActiveDay)
+        }
+    }
+
+    private var isEligible: Bool {
+        ReviewEligibility.isEligible(
+            firstLaunch: store.object(forKey: Keys.firstLaunch) as? Date,
+            activeDays: store.integer(forKey: Keys.activeDays),
+            now: .now
+        )
     }
 
     private init(store: UserDefaults = FastCapturePreferences.defaults) {
@@ -43,12 +71,12 @@ final class ReviewPrompt {
         guard !hasRequested else { return }
         let count = store.integer(forKey: Keys.captureCount) + 1
         store.set(count, forKey: Keys.captureCount)
-        if count >= captureThreshold { pendingRequest = true }
+        if count >= captureThreshold, isEligible { pendingRequest = true }
     }
 
     /// Trigger B: a resurfaced thought has been on screen long enough to land.
     func recordResurfacedOpen() {
-        guard !hasRequested else { return }
+        guard !hasRequested, isEligible else { return }
         pendingRequest = true
     }
 

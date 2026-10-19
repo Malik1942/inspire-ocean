@@ -1,398 +1,326 @@
 import SwiftUI
 import SwiftData
 
+/// The one capture surface. Every entry point (the floating button, the
+/// Action Button, Control Center, the widget, Siri, a share, a current's +)
+/// lands here.
+///
+/// Tap the button to type; hold it to whisper. While the finger is down the
+/// words land on the water as subtitles and the button breathes with the
+/// microphone. Lift, and the words settle into the Ocean: saved first, then
+/// the chime, then one toast above the bar with the way back. No review
+/// beat, no mode picker (docs/plans/phone-refocus/SPEC.md, Phase 1).
 struct FastCaptureSessionView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.oceanAI) private var ai
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.calmAccessibility) private var calm
+    @Environment(CaptureControl.self) private var control
 
     let request: FastCaptureRequest
     var onFinish: () -> Void
-    /// Wired by the host so "See in Ocean" can focus the fragment after the
-    /// overlay dismisses (the overlay sits outside AppState's environment).
-    var onOpenNode: ((UUID) -> Void)? = nil
+    /// Presented as a sheet (from inside a current) rather than over the
+    /// tabs: no dim backdrop, and the button is the sheet's own.
+    var asSheet = false
 
-    @State private var mode: FastCaptureInputPreference
+    private enum Phase: Equatable {
+        /// Typing, or waiting for a hold.
+        case composing
+        /// A take is live under the finger (or locked).
+        case listening
+        /// The finger lifted: the words sink while the save is verified.
+        case settling
+        /// Saved. The overlay is only its toast, above the bar, until the
+        /// undo window closes or the next capture starts.
+        case linger
+    }
+
+    @State private var phase: Phase = .composing
     @State private var text: String
     @State private var imageData: Data?
     @State private var session = CaptureSession()
-    @State private var recordedURL: URL?
-    @State private var recordedAudioData: Data?
-    @State private var transcriptDraft: String = ""
-    /// Stop = captured: the node is saved the moment recording ends. The
-    /// review beat that follows edits an already-safe thought and releases
-    /// itself after a moment unless the user reaches for the words.
-    @State private var savedNodeID: UUID?
-    @State private var isReviewing = false
-    @State private var autoReleaseTask: Task<Void, Never>?
-    /// The card's work is done but the way back is still open: the overlay
-    /// shrinks to a quiet Undo pill (backdrop gone) until the session's undo
-    /// window (~10 s after save) closes, then finishes for real.
-    @State private var lingeringUndo = false
+    /// Words of the take that just ended, held for the settle animation.
+    @State private var settlingWords = ""
+    @State private var settled = false
+    /// A take the store refused, or one taken back: its audio rides along
+    /// with the next release so nothing recorded is lost.
+    @State private var heldDraft: CaptureDraft?
     @State private var message: String?
     @State private var isSaving = false
     @State private var hasStarted = false
-    @State private var moment: PostCaptureMoment?
     @State private var fadeTask: Task<Void, Never>?
-    @State private var questionTarget: Node?
     @FocusState private var textFocused: Bool
-    @FocusState private var transcriptFocused: Bool
 
     init(
         request: FastCaptureRequest,
         onFinish: @escaping () -> Void,
-        onOpenNode: ((UUID) -> Void)? = nil
+        asSheet: Bool = false
     ) {
         self.request = request
         self.onFinish = onFinish
-        self.onOpenNode = onOpenNode
-        _mode = State(initialValue: request.inputPreference)
+        self.asSheet = asSheet
         _text = State(initialValue: request.seedText)
         _imageData = State(initialValue: request.imageData)
     }
 
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            Color.black.opacity(lingeringUndo ? 0 : 0.24)
-                .ignoresSafeArea()
-                .allowsHitTesting(!lingeringUndo)
+    private var listening: Bool { phase == .listening }
 
-            if lingeringUndo {
-                Button(action: undoFromMoment) {
-                    Label("Undo", systemImage: "arrow.uturn.backward")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(OceanTheme.mist)
-                        .padding(.horizontal, 14).padding(.vertical, 8)
-                        .background(.ultraThinMaterial, in: Capsule())
+    var body: some View {
+        GeometryReader { geo in
+        // With the keyboard up the bottom safe area is the keyboard itself,
+        // so the card sits right on it; otherwise it clears the tab bar.
+        let keyboardUp = geo.safeAreaInsets.bottom > 120
+        ZStack(alignment: .bottom) {
+            backdrop
+
+            VStack(alignment: .leading, spacing: 14) {
+                switch phase {
+                case .composing:
+                    composer
+                case .listening, .settling:
+                    // One subtitle block across the take and its settle, so
+                    // the words that were spoken are the words that sink.
+                    WhisperSubtitles(
+                        text: listening ? session.transcriber.partial : settlingWords,
+                        showsPlaceholder: listening && !wordsDelayed
+                    )
+                    .opacity(phase == .settling && settled ? 0 : 1)
+                    .offset(y: phase == .settling && settled ? 24 : 0)
+                    .animation(.easeIn(duration: 0.3), value: settled)
+                    if listening {
+                        listeningRow
+                    }
+                case .linger:
+                    HStack {
+                        Spacer(minLength: 0)
+                        CaptureToast(onUndo: undoCapture)
+                        Spacer(minLength: 0)
+                    }
+                    .transition(.opacity.combined(with: .offset(y: 8)))
                 }
-                .accessibilityLabel("Undo capture")
-                .padding(.bottom, 24)
-                .transition(.opacity)
-            } else {
-                fastCaptureCard
             }
+            .padding(.horizontal, OceanSpacing.gutter)
+            .padding(.bottom, bottomPadding(keyboardUp: keyboardUp))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .animation(.spring(response: 0.36, dampingFraction: 0.86), value: phase)
+        }
         }
         .task {
+            control.overlayOpen = true
             session.configure(context: context, ai: ai)
-            session.onUnderstood = { nodeID, title in
-                advanceMoment(nodeID: nodeID, title: title)
-            }
             guard !hasStarted else { return }
             hasStarted = true
-            if mode == .voiceFirst {
-                await startRecording()
+            if control.touch != .up {
+                // The hold began on the floating button: keep listening.
+                await startListening()
+            } else if request.inputPreference == .voiceFirst {
+                // A widget, the Action Button, Control Center: no finger to
+                // hold, so the take locks and runs until Stop.
+                control.touch = .locked
+                await startListening()
             } else {
                 textFocused = true
             }
+        }
+        .onDisappear {
+            control.overlayOpen = false
+            control.toastShowing = false
+            control.isListening = false
+            control.level = 0
+            if control.touch == .locked { control.touch = .up }
+        }
+        .onChange(of: control.touch) { old, new in
+            switch new {
+            case .held, .locked:
+                // A hold on the bar while the toast shows starts the next take.
+                if phase == .linger { beginNextCapture() }
+                if phase == .composing { Task { await startListening() } }
+            case .up:
+                if case .held = old, listening { Task { await catchTake() } }
+            }
+        }
+        .onChange(of: control.stopCount) { _, _ in
+            if listening { Task { await catchTake() } }
+        }
+        .onChange(of: control.tapCount) { _, _ in
+            // A tap on the bar while the toast shows starts the next thought.
+            if phase == .linger { beginNextCapture() }
+            if phase == .composing { textFocused = true }
+        }
+        .onChange(of: session.transcriber.level) { _, level in
+            control.level = listening ? level : 0
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase != .active else { return }
             finishInterruptedCapture()
         }
-        .sheet(item: $questionTarget, onDismiss: { onFinish() }) { parent in
-            BranchComposer(
-                parent: parent,
-                prefill: moment?.title ?? "",
-                prefillType: .question
-            )
-        }
     }
 
-    private var fastCaptureCard: some View {
-        GlassCard(padding: 16) {
-                VStack(alignment: .leading, spacing: 14) {
-                    header
+    // MARK: Pieces
 
-                    if let moment {
-                        // Post-release: the card becomes the understanding moment.
-                        PostCaptureMomentView(
-                            moment: moment,
-                            onTurnIntoQuestion: { turnIntoQuestion(moment) },
-                            onSeeInOcean: { seeInOcean(moment) },
-                            onUndo: session.undoAvailable(for: moment.id)
-                                ? { undoFromMoment() } : nil
+    private var backdrop: some View {
+        Color.black.opacity(asSheet || phase == .linger ? 0 : 0.24)
+            .ignoresSafeArea()
+            .allowsHitTesting(phase != .linger)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                // Open water: fold the keyboard, or leave if nothing is here.
+                if phase == .composing, text.trimmed.isEmpty, imageData == nil, heldDraft == nil {
+                    cancel()
+                } else {
+                    textFocused = false
+                }
+            }
+    }
+
+    /// Typing: the bar's own capsule, the field where its placeholder sits.
+    /// The way out floats above the capsule's end, centered on the disc,
+    /// off the container so it never reads as a badge on the words.
+    private var composer: some View {
+        VStack(alignment: .trailing, spacing: 8) {
+            HStack(alignment: .bottom, spacing: 8) {
+                composerCaptions
+                Spacer(minLength: 8)
+                // Nothing to close while a finger holds the disc and the
+                // microphone wakes: lifting catches.
+                closeButton
+                    .padding(.trailing, FastCaptureLayout.discInset)
+                    .opacity(control.isHeld ? 0 : 1)
+                    .allowsHitTesting(!control.isHeld)
+            }
+            CaptureCapsule {
+                VStack(alignment: .leading, spacing: FastCaptureLayout.discInset) {
+                    if let imageData, let uiImage = UIImage(data: imageData) {
+                        screenshotPreview(uiImage)
+                    }
+
+                    HStack(alignment: .bottom, spacing: 8) {
+                        // The bar's own words in its own color, so opening
+                        // the keyboard changes nothing but the cursor.
+                        TextField(
+                            "What are you noticing?",
+                            text: $text,
+                            prompt: Text("What are you noticing?").foregroundStyle(OceanTheme.hint),
+                            axis: .vertical
                         )
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    } else {
-                        if let imageData, let uiImage = UIImage(data: imageData) {
-                            screenshotPreview(uiImage)
+                            .textFieldStyle(.plain)
+                            .font(.body)
+                            .lineLimit(1...6)
+                            .lineSpacing(2)
+                            .focused($textFocused)
+                            .foregroundStyle(OceanTheme.foam)
+                            .tint(OceanTheme.accent)
+                            .submitLabel(.return)
+                            .padding(.vertical, 4)
+                            .padding(.leading, FastCaptureLayout.fieldLeading - FastCaptureLayout.discInset)
+                            .frame(minHeight: FastCaptureLayout.buttonSize)
+
+                        if canRelease {
+                            Button(action: saveTyped) {
+                                Image(systemName: "arrow.up")
+                            }
+                            .buttonStyle(.oceanPrimaryIcon)
+                            .disabled(isSaving)
+                            .accessibilityLabel("Release into the Ocean")
+                            .transition(.scale.combined(with: .opacity))
                         }
 
-                        if isReviewing {
-                            reviewCapture
-                        } else if mode == .voiceFirst {
-                            voiceCapture
-                        } else {
-                            typingCapture
-                        }
-
-                        if let message {
-                            Text(message)
-                                .font(.caption)
-                                .foregroundStyle(OceanTheme.mist)
-                        }
-
-                        controls
+                        overlayDisc
                     }
                 }
+                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: canRelease)
+            }
         }
-        .padding(.horizontal, 14)
-        .padding(.bottom, 12)
+        .transition(.opacity)
     }
 
-    private var header: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "bolt.circle.fill")
-                .font(.title3)
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(OceanTheme.accent)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Fast Capture")
-                    .font(.headline)
-                    .foregroundStyle(OceanTheme.foam)
-                Text(request.source.label)
+    /// What the capsule can't hold: a refusal, and the current a thought
+    /// added from a stream flows into. Above it, on the leading side.
+    private var composerCaptions: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if let message {
+                Text(message)
                     .font(.caption)
                     .foregroundStyle(OceanTheme.mist)
             }
-
-            Spacer()
-
-            Button(action: cancel) {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.title3)
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(OceanTheme.mist)
-            }
-            .accessibilityLabel(
-                session.transcriber.isRecording ? Text("Cancel recording")
-                    : isReviewing ? Text("Close: keeps the capture")
-                    : Text("Close Fast Capture")
-            )
-        }
-    }
-
-    private var voiceCapture: some View {
-        VStack(spacing: 12) {
-            FastCaptureWaveform(level: session.transcriber.level, active: session.transcriber.isRecording)
-                .frame(height: 42)
-
-            HStack {
-                Text((session.transcriber.isRecording ? "Listening" : "Whisper held") as LocalizedStringKey)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(OceanTheme.foam)
-
-                Spacer()
-
-                Text(timeString(session.transcriber.elapsed))
-                    .font(.system(.subheadline, design: .monospaced))
-                    .foregroundStyle(OceanTheme.mist)
-            }
-
-            if session.transcriber.isRecording, session.transcriber.speechAvailability == .live {
-                // The words land while speaking; the note field returns in
-                // the review beat (and stays for the speech-off path).
-                TranscriptEditor(
-                    text: .constant(session.transcriber.partial),
-                    isEditable: false,
-                    placeholder: "Words appear as you speak…",
-                    minHeight: 54,
-                    maxHeight: 88
-                )
-            } else {
-                if session.transcriber.isRecording, session.transcriber.speechAvailability == .preparing {
-                    // iOS 26 first use: the on-device model is still downloading,
-                    // so no live words are coming. Say so, rather than dropping to
-                    // the note field and letting it read as "nothing was heard"
-                    // (BRIEF decision 12). The audio is captured either way, and
-                    // the post-capture pass recovers the words.
-                    Text("Preparing speech recognition…")
-                        .font(.caption)
-                        .foregroundStyle(OceanTheme.hint)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                noteEditor
-            }
-        }
-    }
-
-    private var noteEditor: some View {
-        TextEditor(text: $text)
-            .scrollContentBackground(.hidden)
-            .frame(minHeight: 54, maxHeight: 88)
-            .focused($textFocused)
-            .foregroundStyle(OceanTheme.foam)
-            .overlay(alignment: .topLeading) {
-                if text.trimmed.isEmpty {
-                    Text("A few words, if needed")
-                        .font(.subheadline)
-                        .foregroundStyle(OceanTheme.hint)
-                        .padding(.top, 8)
-                        .padding(.leading, 5)
-                        .allowsHitTesting(false)
-                }
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-
-    /// What the empty review field says, one honest line per speech state:
-    /// recognition is off for good, still preparing, or was listening and simply
-    /// caught nothing. Only the last one may ask "what did you say?" — the other
-    /// two would be blaming the user for the model's absence (BRIEF decision 12).
-    private var transcriptPlaceholder: LocalizedStringKey {
-        switch session.transcriber.speechAvailability {
-        case .unavailable: "Transcription is off: type the words, if you like"
-        case .preparing: "Still preparing speech recognition: type the words, if you like"
-        case .live, .unknown: "What did you say?"
-        }
-    }
-
-    /// The brief post-stop beat: the thought is already saved; the words sit
-    /// visible for a moment and release themselves unless tapped.
-    private var reviewCapture: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Label("Captured", systemImage: "checkmark.circle")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(OceanTheme.foam)
-                Spacer()
-                // The explicit way back — X above only closes; this deletes.
-                Button(action: undoCapture) {
-                    Label("Undo", systemImage: "arrow.uturn.backward")
-                        .font(.caption2.weight(.medium))
-                        .padding(.horizontal, 10).padding(.vertical, 5)
-                        .background(Color.white.opacity(0.08), in: Capsule())
-                        .foregroundStyle(OceanTheme.mist)
-                }
-                .accessibilityLabel("Undo capture")
-            }
-
-            if autoReleaseTask != nil {
-                Text("Tap words to keep editing")
+            if let anchor = request.anchorThemeKey {
+                Text(String(localized: "Flows into “\(OceanLayoutEngine.displayLabel(for: anchor))”"))
                     .font(.caption2)
+                    .foregroundStyle(OceanTheme.faint)
+            }
+        }
+        .padding(.leading, FastCaptureLayout.fieldLeading)
+    }
+
+    /// Listening: the same capsule in the same frame. The way out (cancel,
+    /// nothing is saved yet) is a glass disc at the leading end mirroring
+    /// the record disc, on the far side so the finger sliding up to lock
+    /// never crosses it. Between them, a note already typed (it releases
+    /// with the whisper) and the one honest line when no live words come.
+    private var listeningRow: some View {
+        CaptureCapsule {
+            HStack(alignment: .center, spacing: 10) {
+                closeButton
+                listeningNotes
+                Spacer(minLength: 8)
+                overlayDisc
+            }
+        }
+        .transition(.opacity)
+    }
+
+    /// The overlay's own disc, in the composer and the listening capsule.
+    /// While the hold that opened this overlay still has its finger on the
+    /// capture bar's disc (invisible, in the same frame), that disc owns
+    /// the gesture; once the take locks this one is the Stop.
+    private var overlayDisc: some View {
+        CaptureHoldButton(size: FastCaptureLayout.buttonSize)
+            .allowsHitTesting(asSheet || !control.isHeld)
+    }
+
+    private var listeningNotes: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            if !text.trimmed.isEmpty {
+                Text(text)
+                    .font(.footnote)
+                    .foregroundStyle(OceanTheme.mist)
+                    .lineLimit(1)
+            }
+            if wordsDelayed {
+                Text("Words will follow.")
+                    .font(.footnote)
                     .foregroundStyle(OceanTheme.hint)
             }
-
-            if autoReleaseTask == nil {
-                TranscriptEditor(
-                    text: $transcriptDraft,
-                    isEditable: true,
-                    placeholder: transcriptPlaceholder,
-                    minHeight: 54,
-                    maxHeight: 110,
-                    focus: $transcriptFocused
-                )
-            } else {
-                TranscriptEditor(
-                    text: .constant(transcriptDraft),
-                    isEditable: false,
-                    placeholder: "No words caught, tap to add them",
-                    minHeight: 54,
-                    maxHeight: 110
-                )
-                .contentShape(Rectangle())
-                .onTapGesture { pauseAutoRelease(focus: true) }
-            }
-
-            // The typed note releases with the thought — it stays visible
-            // and editable here; a review that hides content isn't a review.
-            if !text.trimmed.isEmpty {
-                noteEditor
-            }
-
-            if autoReleaseTask == nil, let recordedAudioData {
-                ListenChip(data: recordedAudioData)
-            }
-        }
-        .onChange(of: transcriptFocused) { _, focused in
-            if focused { pauseAutoRelease(focus: false) }
         }
     }
 
-    private var typingCapture: some View {
-        TextEditor(text: $text)
-            .scrollContentBackground(.hidden)
-            .frame(minHeight: 116, maxHeight: 170)
-            .focused($textFocused)
-            .foregroundStyle(OceanTheme.foam)
-            .overlay(alignment: .topLeading) {
-                if text.trimmed.isEmpty {
-                    Text("What are you noticing?")
-                        .font(.subheadline)
-                        .foregroundStyle(OceanTheme.hint)
-                        .padding(.top, 8)
-                        .padding(.leading, 5)
-                        .allowsHitTesting(false)
-                }
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    /// No live words are coming for this take (recognition preparing or
+    /// unavailable): the subtitle area stays empty and one line says so.
+    private var wordsDelayed: Bool {
+        session.transcriber.speechAvailability == .preparing
+            || session.transcriber.speechAvailability == .unavailable
     }
 
-    private var controls: some View {
-        HStack(spacing: 10) {
-            if isReviewing {
-                if autoReleaseTask != nil {
-                    // The pause on Fast Capture's zero-friction path: hold the
-                    // fragment back and fix the words.
-                    Button {
-                        pauseAutoRelease(focus: true)
-                    } label: {
-                        Label("Edit", systemImage: "pencil")
-                            .font(.subheadline.weight(.semibold))
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(OceanTheme.accent)
-                }
-            } else if mode == .voiceFirst {
-                Button {
-                    Task { await toggleRecording() }
-                } label: {
-                    Label((session.transcriber.isRecording ? "Stop" : "Record") as LocalizedStringKey, systemImage: session.transcriber.isRecording ? "stop.circle.fill" : "mic.circle.fill")
-                        .font(.subheadline.weight(.semibold))
-                }
-                .buttonStyle(.bordered)
-                .tint(session.transcriber.isRecording ? .red.opacity(0.8) : OceanTheme.accent)
-            } else {
-                Button {
-                    withAnimation(.snappy) { mode = .voiceFirst }
-                    Task { await startRecording() }
-                } label: {
-                    Label("Voice", systemImage: "waveform")
-                        .font(.subheadline.weight(.semibold))
-                }
-                .buttonStyle(.bordered)
-                .tint(OceanTheme.accent)
-            }
+    private var stilled: Bool { reduceMotion || calm }
 
-            Spacer()
-
-            if isReviewing {
-                if autoReleaseTask == nil {
-                    // Paused for editing: the only forward action is "keep".
-                    Button {
-                        finalizeReview()
-                    } label: {
-                        Label("Keep", systemImage: "checkmark.circle.fill")
-                            .font(.subheadline.weight(.semibold))
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(OceanTheme.accent)
-                    .foregroundStyle(OceanTheme.abyss)
-                    .disabled(isSaving)
-                }
-            } else {
-                Button(action: releaseNow) {
-                    Label("Release", systemImage: "arrow.up.forward.circle.fill")
-                        .font(.subheadline.weight(.semibold))
-                }
-                .buttonStyle(ReleasePillStyle())
-                .disabled(!canSave || isSaving)
-            }
+    /// Mid-take it cancels (nothing is saved yet); composing it closes. A
+    /// small glass body like the capture button, not a badge on the card.
+    private var closeButton: some View {
+        Button(action: cancel) {
+            Image(systemName: "xmark")
         }
+        .buttonStyle(.oceanIcon)
+        .accessibilityLabel(listening ? Text("Cancel whisper") : Text("Close"))
+    }
+
+    /// Composing and listening clear the tab bar (or sit on the keyboard);
+    /// the toast sits above the capture bar, which stays usable under it.
+    private func bottomPadding(keyboardUp: Bool) -> CGFloat {
+        if phase == .linger {
+            return asSheet ? 24 : FastCaptureLayout.tabBarClearance + FastCaptureLayout.barHeight + 12
+        }
+        return asSheet || keyboardUp ? 12 : FastCaptureLayout.tabBarClearance
     }
 
     private func screenshotPreview(_ uiImage: UIImage) -> some View {
@@ -402,11 +330,11 @@ struct FastCaptureSessionView: View {
                 .scaledToFill()
                 .frame(height: 116)
                 .frame(maxWidth: .infinity)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.10), lineWidth: 0.5)
-                )
+                // Concentric with the capsule's end.
+                .clipShape(RoundedRectangle(
+                    cornerRadius: FastCaptureLayout.endRadius - FastCaptureLayout.discInset,
+                    style: .circular
+                ))
 
             Button {
                 withAnimation(.snappy) { imageData = nil }
@@ -421,255 +349,133 @@ struct FastCaptureSessionView: View {
         }
     }
 
-    private var canSave: Bool {
-        session.transcriber.isRecording
-        || isReviewing
-        || !text.trimmed.isEmpty
-        || imageData != nil
+    private var canRelease: Bool {
+        !text.trimmed.isEmpty || imageData != nil || heldDraft?.audioData != nil
     }
 
-    private func toggleRecording() async {
-        if session.transcriber.isRecording {
-            await captureNow()
-        } else {
-            await startRecording()
-        }
-    }
+    // MARK: Listening
 
-    private func startRecording() async {
-        guard !session.transcriber.isRecording else { return }
-        await MainActor.run {
-            recordedURL = nil
-            recordedAudioData = nil
-            transcriptDraft = ""
-            savedNodeID = nil
-            isReviewing = false
-        }
-        // System interruptions end the take like a tap on Stop: capture
-        // what was caught and show the review, never a stuck "Listening".
+    private func startListening() async {
+        guard phase == .composing, !session.transcriber.isRecording else { return }
+        textFocused = false
+        message = nil
         let started = await session.startRecording(onInterruption: { [self] in
-            Task { await captureNow() }
+            // A call, Siri, a lost mic: the take ends as a lift would.
+            Task { await catchTake() }
         })
-        if started != .started {
-            await MainActor.run { fallBackToTyping() }
+        guard started == .started else {
+            control.touch = .up
+            control.isListening = false
+            if started == .permissionDenied {
+                message = String(localized: "Typing is ready.")
+            }
+            textFocused = true
+            return
         }
+        control.isListening = true
+        // The finger left while permission was being asked (or the take was
+        // started without one): the take runs until Stop.
+        if control.touch == .up { control.touch = .locked }
+        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .listening }
     }
 
-    private func fallBackToTyping() {
-        withAnimation(.snappy) {
-            mode = .typingFirst
-            message = String(localized: "Typing is ready.")
-        }
-        textFocused = true
-    }
-
-    /// Stop = captured. The node is saved here, before the review beat — the
-    /// beat edits a thought that is already safe, then releases itself.
+    /// Lift = catch. Saved before anything says so; the settle is the
+    /// confirmation and only runs once the save is verified.
     @MainActor
-    private func captureNow() async {
-        guard !isSaving, savedNodeID == nil else { return }
+    private func catchTake() async {
+        guard listening else { return }
         let elapsed = session.transcriber.elapsed
         let (url, transcript) = await session.stopRecording()
-        let trimmedNote = text.trimmed
-        let trimmedTranscript = transcript.trimmed
+        control.isListening = false
+        control.level = 0
+        if control.touch == .locked { control.touch = .up }
 
-        // A pocket press or reflexive tap shouldn't mint an empty thought.
-        if trimmedTranscript.isEmpty, trimmedNote.isEmpty, imageData == nil, elapsed < 1 {
+        let note = text.trimmed
+        let words = transcript.trimmed
+
+        // A press just past the hold threshold with nothing said: not a
+        // thought. Back to the field, keyboard up, nothing minted.
+        if words.isEmpty, note.isEmpty, imageData == nil, heldDraft == nil, elapsed < 1 {
             if let url { try? FileManager.default.removeItem(at: url) }
+            withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .composing }
+            textFocused = true
             return
         }
 
-        recordedURL = url
-        recordedAudioData = CaptureSession.readAudio(url)
-        transcriptDraft = trimmedTranscript
-        let draft = CaptureDraft(
-            kind: .voice,
-            text: trimmedNote,
-            transcript: trimmedTranscript,
-            audioData: recordedAudioData,
-            audioTempURL: url,
-            imageData: imageData
-        )
-
-        if let nodeID = session.release(draft) {
-            savedNodeID = nodeID
-            withAnimation(.snappy) { isReviewing = true }
-            scheduleAutoRelease()
-        } else {
-            // The store refused the save: hold the words, paused — Keep
-            // retries the release. Never a silent loss.
-            savedNodeID = nil
-            message = String(localized: "Couldn't save yet. Keep tries again.")
-            withAnimation(.snappy) { isReviewing = true }
+        var draft = heldDraft ?? CaptureDraft()
+        draft.kind = .voice
+        draft.text = note
+        draft.transcript = [draft.transcript, words].map(\.trimmed).filter { !$0.isEmpty }.joined(separator: " ")
+        if let url, let data = CaptureSession.readAudio(url) {
+            draft.audioData = data
+            draft.audioTempURL = url
         }
-    }
+        draft.imageData = imageData
+        draft.anchorThemeKey = request.anchorThemeKey
+        heldDraft = nil
 
-    private func scheduleAutoRelease() {
-        autoReleaseTask?.cancel()
-        autoReleaseTask = Task {
-            try? await Task.sleep(for: .seconds(3))
-            guard !Task.isCancelled else { return }
-            await MainActor.run { finalizeReview() }
+        settlingWords = words.isEmpty ? note : words
+        settled = false
+        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .settling }
+
+        guard let nodeID = session.release(draft) else {
+            // The store refused: the words come back to the field, the audio
+            // rides along with the next release. Never a silent loss.
+            heldDraft = draft
+            text = [note, words].filter { !$0.isEmpty }.joined(separator: " ")
+            message = String(localized: "Couldn't save yet. Release tries again.")
+            withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .composing }
+            return
         }
-    }
 
-    private func pauseAutoRelease(focus: Bool) {
-        autoReleaseTask?.cancel()
-        autoReleaseTask = nil
-        // Deliberately no auto-focus even when asked: the keyboard
-        // transaction can eat the next tap (Keep, Listen). The editor is
-        // editable the moment the pause lands — tapping it focuses natively.
-        _ = focus
-    }
-
-    /// The review resolves: apply any edits to the saved node (or release a
-    /// restored draft), then let understanding run on the words the user kept.
-    @MainActor
-    private func finalizeReview() {
-        guard !isSaving else { return }
-        autoReleaseTask?.cancel()
-        autoReleaseTask = nil
-
-        let nodeID: UUID
-        if let existing = savedNodeID {
-            session.applyReviewEdits(nodeID: existing, transcript: transcriptDraft, note: text)
-            nodeID = existing
-        } else {
-            // A restored (undone) or save-failed draft — release it now.
-            let draft = CaptureDraft(
-                kind: .voice,
-                text: text.trimmed,
-                transcript: transcriptDraft.trimmed,
-                audioData: recordedAudioData,
-                audioTempURL: recordedURL
-            )
-            guard let id = session.release(draft) else {
-                message = String(localized: "Couldn't save yet. Keep tries again.")
-                return
-            }
-            nodeID = id
-        }
         isSaving = true
-        message = nil
-
         session.beginUnderstanding(nodeID: nodeID)
-
-        textFocused = false
-        transcriptFocused = false
-        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
-            isReviewing = false
-            moment = .received(for: nodeID)
-        }
         CaptureFeedback.released()
-        // The moment is also the undo window; linger a touch longer than the
-        // old flash so a late tap can land.
-        scheduleFinish(after: 2.4)
+        withAnimation(.easeIn(duration: 0.3)) { settled = true }
+        try? await Task.sleep(for: .milliseconds(300))
+        showToast(for: nodeID)
     }
 
-    /// A late Undo from the moment (or its lingering pill): the thought comes
-    /// back into the review, held — the overlay returns so nothing is lost.
-    private func undoFromMoment() {
-        fadeTask?.cancel()
-        guard let draft = session.undoLastRelease() else {
-            if lingeringUndo { onFinish() }
-            return
-        }
-        isSaving = false
-        savedNodeID = nil
-        transcriptDraft = draft.transcript
-        text = draft.text
-        recordedAudioData = draft.audioData
-        recordedURL = nil
-        imageData = draft.imageData   // a staged screenshot comes back too
-        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
-            lingeringUndo = false
-            moment = nil
-            isReviewing = true
-        }
-    }
-
-    /// The prominent Release button: while recording it stops *and* releases
-    /// in one gesture; in typing mode it saves the typed thought as before.
-    private func releaseNow() {
-        if session.transcriber.isRecording {
-            Task {
-                await captureNow()
-                await MainActor.run { finalizeReview() }
-            }
-        } else if isReviewing {
-            finalizeReview()
-        } else {
-            saveTyped()
-        }
-    }
+    // MARK: Typed release
 
     private func saveTyped() {
-        guard !isSaving, canSave else { return }
-
+        guard !isSaving, canRelease else { return }
         let trimmed = text.trimmed
-        let kind: NodeKind = (imageData != nil && trimmed.isEmpty) ? .image : .text
-        let draft = CaptureDraft(kind: kind, text: trimmed, imageData: imageData)
+        var draft = heldDraft ?? CaptureDraft()
+        if draft.audioData != nil {
+            draft.kind = .voice
+            // The words in the field are the whisper's words, possibly
+            // corrected; the field is the transcript now.
+            draft.transcript = trimmed
+            draft.text = ""
+        } else {
+            draft.kind = (imageData != nil && trimmed.isEmpty) ? .image : .text
+            draft.text = trimmed
+        }
+        draft.imageData = imageData
+        draft.anchorThemeKey = request.anchorThemeKey
         guard let nodeID = session.release(draft) else {
             message = String(localized: "Couldn't save yet. Release tries again.")
             return
         }
+        heldDraft = nil
         isSaving = true
+        message = nil
         session.beginUnderstanding(nodeID: nodeID)
-
-        // Received. If the interpreted title lands quickly (the common case for
-        // text), the card morphs into the understanding moment and lingers
-        // briefly; otherwise it dismisses almost as fast as before. The moment
-        // is also the undo window.
         textFocused = false
-        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
-            moment = .received(for: nodeID)
-        }
+        showToast(for: nodeID)
         CaptureFeedback.released()
-        scheduleFinish(after: 2.4)
     }
 
-    // MARK: Understanding moment
+    // MARK: Toast
 
+    /// Saved. The overlay becomes its toast for as long as the thought can
+    /// be taken back, then closes. The capture bar is back the whole time.
     @MainActor
-    private func advanceMoment(nodeID: UUID, title: String) {
-        guard moment?.id == nodeID else { return }
-        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
-            moment?.title = title
-        }
-        scheduleFinish(after: 3.6)
-
-        if let hint = PostCaptureMoment.strongRelatedHint(for: nodeID, context: context, ai: ai),
-           moment?.id == nodeID {
-            withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
-                moment?.related = hint
-            }
-            scheduleFinish(after: 4.2)
-        }
-    }
-
-    private func scheduleFinish(after seconds: Double) {
+    private func showToast(for nodeID: UUID) {
+        control.toastShowing = true
+        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .linger }
         fadeTask?.cancel()
-        fadeTask = Task {
-            try? await Task.sleep(for: .seconds(seconds))
-            guard !Task.isCancelled else { return }
-            await MainActor.run { finishOrLinger() }
-        }
-    }
-
-    /// The card's beat is over — but if the thought can still be taken back,
-    /// the overlay shrinks to a quiet Undo pill (backdrop gone) and finishes
-    /// only when the undo window actually closes.
-    @MainActor
-    private func finishOrLinger() {
-        guard let nodeID = moment?.id ?? savedNodeID,
-              session.undoAvailable(for: nodeID) else {
-            onFinish()
-            return
-        }
-        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
-            lingeringUndo = true
-            moment = nil
-        }
         fadeTask = Task {
             while !Task.isCancelled, session.undoAvailable(for: nodeID) {
                 try? await Task.sleep(for: .seconds(0.5))
@@ -679,119 +485,107 @@ struct FastCaptureSessionView: View {
         }
     }
 
-    private func turnIntoQuestion(_ moment: PostCaptureMoment) {
+    /// The bar was tapped or held while the toast showed: the toast steps
+    /// aside and the same overlay takes the next thought, empty.
+    private func beginNextCapture() {
         fadeTask?.cancel()
-        let id = moment.id
-        let descriptor = FetchDescriptor<Node>(predicate: #Predicate { $0.id == id })
-        guard let node = try? context.fetch(descriptor).first else { return }
-        questionTarget = node
+        isSaving = false
+        text = ""
+        imageData = nil
+        heldDraft = nil
+        message = nil
+        settlingWords = ""
+        settled = false
+        control.toastShowing = false
+        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .composing }
     }
 
-    private func seeInOcean(_ moment: PostCaptureMoment) {
+    /// Take the released thought back: it returns to the field, words,
+    /// recording and image intact, and never entered the Ocean.
+    private func undoCapture() {
         fadeTask?.cancel()
-        onOpenNode?(moment.id)
-        onFinish()
+        guard let draft = session.undoLastRelease() else {
+            if phase == .linger { onFinish() }
+            return
+        }
+        isSaving = false
+        heldDraft = draft.audioData != nil ? draft : nil
+        text = [draft.text, draft.transcript].map(\.trimmed).filter { !$0.isEmpty }.joined(separator: " ")
+        imageData = draft.imageData
+        control.toastShowing = false
+        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .composing }
+        textFocused = true
     }
 
-    /// The header X. Consistent close semantics: after capture it only
-    /// closes — committing what's already safe — and never deletes. Deleting
-    /// is Undo's job, and it says so. Mid-recording, nothing is saved yet, so
-    /// X cancels the take.
+    /// The X. Mid-take it cancels the take (nothing is saved yet); after a
+    /// release it only closes, never deletes. Deleting is Undo's job.
     private func cancel() {
         fadeTask?.cancel()
-        if moment != nil {
-            // Post-release: the fragment is already saved — just close.
-            autoReleaseTask?.cancel()
-            onFinish()
-            return
-        }
-        if session.transcriber.isRecording {
+        textFocused = false
+        if listening {
             Task { await session.transcriber.cancel() }
+            control.isListening = false
+            control.level = 0
+            control.touch = .up
             onFinish()
             return
         }
-        if isReviewing {
-            // Close = keep: commit drafts and dismiss without the moment beat.
-            finalizeReview()
-            fadeTask?.cancel()
-            onFinish()
-            return
-        }
-        if let recordedURL {
-            try? FileManager.default.removeItem(at: recordedURL)
-        }
-        onFinish()
-    }
-
-    /// The explicit take-it-back: deletes the captured node and closes.
-    private func undoCapture() {
-        autoReleaseTask?.cancel()
-        autoReleaseTask = nil
-        fadeTask?.cancel()
-        if savedNodeID != nil {
-            _ = session.undoLastRelease()
-        } else if let recordedURL {
-            try? FileManager.default.removeItem(at: recordedURL)
+        if let url = heldDraft?.audioTempURL {
+            try? FileManager.default.removeItem(at: url)
         }
         onFinish()
     }
 
     private func finishInterruptedCapture() {
-        if session.transcriber.isRecording {
-            // The overlay is going away — capture what we have and release;
-            // no review beat to show.
-            Task {
-                await captureNow()
-                await MainActor.run { finalizeReview() }
-            }
-        } else if isReviewing, moment == nil {
-            // Backgrounded mid-review — paused or not, the thought is already
-            // safe and any edits made so far go with it.
-            finalizeReview()
+        if listening {
+            Task { await catchTake() }
         }
-    }
-
-    private func timeString(_ t: TimeInterval) -> String {
-        String(format: "%01d:%02d", Int(t) / 60, Int(t) % 60)
     }
 }
 
-private struct FastCaptureWaveform: View {
-    let level: Double
-    let active: Bool
+// MARK: - Subtitles
+
+/// The words of a live take, laid on the water: plain, unframed, newest at
+/// the bottom, the oldest fading out above. They appear as they are heard
+/// and leave in one piece when the take ends. Nothing performs.
+struct WhisperSubtitles: View {
+    let text: String
+    var maxWords = 40
+    /// "Listening" while waiting for the first word; off when no live words
+    /// are coming and while the words settle.
+    var showsPlaceholder = true
+
+    private var tail: String {
+        let all = text.split(whereSeparator: \.isWhitespace)
+        return all.suffix(maxWords).joined(separator: " ")
+    }
 
     var body: some View {
-        TimelineView(.animation(paused: !active)) { timeline in
-            let t = timeline.date.timeIntervalSinceReferenceDate
-            HStack(spacing: 4) {
-                ForEach(0..<22, id: \.self) { index in
-                    let phase = Double(index) * 0.58
-                    let base = active ? (0.26 + 0.74 * abs(sin(t * 4.4 + phase))) : 0.16
-                    let height = max(4, base * (active ? (8 + level * 42) : 8))
-                    Capsule()
-                        .fill(OceanTheme.accent.opacity(active ? 0.88 : 0.36))
-                        .frame(width: 4, height: height)
+        Group {
+            if tail.isEmpty {
+                if showsPlaceholder {
+                    Text("Listening")
+                        .font(.title2)
+                        .foregroundStyle(OceanTheme.hint)
                 }
+            } else {
+                Text(tail)
+                    .font(.title2.weight(.medium))
+                    .foregroundStyle(OceanTheme.foam)
+                    .lineSpacing(3)
+                    .multilineTextAlignment(.leading)
+                    .animation(.easeOut(duration: 0.15), value: tail)
             }
-            .frame(maxWidth: .infinity)
         }
-    }
-}
-
-/// The Release pill. Idle, with nothing to release yet, it stays a readable
-/// grey: the system's dimmed prominent style plus an opacity fade sank it into
-/// the card at roughly 1:1 label contrast. Ready, it turns to the accent with
-/// abyss text, the same pairing as "Release into the Ocean".
-private struct ReleasePillStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
-            .background(isEnabled ? OceanTheme.accent : Color.white.opacity(0.12), in: Capsule())
-            .foregroundStyle(isEnabled ? OceanTheme.abyss : Color.white.opacity(0.62))
-            .opacity(configuration.isPressed ? 0.8 : 1)
-            .animation(.easeOut(duration: 0.15), value: isEnabled)
+        .frame(maxWidth: .infinity, maxHeight: 220, alignment: .bottomLeading)
+        .mask(
+            LinearGradient(
+                stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.3), .init(color: .black, location: 1)],
+                startPoint: .top, endPoint: .bottom
+            )
+        )
+        .shadow(color: .black.opacity(0.5), radius: 8)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(text.isEmpty ? Text("Listening") : Text(text))
     }
 }

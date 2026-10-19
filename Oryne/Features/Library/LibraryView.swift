@@ -6,7 +6,10 @@ import SwiftData
 /// accessibility and trust."
 struct LibraryView: View {
     @Environment(\.modelContext) private var context
+    @Environment(AppState.self) private var appState
     @Environment(\.oceanAI) private var ai
+    @Environment(CaptureControl.self) private var control
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(sort: \Node.createdAt, order: .reverse) private var allNodes: [Node]
 
     @State private var search = ""
@@ -33,6 +36,17 @@ struct LibraryView: View {
     /// glow; it is empty while the anchor pins and the off-main ranking runs.
     @State private var focusedAnchorID: UUID?
     @State private var focusRelatedRank: [UUID: Int] = [:]
+
+    @State private var showCurrents = false
+    /// Where the grid last moved the way the capture bar already is; the bar
+    /// changes only after real travel against it from here. A plain object,
+    /// not observed state: it changes every scroll frame and must not make
+    /// the grid re-render (that was the pull-down stutter).
+    @State private var foldTracker = FoldTracker()
+    @FocusState private var searchFocused: Bool
+    /// The Library's navigation. A thought on screen keeps the capture bar
+    /// open; only reading the grid folds it.
+    @State private var path = NavigationPath()
 
     #if DEBUG
     /// One-shot for `OCEAN_SHOW_RELATED_TITLE` (marketing recapture).
@@ -76,60 +90,29 @@ struct LibraryView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ZStack {
-                OceanBackground(animated: false)
-                Group {
-                    if filtered.isEmpty {
-                        emptyState
-                    } else {
-                        grid
-                    }
-                }
+                PageBackground()
+                grid
+                ShoreGradient()
             }
+            // A tap in open space folds the search keyboard, as open water
+            // does in the capture overlay. Cards and buttons keep their taps.
+            .contentShape(Rectangle())
+            .onTapGesture { searchFocused = false }
             .navigationTitle("Library")
-            .searchable(text: $search, prompt: "Search the Ocean")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Picker("Arrangement", selection: $arrangement) {
-                            Label("Recent", systemImage: "clock").tag(Arrangement.recent)
-                            Label("Related", systemImage: "point.3.connected.trianglepath.dotted")
-                                .tag(Arrangement.related)
-                        }
-                    } label: {
-                        Image(systemName: arrangement == .related
-                            ? "point.3.connected.trianglepath.dotted"
-                            : "arrow.up.arrow.down")
-                    }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Picker("Kind", selection: $kindFilter) {
-                            Text("All kinds").tag(NodeKind?.none)
-                            ForEach(NodeKind.allCases) { k in
-                                Label(k.label, systemImage: k.symbol).tag(NodeKind?.some(k))
-                            }
-                        }
-                        Toggle("Show archived", isOn: $showArchived)
-                    } label: {
-                        Image(systemName: "line.3.horizontal.decrease.circle")
-                    }
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
+            .sheet(isPresented: $showCurrents) { CurrentsPage() }
             .navigationDestination(for: Node.self) { node in
                 NodeDetailContent(node: node)
             }
-            // The original system confirmation (the chat-bubble popover). Swap
-            // for `.oceanConfirmationDialog` (OceanConfirmationDialog.swift) to
-            // use the kept Liquid Glass alternative.
-            .confirmationDialog(
+            // The system alert, as on a thought's page.
+            .alert(
                 "Delete this thought?",
                 isPresented: Binding(
                     get: { pendingDelete != nil },
                     set: { if !$0 { pendingDelete = nil } }
-                ),
-                titleVisibility: .visible
+                )
             ) {
                 Button("Delete", role: .destructive) {
                     if let node = pendingDelete { delete(node) }
@@ -154,14 +137,16 @@ struct LibraryView: View {
         }
     }
 
-    /// The marker for fragments themed before the semantic understanding
-    /// layer existed; bump the suffix to re-run the migration after a
-    /// meaningful change to theme generation.
+    /// Set once this install's one-time semantic re-theme has run. It only
+    /// ever re-themes thoughts captured before the semantic layer existed
+    /// (`UnderstandingBackfill.semanticLayerLanded`); every later thought was
+    /// understood at capture and keeps its current.
     private static let semanticThemesMigrationKey = "ocean.semanticThemes.v1"
 
-    /// Interpret fragments that haven't been understood yet: untitled ones
-    /// (as before), plus — once — every fragment themed by the old keyword
-    /// extractor, so the whole Ocean groups and matches by meaning.
+    /// Interpret fragments that haven't been understood yet: untitled ones,
+    /// plus, once, any fragment captured before the semantic layer (themed by
+    /// the old keyword extractor). Both join existing currents the way a
+    /// capture does, rather than founding a current of their own.
     private func backfillUnderstanding() async {
         guard !backfilling else { return }
         backfilling = true
@@ -169,32 +154,53 @@ struct LibraryView: View {
 
         let migrate = !UserDefaults.standard.bool(forKey: Self.semanticThemesMigrationKey)
 
-        for node in allNodes {
-            // Examples are curated: seeded with final titles and themes, and
-            // re-localized wholesale on language change. Understanding must
-            // never retitle or re-theme them, and they carry no user-edit
-            // flags, so they are skipped here rather than protected per-field.
-            guard !node.isExample else { continue }
+        let pending = allNodes.compactMap { node -> (node: Node, work: UnderstandingBackfill.Work)? in
+            let work = UnderstandingBackfill.work(
+                isExample: node.isExample,
+                hasTitle: !node.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                createdAt: node.createdAt,
+                migrating: migrate
+            )
+            return work.map { (node, $0) }
+        }
+        // A keyword-era thought still waiting for its new themes is no
+        // current to join; it becomes one once re-themed.
+        var keywordEra = Set(pending.filter { $0.work == .retheme }.map(\.node.id))
 
-            let needsTitle = node.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            guard needsTitle || migrate else { continue }
+        for (node, work) in pending {
+            defer { keywordEra.remove(node.id) }
 
             let raw = node.rawContent
             if raw.isEmpty {
-                if needsTitle {
+                if work == .understand {
                     node.title = node.kind.label
                     try? context.save()
                 }
                 continue
             }
 
-            let understanding = await ai.understand(raw)
-            NodeComposer.applyUnderstanding(understanding, to: node, preserveTitle: !needsTitle)
+            let currents = CurrentSnap.candidates(
+                in: allNodes.filter { !keywordEra.contains($0.id) },
+                excluding: node.id,
+                forEntry: raw
+            )
+            let understanding = await ai.understand(raw, currents: currents)
+            NodeComposer.applyUnderstanding(understanding, to: node, preserveTitle: work == .retheme)
             try? context.save()
         }
 
         if migrate {
             UserDefaults.standard.set(true, forKey: Self.semanticThemesMigrationKey)
+        }
+
+        // Long whispers from before summaries existed get their reading now,
+        // one at a time, in the background.
+        for node in allNodes where node.kind == .voice && !node.isExample && node.summary == nil {
+            guard let transcript = node.transcription, transcript.count >= CaptureSession.summaryThreshold else { continue }
+            if let summary = await ai.summarizeTranscript(transcript) {
+                node.summary = summary
+                try? context.save()
+            }
         }
     }
 
@@ -266,7 +272,14 @@ struct LibraryView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
-                    Color.clear.frame(height: 0).id(Self.gridTopID)
+                    header
+                        .id(Self.gridTopID)
+                    if filtered.isEmpty {
+                        emptyState
+                    }
+                    if !search.trimmed.isEmpty, filtered.count >= 2 {
+                        summarizeChip
+                    }
                     if arrangement == .recent, focusedAnchorID == nil {
                         // Recent, unfocused: keep the Today / This week / Earlier
                         // sections, one masonry each.
@@ -291,8 +304,9 @@ struct LibraryView: View {
                         }
                     }
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+                .padding(.horizontal, OceanSpacing.gutter)
+                .padding(.bottom, 8)
+                .padding(.bottom, FastCaptureLayout.contentClearance)
             }
             // Fresh scroll view per arrangement. Lazy columns realize cells
             // incrementally from the top; carrying a deep scroll offset across an
@@ -301,6 +315,18 @@ struct LibraryView: View {
             // node anyway, so returning to the top is also the honest UX.
             .id(arrangement)
             .opacity(gridOpacity)
+            .scrollDismissesKeyboard(.immediately)
+            // Reading down folds the capture bar into its disc.
+            .onScrollGeometryChange(for: CGFloat.self) { geometry in
+                geometry.contentOffset.y + geometry.contentInsets.top
+            } action: { old, new in
+                scrollMoved(from: old, to: new)
+            }
+            .onDisappear { setBarFolded(false) }
+            .onChange(of: path.count) { _, count in
+                if count > 0 { setBarFolded(false) }
+                withAnimation(OceanMotion.quick) { control.readingThought = count > 0 }
+            }
             // Engage and clear put the front at offset 0. Focus is not an
             // arrangement change, so `.id` does not reset scroll; steer explicitly
             // or the viewport strands past realized content (the spike's mid-reorder
@@ -313,6 +339,21 @@ struct LibraryView: View {
         .safeAreaInset(edge: .top) {
             if focusedAnchorID != nil { focusChip }
         }
+    }
+
+    /// A search that found more than one thought can be read across in one
+    /// tap: the result set goes to Ask as a summary (SPEC, Ask: one mode).
+    private var summarizeChip: some View {
+        Button {
+            appState.summarize(filtered.map(\.id), title: search.trimmed)
+        } label: {
+            Label(summarizeLabel, systemImage: "text.line.first.and.arrowtriangle.forward")
+        }
+        .buttonStyle(.oceanSecondary)
+    }
+
+    private var summarizeLabel: String {
+        String(localized: "Summarize these \(filtered.count)")
     }
 
     /// The base order the focused masonry reorders over: the Related ribbon keeps
@@ -467,19 +508,93 @@ struct LibraryView: View {
     /// kind is the hint for a banner), because this runs over the whole set.
     private func estimatedCardHeight(_ node: Node) -> CGFloat {
         var height: CGFloat = 92
-        if node.kind == .image || node.linkImageData != nil { height += 140 }
-        if !node.snippet.isEmpty { height += CGFloat(min(4, node.snippet.count / 32)) * 15 }
-        if node.linkURLString != nil { height += 18 }
-        if !node.themes.isEmpty || node.isExample { height += 24 }
+        if node.kind == .image || node.linkImageData != nil { height += 120 }
+        if !node.snippet.isEmpty { height += CGFloat(min(4, node.snippet.count / 24)) * 20 }
         return height
     }
 
+    /// Tide's page header, with Library's three tools in the same frosted
+    /// group, then the page's own search field.
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            // One tool: how the Library is arranged and what it shows, in
+            // one menu. Settings live on Tide.
+            PageTitleRow(title: "Library") {
+                Menu {
+                    Section("Sort") {
+                        Picker("Arrangement", selection: $arrangement) {
+                            Label("Recent", systemImage: "clock").tag(Arrangement.recent)
+                            Label("Related", systemImage: "point.3.connected.trianglepath.dotted")
+                                .tag(Arrangement.related)
+                        }
+                    }
+                    Section("Show") {
+                        Picker("Kind", selection: $kindFilter) {
+                            Label("All kinds", systemImage: "square.grid.2x2").tag(NodeKind?.none)
+                            ForEach(NodeKind.allCases) { k in
+                                Label(k.label, systemImage: k.symbol).tag(NodeKind?.some(k))
+                            }
+                        }
+                        Toggle(isOn: $showArchived) {
+                            Label("Show archived", systemImage: "archivebox")
+                        }
+                    }
+                    Divider()
+                    Button {
+                        showCurrents = true
+                    } label: {
+                        Label("Currents", systemImage: "water.waves")
+                    }
+                } label: {
+                    OceanToolGlyph(systemName: "line.3.horizontal.decrease")
+                }
+                .accessibilityLabel("Sort and filter")
+            }
+            .padding(.bottom, -4)
+
+            OceanSearchField(text: $search, prompt: "Search the Ocean", focused: $searchFocused)
+        }
+        .padding(.bottom, 8)
+    }
+
+    // MARK: Folding the capture bar
+
+    /// Reading down folds the capture bar into its disc; heading back up, or
+    /// reaching the top, unfolds it. It changes only after 24 pt of travel
+    /// against its current state, so a bounce or a small correction never
+    /// makes it flicker.
+    private func scrollMoved(from old: CGFloat, to new: CGFloat) {
+        // Only the grid itself folds the bar, never a thought pushed over it.
+        guard path.isEmpty else { return }
+        if new < 40 {
+            setBarFolded(false)
+            foldTracker.anchor = new
+            return
+        }
+        let goingDown = new > old
+        if goingDown == control.barFolded {
+            foldTracker.anchor = new
+        } else if abs(new - foldTracker.anchor) > 24 {
+            setBarFolded(goingDown)
+            foldTracker.anchor = new
+        }
+    }
+
+    private func setBarFolded(_ fold: Bool) {
+        guard control.barFolded != fold else { return }
+        withAnimation(reduceMotion ? OceanMotion.quick : OceanMotion.standard) {
+            control.barFolded = fold
+        }
+    }
+
+    /// Time sections wear Tide's labels: New York italic, mist.
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
-            .font(.subheadline)
+            .font(OceanType.sectionLabel)
             .foregroundStyle(OceanTheme.mist)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 4)
+            .padding(.leading, 2)
+            .padding(.top, 12)
     }
 
     /// A grid cell: the card, a value-based NavigationLink for tap (no List
@@ -518,12 +633,11 @@ struct LibraryView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "square.stack.3d.up.slash")
-                .font(.system(size: 48)).foregroundStyle(OceanTheme.surface)
-            Text((search.isEmpty ? "Nothing here yet" : "No fragments match") as LocalizedStringKey)
-                .font(.title3.weight(.semibold)).foregroundStyle(OceanTheme.foam)
-        }
+        Text((search.isEmpty ? "Nothing here yet" : "No fragments match") as LocalizedStringKey)
+            .font(.subheadline)
+            .foregroundStyle(OceanTheme.mist)
+            .frame(maxWidth: .infinity)
+            .padding(.top, OceanSpacing.block)
     }
 
     private func archive(_ node: Node) {
@@ -587,4 +701,10 @@ private func rankRelated(anchorID: UUID, among inputs: [FocusInput]) -> [UUID] {
         return (other.id, score)
     }
     return scored.sorted { $0.score > $1.score }.map(\.id)
+}
+
+/// Scroll bookkeeping for folding the capture bar, kept out of SwiftUI's
+/// observation so it never invalidates the view.
+private final class FoldTracker {
+    var anchor: CGFloat = 0
 }
