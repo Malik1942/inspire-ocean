@@ -25,6 +25,13 @@ enum CaptureFeedback {
         if isEnabled(Keys.haptics) { playSwell() }
     }
 
+    /// The small taps of the gesture itself (hold reached, take locked),
+    /// under the same Haptics toggle as the swell.
+    static func touch(_ style: UIImpactFeedbackGenerator.FeedbackStyle) {
+        guard isEnabled(Keys.haptics) else { return }
+        UIImpactFeedbackGenerator(style: style).impactOccurred()
+    }
+
     /// Both toggles default ON: an absent key means enabled.
     private static func isEnabled(_ key: String) -> Bool {
         let defaults = FastCapturePreferences.defaults

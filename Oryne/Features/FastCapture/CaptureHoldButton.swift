@@ -78,7 +78,7 @@ struct CaptureHoldButton: View {
                 if case .held = control.touch, value.translation.height < -CaptureControl.lockDistance {
                     lockedThisTouch = true
                     control.touch = .locked
-                    UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+                    CaptureFeedback.touch(.rigid)
                 }
             }
             .onEnded { _ in end() }
@@ -95,7 +95,7 @@ struct CaptureHoldButton: View {
             try? await Task.sleep(for: CaptureControl.holdThreshold)
             guard !Task.isCancelled, pressBegan != nil else { return }
             control.touch = .held(since: .now)
-            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            CaptureFeedback.touch(.soft)
         }
     }
 
