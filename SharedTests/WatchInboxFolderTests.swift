@@ -66,6 +66,23 @@ final class WatchInboxFolderTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: folder.audioURL(for: t.id)), Data([9, 9]))
     }
 
+    func test_failedSecondDelivery_keepsTheFirstCopy() throws {
+        let t = take()
+        try folder.accept(t, movingAudioFrom: try sourceFile([1]))
+        let missing = root.appendingPathComponent("gone-\(UUID().uuidString).m4a")
+        XCTAssertThrowsError(try folder.accept(t, copyingAudioFrom: missing))
+        XCTAssertEqual(folder.pending(), [t])
+        XCTAssertEqual(try Data(contentsOf: folder.audioURL(for: t.id)), Data([1]))
+    }
+
+    func test_failedFirstDelivery_listsNothing() throws {
+        let missing = root.appendingPathComponent("gone-\(UUID().uuidString).m4a")
+        XCTAssertThrowsError(try folder.accept(take(), movingAudioFrom: missing))
+        XCTAssertEqual(folder.pending(), [])
+        let leftovers = try FileManager.default.contentsOfDirectory(atPath: folder.directory.path)
+        XCTAssertEqual(leftovers, [], "a failed delivery leaves nothing behind")
+    }
+
     func test_remove_deletesBothFiles() throws {
         let t = take()
         try folder.accept(t, movingAudioFrom: try sourceFile([1]))

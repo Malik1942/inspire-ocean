@@ -59,9 +59,21 @@ struct WatchInboxFolder {
     }
 
     private func place(_ take: WatchTake, audio write: (URL) throws -> Void) throws {
-        // A second delivery of the same take replaces the first copy.
-        remove(take.id)
-        try write(audioURL(for: take.id))
+        let audio = audioURL(for: take.id)
+        // Stage beside the destination, then swap it in: a failed second
+        // delivery of the same take must never remove a good first copy.
+        let staged = directory.appendingPathComponent("\(take.id.uuidString).incoming-\(UUID().uuidString)")
+        try write(staged)
+        do {
+            if FileManager.default.fileExists(atPath: audio.path) {
+                _ = try FileManager.default.replaceItemAt(audio, withItemAt: staged)
+            } else {
+                try FileManager.default.moveItem(at: staged, to: audio)
+            }
+        } catch {
+            try? FileManager.default.removeItem(at: staged)
+            throw error
+        }
         guard let data = WatchWire.encode(take) else { throw CocoaError(.coderInvalidValue) }
         try data.write(to: metadataURL(for: take.id), options: .atomic)
     }

@@ -74,6 +74,56 @@ final class TakeQueueStoreTests: XCTestCase {
         XCTAssertTrue(audioExists(waiting.id))
     }
 
+    func test_unreadableIndex_isSetAsideNotOverwritten() throws {
+        try Data("corrupt".utf8).write(to: store.indexURL)
+        XCTAssertEqual(store.load(), TakeQueueState())
+        XCTAssertFalse(FileManager.default.fileExists(atPath: store.indexURL.path))
+        let names = try FileManager.default.contentsOfDirectory(atPath: directory.path)
+        let aside = try XCTUnwrap(names.first { $0.hasPrefix("queue.unreadable-") })
+        XCTAssertEqual(try Data(contentsOf: directory.appendingPathComponent(aside)), Data("corrupt".utf8))
+    }
+
+    func test_unlistedTakes_returnsPlayableRecordingsTheIndexMisses() throws {
+        var state = TakeQueueState()
+        let listed = take()
+        state.add(listed, phoneReachableAtStop: true)
+        let playable = UUID(), unplayable = UUID()
+        for id in [listed.id, playable, unplayable] { try writeAudio(id) }
+
+        let recovered = store.unlistedTakes(in: state) { url in
+            url.lastPathComponent.hasPrefix(playable.uuidString) ? 5 : nil
+        }
+
+        XCTAssertEqual(recovered.map(\.id), [playable])
+        XCTAssertEqual(recovered.first?.duration, 5)
+    }
+
+    func test_unlistedTakes_timesTheTakeFromTheFile() throws {
+        let id = UUID()
+        try writeAudio(id)
+        let when = Date(timeIntervalSinceReferenceDate: 800_000_000)
+        try FileManager.default.setAttributes([.creationDate: when], ofItemAtPath: store.audioURL(for: id).path)
+
+        let recovered = store.unlistedTakes(in: TakeQueueState()) { _ in 3 }
+
+        let createdAt = try XCTUnwrap(recovered.first?.createdAt)
+        XCTAssertEqual(createdAt.timeIntervalSinceReferenceDate, when.timeIntervalSinceReferenceDate, accuracy: 1)
+    }
+
+    func test_unreadableIndex_recordingsComeBack() throws {
+        var state = TakeQueueState()
+        let waiting = take()
+        state.add(waiting, phoneReachableAtStop: true)
+        store.save(state)
+        try writeAudio(waiting.id)
+        try Data("corrupt".utf8).write(to: store.indexURL)
+
+        let loaded = store.load()
+        let recovered = store.unlistedTakes(in: loaded) { _ in 2 }
+
+        XCTAssertEqual(recovered.map(\.id), [waiting.id])
+    }
+
     func test_deleteAudio_removesTheFile() throws {
         let id = UUID()
         try writeAudio(id)
