@@ -17,7 +17,6 @@ final class OryneAppDelegate: NSObject, UIApplicationDelegate {
         didReceiveRemoteNotification userInfo: [AnyHashable: Any]
     ) async -> UIBackgroundFetchResult {
         guard WatchInboxReader.isInboxPush(userInfo) else { return .noData }
-        await WatchBridge.shared.refresh()
-        return .newData
+        return await WatchBridge.shared.refresh() ? .newData : .noData
     }
 }
