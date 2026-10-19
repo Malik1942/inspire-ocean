@@ -1595,6 +1595,8 @@ git commit -m "Watch: lift the understanding pass out of CaptureSession for reus
 
 ### Task 6: Phone importer, bridge, and the launch sweep
 
+> **Amended after review (Malik, 2026-10-18):** the shipped importer keeps the inbox files when the audio can't be read (only an empty file is removed), re-confirms a duplicate arrival, imports on every `drain()` call without waiting behind an understanding pass (`isUnderstanding` replaces `isDraining`/`needsAnotherPass`), leaves a take `imported` when the pass is cancelled, and ends its background task in an expiration handler. The e2e script also checks that the watch's `createdAt` carries over and that a deleted thought stays deleted. Shipped in the Task 6 fix commit; the code below is the original task text.
+
 **Files:**
 - Create: `Oryne/Services/WatchTakeImporter.swift`
 - Create: `Oryne/Services/WatchBridge.swift`
