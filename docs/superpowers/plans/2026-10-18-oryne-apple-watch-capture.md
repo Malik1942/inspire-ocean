@@ -2843,9 +2843,10 @@ final class TakeQueue {
         // Recordings caught but missing from the index (a failed save, an
         // unreadable index) go back in the queue rather than sit stuck.
         // Launch only: nothing is being recorded yet.
+        // Below the 0.6 s minimum is a reflex press, never a take.
         let recovered = store.unlistedTakes(in: state) { url in
             let length = (try? AVAudioPlayer(contentsOf: url))?.duration ?? 0
-            return length > 0 ? length : nil
+            return length >= 0.6 ? length : nil
         }
         for take in recovered {
             state.add(take, phoneReachableAtStop: false)
