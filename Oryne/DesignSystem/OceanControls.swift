@@ -21,7 +21,8 @@ enum OceanRadius {
 }
 
 /// Liquid Glass, the material of the tab bar and the navigation bar, for
-/// every control and floating bar. Before iOS 26 it falls back to the
+/// the layer that floats over content: bars, the toast, page tools, sheet
+/// chrome, the discs. Content-layer buttons stay matte (Secondary). Before iOS 26 it falls back to the
 /// thin material the app used before.
 extension View {
     @ViewBuilder
@@ -55,7 +56,11 @@ struct OceanPrimaryButtonStyle: ButtonStyle {
     }
 }
 
-/// The quiet action: glass capsule, 44 pt tall, foam label.
+/// The quiet action, in the content layer: a matte capsule from the same
+/// family as the tiles (a touch brighter so it reads as a control), no
+/// rim, 44 pt tall, foam label. Glass is for the layer that floats over
+/// content (bars, toast, page tools, sheet chrome); a button that scrolls
+/// with the cards wears the cards' material.
 struct OceanSecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -63,8 +68,8 @@ struct OceanSecondaryButtonStyle: ButtonStyle {
             .foregroundStyle(OceanTheme.foam)
             .padding(.horizontal, 18)
             .frame(minHeight: OceanControlSize.height)
-            .oceanGlass(in: Capsule())
-            .opacity(configuration.isPressed ? 0.85 : 1)
+            .background(Color.white.opacity(configuration.isPressed ? 0.13 : 0.08), in: Capsule())
+            .animation(OceanMotion.quick, value: configuration.isPressed)
     }
 }
 
