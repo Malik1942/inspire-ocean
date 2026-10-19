@@ -5,6 +5,7 @@ import Network
 
 @main
 struct OryneApp: App {
+    @UIApplicationDelegateAdaptor(OryneAppDelegate.self) private var appDelegate
     let container = Persistence.shared
     @Environment(\.scenePhase) private var scenePhase
 
