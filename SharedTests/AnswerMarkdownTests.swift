@@ -40,4 +40,27 @@ final class AnswerMarkdownTests: XCTestCase {
         let text = "No markup here, just water."
         XCTAssertEqual(String(AnswerMarkdown.attributed(text).characters), text)
     }
+
+    // MARK: - AnswerLength
+
+    /// The observed run-on (2026-10-19): a Summarize answer of nine
+    /// sentences that drifted from the fragments after the fourth.
+    func test_longAnswer_keepsFourSentences() {
+        let text = "You keep returning to light. You study the sunset. You match its shift. "
+            + "You avoid the overlay. You feel calm in your artwork. You feel at peace."
+        XCTAssertEqual(
+            AnswerLength.capped(text),
+            "You keep returning to light. You study the sunset. You match its shift. You avoid the overlay."
+        )
+    }
+
+    func test_shortAnswer_isUntouched() {
+        let text = "You keep returning to light.\n\nIt cools before it ends."
+        XCTAssertEqual(AnswerLength.capped(text), text)
+    }
+
+    func test_chinese_isCutBySentence() {
+        let text = "你一直在回到光。你在研究日落。你想匹配它的变化。你不再叠加滤镜。你在作品里感到平静。"
+        XCTAssertEqual(AnswerLength.capped(text), "你一直在回到光。你在研究日落。你想匹配它的变化。你不再叠加滤镜。")
+    }
 }

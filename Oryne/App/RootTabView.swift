@@ -73,18 +73,18 @@ struct RootTabView: View {
                 .transition(.opacity)
             }
         }
-        // The capture bar rides above the tab bar (Ocean and Library). A
-        // hold that begins on its disc keeps its finger while the overlay
-        // rises; the overlay's own disc takes over once the finger lifts.
-        // The bar steps aside the moment the overlay is up (its composer is
-        // the bar, expanded), except while a hold that began on the bar's
-        // disc still has its finger down, and while the overlay is only its
-        // toast, which sits above the bar.
+        // The capture bar rides above the tab bar (Tide and Library). The
+        // moment the overlay is up it draws the same capsule in the same
+        // frame (typing, listening), so the bar steps aside and only one
+        // capsule is ever on screen. A hold that began on the bar's disc
+        // keeps its finger on the now invisible bar until it lifts or
+        // locks. While the overlay is only its toast, the bar is back.
         .modifier(CaptureBarPlacement(
             show: appState.selectedTab != .ask
                 && !(appState.selectedTab == .library && control.readingThought)
                 && !keyboardUp
-                && (appState.fastCaptureRequest == nil || control.touch != .up || control.toastShowing),
+                && (appState.fastCaptureRequest == nil || control.toastShowing),
+            keepsTouch: control.isHeld,
             // Only the Library folds the bar, while reading down its grid.
             folded: control.barFolded && appState.selectedTab == .library,
             control: control
@@ -198,6 +198,11 @@ enum FastCaptureLayout {
     static let barHeight: CGFloat = 56
     static let buttonSize: CGFloat = 44
     static let discInset: CGFloat = 6
+    /// Where the words start inside the capsule: the placeholder on the bar
+    /// and the field in the overlay sit on the same line.
+    static let fieldLeading: CGFloat = barHeight / 2 - 8
+    /// The capsule's end radius, kept when the container grows taller.
+    static let endRadius: CGFloat = barHeight / 2
     /// The tab bar (49 pt) plus the 12 pt gap under the bar.
     static let tabBarClearance: CGFloat = 49 + 12
     /// What scrolling content under the bar leaves clear: bar, gap, and a

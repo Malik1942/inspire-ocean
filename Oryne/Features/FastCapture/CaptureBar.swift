@@ -22,7 +22,7 @@ struct CaptureBar: View {
                     .foregroundStyle(OceanTheme.hint)
                     .lineLimit(1)
                     .fixedSize()
-                    .padding(.leading, FastCaptureLayout.barHeight / 2 - 8)
+                    .padding(.leading, FastCaptureLayout.fieldLeading)
                     // minWidth 0: the words keep their width and overflow
                     // into the clip instead of widening the bar.
                     .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -52,9 +52,29 @@ struct CaptureBar: View {
     }
 }
 
+/// The one container every capture state wears: the bar's Liquid Glass
+/// capsule, at the bar's frame. Typing and listening in the overlay draw
+/// in it too, so the bar never changes shape or material. Taller content
+/// (wrapped words, a screenshot) grows it into a rounded rectangle with
+/// the same end radius, which at one line is exactly the capsule.
+struct CaptureCapsule<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        content
+            .padding(FastCaptureLayout.discInset)
+            .frame(maxWidth: .infinity, minHeight: FastCaptureLayout.barHeight, alignment: .leading)
+            .background(OceanBarBackground(cornerRadius: FastCaptureLayout.endRadius))
+    }
+}
+
 /// Places the bar above the tab bar. Hidden on Ask, which has its own input.
 struct CaptureBarPlacement: ViewModifier {
     let show: Bool
+    /// A hold that began on the bar's disc: the overlay's identical capsule
+    /// is drawn in the same frame, so the bar goes invisible but keeps the
+    /// finger until it lifts or locks.
+    var keepsTouch = false
     var folded = false
     let control: CaptureControl
 
@@ -66,7 +86,7 @@ struct CaptureBarPlacement: ViewModifier {
                 .padding(.bottom, FastCaptureLayout.tabBarClearance)
                 .ignoresSafeArea(.keyboard)
                 .opacity(show ? 1 : 0)
-                .allowsHitTesting(show)
+                .allowsHitTesting(show || keepsTouch)
                 .animation(.easeOut(duration: 0.18), value: show)
         }
     }
@@ -82,7 +102,9 @@ struct OceanBarBackground: View {
 
     var body: some View {
         if let cornerRadius {
-            surface(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            // Circular corners: at half the height this is exactly the
+            // capsule, so a bar growing past one line keeps its ends.
+            surface(RoundedRectangle(cornerRadius: cornerRadius, style: .circular))
         } else {
             surface(Capsule())
         }

@@ -34,7 +34,7 @@ enum SeedScreenshot {
             context,
             kind: .image,
             title: "Golden hour on the walk home",
-            text: "Streetlights coming on while the sky is still warm. Same sunset gradient, just in the city — peach on brick, then slate.",
+            text: "Streetlights coming on while the sky is still warm. Same sunset gradient, just in the city: peach on brick, then slate.",
             themes: [light, "visual study"],
             at: days(16),
             image: goldenHour()

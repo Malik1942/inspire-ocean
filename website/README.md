@@ -43,7 +43,7 @@ python3 tools/check.py                                 # dashes, links, assets, 
 | `assets/js/sound.js` | surf on the breath, plus the app's chime |
 | `assets/js/site.js` | page wiring: scroll, sound, language, tabs, release demo |
 | `assets/css/site.css` | all styles; tokens from `OceanTheme` |
-| `assets/fonts/` | Instrument Serif and Inter, self-hosted (SIL Open Font License, `OFL.txt`) |
+| `assets/fonts/` | Inter, self-hosted (SIL Open Font License, `OFL.txt`), the text font where the system has no SF |
 
 Sections declare `data-chapter` and anchors declare `data-anchor`; `site.js`
 reads them and hands `choreo.js` plain numbers. Motion is atmosphere: every
@@ -55,7 +55,7 @@ fact the water shows is also written on the page, and Reduce Motion (or
 
 - No em or en dashes: use a comma, colon, or period. `check.py` fails on them.
 - Headline accents: wrap the closing phrase of an English headline in `<em>`
-  for the Instrument Serif italic. Chinese headlines stay upright, without `<em>`.
+  for the New York italic. Chinese headlines stay upright, without `<em>`.
 - Change English and Chinese together. Both trees must keep the same ids,
   `data-chapter` order, links, and assets; `check.py` compares them.
 - Chinese follows `docs/localization-glossary.md`, reusing the app's catalog
@@ -68,10 +68,14 @@ fact the water shows is also written on the page, and Reduce Motion (or
 ## How the assets were made
 
 - Icons: `sips` from `Oryne/Assets.xcassets/AppIcon.appiconset/icon-1024.png`.
-- Fonts: the Latin woff2 files Google Fonts serves for Instrument Serif (regular
-  and italic) and Inter (variable, 300 to 600), self-hosted under the SIL Open
-  Font License 1.1. The `@font-face` rules carry the same Latin `unicode-range`,
-  so Chinese falls through to Songti SC for headlines and PingFang for text.
+- Fonts: as in the app, New York for headlines and SF for text. Both are the
+  visitor's own system fonts (`ui-serif`, `-apple-system`): Apple's license does not
+  allow hosting them, and Chrome on a Mac cannot reach New York at all, so every
+  iPhone and iPad, and Safari on a Mac, show New York while other browsers fall back
+  to Georgia (Noto Serif on Android). Inter (variable, 300 to 600) is self-hosted under
+  the SIL Open Font License 1.1 for text where there is no SF; its `@font-face` carries a
+  Latin `unicode-range`, so Chinese falls through to Songti SC for headlines and PingFang
+  for text. Check type in WebKit (Safari, or Safari in the Simulator), not Chrome.
 - Chime: the app's own capture sound, so a release on the page sounds like a capture on the
   phone. `afconvert -f m4af -d aac -b 128000 Oryne/Resources/OceanReceived.caf
   website/assets/audio/ocean-received.m4a`, after rendering the app's sound with
@@ -84,18 +88,36 @@ fact the water shows is also written on the page, and Reduce Motion (or
   down to 27 KB. Its screen opening is inset 5.333% at the sides and 2.5% top and
   bottom, and its aspect matches the screens exactly, so `.phone__screen` sits in the
   opening without cropping. Measure the opening again if the file is ever replaced.
-- Screens: Debug build on the iPhone 17 Pro simulator, launched with
-  `SIMCTL_CHILD_OCEAN_SCREENSHOT_SEED=1` and `SIMCTL_CHILD_OCEAN_START_TAB=…`, status bar
-  set to 9:41, captured with `simctl io … screenshot`, resized to 640 px, WebP q82.
-  `fast-capture.webp` is the same build opened with `simctl openurl … oryne://capture/whisper`
-  after granting the microphone and answering the speech prompt; its source line reads
-  "Widget" because that is how the URL route is labelled.
-  `widget.webp` is the same simulator's Home Screen with the medium Quick Capture widget
-  added through the widget gallery (Edit › Add Widget › Oryne).
-- Social image: a headless Chrome capture of the stilled hero (`?motion=still`) at
-  1200×630 (driven through the DevTools protocol), with the bar, lead, and Listen
-  button hidden and the headline set at 92px, so the headline, badge, and phone in
-  its ring fill the card.
+- Screens (2026-10-19, the phone-refocus app): Debug build on a throwaway iPhone 17 Pro
+  simulator made for the purpose (`simctl create`), never one with real data:
+  `SIMCTL_CHILD_OCEAN_SCREENSHOT_SEED=1` deletes every thought and seeds ten on each launch.
+  Open the Library once before capturing, so its one-time understanding pass has run and
+  later re-seeds keep their currents. Status bar 9:41, full battery, dark appearance;
+  `simctl io … screenshot`, resized to 640 px, WebP q82.
+  - `tide.webp`: Tide at launch (`OCEAN_START_TAB=tide`), resurfacing "Sunset gradient
+    study"; clear `resurfacing.restedID` and `resurfacing.restedDay` in the App Group plist
+    first so Let it rest shows.
+  - `capture.webp`: Tide, the capture bar tapped and a line typed.
+  - `fast-capture.webp`: `simctl openurl … oryne://capture/whisper`, the take Action Button,
+    widget and Control Center start. The simulator hears no speech, so it shows "Words will
+    follow." instead of words on the water.
+  - `current.webp`: All currents › Light And Color, the sheet pulled to full height.
+  - `ask.webp`: Summarize on that current.
+  - `detail.webp`: the thought page of "Warm to cool, not a filter", short enough to show
+    Grow a branch.
+  - `library.webp`: the Library sorted by Related.
+  - `widget.webp` (2026-09) is the Home Screen with the medium Quick Capture widget, added
+    through the widget gallery (Edit › Add Widget › Oryne); the widgets did not change.
+- Social image: `tools/websnap.swift`, a WKWebView snapshot, because only WebKit renders
+  New York (`swiftc -O tools/websnap.swift -o websnap`). The stilled hero at 1200×630 with
+  the bar, lead and Listen button hidden, the headline at 58px and the hero 30px from the
+  top, scaled from the 2x capture to 1200×630. The offscreen view draws no WebGL, so the
+  water is plain dark there:
+
+  ```bash
+  ./websnap "http://localhost:8765/?motion=still" 1200 630 og.png view \
+    ".bar{display:none!important}.hero .lead,.hero [data-sound-toggle]{display:none!important}.hero .display{font-size:58px!important;line-height:1.02!important}.hero{padding-top:0!important;margin-top:30px!important}.hero .eyebrow{margin-bottom:10px!important}.hero__actions{margin-top:22px!important}"
+  ```
 
 ## Deploy
 
