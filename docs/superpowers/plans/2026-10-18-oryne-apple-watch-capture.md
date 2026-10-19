@@ -2827,7 +2827,7 @@ import Observation
 /// elsewhere, so a take is never lost to a crash and never kept longer than
 /// it needs to be. A sweep never touches a recording the index doesn't list
 /// (see `TakeQueueState.audioDisposable`); a take that leaves the queue
-/// takes its audio with it only if that audio was already safe elsewhere.
+/// (Undo, or pruned once confirmed) takes its audio with it deliberately.
 @MainActor
 @Observable
 final class TakeQueue {
@@ -2848,16 +2848,18 @@ final class TakeQueue {
         let before = state
         mutate(&state)
         store.save(state)
-        // Pruned confirmed takes leave the index: delete their audio here,
-        // since the sweep keeps anything it can't account for.
-        for item in before.takes where state.item(item.id) == nil && before.audioDisposable(item.id) {
+        // A take leaves the index only by Undo or by being pruned once
+        // confirmed (even when confirmed and pruned in the same change):
+        // either way its audio goes now, since the sweep keeps anything the
+        // index doesn't list.
+        for item in before.takes where state.item(item.id) == nil {
             store.deleteAudio(item.id)
         }
         store.sweep(state)
     }
 
-    /// Deletes a recording outright: Undo, or a take discarded before it was
-    /// ever queued.
+    /// Deletes a recording that was never queued (a reflex press, a failed
+    /// or empty take). Queued takes lose their audio through `change`.
     func deleteAudio(_ id: UUID) {
         store.deleteAudio(id)
     }
@@ -3356,8 +3358,7 @@ final class WatchCaptureModel {
         guard case .caught(let id) = stage else { return }
         undoTask?.cancel()
         sync.heldTakeID = nil
-        queue.change { $0.remove(id) }
-        queue.deleteAudio(id)   // sweeps never delete what the index doesn't list
+        queue.change { $0.remove(id) }   // leaving the queue deletes its audio
         stage = .idle
     }
 
