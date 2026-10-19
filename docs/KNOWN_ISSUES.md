@@ -54,7 +54,7 @@ copy).
   declared URL schemes, so `oryne://watch/catch` (the complication tap) is
   only checkable on a real watch.
 - Chinese strings for the watch and the new phone strings (the Apple Watch
-  setup card in Fast Capture settings) are drafts (`needs_review`).
+  section in Settings) are drafts (`needs_review`).
 - Two iPhones on one Apple ID, each paired with its own watch, would both
   read the iCloud inbox and import duplicates. Not handled; one paired iPhone
   is the supported setup.

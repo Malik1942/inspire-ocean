@@ -75,12 +75,12 @@ deliver WatchConnectivity files, press the Action Button, or prove
 wrist-down recording.
 
 - [ ] **Action Button setup** — on an Ultra: Settings › Action Button ›
-  Shortcut. Confirm "Catch a thought" can be chosen directly; if it must be
-  wrapped in a user shortcut, update the setup card in Fast Capture settings
+  Shortcut. Confirm "Catch a whisper" can be chosen directly; if it must be
+  wrapped in a user shortcut, update the Apple Watch section in Settings
   and this item. A press opens Oryne recording.
 - [ ] **Second press stops** — press the Action Button again while recording:
   the take is caught. If the press doesn't reach the app, record that, and
-  the setup card must say stop with a tap or Double Tap.
+  the Apple Watch section in Settings must say stop with a tap or Double Tap.
 - [ ] **Complication tap** — tap the Oryne complication (circular, corner,
   rectangular, and the Smart Stack): Oryne opens recording; tap again while
   recording: the take is caught. (The watch simulator's LaunchServices

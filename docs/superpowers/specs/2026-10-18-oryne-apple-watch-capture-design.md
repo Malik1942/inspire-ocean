@@ -23,6 +23,7 @@ an asset to manage) govern every choice below.
 | Wrist mark on thoughts | No. A watch take is an ordinary voice thought; no Node schema change |
 | Starting point | Port Phase 1 from `feat/watchos-quick-capture` (unmerged, 77 commits behind main) onto this branch and fix its known bugs; do not merge that branch |
 | Floors | watchOS 11 (Double Tap API), iOS 18 (unchanged) |
+| Alignment with the new iPhone (Malik, 2026-10-19) | The shortcut and complication say Catch a whisper; Caught stays; screens follow the phone's visual language; the setup lives in Settings as its own section |
 
 ## Platform facts this design rests on
 
@@ -52,9 +53,9 @@ an asset to manage) govern every choice below.
 
 | Entry | Behavior |
 |---|---|
-| Action Button (Ultra) | Shortcut slot runs the watch app's **Catch a thought** App Shortcut → app opens recording. A second press while recording stops and catches (device-verify; Double Tap and tap remain if it doesn't) |
+| Action Button (Ultra) | Shortcut slot runs the watch app's **Catch a whisper** App Shortcut → app opens recording. A second press while recording stops and catches (device-verify; Double Tap and tap remain if it doesn't) |
 | Complication | `accessoryCircular`, `accessoryCorner`, and `accessoryRectangular` (Smart Stack). A static launcher: deep link `oryne://watch/catch` → recording |
-| Siri | Same intent. Phrases **"Whisper to Oryne"** and **"Record a thought in Oryne"**. ("Catch this in Oryne" already belongs to iPhone Fast Capture in `CaptureIntents.swift`; the watch must not collide with it) |
+| Siri | Same intent. Phrases **"Whisper to Oryne"** and **"Record a whisper in Oryne"**. ("Catch this in Oryne" already belongs to iPhone Fast Capture in `CaptureIntents.swift`; the watch must not collide with it) |
 | App icon | Idle screen. Never records |
 
 The Action Button and Siri run one intent, `CatchThoughtIntent`
@@ -123,7 +124,7 @@ No em or en dashes in any UI string; value as key, so EN and zh move together.
 | Last: %@ | 上一条：%@ |
 | Couldn't start. Tap to try again. | 没能开始。轻点再试一次。 |
 | Nothing was caught | 什么也没接住 |
-| Catch a thought (shortcut title) | 捕捉灵感 |
+| Catch a whisper (shortcut title) | 记一段语音 |
 
 ---
 
@@ -237,7 +238,7 @@ development environment creates them on first write.
 - **No Node schema change.** Pending state lives in the ledger. The thought
   shows in Library and the Ocean at once as "Whisper" until named, exactly
   like a phone take. The existing 30 day audio expiry applies.
-- **Setup help:** one row in Fast Capture settings explaining the Ultra Action
+- **Setup help:** the Apple Watch section in Settings explains the Ultra Action
   Button setup. Exact path written after the device check.
 - **Packaging:** the watch app is embedded in the iOS app (companion, not
   standalone).
@@ -330,7 +331,7 @@ its App Group entitlement. Fix its recorded defects:
 ## 9 · Device unknowns that could change the design
 
 1. A second Action Button press may not reach a foreground app's intent. Then
-   stop is tap or Double Tap only, and the setup row says so.
+   stop is tap or Double Tap only, and the Apple Watch section in Settings says so.
 2. The wake message may not prompt delivery of a queued file. Then delivery
    happens at the phone app's next launch or via the iCloud path; the status
    line stays truthful either way.
