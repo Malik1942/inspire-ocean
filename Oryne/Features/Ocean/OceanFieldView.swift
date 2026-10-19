@@ -350,7 +350,8 @@ struct OceanFieldView: View {
     private func open(_ node: Node) {
         if node.id == resurfacing?.id {
             Resurfacing.markMet(node, context: context)
-            if !ReviewPrompt.shared.hasRequested {
+            // Seeded examples are a tour, not the promise paying off.
+            if !ReviewPrompt.shared.hasRequested, !node.isExample {
                 Task { @MainActor in
                     try? await Task.sleep(for: .seconds(2))
                     ReviewPrompt.shared.recordResurfacedOpen()

@@ -22,15 +22,24 @@ struct RootTabView: View {
     /// Another field has the keyboard (Library's search, a sheet's field):
     /// the capture bar steps aside rather than ride on top of it.
     @State private var keyboardUp = false
+    /// When the app last became active; the rating ask waits 10 s past it.
+    @State private var activeSince = Date.now
 
     private var control: CaptureControl { appState.captureControl }
 
-    /// Nothing is covering the tabs: no Fast Capture overlay, no onboarding
-    /// sheet, no sheet up in the Ocean. The review ask only ever fires here.
+    /// A quiet moment: Tide or the Library (never Ask, so never over an
+    /// answer), no capture overlay, toast, hold, keyboard, onboarding or
+    /// Tide sheet, and the app active for at least 10 s. The review ask only
+    /// ever fires here, after two still seconds.
     private var canFulfillReview: Bool {
-        appState.fastCaptureRequest == nil
+        appState.selectedTab != .ask
+            && appState.fastCaptureRequest == nil
+            && !control.toastShowing
+            && control.touch == .up
+            && !keyboardUp
             && !showFastCaptureOnboarding
             && !appState.isPresentingOceanSheet
+            && Date.now.timeIntervalSince(activeSince) >= 10
     }
 
     var body: some View {
@@ -94,6 +103,7 @@ struct RootTabView: View {
         }
         .task {
             control.tapToToggle = CaptureControl.assistiveTechnologyRunning
+            ReviewPrompt.shared.noteActive()
             appState.consumePendingFastCapture()
             guard !fastCaptureOnboardingCompleted else { return }
             try? await Task.sleep(for: .milliseconds(650))
@@ -113,6 +123,8 @@ struct RootTabView: View {
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
+            activeSince = .now
+            ReviewPrompt.shared.noteActive()
             appState.consumePendingFastCapture()
         }
         .onOpenURL { url in
@@ -140,6 +152,9 @@ struct RootTabView: View {
         .onChange(of: appState.fastCaptureRequest?.id) { _, _ in scheduleReviewFulfillIfSafe() }
         .onChange(of: showFastCaptureOnboarding) { _, _ in scheduleReviewFulfillIfSafe() }
         .onChange(of: appState.isPresentingOceanSheet) { _, _ in scheduleReviewFulfillIfSafe() }
+        .onChange(of: appState.selectedTab) { _, _ in scheduleReviewFulfillIfSafe() }
+        .onChange(of: control.toastShowing) { _, _ in scheduleReviewFulfillIfSafe() }
+        .onChange(of: keyboardUp) { _, _ in scheduleReviewFulfillIfSafe() }
         // Outermost, so the Fast Capture overlay and every presented sheet
         // inherit the stilled-water environment along with the tabs.
         .environment(\.calmAccessibility, calmAccessibilityOn)
@@ -153,7 +168,9 @@ struct RootTabView: View {
         reviewFulfillTask?.cancel()
         guard ReviewPrompt.shared.pendingRequest, canFulfillReview else { return }
         reviewFulfillTask = Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(500))
+            // Still for two seconds, and past the 10 s since becoming active.
+            let wait = max(2, 10 - Date.now.timeIntervalSince(activeSince))
+            try? await Task.sleep(for: .seconds(wait))
             guard !Task.isCancelled, ReviewPrompt.shared.pendingRequest, canFulfillReview else { return }
             ReviewPrompt.shared.fulfill(using: requestReview)
         }
