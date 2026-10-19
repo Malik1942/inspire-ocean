@@ -2,9 +2,10 @@ import AudioToolbox
 import CoreHaptics
 import UIKit
 
-/// The quiet confirmation that the Ocean received a capture: a soft two-note
-/// chime (OceanReceived.caf) and a swell-shaped haptic, fired at the instant
-/// the capture toast appears. Foreground, on-screen captures only; the
+/// The quiet confirmation that the Ocean received a capture: a landed note over
+/// a faint bed of a real wave (OceanReceived.caf, rendered by
+/// design/sound/render_capture.py) and a swell-shaped haptic, fired at the
+/// instant the capture toast appears. Foreground, on-screen captures only; the
 /// background App Intent paths stay silent.
 ///
 /// Deliberately outside the AVAudioSession choreography owned by
