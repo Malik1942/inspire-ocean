@@ -72,9 +72,11 @@ fact the water shows is also written on the page, and Reduce Motion (or
   and italic) and Inter (variable, 300 to 600), self-hosted under the SIL Open
   Font License 1.1. The `@font-face` rules carry the same Latin `unicode-range`,
   so Chinese falls through to Songti SC for headlines and PingFang for text.
-- Chime: `python3 tools/generate_ocean_received.py --wav-out <tmp>.wav --out <tmp>.caf`,
-  then `afconvert -f m4af -d aac -b 96000 <tmp>.wav assets/audio/ocean-received.m4a`.
-  Never run the generator without `--out`: its default overwrites the app's sound.
+- Chime: the app's own capture sound, so a release on the page sounds like a capture on the
+  phone. `afconvert -f m4af -d aac -b 128000 Oryne/Resources/OceanReceived.caf
+  website/assets/audio/ocean-received.m4a`, after rendering the app's sound with
+  `design/sound/render_capture.py` (see `design/sound/README.md`). The old two-note chime
+  generator, `tools/generate_ocean_received.py`, is retired.
 - Badges: Apple's official black Download on the App Store badges (en-us and
   zh-cn) from Apple Marketing Tools, used unmodified.
 - Phone frame: `assets/img/phone-frame.webp`, the silver iPhone mockup Malik

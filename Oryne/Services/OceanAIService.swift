@@ -57,6 +57,15 @@ protocol OceanAIService {
     /// Transcribe a recorded voice drift. Returns nil if transcription fails.
     func transcribe(audioURL: URL) async -> String?
 
+    /// The capture pipeline's pass: both of a bilingual user's languages,
+    /// the user's own vocabulary as hints, and the runner-up kept when the
+    /// two were too close to call. Always on-device.
+    func transcribeDetailed(audioURL: URL, vocabulary: [String]) async -> TranscriptOutcome?
+
+    /// Two or three sentences for a long whisper, in its own language, by the
+    /// on-device model only. nil when the device has no model.
+    func summarizeTranscript(_ text: String) async -> String?
+
     /// The understanding step — run when a thought is saved or updated, before
     /// anything is labelled or matched: interpret the fragment's meaning into
     /// a concise essence (its title), 1–3 conceptual themes, and a soft mood.
@@ -80,6 +89,11 @@ protocol OceanAIService {
     /// Carry an Ocean Dialogue turn, grounded in the user's saved nodes.
     /// `history` is the last few turns (oldest first), for continuity.
     func respond(to query: String, history: [DialogueTurn], mode: DialogueMode, nodes: [Node]) async -> OceanResponse
+
+    /// Read across a gathered set of thoughts (a current, a search) and say
+    /// what runs through them. No retrieval: the set is the user's choice,
+    /// so every member is a source.
+    func summarize(_ nodes: [Node]) async -> OceanResponse
 }
 
 extension OceanAIService {

@@ -30,6 +30,43 @@ final class LocalOceanAIService: OceanAIService {
         await transcriber.transcribe(url: audioURL)
     }
 
+    func transcribeDetailed(audioURL: URL, vocabulary: [String]) async -> TranscriptOutcome? {
+        await transcriber.transcribe(url: audioURL, vocabulary: vocabulary)
+    }
+
+    /// The reading of a long whisper: the substance in 2 or 3 sentences, in
+    /// the note's own language, first person kept. On-device model only; no
+    /// template stands in for it, because a summary that is not a reading of
+    /// the words would be a lie with good intentions (§5).
+    func summarizeTranscript(_ text: String) async -> String? {
+        let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard cleaned.count > 200 else { return nil }
+        if #available(iOS 26, *) {
+            #if canImport(FoundationModels)
+            guard Self.foundationModelAvailable else { return nil }
+            do {
+                let session = LanguageModelSession {
+                    """
+                    You condense a spoken note into its substance. Reply with two or three \
+                    plain sentences in the same language the note is in (if it mixes Chinese \
+                    and English, answer in the language most of it is in). Keep the speaker's \
+                    first person: "I" stays "I". No preamble, no list, no quotation marks, \
+                    no heading. Say what they are getting at, not that they said it.
+                    """
+                }
+                let response = try await session.respond(to: String(cleaned.prefix(6000)))
+                let summary = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
+                return summary.isEmpty ? nil : summary
+            } catch {
+                return nil
+            }
+            #else
+            return nil
+            #endif
+        }
+        return nil
+    }
+
     // MARK: Understanding
 
     /// Raw thought → semantic understanding → essence + conceptual themes.
@@ -48,7 +85,9 @@ final class LocalOceanAIService: OceanAIService {
         }
 
         if #available(iOS 26, *), Self.foundationModelAvailable {
-            let modelTitle = await foundationModelTitle(for: cleaned).map(TitleDistiller.tidy)
+            let modelTitle = await foundationModelTitle(for: cleaned)
+                .map(TitleDistiller.tidy)
+                .flatMap { TitleDistiller.speaksLike($0, entry: cleaned) ? $0 : nil }
             let essence = modelTitle ?? TitleDistiller.essence(from: cleaned)
             async let pick = FoundationCurrentPicker.pick(entry: cleaned, candidates: currents)
             let modelThemes = await foundationModelThemes(for: cleaned)
@@ -240,7 +279,7 @@ final class LocalOceanAIService: OceanAIService {
         //    notes, composed on-device when the foundation model is available
         //    (the cloud service replaces this with Claude when configured).
         var outwardNote: String?
-        if mode == .research, #available(iOS 26, *) {
+        if Self.looksOutward(mode: mode, sourceCount: sources.count), #available(iOS 26, *) {
             outwardNote = await foundationModelOutward(query: query, sources: sources)
         }
 
@@ -253,6 +292,54 @@ final class LocalOceanAIService: OceanAIService {
             // A shortened question means the reply is a partial read; otherwise
             // this is an ordinary grounded on-device answer.
             provenance: degraded ? .degraded : .onDevice
+        )
+    }
+
+    /// When an answer steps beyond the user's notes. Research always does;
+    /// the one merged Ask mode (synthesis) does only when the water was thin,
+    /// so a question the Ocean can barely answer still gets a direction,
+    /// marked apart (docs/plans/phone-refocus/SPEC.md, "Ask: one mode").
+    static func looksOutward(mode: DialogueMode, sourceCount: Int) -> Bool {
+        switch mode {
+        case .research: return true
+        case .synthesis: return sourceCount <= 2
+        case .search, .expansion: return false
+        }
+    }
+
+    /// The fixed question behind Summarize: the set is already chosen, so the
+    /// model is asked only to read across it.
+    static let summaryQuery = "What runs through these thoughts? Say what they share, where they pull apart, and what sits underneath. Speak to me directly, as you, never as the user."
+
+    func summarize(_ nodes: [Node]) async -> OceanResponse {
+        let sources = Array(nodes.filter { !$0.isArchived }.prefix(12))
+        guard !sources.isEmpty else {
+            return OceanResponse(reflection: String(localized: "Nothing to read across yet."),
+                                 sourceNodeIDs: [], patternSummary: nil, suggestedBranches: [],
+                                 outwardNote: nil, provenance: .noSources)
+        }
+        let themeCounts = sources
+            .flatMap { $0.themes }
+            .reduce(into: [String: Int]()) { $0[$1, default: 0] += 1 }
+        let topThemes = themeCounts.sorted { $0.value > $1.value }.prefix(3).map { $0.key }
+
+        var reflection: String?
+        if #available(iOS 26, *) {
+            reflection = await foundationModelReflection(
+                query: Self.summaryQuery, history: [], mode: .synthesis, sources: sources
+            )
+        }
+        let finalReflection = reflection ?? compose(
+            mode: .synthesis, query: Self.summaryQuery, sources: sources,
+            themes: topThemes, totalNodes: nodes.count
+        )
+        return OceanResponse(
+            reflection: finalReflection,
+            sourceNodeIDs: sources.map { $0.id },
+            patternSummary: topThemes.isEmpty ? nil : "Recurring threads: " + topThemes.joined(separator: " · "),
+            suggestedBranches: [],
+            outwardNote: nil,
+            provenance: .onDevice
         )
     }
 
@@ -407,7 +494,8 @@ final class LocalOceanAIService: OceanAIService {
     called the Ocean. You answer ONLY from the user's own captured \
     fragments, provided below. Write 2 to 4 calm sentences in plain \
     prose — no lists, no headers, no advice-column tone, no exclamation \
-    marks. Refer to fragments by their quoted titles. Each fragment notes \
+    marks. Speak to the person directly as "you"; never write "the user" \
+    or describe them in the third person. Never exceed four sentences. Refer to fragments by their quoted titles. Each fragment notes \
     when it was captured and its mood — you may quietly draw on how the \
     thread has moved over time. If a pattern or question sits underneath \
     the fragments, name it plainly. Never invent fragments that are not \

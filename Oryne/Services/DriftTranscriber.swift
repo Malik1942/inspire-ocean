@@ -1,4 +1,21 @@
 import Foundation
+
+/// What the automatic pass settled on: the kept transcript with its locale,
+/// and the other language's pass when it was too close to call.
+struct TranscriptOutcome {
+    let text: String
+    let localeID: String
+    let alternateText: String?
+    let alternateLocaleID: String?
+
+    init?(candidate: TranscriptCandidate, alternate: TranscriptCandidate?) {
+        guard let text = candidate.transcript.nonEmptyOrNil else { return nil }
+        self.text = text
+        self.localeID = candidate.locale.identifier
+        self.alternateText = alternate?.transcript.nonEmptyOrNil
+        self.alternateLocaleID = alternateText == nil ? nil : alternate?.locale.identifier
+    }
+}
 import Speech
 import AVFoundation
 
@@ -31,38 +48,47 @@ final class DriftTranscriber {
     /// locale, and re-run in the alternate only when the main transcript shows
     /// loud failure signals — then keep whichever transcript the scorer picks.
     func transcribe(url: URL) async -> String? {
+        await transcribe(url: url, vocabulary: [])?.text
+    }
+
+    /// Automatic path used by the capture pipeline. A bilingual user gets a
+    /// pass in each language; the scorer keeps the better one, and when the
+    /// two are too close to call the other is kept too, for the user to
+    /// switch to. `vocabulary` is the user's own words (names, English terms
+    /// inside Chinese speech) handed to the recognizer as contextual strings.
+    func transcribe(url: URL, vocabulary: [String]) async -> TranscriptOutcome? {
         guard await requestAuthorization() else { return nil }
 
         let (main, alternate) = await LanguageResolver.resolve()
         let duration = await Self.audioDuration(url: url)
 
-        guard let mainCandidate = await recognize(url: url, locale: main, duration: duration) else {
-            // The main recognizer was unavailable or errored outright. A
-            // bilingual user still gets one honest attempt in their alternate
-            // language before we give up and keep audio only.
-            if let alternate,
-               let altCandidate = await recognize(url: url, locale: alternate, duration: duration) {
-                return altCandidate.transcript.nonEmptyOrNil
-            }
+        let mainCandidate = await recognize(url: url, locale: main, duration: duration, vocabulary: vocabulary)
+        let altCandidate: TranscriptCandidate? = alternate == nil
+            ? nil
+            : await recognize(url: url, locale: alternate!, duration: duration, vocabulary: vocabulary)
+
+        switch (mainCandidate, altCandidate) {
+        case (nil, nil):
             return nil
+        case (let m?, nil):
+            return TranscriptOutcome(candidate: m, alternate: nil)
+        case (nil, let a?):
+            return TranscriptOutcome(candidate: a, alternate: nil)
+        case (let m?, let a?):
+            let winner = TranscriptScorer.pickWinner(m, a)
+            let loser = winner.locale == m.locale ? a : m
+            let keepLoser = TranscriptScorer.areClose(m, a)
+            return TranscriptOutcome(candidate: winner, alternate: keepLoser ? loser : nil)
         }
-
-        if let alternate, TranscriptScorer.hasLoudFailureSignals(mainCandidate),
-           let altCandidate = await recognize(url: url, locale: alternate, duration: duration) {
-            let winner = TranscriptScorer.pickWinner(mainCandidate, altCandidate)
-            return winner.transcript.nonEmptyOrNil
-        }
-
-        return mainCandidate.transcript.nonEmptyOrNil
     }
 
     /// Manual escape hatch (BRIEF decision 8): transcribe once in an explicitly
     /// chosen locale, bypassing resolution and the dual-pass. Used by the
     /// "Re-transcribe in 中文 / English" action.
-    func transcribe(url: URL, locale: Locale) async -> String? {
+    func transcribe(url: URL, locale: Locale, vocabulary: [String] = []) async -> String? {
         guard await requestAuthorization() else { return nil }
         let duration = await Self.audioDuration(url: url)
-        return (await recognize(url: url, locale: locale, duration: duration))?.transcript.nonEmptyOrNil
+        return (await recognize(url: url, locale: locale, duration: duration, vocabulary: vocabulary))?.transcript.nonEmptyOrNil
     }
 
     // MARK: - One recognition pass
@@ -71,13 +97,14 @@ final class DriftTranscriber {
     /// scorer needs. `nil` only when the recognizer for `locale` is
     /// unavailable or the task errors — an empty-but-successful result comes
     /// back as a candidate with an empty transcript so the scorer can judge it.
-    private func recognize(url: URL, locale: Locale, duration: TimeInterval) async -> TranscriptCandidate? {
+    private func recognize(url: URL, locale: Locale, duration: TimeInterval, vocabulary: [String]) async -> TranscriptCandidate? {
         guard let recognizer = SFSpeechRecognizer(locale: locale), recognizer.isAvailable else {
             return nil
         }
 
         let request = SFSpeechURLRecognitionRequest(url: url)
         request.shouldReportPartialResults = false
+        if !vocabulary.isEmpty { request.contextualStrings = vocabulary }
         if recognizer.supportsOnDeviceRecognition {
             request.requiresOnDeviceRecognition = true
         }

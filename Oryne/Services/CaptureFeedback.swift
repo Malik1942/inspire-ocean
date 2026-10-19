@@ -2,9 +2,10 @@ import AudioToolbox
 import CoreHaptics
 import UIKit
 
-/// The quiet confirmation that the Ocean received a capture: a soft two-note
-/// chime (OceanReceived.caf) and a swell-shaped haptic, fired at the instant
-/// the PostCaptureMoment appears. Foreground, on-screen captures only; the
+/// The quiet confirmation that the Ocean received a capture: a landed note over
+/// a faint bed of a real wave (OceanReceived.caf, rendered by
+/// design/sound/render_capture.py) and a swell-shaped haptic, fired at the
+/// instant the capture toast appears. Foreground, on-screen captures only; the
 /// background App Intent paths stay silent.
 ///
 /// Deliberately outside the AVAudioSession choreography owned by
@@ -22,6 +23,13 @@ enum CaptureFeedback {
     static func released() {
         if isEnabled(Keys.sound) { playChime() }
         if isEnabled(Keys.haptics) { playSwell() }
+    }
+
+    /// The small taps of the gesture itself (hold reached, take locked),
+    /// under the same Haptics toggle as the swell.
+    static func touch(_ style: UIImpactFeedbackGenerator.FeedbackStyle) {
+        guard isEnabled(Keys.haptics) else { return }
+        UIImpactFeedbackGenerator(style: style).impactOccurred()
     }
 
     /// Both toggles default ON: an absent key means enabled.

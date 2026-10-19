@@ -2,8 +2,9 @@ import SwiftUI
 
 /// A vertical, variable-height card for a fragment, sized for the Library
 /// masonry grid. `NodeRow` is the compact list form; this is the
-/// content-forward grid form: image or link-preview banner, title, snippet,
-/// link domain, themes, and the fragment's metadata.
+/// content-forward grid form: a full-bleed picture or link preview, the
+/// title, a few lines of its words, and the meta line (a link's domain
+/// leads it). The same anatomy and type as Tide's cards; no tag capsules.
 struct NodeCard: View {
     let node: Node
 
@@ -66,55 +67,39 @@ struct NodeCard: View {
         VStack(alignment: .leading, spacing: 0) {
             if showBanner { banner }
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(node.displayTitle)
-                    .font(.subheadline.weight(.medium))
+                    .font(OceanType.tileTitle)
                     .foregroundStyle(OceanTheme.foam)
                     .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
 
-                if !node.snippet.isEmpty {
+                if !node.snippet.isEmpty, node.snippet != node.displayTitle {
                     Text(node.snippet)
-                        .font(.caption)
-                        .foregroundStyle(OceanTheme.mist)
+                        .font(.subheadline)
+                        .foregroundStyle(OceanTheme.text)
                         .lineLimit(showBanner ? 2 : 4)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
-                // Keyed on the URL, not the kind: a link captured in-app is a
-                // .text node carrying linkURLString; only the share extension
-                // makes .link nodes. The card shows the link wherever one is.
-                if let domain = node.linkDomain {
-                    HStack(spacing: 4) {
-                        Image(systemName: "link").font(.caption2)
-                        Text(domain)
-                            .font(.caption2)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                    }
-                    .foregroundStyle(OceanTheme.mist)
-                }
-
-                if !node.themes.isEmpty || node.isExample {
-                    tags
-                }
-
                 footer
+                    .padding(.top, 4)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(16)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white.opacity(0.05))
-        // Clip the whole card (not just the fill) so the banner's top corners
-        // round with it. Matches NodeRow's 14pt continuous radius.
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        // Clip the content so the banner's top corners round with the card;
+        // the lit surface and its shadow sit behind, outside the clip, and
+        // the shadow rests while the card moves in a reorder.
+        .clipShape(RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous))
+        .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous),
+                                 shadow: !suppressShadow))
         .overlay {
             if isAnchor {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous)
                     .strokeBorder(OceanTheme.accent, lineWidth: 1.5)
             } else if glow > 0 {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous)
                     .strokeBorder(OceanTheme.glowWarm.opacity(glow), lineWidth: 1)
             }
         }
@@ -135,7 +120,7 @@ struct NodeCard: View {
     /// size and ratio" failure this layout avoids.
     private var banner: some View {
         OceanTheme.color(forHue: node.hue).opacity(0.25)
-            .frame(height: 140)
+            .frame(height: 120)
             .frame(maxWidth: .infinity)
             .overlay {
                 if let bannerImage {
@@ -159,40 +144,11 @@ struct NodeCard: View {
             }
     }
 
-    /// Themes (up to two) and the Example badge, wrapping when narrow.
-    private var tags: some View {
-        FlowLayout(spacing: 6) {
-            ForEach(Array(node.themes.prefix(2)), id: \.self) { theme in
-                tagCapsule(theme)
-            }
-            if node.isExample {
-                tagCapsule(String(localized: "Example"))
-            }
-        }
-    }
-
-    private func tagCapsule(_ text: String) -> some View {
-        Text(text)
-            .font(.caption2)
-            .foregroundStyle(OceanTheme.mist)
-            .lineLimit(1)
-            .padding(.horizontal, 6).padding(.vertical, 1)
-            .background(Color.white.opacity(0.06), in: Capsule())
-    }
-
+    /// Keyed on the URL, not the kind: a link captured in-app is a .text
+    /// node carrying linkURLString. The domain leads the meta line wherever
+    /// a link is.
     private var footer: some View {
-        HStack(spacing: 6) {
-            if node.isBranch, let bt = node.branchType {
-                Image(systemName: bt.symbol)
-                    .font(.caption2).foregroundStyle(OceanTheme.accent)
-            }
-            Image(systemName: node.kind.symbol)
-                .font(.caption2).foregroundStyle(OceanTheme.faint)
-            Text(node.createdAt.formatted(.relative(presentation: .named)))
-                .font(.caption2).foregroundStyle(OceanTheme.faint)
-                .lineLimit(1)
-            Spacer(minLength: 0)
-        }
+        NodeMeta(node: node, detail: node.linkDomain, showsCurrent: false)
     }
 
     /// The edge shadow colour: steady accent for the anchor, warm-decaying for a

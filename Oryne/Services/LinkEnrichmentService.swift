@@ -1,6 +1,6 @@
 import Foundation
 import SwiftData
-import LinkPresentation
+@preconcurrency import LinkPresentation
 import UIKit
 #if canImport(FoundationModels)
 import FoundationModels

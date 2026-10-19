@@ -48,8 +48,8 @@ enum FastCaptureInputPreference: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .voiceFirst: return String(localized: "Voice First")
-        case .typingFirst: return String(localized: "Typing First")
+        case .voiceFirst: return String(localized: "Whisper")
+        case .typingFirst: return String(localized: "Typing")
         }
     }
 
@@ -90,6 +90,9 @@ struct FastCaptureRequest: Identifiable {
     var imageData: Data?
     var seedText: String
     var createdAt: Date
+    /// Capture opened from inside a current: the released thought is
+    /// anchored there (`Node.anchorThemeKey`) the instant it lands.
+    var anchorThemeKey: String?
 
     init(
         id: UUID = UUID(),
@@ -97,7 +100,8 @@ struct FastCaptureRequest: Identifiable {
         inputPreference: FastCaptureInputPreference,
         imageData: Data? = nil,
         seedText: String = "",
-        createdAt: Date = .now
+        createdAt: Date = .now,
+        anchorThemeKey: String? = nil
     ) {
         self.id = id
         self.source = source
@@ -105,6 +109,7 @@ struct FastCaptureRequest: Identifiable {
         self.imageData = imageData
         self.seedText = seedText
         self.createdAt = createdAt
+        self.anchorThemeKey = anchorThemeKey
     }
 }
 
