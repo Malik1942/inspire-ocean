@@ -25,6 +25,8 @@ Visual language (Malik, 2026-10-17, after three rounds): New York (Apple's serif
 
 Refined 2026-10-18 (Malik: "delicate and well designed ... built by spacing, font, hierarchy and layout, not round corners"): New York names what a page is about, so each tab's title (Tide, Ask, and Library's large title), a thought's or a current's title on its own page, and the question in Ask; plus the italic section labels. Type and spacing do the grouping: one 20 pt gutter, items tight, sections 40 pt apart. Only things you open are tiles (flat fill, 20 pt corners, no tag capsules); a thought's page is text on the water in one order for every kind (picture or link, meta line, title, words, Summary, transcript). Settings is a native grouped list. Every destructive confirm is the system alert, centered and with Cancel.
 
+Materials by layer (Malik, 2026-10-18, after a side-by-side): Liquid Glass only on the layer that floats over content, meaning the tab bar, the capture bar and Ask's bar, the capture toast, page tool groups, sheet chrome and the discs. Buttons that scroll with the cards (Nearby, Let it rest, theme chips, Summarize, Grow a branch, Ask Ocean, Add a thought) are matte capsules from the tiles' family, a touch brighter, no rim. Every control is 44 pt tall.
+
 
 Three tabs and one button.
 
