@@ -1,80 +1,17 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "More" : {
+    "Stills the water and its light, and makes the capture button tap to start and tap to stop instead of holding. The system Reduce Motion setting stills the water too." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "更多"
-          }
-        }
-      }
-    },
-    "Less" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "收起"
-          }
-        }
-      }
-    },
-    "Transcript language" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "转写语言"
-          }
-        }
-      }
-    },
-    "Shows the whole transcript." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "展开完整转写。"
-          }
-        }
-      }
-    },
-    "Collapses the transcript." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "收起转写。"
-          }
-        }
-      }
-    },
-    "Translate" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "翻译"
-          }
-        }
-      }
-    },
-    "Switch to %@" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "切换为 %@"
+            "value" : "让水面和光静止，并把捕捉按钮改为轻点开始、再轻点停止，不必按住。系统的“减弱动态效果”同样会让水面静止。"
           }
         }
       }
     },
     "" : {
-
-    },
-    "· %@" : {
 
     },
     "%lld" : {
@@ -667,6 +604,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "关闭，保留这次捕捉"
+          }
+        }
+      }
+    },
+    "Collapses the transcript." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收起转写。"
           }
         }
       }
@@ -1494,6 +1441,16 @@
         }
       }
     },
+    "Less" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收起"
+          }
+        }
+      }
+    },
     "Let it rest" : {
       "localizations" : {
         "zh-Hans" : {
@@ -1613,6 +1570,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "模式"
+          }
+        }
+      }
+    },
+    "More" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更多"
           }
         }
       }
@@ -2154,6 +2121,7 @@
     },
     "Re-transcribe in another language" : {
       "comment" : "Accessibility label for the re-transcribe menu button",
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -2654,6 +2622,16 @@
         }
       }
     },
+    "Shows the whole transcript." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "展开完整转写。"
+          }
+        }
+      }
+    },
     "Skip" : {
       "localizations" : {
         "zh-Hans" : {
@@ -2844,6 +2822,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "水面"
+          }
+        }
+      }
+    },
+    "Switch to %@" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "切换为 %@"
           }
         }
       }
@@ -3238,6 +3226,16 @@
         }
       }
     },
+    "Transcript language" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "转写语言"
+          }
+        }
+      }
+    },
     "Transcription is off: type the words, if you like" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3245,6 +3243,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "转写已关闭：也可以直接输入文字"
+          }
+        }
+      }
+    },
+    "Translate" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "翻译"
           }
         }
       }

@@ -115,7 +115,7 @@ struct OceanSettingsView: View {
                 }
                 .tint(OceanTheme.accent)
 
-                Text("Stills the water, brightens the words that carry meaning, and widens every touch target. Nothing about your Ocean changes, only how it moves. The system Reduce Motion setting stills the water too.")
+                Text("Stills the water and its light, and makes the capture button tap to start and tap to stop instead of holding. The system Reduce Motion setting stills the water too.")
                     .font(.caption)
                     .foregroundStyle(OceanTheme.mist)
                     .fixedSize(horizontal: false, vertical: true)
