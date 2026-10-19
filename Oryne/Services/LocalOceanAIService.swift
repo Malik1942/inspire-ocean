@@ -443,10 +443,12 @@ final class LocalOceanAIService: OceanAIService {
             Their fragments:
             \(fragments)
             \(recentTurns.isEmpty ? "" : "\nEarlier in this conversation (context only, do not answer this in place of the current question):\n\(recentTurns)")
+
+            \(Self.secondPersonReminder)
             """
             let response = try await session.respond(to: prompt)
             let text = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
-            return text.isEmpty ? nil : text
+            return text.isEmpty ? nil : AnswerLength.capped(text)
         } catch {
             return nil
         }
@@ -488,6 +490,15 @@ final class LocalOceanAIService: OceanAIService {
             return "They want directions worth exploring next."
         }
     }
+
+    /// Last in the prompt, where the small on-device model weighs it most:
+    /// the framing above speaks about "them", and without this the answer
+    /// copied it ("The user is exploring…").
+    static let secondPersonReminder = """
+    Reply to the person who captured these fragments in at most three short \
+    sentences, saying only what the fragments say. Call them "you", as in \
+    "You keep returning to…"; never write "the user", "they" or "the person".
+    """
 
     static let reflectionVoice = """
     You are the quiet, reflective voice of a personal inspiration space \
