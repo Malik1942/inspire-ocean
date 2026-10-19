@@ -98,7 +98,7 @@ struct OceanFieldView: View {
                             if !currents.isEmpty { currentsSection }
                         }
                         .padding(.horizontal, OceanSpacing.gutter)
-                        .padding(.top, 8)
+                        .padding(.top, 0)
                         .padding(.bottom, FastCaptureLayout.contentClearance)
                     }
                 }

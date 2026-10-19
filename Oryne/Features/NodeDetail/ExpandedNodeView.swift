@@ -481,25 +481,33 @@ struct NodeDetailContent: View {
                     transcriptMenu(node.audioData)
                 }
                 if node.summary?.isEmpty == false {
-                    Button {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { transcriptOpen.toggle() }
-                    } label: {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(transcription)
-                                .font(.body)
-                                .lineSpacing(4)
-                                .foregroundStyle(OceanTheme.text)
-                                .lineLimit(transcriptOpen ? nil : 3)
-                                .multilineTextAlignment(.leading)
-                            Text(transcriptOpen ? "Less" : "More")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(OceanTheme.accent)
+                    // Under a summary the words fold to three lines that fade
+                    // out, with a plain button to read the rest.
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text(transcription)
+                            .font(.body)
+                            .lineSpacing(4)
+                            .foregroundStyle(OceanTheme.text)
+                            .lineLimit(transcriptOpen ? nil : 3)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .mask {
+                                LinearGradient(
+                                    stops: [.init(color: .black, location: 0),
+                                            .init(color: .black, location: transcriptOpen ? 1 : 0.55),
+                                            .init(color: .black.opacity(transcriptOpen ? 1 : 0.15), location: 1)],
+                                    startPoint: .top, endPoint: .bottom
+                                )
+                            }
+                        Button {
+                            withAnimation(OceanMotion.standard) { transcriptOpen.toggle() }
+                        } label: {
+                            Label(transcriptOpen ? "Show less" : "Read full transcript",
+                                  systemImage: transcriptOpen ? "chevron.up" : "chevron.down")
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .contentShape(Rectangle())
+                        .buttonStyle(.oceanSecondary)
+                        .accessibilityHint(transcriptOpen ? Text("Collapses the transcript.") : Text("Shows the whole transcript."))
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityHint(transcriptOpen ? Text("Collapses the transcript.") : Text("Shows the whole transcript."))
                 } else {
                     Text(transcription)
                         .font(.body)

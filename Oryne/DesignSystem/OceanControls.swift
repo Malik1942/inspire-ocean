@@ -148,26 +148,30 @@ struct OceanSendDiscStyle: ButtonStyle {
     }
 }
 
-/// The row every tab opens with: the tab's name in New York, its tools in
-/// one frosted group at the right. Same size, place and spacing on Tide,
-/// Ask and Library; it scrolls with the page.
+/// How every tab opens, laid out like a native large-title page: the
+/// tools on a 44 pt row where the navigation bar's buttons sit (16 pt from
+/// the edge, the same size as a pushed page's toolbar, so they stay put
+/// when a thought opens), and the tab's name in New York below, where a
+/// system large title would be. It scrolls with the page.
 struct PageTitleRow<Tools: View>: View {
     let title: LocalizedStringKey
     @ViewBuilder var tools: Tools
 
     var body: some View {
-        HStack(alignment: .center) {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Spacer()
+                if Tools.self != EmptyView.self {
+                    OceanToolGroup { tools }
+                        .padding(.trailing, -(OceanSpacing.gutter - 16))
+                }
+            }
+            .frame(height: OceanControlSize.height)
             Text(title)
                 .font(OceanType.pageTitle)
                 .foregroundStyle(OceanTheme.foam)
                 .accessibilityAddTraits(.isHeader)
-            Spacer()
-            if Tools.self != EmptyView.self {
-                OceanToolGroup { tools }
-            }
         }
-        .frame(minHeight: OceanControlSize.height)
-        .padding(.top, 8)
     }
 }
 
@@ -188,25 +192,34 @@ extension PageTitleRow where Tools == SettingsTool {
 /// Page tools in one glass capsule, 44 pt tall, 44 pt cells. One tool
 /// makes a circle (Tide's and Ask's gear); three make a capsule (Library).
 struct OceanToolGroup<Content: View>: View {
+    @Environment(\.oceanToolCellWidth) private var cellWidth
     @ViewBuilder var content: Content
 
     var body: some View {
         HStack(spacing: 0) { content }
+            .padding(.horizontal, cellWidth > OceanControlSize.height ? 4 : 0)
             .tint(OceanTheme.foam)
             .frame(height: OceanControlSize.height)
             .oceanGlass(in: Capsule())
     }
 }
 
+extension EnvironmentValues {
+    /// A lone tool is a 44 pt circle; a group of several uses wider cells,
+    /// as the system toolbar does (about 50 pt each).
+    @Entry var oceanToolCellWidth: CGFloat = OceanControlSize.height
+}
+
 /// One glyph in a tool group: 17 pt regular, foam, a 44 pt cell.
 struct OceanToolGlyph: View {
     let systemName: String
+    @Environment(\.oceanToolCellWidth) private var cellWidth
 
     var body: some View {
         Image(systemName: systemName)
             .font(.system(size: 17, weight: .regular))
             .foregroundStyle(OceanTheme.foam)
-            .frame(width: OceanControlSize.height, height: OceanControlSize.height)
+            .frame(width: cellWidth, height: OceanControlSize.height)
             .contentShape(Rectangle())
     }
 }

@@ -78,7 +78,7 @@ struct AskView: View {
                     if let searchPhase { searchLine(searchPhase).id("searching") }
                 }
                 .padding(.horizontal, OceanSpacing.gutter)
-                .padding(.top, 8)
+                .padding(.top, 0)
                 .padding(.bottom, OceanSpacing.block)
             }
             .scrollDismissesKeyboard(.interactively)

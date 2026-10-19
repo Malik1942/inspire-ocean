@@ -40,8 +40,10 @@ struct LibraryView: View {
     @State private var showSettings = false
     @State private var showCurrents = false
     /// Where the grid last moved the way the capture bar already is; the bar
-    /// changes only after real travel against it from here.
-    @State private var foldAnchor: CGFloat = 0
+    /// changes only after real travel against it from here. A plain object,
+    /// not observed state: it changes every scroll frame and must not make
+    /// the grid re-render (that was the pull-down stutter).
+    @State private var foldTracker = FoldTracker()
     @FocusState private var searchFocused: Bool
 
     #if DEBUG
@@ -285,7 +287,7 @@ struct LibraryView: View {
                     }
                 }
                 .padding(.horizontal, OceanSpacing.gutter)
-                .padding(.vertical, 8)
+                .padding(.bottom, 8)
                 .padding(.bottom, FastCaptureLayout.contentClearance)
             }
             // Fresh scroll view per arrangement. Lazy columns realize cells
@@ -528,6 +530,7 @@ struct LibraryView: View {
 
                 SettingsTool(isPresented: $showSettings)
             }
+            .environment(\.oceanToolCellWidth, 50)
             .padding(.bottom, -4)
 
             OceanSearchField(text: $search, prompt: "Search the Ocean", focused: $searchFocused)
@@ -544,15 +547,15 @@ struct LibraryView: View {
     private func scrollMoved(from old: CGFloat, to new: CGFloat) {
         if new < 40 {
             setBarFolded(false)
-            foldAnchor = new
+            foldTracker.anchor = new
             return
         }
         let goingDown = new > old
         if goingDown == control.barFolded {
-            foldAnchor = new
-        } else if abs(new - foldAnchor) > 24 {
+            foldTracker.anchor = new
+        } else if abs(new - foldTracker.anchor) > 24 {
             setBarFolded(goingDown)
-            foldAnchor = new
+            foldTracker.anchor = new
         }
     }
 
@@ -677,4 +680,10 @@ private func rankRelated(anchorID: UUID, among inputs: [FocusInput]) -> [UUID] {
         return (other.id, score)
     }
     return scored.sorted { $0.score > $1.score }.map(\.id)
+}
+
+/// Scroll bookkeeping for folding the capture bar, kept out of SwiftUI's
+/// observation so it never invalidates the view.
+private final class FoldTracker {
+    var anchor: CGFloat = 0
 }
