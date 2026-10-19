@@ -55,6 +55,9 @@ final class WatchLink: NSObject, WCSessionDelegate {
         activationDidCompleteWith activationState: WCSessionActivationState,
         error: Error?
     ) {
+        if let error = error as NSError? {
+            log.error("Activation finished with an error (state \(activationState.rawValue, privacy: .public)): \(error.domain, privacy: .public) \(error.code, privacy: .public)")
+        }
         onActivated?(activationState == .activated && session.isPaired)
     }
 

@@ -195,7 +195,8 @@ final class WatchInboxReader {
 
     private func accept(_ record: CKRecord) -> InboxRecordOutcome {
         switch WatchInboxSchema.check(record) {
-        case .invalid:
+        case .invalid(let fault):
+            log.error("Skipped inbox record \(record.recordID.recordName, privacy: .public): \(fault.rawValue, privacy: .public)")
             return .invalid
         case .notDownloaded:
             return .failedForNow
