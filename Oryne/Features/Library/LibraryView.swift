@@ -96,6 +96,10 @@ struct LibraryView: View {
                 grid
                 ShoreGradient()
             }
+            // A tap in open space folds the search keyboard, as open water
+            // does in the capture overlay. Cards and buttons keep their taps.
+            .contentShape(Rectangle())
+            .onTapGesture { searchFocused = false }
             .navigationTitle("Library")
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showCurrents) { CurrentsPage() }
@@ -308,6 +312,7 @@ struct LibraryView: View {
             .onDisappear { setBarFolded(false) }
             .onChange(of: path.count) { _, count in
                 if count > 0 { setBarFolded(false) }
+                withAnimation(OceanMotion.quick) { control.readingThought = count > 0 }
             }
             // Engage and clear put the front at offset 0. Focus is not an
             // arrangement change, so `.id` does not reset scroll; steer explicitly

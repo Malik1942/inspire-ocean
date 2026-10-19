@@ -245,25 +245,7 @@ struct OceanSearchField: View {
     let prompt: LocalizedStringKey
     var focused: FocusState<Bool>.Binding
 
-    var body: some View {
-        // The system's search pattern: while the field has the keyboard a
-        // Cancel sits beside it and folds the keyboard; Search does too.
-        HStack(spacing: 12) {
-            field
-            if focused.wrappedValue {
-                Button("Cancel") {
-                    text = ""
-                    focused.wrappedValue = false
-                }
-                .font(.body)
-                .foregroundStyle(OceanTheme.foam)
-                .buttonStyle(.plain)
-                .frame(minHeight: OceanControlSize.height)
-                .transition(.move(edge: .trailing).combined(with: .opacity))
-            }
-        }
-        .animation(OceanMotion.standard, value: focused.wrappedValue)
-    }
+    var body: some View { field }
 
     private var field: some View {
         HStack(spacing: 10) {

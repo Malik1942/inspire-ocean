@@ -82,6 +82,7 @@ struct RootTabView: View {
         // toast, which sits above the bar.
         .modifier(CaptureBarPlacement(
             show: appState.selectedTab != .ask
+                && !(appState.selectedTab == .library && control.readingThought)
                 && !keyboardUp
                 && (appState.fastCaptureRequest == nil || control.touch != .up || control.toastShowing),
             // Only the Library folds the bar, while reading down its grid.

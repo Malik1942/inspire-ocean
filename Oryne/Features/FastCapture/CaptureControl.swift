@@ -43,6 +43,9 @@ final class CaptureControl {
     /// Reading down the Library folds the bar into its disc; heading back
     /// up, or reaching the top, unfolds it.
     var barFolded = false
+    /// A thought is open in the Library: it is a page to read, so the bar
+    /// (and the tab bar) step away until you go back.
+    var readingThought = false
 
     /// VoiceOver, Switch Control and Calm Accessibility Mode make the button
     /// tap-to-start, tap-to-stop. The hold is an optimisation, never the only

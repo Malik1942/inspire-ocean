@@ -71,11 +71,12 @@ struct NodeDetailContent: View {
             }
             .padding(.horizontal, OceanSpacing.gutter)
             .padding(.top, 8)
-            // Pushed in the Library this page has the capture bar over its
-            // foot: the last actions scroll fully clear of it.
-            .padding(.bottom, FastCaptureLayout.contentClearance + OceanSpacing.block)
+            .padding(.bottom, OceanSpacing.section)
         }
         .background(OceanBackground())
+        // A thought is a page to read: pushed, it hides the tab bar (the
+        // capture bar steps away with it); the back gesture returns.
+        .toolbar(isSheetRoot ? .automatic : .hidden, for: .tabBar)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             // Only a sheet root needs its own dismiss control; a pushed view
