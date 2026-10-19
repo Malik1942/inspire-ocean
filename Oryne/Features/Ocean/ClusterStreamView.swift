@@ -61,6 +61,10 @@ struct ClusterStreamView: View {
         }
         .presentationDetents([.medium, .large])
         .presentationBackground(.clear)
+        // A summary or a question opens in Ask: step out of the way.
+        .onChange(of: appState.selectedTab) { _, tab in
+            if tab == .ask { dismiss() }
+        }
         // The one capture surface, opened into this current: the saved node
         // is anchored here (CaptureSession.release), so the live @Query drops
         // it at the top of this stream on save. Sheet-over-sheet, fine on 17+.

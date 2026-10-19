@@ -20,42 +20,109 @@ enum OceanRadius {
     static let thumbnail: CGFloat = 10
 }
 
+/// Liquid Glass, the material of the tab bar and the navigation bar, for
+/// every control and floating bar. Before iOS 26 it falls back to the
+/// thin material the app used before.
+extension View {
+    @ViewBuilder
+    func oceanGlass<S: Shape>(in shape: S, tint: Color? = nil, interactive: Bool = true) -> some View {
+        if #available(iOS 26.0, *) {
+            let base: Glass = tint.map { Glass.regular.tint($0) } ?? .regular
+            self.glassEffect(interactive ? base.interactive() : base, in: shape)
+        } else {
+            self.background(tint.map { AnyShapeStyle($0) } ?? AnyShapeStyle(.ultraThinMaterial), in: shape)
+        }
+    }
+}
+
+/// One control height across the app: 44 pt, the system's own.
+enum OceanControlSize {
+    static let height: CGFloat = 44
+}
+
 struct OceanPrimaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.subheadline.weight(.semibold))
-            .foregroundStyle(isEnabled ? OceanTheme.abyss : Color.white.opacity(0.62))
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(isEnabled ? OceanTheme.accent : Color.white.opacity(0.12), in: Capsule())
-            .opacity(configuration.isPressed ? 0.8 : 1)
-            .animation(.easeOut(duration: 0.15), value: isEnabled)
+            .foregroundStyle(isEnabled ? OceanTheme.abyss : OceanTheme.mist)
+            .padding(.horizontal, 20)
+            .frame(minHeight: OceanControlSize.height)
+            .oceanGlass(in: Capsule(), tint: isEnabled ? OceanTheme.accent : nil)
+            .opacity(configuration.isPressed ? 0.85 : 1)
+            .animation(OceanMotion.quick, value: isEnabled)
     }
 }
 
+/// The quiet action: glass capsule, 44 pt tall, foam label.
 struct OceanSecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.subheadline.weight(.medium))
             .foregroundStyle(OceanTheme.foam)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(Color.white.opacity(configuration.isPressed ? 0.12 : 0.08), in: Capsule())
+            .padding(.horizontal, 18)
+            .frame(minHeight: OceanControlSize.height)
+            .oceanGlass(in: Capsule())
+            .opacity(configuration.isPressed ? 0.85 : 1)
     }
 }
 
+/// A tool: a 44 pt glass circle with a 17 pt foam glyph, the same cell as
+/// a tool group and the navigation bar's own buttons.
 struct OceanIconButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 17, weight: .regular))
-            .foregroundStyle(OceanTheme.mist)
-            .frame(width: 36, height: 36)
-            .background(.ultraThinMaterial, in: Circle())
-            .opacity(configuration.isPressed ? 0.7 : 1)
-            .frame(width: 44, height: 44)
+            .foregroundStyle(OceanTheme.foam)
+            .frame(width: OceanControlSize.height, height: OceanControlSize.height)
+            .oceanGlass(in: Circle())
             .contentShape(Circle())
+            .opacity(configuration.isPressed ? 0.85 : 1)
+    }
+}
+
+/// Primary in its icon form: a 44 pt accent-tinted glass circle.
+struct OceanPrimaryIconButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 17, weight: .semibold))
+            .foregroundStyle(isEnabled ? OceanTheme.abyss : OceanTheme.mist)
+            .frame(width: OceanControlSize.height, height: OceanControlSize.height)
+            .oceanGlass(in: Circle(), tint: isEnabled ? OceanTheme.accent : nil)
+            .contentShape(Circle())
+            .opacity(configuration.isPressed ? 0.85 : 1)
+    }
+}
+
+extension ButtonStyle where Self == OceanPrimaryIconButtonStyle {
+    static var oceanPrimaryIcon: OceanPrimaryIconButtonStyle { OceanPrimaryIconButtonStyle() }
+}
+extension ButtonStyle where Self == OceanPrimaryButtonStyle {
+    static var oceanPrimary: OceanPrimaryButtonStyle { OceanPrimaryButtonStyle() }
+}
+extension ButtonStyle where Self == OceanSecondaryButtonStyle {
+    static var oceanSecondary: OceanSecondaryButtonStyle { OceanSecondaryButtonStyle() }
+}
+extension ButtonStyle where Self == OceanIconButtonStyle {
+    static var oceanIcon: OceanIconButtonStyle { OceanIconButtonStyle() }
+}
+
+/// The settings gear every tab wears in the same place. Toolbar items take
+/// the system's own treatment (iOS 26 draws its glass around them), so the
+/// Icon style is for controls inside content, not in toolbars.
+struct SettingsGearButton: View {
+    @Binding var isPresented: Bool
+
+    var body: some View {
+        Button {
+            isPresented = true
+        } label: {
+            Image(systemName: "gearshape")
+        }
+        .accessibilityLabel("Ocean settings")
     }
 }
 
@@ -69,8 +136,8 @@ struct OceanSendDiscStyle: ButtonStyle {
             .font(.system(size: 17, weight: .semibold))
             .foregroundStyle(isEnabled ? OceanTheme.abyss : OceanTheme.mist)
             .frame(width: FastCaptureLayout.buttonSize, height: FastCaptureLayout.buttonSize)
-            .background(isEnabled ? OceanTheme.accent : Color.white.opacity(0.10), in: Circle())
-            .opacity(configuration.isPressed ? 0.8 : 1)
+            .oceanGlass(in: Circle(), tint: isEnabled ? OceanTheme.accent : nil)
+            .opacity(configuration.isPressed ? 0.85 : 1)
             .contentShape(Circle())
             .animation(.easeOut(duration: 0.15), value: isEnabled)
     }
@@ -90,9 +157,19 @@ struct PageTitleRow<Tools: View>: View {
                 .foregroundStyle(OceanTheme.foam)
                 .accessibilityAddTraits(.isHeader)
             Spacer()
-            OceanToolGroup { tools }
+            if Tools.self != EmptyView.self {
+                OceanToolGroup { tools }
+            }
         }
+        .frame(minHeight: OceanControlSize.height)
         .padding(.top, 8)
+    }
+}
+
+extension PageTitleRow where Tools == EmptyView {
+    /// A page with no tools of its own (Ask).
+    init(title: LocalizedStringKey) {
+        self.init(title: title) { EmptyView() }
     }
 }
 
@@ -103,29 +180,28 @@ extension PageTitleRow where Tools == SettingsTool {
     }
 }
 
-/// Page tools in one frosted capsule, 36 pt tall in a 44 pt target. One tool
+/// Page tools in one glass capsule, 44 pt tall, 44 pt cells. One tool
 /// makes a circle (Tide's and Ask's gear); three make a capsule (Library).
 struct OceanToolGroup<Content: View>: View {
     @ViewBuilder var content: Content
 
     var body: some View {
         HStack(spacing: 0) { content }
-            .tint(OceanTheme.mist)
-            .frame(height: 36)
-            .background(.ultraThinMaterial, in: Capsule())
-            .frame(minHeight: 44)
+            .tint(OceanTheme.foam)
+            .frame(height: OceanControlSize.height)
+            .oceanGlass(in: Capsule())
     }
 }
 
-/// One glyph in a tool group: 17 pt regular, mist, a 36 pt cell.
+/// One glyph in a tool group: 17 pt regular, foam, a 44 pt cell.
 struct OceanToolGlyph: View {
     let systemName: String
 
     var body: some View {
         Image(systemName: systemName)
             .font(.system(size: 17, weight: .regular))
-            .foregroundStyle(OceanTheme.mist)
-            .frame(width: 36, height: 36)
+            .foregroundStyle(OceanTheme.foam)
+            .frame(width: OceanControlSize.height, height: OceanControlSize.height)
             .contentShape(Rectangle())
     }
 }
@@ -236,47 +312,4 @@ struct ThoughtLine: View {
     }
 }
 
-/// Primary in its icon form: a 36 pt accent circle in a 44 pt target.
-struct OceanPrimaryIconButtonStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
 
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 17, weight: .semibold))
-            .foregroundStyle(isEnabled ? OceanTheme.abyss : Color.white.opacity(0.62))
-            .frame(width: 36, height: 36)
-            .background(isEnabled ? OceanTheme.accent : Color.white.opacity(0.12), in: Circle())
-            .opacity(configuration.isPressed ? 0.8 : 1)
-            .frame(width: 44, height: 44)
-            .contentShape(Circle())
-    }
-}
-
-extension ButtonStyle where Self == OceanPrimaryIconButtonStyle {
-    static var oceanPrimaryIcon: OceanPrimaryIconButtonStyle { OceanPrimaryIconButtonStyle() }
-}
-extension ButtonStyle where Self == OceanPrimaryButtonStyle {
-    static var oceanPrimary: OceanPrimaryButtonStyle { OceanPrimaryButtonStyle() }
-}
-extension ButtonStyle where Self == OceanSecondaryButtonStyle {
-    static var oceanSecondary: OceanSecondaryButtonStyle { OceanSecondaryButtonStyle() }
-}
-extension ButtonStyle where Self == OceanIconButtonStyle {
-    static var oceanIcon: OceanIconButtonStyle { OceanIconButtonStyle() }
-}
-
-/// The settings gear every tab wears in the same place. Toolbar items take
-/// the system's own treatment (iOS 26 draws its glass around them), so the
-/// Icon style is for controls inside content, not in toolbars.
-struct SettingsGearButton: View {
-    @Binding var isPresented: Bool
-
-    var body: some View {
-        Button {
-            isPresented = true
-        } label: {
-            Image(systemName: "gearshape")
-        }
-        .accessibilityLabel("Ocean settings")
-    }
-}

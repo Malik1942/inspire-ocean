@@ -25,7 +25,7 @@ struct NodeRow: View {
     private var row: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(node.displayTitle)
-                .font(.body.weight(.semibold))
+                .font(OceanType.tileTitle)
                 .foregroundStyle(OceanTheme.foam)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)

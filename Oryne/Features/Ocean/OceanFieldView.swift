@@ -256,7 +256,7 @@ struct OceanFieldView: View {
                     Button { sheet = .stream(theme: group.key) } label: {
                         VStack(alignment: .leading, spacing: 6) {
                             Text(group.label)
-                                .font(.subheadline.weight(.semibold))
+                                .font(OceanType.tileTitle)
                                 .foregroundStyle(OceanTheme.foam)
                                 .lineLimit(1)
                             Text(group.newest?.displayTitle ?? "")
@@ -396,7 +396,7 @@ private struct GlanceCard: View {
                 }
                 VStack(alignment: .leading, spacing: 6) {
                     Text(node.displayTitle)
-                        .font(.body.weight(.semibold))
+                        .font(OceanType.tileTitle)
                         .foregroundStyle(OceanTheme.foam)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)

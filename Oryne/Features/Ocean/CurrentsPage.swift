@@ -41,6 +41,7 @@ struct CurrentGroup: Identifiable {
 /// current" goes to all of it. No cards around currents, no counts.
 struct CurrentsPage: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppState.self) private var appState
     @Query(filter: #Predicate<Node> { !$0.isArchived }, sort: \Node.createdAt, order: .reverse)
     private var nodes: [Node]
 
@@ -109,40 +110,63 @@ struct CurrentsPage: View {
             .sheet(item: $stream) { selection in
                 ClusterStreamView(theme: selection.theme)
             }
+            // A summary or a question opens in Ask: step out of the way so
+            // the answer is what you see.
+            .onChange(of: appState.selectedTab) { _, tab in
+                if tab == .ask { dismiss() }
+            }
         }
     }
 
     // MARK: Current
 
+    private func toggle(_ group: CurrentGroup, isOpen: Bool, forced: Bool) {
+        guard !forced else { return }
+        withAnimation(OceanMotion.standard) {
+            expanded = isOpen ? nil : group.key
+        }
+    }
+
     private func current(_ group: CurrentGroup, rows: [Node], forced: Bool) -> some View {
         let isOpen = forced || expanded == group.key
         let shown = Array(rows.prefix(isOpen ? Self.expandedLimit : 1))
         return VStack(alignment: .leading, spacing: OceanSpacing.item) {
-            Button {
-                guard !forced else { return }
-                withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
-                    expanded = isOpen ? nil : group.key
+            HStack(alignment: .center, spacing: 10) {
+                Button { toggle(group, isOpen: isOpen, forced: forced) } label: {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(group.label)
+                            .font(OceanType.sectionLabel)
+                            .foregroundStyle(group.isAdrift ? OceanTheme.mist : OceanTheme.foam)
+                            .lineLimit(1)
+                            .padding(.leading, 2)
+                        Spacer(minLength: 8)
+                    }
+                    .frame(minHeight: OceanControlSize.height)
+                    .contentShape(Rectangle())
                 }
-            } label: {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(group.label)
-                        .font(OceanType.sectionLabel)
-                        .foregroundStyle(group.isAdrift ? OceanTheme.mist : OceanTheme.foam)
-                        .lineLimit(1)
-                        .padding(.leading, 2)
-                    Spacer(minLength: 8)
-                    if !forced, group.members.count > 1 {
+                .buttonStyle(.plain)
+                .accessibilityHint(isOpen ? Text("Collapses this current.") : Text("Shows every thought in this current."))
+
+                // Summarize, the anchor use of Ask, on every current that
+                // has more than one thought to read across.
+                if group.members.count > 1 {
+                    Button {
+                        appState.summarize(group.members.map(\.id), title: group.label)
+                    } label: {
+                        Label("Summarize", systemImage: "text.line.first.and.arrowtriangle.forward")
+                    }
+                    .buttonStyle(.oceanSecondary)
+                }
+
+                if !forced, group.members.count > 1 {
+                    Button { toggle(group, isOpen: isOpen, forced: forced) } label: {
                         Image(systemName: "chevron.down")
-                            .font(.footnote.weight(.semibold))
-                            .foregroundStyle(OceanTheme.mist)
                             .rotationEffect(.degrees(isOpen ? 180 : 0))
                     }
+                    .buttonStyle(.oceanIcon)
+                    .accessibilityLabel(isOpen ? Text("Collapse") : Text("Expand"))
                 }
-                .padding(.vertical, 4)
-                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
-            .accessibilityHint(isOpen ? Text("Collapses this current.") : Text("Shows every thought in this current."))
 
             ForEach(shown) { node in
                 NavigationLink(value: node) { NodeRow(node: node) }

@@ -42,6 +42,8 @@ struct NodeDetailContent: View {
     @State private var viewerIndex = 0
     @State private var retranscribing = false
     @State private var transcriptOpen = false
+    /// A theme tapped on this page: its current opens in a sheet.
+    @State private var themeStream: StreamSelection?
     @State private var showTranslation = false
     @State private var showReplaceConfirm = false
     @State private var pendingRetranscribe: (data: Data, locale: Locale)?
@@ -152,6 +154,11 @@ struct NodeDetailContent: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text("Speech recognition couldn't produce words for this recording.")
+        }
+        // A summary or a question opens in Ask: a thought shown as a sheet
+        // steps out of the way so the answer is what you see.
+        .onChange(of: appState.selectedTab) { _, tab in
+            if isSheetRoot, tab == .ask { dismiss() }
         }
         .fullScreenCover(isPresented: $showImageViewer) {
             ImageViewer(datas: node.imageDatas, index: $viewerIndex)
@@ -541,13 +548,22 @@ struct NodeDetailContent: View {
 
     // MARK: Sections
 
+    /// Each theme is a way in: tap it to see every thought that carries it.
     private var themesSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             sectionTitle("Themes")
-            Text(node.themes.joined(separator: "  ·  "))
-                .font(.body)
-                .foregroundStyle(OceanTheme.text)
-                .fixedSize(horizontal: false, vertical: true)
+            FlowLayout(spacing: 8) {
+                ForEach(node.themes, id: \.self) { theme in
+                    Button { themeStream = StreamSelection(theme: theme) } label: {
+                        Text(OceanLayoutEngine.displayLabel(for: theme))
+                    }
+                    .buttonStyle(.oceanSecondary)
+                    .accessibilityHint("Shows every thought with this theme.")
+                }
+            }
+        }
+        .sheet(item: $themeStream) { selection in
+            ClusterStreamView(theme: selection.theme)
         }
     }
 
@@ -565,7 +581,20 @@ struct NodeDetailContent: View {
 
     private var relatedSection: some View {
         VStack(alignment: .leading, spacing: OceanSpacing.item) {
-            sectionTitle("Nearby")
+            HStack(alignment: .center) {
+                sectionTitle("Nearby")
+                Spacer(minLength: 8)
+                // Read this thought and its neighbours together, in Ask.
+                if !related.isEmpty {
+                    Button {
+                        appState.summarize([node.id] + related.map(\.id), title: node.displayTitle)
+                        dismiss()
+                    } label: {
+                        Label("Summarize", systemImage: "text.line.first.and.arrowtriangle.forward")
+                    }
+                    .buttonStyle(.oceanSecondary)
+                }
+            }
             if related.isEmpty {
                 Text("Nothing drifts nearby yet.")
                     .font(.subheadline).foregroundStyle(OceanTheme.mist)

@@ -19,6 +19,9 @@ enum OceanType {
     /// question an answer replies to.
     static var subjectTitle: Font { .system(size: 28, weight: .regular, design: .serif) }
     static var eyebrow: Font { .footnote.weight(.semibold) }
+    /// A thought's title on a tile (card, row, current): 16 pt medium,
+    /// lighter than a heading so the tiles stay quiet.
+    static var tileTitle: Font { .system(size: 16, weight: .medium) }
 
     /// The navigation bar's large title in the same face and size as
     /// `pageTitle`, so a system large title (Library, Currents) matches the

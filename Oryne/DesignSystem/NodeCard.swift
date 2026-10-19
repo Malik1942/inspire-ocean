@@ -69,7 +69,7 @@ struct NodeCard: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(node.displayTitle)
-                    .font(.body.weight(.semibold))
+                    .font(OceanType.tileTitle)
                     .foregroundStyle(OceanTheme.foam)
                     .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)

@@ -88,11 +88,18 @@ struct OceanBarBackground: View {
         }
     }
 
+    /// Liquid Glass, like the tab bar under it; the old dense material
+    /// before iOS 26.
+    @ViewBuilder
     private func surface<S: Shape>(_ shape: S) -> some View {
-        shape
-            .fill(.regularMaterial)
-            .overlay(shape.fill(OceanTheme.deep.opacity(0.55)))
-            .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
+        if #available(iOS 26.0, *) {
+            Color.clear.glassEffect(.regular, in: shape)
+        } else {
+            shape
+                .fill(.regularMaterial)
+                .overlay(shape.fill(OceanTheme.deep.opacity(0.55)))
+                .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
+        }
     }
 }
 

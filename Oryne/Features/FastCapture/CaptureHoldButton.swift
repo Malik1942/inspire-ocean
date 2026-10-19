@@ -26,8 +26,10 @@ struct CaptureHoldButton: View {
 
     var body: some View {
         ZStack {
-            Circle()
-                .fill(Color.white.opacity(listening ? 0.16 : 0.10))
+            // Glass, like every control; a lighter tint while listening.
+            Color.clear
+                .frame(width: size, height: size)
+                .oceanGlass(in: Circle(), tint: listening ? Color.white.opacity(0.18) : nil, interactive: false)
                 .opacity(isPressed ? 0.75 : 1)
 
             glyph

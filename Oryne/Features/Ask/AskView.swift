@@ -33,7 +33,6 @@ struct AskView: View {
     @FocusState private var inputFocused: Bool
 
     @State private var openedNode: Node?
-    @State private var showSettings = false
 
     private var messages: [ChatMessage] { conversation?.orderedMessages ?? [] }
 
@@ -50,7 +49,6 @@ struct AskView: View {
             .onTapGesture { inputFocused = false }
             .navigationTitle("Ask")
             .toolbar(.hidden, for: .navigationBar)
-            .sheet(isPresented: $showSettings) { OceanSettingsView() }
             .safeAreaInset(edge: .bottom) { inputBar }
             .sheet(item: $openedNode) { ExpandedNodeView(node: $0) }
             .onAppear {
@@ -70,7 +68,9 @@ struct AskView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    PageTitleRow(title: "Ask", showSettings: $showSettings)
+                    // No gear here: Ask is for asking. Settings live on Tide
+                    // and the Library.
+                    PageTitleRow(title: "Ask")
                     if messages.isEmpty && searchPhase == nil { emptyState }
                     ForEach(messages) { message in
                         messageView(message).id(message.id)
