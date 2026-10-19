@@ -5,7 +5,7 @@ import AppIntents
 /// requires for Action Button intents. Idle or Caught → record; recording →
 /// stop and catch.
 struct CatchThoughtIntent: AppIntent {
-    static let title: LocalizedStringResource = "Catch a thought"
+    static let title: LocalizedStringResource = "Catch a whisper"
     static let description = IntentDescription("Start or stop a whisper on your wrist.")
     static let openAppWhenRun = true
 
@@ -26,9 +26,9 @@ struct OryneWatchShortcuts: AppShortcutsProvider {
             intent: CatchThoughtIntent(),
             phrases: [
                 "Whisper to \(.applicationName)",
-                "Record a thought in \(.applicationName)"
+                "Record a whisper in \(.applicationName)"
             ],
-            shortTitle: "Catch a thought",
+            shortTitle: "Catch a whisper",
             systemImageName: "waveform"
         )
     }

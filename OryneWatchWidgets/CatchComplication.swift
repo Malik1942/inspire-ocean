@@ -8,7 +8,7 @@ struct CatchComplication: Widget {
         StaticConfiguration(kind: "OryneCatch", provider: CatchProvider()) { _ in
             CatchComplicationView()
         }
-        .configurationDisplayName("Catch a thought")
+        .configurationDisplayName("Catch a whisper")
         .description("Opens Oryne, already listening.")
         .supportedFamilies([.accessoryCircular, .accessoryCorner, .accessoryRectangular])
     }
@@ -46,21 +46,21 @@ struct CatchComplicationView: View {
         case .accessoryRectangular:
             HStack(spacing: 6) {
                 Image(systemName: "waveform")
-                Text("Catch a thought")
+                Text("Catch a whisper")
                     .font(.headline)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         case .accessoryCorner:
             Image(systemName: "waveform")
                 .font(.title3)
-                .accessibilityLabel(Text("Catch a thought"))
+                .accessibilityLabel(Text("Catch a whisper"))
                 .widgetLabel { Text(verbatim: "Oryne") }
         default:
             ZStack {
                 AccessoryWidgetBackground()
                 Image(systemName: "waveform")
                     .font(.title3)
-                    .accessibilityLabel(Text("Catch a thought"))
+                    .accessibilityLabel(Text("Catch a whisper"))
             }
         }
     }

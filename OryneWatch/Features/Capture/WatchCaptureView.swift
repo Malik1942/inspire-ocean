@@ -35,13 +35,14 @@ struct WatchCaptureView: View {
 
     private var idle: some View {
         VStack(spacing: 10) {
-            Button { Task { await model.begin() } } label: { disc(symbol: "mic.fill") }
+            Button { Task { await model.begin() } } label: { disc(symbol: "waveform") }
                 .buttonStyle(.plain)
-                .accessibilityLabel(Text("Catch a thought"))
+                .accessibilityLabel(Text("Catch a whisper"))
             statusLine
             if let title = model.lastTitle {
+                // A thought's title is New York on the phone.
                 Text("Last: \(title)")
-                    .font(.footnote)
+                    .font(.system(.footnote, design: .serif))
                     .foregroundStyle(OceanTheme.foam)
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
@@ -91,10 +92,17 @@ struct WatchCaptureView: View {
             Text("Caught")
                 .font(.headline)
                 .foregroundStyle(OceanTheme.foam)
-            Button { model.undo() } label: { Text("Undo") }
-                .font(.footnote.weight(.semibold))
-                .tint(OceanTheme.accent)
-                .accessibilityLabel(Text("Undo this take"))
+            Button { model.undo() } label: {
+                Text("Undo")
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(OceanTheme.foam)
+                    .padding(.horizontal, 18)
+                    .frame(minHeight: 44)
+                    // The phone's raised surface fill (OceanSurface, raised).
+                    .background(Capsule().fill(Color.white.opacity(0.08)))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Undo this take"))
         }
     }
 
@@ -107,7 +115,7 @@ struct WatchCaptureView: View {
                 .foregroundStyle(OceanTheme.mist)
             Text("Allow the microphone for Oryne in Settings on your watch.")
                 .font(.footnote)
-                .foregroundStyle(OceanTheme.foam)
+                .foregroundStyle(OceanTheme.text)
                 .multilineTextAlignment(.center)
         }
         .padding(.horizontal)
