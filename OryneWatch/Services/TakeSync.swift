@@ -77,8 +77,8 @@ final class TakeSync {
             if let sent { link.wake(sent) }
             if let cloud {
                 for item in queue.state.needingCloudUpload(now: .now) where item.id != heldTakeID {
-                    // A take undone mid-flush is gone from the queue.
-                    guard queue.state.item(item.id) != nil else { continue }
+                    // Undone, or confirmed, mid-flush.
+                    guard queue.state.item(item.id)?.status == .onWatch else { continue }
                     if await cloud.upload(item.take, audioURL: queue.audioURL(for: item.id)) {
                         queue.change { $0.markInICloud(item.id) }
                     }

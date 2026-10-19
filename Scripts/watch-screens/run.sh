@@ -41,4 +41,8 @@ for lang in en zh-Hans; do
   shot nothing        "$lang" SIMCTL_CHILD_ORYNE_WATCH_STAGE=nothing
 done
 xcrun simctl terminate "$UDID" "$BUNDLE" 2>/dev/null || true
+# The recording shot leaves a real .m4a; launch recovery would queue it as a
+# take, so start clean.
+xcrun simctl uninstall "$UDID" "$BUNDLE"
+xcrun simctl install "$UDID" "$APP"
 echo "Screens written to $OUT"

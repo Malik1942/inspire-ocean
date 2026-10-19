@@ -22,7 +22,7 @@ struct WatchCaptureView: View {
             }
         }
         .animation(.snappy, value: model.stage)
-        .onChange(of: scenePhase) { _, phase in
+        .onChange(of: scenePhase, initial: true) { _, phase in
             if phase == .active {
                 Task { await model.sceneBecameActive() }
             } else {

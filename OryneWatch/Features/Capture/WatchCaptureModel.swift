@@ -31,6 +31,12 @@ final class WatchCaptureModel {
     @ObservationIgnored private var current: (id: UUID, startedAt: Date)?
     @ObservationIgnored private var undoTask: Task<Void, Never>?
     @ObservationIgnored private var noticeTask: Task<Void, Never>?
+    @ObservationIgnored private var sceneIsActive = true
+    #if DEBUG
+    /// The demo `caught` screen waits for the scene to go active: the view's
+    /// first scene-phase report is `inactive`, which would release it.
+    @ObservationIgnored private var demoStageAwaitingActive: Stage?
+    #endif
 
     init(queue: TakeQueue, sync: TakeSync) {
         self.queue = queue
@@ -59,13 +65,17 @@ final class WatchCaptureModel {
     }
 
     func begin() async {
+        // The idle disc and the retry button call this directly; a second
+        // start must never replace the take in progress.
+        guard stage != .starting, stage != .recording else { return }
         releaseHeldTake()
         noticeTask?.cancel()
         stage = .starting
         let id = UUID()
-        current = (id, .now)
         switch await recorder.start(writingTo: queue.audioURL(for: id)) {
         case .started:
+            // Timed from when recording began, not from before the microphone prompt.
+            current = (id, .now)
             stage = .recording
         case .permissionDenied:
             discardRecording(id)
@@ -103,8 +113,11 @@ final class WatchCaptureModel {
 
         let take = WatchTake(id: current.id, createdAt: current.startedAt, duration: finished.duration)
         queue.change { $0.add(take, phoneReachableAtStop: reachable) }
-        sync.heldTakeID = take.id
         WKInterfaceDevice.current().play(.success)
+        // Caught off screen (the cap, or a call, with the wrist down): nobody
+        // can tap Undo, so it goes now.
+        guard sceneIsActive else { stage = .idle; Task { await sync.flush() }; return }
+        sync.heldTakeID = take.id
         stage = .caught(take.id)
 
         undoTask?.cancel()
@@ -137,10 +150,18 @@ final class WatchCaptureModel {
     /// Wrist down: a recording keeps going (spec §1); a take held for Undo
     /// sends now.
     func sceneBecameInactive() {
+        sceneIsActive = false
         if case .caught = stage { releaseHeldTake() }
     }
 
     func sceneBecameActive() async {
+        sceneIsActive = true
+        #if DEBUG
+        if let demo = demoStageAwaitingActive {
+            demoStageAwaitingActive = nil
+            stage = demo
+        }
+        #endif
         // Recovery once the microphone has been allowed in Settings.
         if stage == .denied, !recorder.permissionDenied { stage = .idle }
         await sync.flush()
@@ -203,7 +224,7 @@ final class WatchCaptureModel {
         }
         switch env["ORYNE_WATCH_STAGE"] {
         case "recording": Task { await begin() }
-        case "caught": stage = .caught(UUID())
+        case "caught": demoStageAwaitingActive = .caught(UUID())
         case "denied": stage = .denied
         case "failed": stage = .failed
         case "nothing": stage = .nothingCaught

@@ -158,7 +158,9 @@ final class WatchRecorder: NSObject {
                 recorder.updateMeters()
                 let power = recorder.averagePower(forChannel: 0)   // dBFS, about -160...0
                 self.level = min(1, Double(max(0, (power + 50) / 50)))
-                self.elapsed = recorder.currentTime
+                // Never falls back to 0 when the system stops the recorder, so
+                // `stop()`'s duration keeps the time actually recorded.
+                self.elapsed = max(self.elapsed, recorder.currentTime)
                 if self.elapsed >= Self.cap {
                     self.onEndedBySystem?()
                     return
