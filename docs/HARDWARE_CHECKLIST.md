@@ -93,6 +93,10 @@ wrist-down recording.
   when the app suspends, fall back to "wrist down ends the take" (spec §9.3).
 - [ ] **Always On** — wrist down while recording shows the timer alone, and
   Double Tap still stops the take.
+- [ ] **Stop from a dimmed screen** — with Always On and the wrist down, stop
+  with the Action Button or Double Tap; on raising the wrist, Caught and Undo
+  appear (the take is held, not sent at once). If it sends at once, record
+  it.
 - [ ] **5 minute cap** — a haptic and the take is caught at 5:00.
 - [ ] **Call mid take** — a call ends and catches the take; no stuck screen.
 - [ ] **Interrupted take keeps its length** — a call or lost mic mid-take:
@@ -104,6 +108,9 @@ wrist-down recording.
 - [ ] **Delivery with the phone app force quit** — catch a take with Oryne
   force quit on the phone, phone nearby: within a minute the thought is in
   Library (does the wake ping deliver the file?). Record the latency.
+- [ ] **Background transcription** — catch a take with the phone locked; once
+  imported it gets a transcript and title. If it stays a bare Whisper,
+  opening Oryne retries it.
 - [ ] **iCloud fallback** — phone in airplane mode, watch on Wi-Fi or LTE:
   catch a take; the watch says "On its way"; turn the phone back on; the
   thought arrives and the watch says "In your Ocean" with its title.
@@ -125,8 +132,16 @@ wrist-down recording.
   the Action Button and from Siri ("Whisper to Oryne"): the mic prompt
   appears; after allowing, recording starts; after denying, the one-line
   denied screen shows.
+- [ ] **Nothing was caught** — a take that can't be decoded shows "Nothing was
+  caught" with a failure haptic, and it stays until tapped.
+- [ ] **Phone capture unchanged** — on the phone, record a whisper in the
+  Capture tab and in Fast Capture; the transcript and title still land (the
+  understanding step moved into `VoiceUnderstanding`).
 - [ ] **SwiftData sync unaffected** — after installing this build (it adds an
   app delegate for the inbox push), run the CloudKit two-device sync item
   above again.
-- [ ] **Production schema** — before release, deploy the `WatchTake` record
-  type in CloudKit Console (development creates it on first write).
+- [ ] **Production schema** — before deploying, write one complete
+  `WatchTake` record (all four fields: `createdAt`, `duration`, `version`,
+  `audio`) in the development environment so every field exists in the
+  schema. Then, before release, deploy the `WatchTake` record type in
+  CloudKit Console (development creates it on first write).

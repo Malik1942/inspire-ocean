@@ -55,6 +55,12 @@ copy).
   only checkable on a real watch.
 - Chinese strings for the watch and the new phone strings (the Apple Watch
   setup card in Fast Capture settings) are drafts (`needs_review`).
+- Two iPhones on one Apple ID, each paired with its own watch, would both
+  read the iCloud inbox and import duplicates. Not handled; one paired iPhone
+  is the supported setup.
+- There is no `PrivacyInfo.xcprivacy` in the project (pre-existing), and the
+  watch now uses `UserDefaults` and file timestamps (required-reason APIs):
+  add a privacy manifest before App Store upload.
 
 ## 2026-06-28 — Dev machine: no-passphrase SSH key (deliberate)
 

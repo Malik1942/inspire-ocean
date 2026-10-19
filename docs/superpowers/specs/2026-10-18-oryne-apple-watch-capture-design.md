@@ -81,7 +81,9 @@ stop and catch.
 A success haptic, "Caught", and an **Undo** button for 5 seconds. Sending
 starts when the window closes, or at once if the app leaves the screen. Undo
 deletes the local file; nothing was sent, so nothing exists anywhere else.
-Then the idle screen.
+Then the idle screen. A take caught while the app is off screen (the cap or a
+call with the wrist down) sends at once with no Undo hold: nobody can tap
+Undo (Malik, 2026-10-18).
 
 ### Idle
 
@@ -102,7 +104,9 @@ shown only once the phone has named it. Before that, nothing; no placeholder.
 
 - Microphone denied: one line naming where to turn it on, no retry loop.
 - Recorder failed to start: "Couldn't start. Tap to try again."
-- Empty or undecodable file: "Nothing was caught" (nothing is queued).
+- Empty or undecodable file: "Nothing was caught" (nothing is queued), with a
+  failure haptic. It stays until tapped (PHILOSOPHY: failure never
+  auto-fades); a new take can start from it.
 
 ### Copy (EN, with zh drafts to confirm against `docs/localization-glossary.md`)
 
@@ -187,7 +191,8 @@ An iPad never reads the inbox; two importers would mint duplicates.
 ### Confirmation back to the watch
 
 The phone calls `updateApplicationContext(["recent": [{id, title?}]])` with the
-newest 20 imported takes, after each import and again when a title lands.
+newest 200 imported takes (Malik, 2026-10-18: 20 stranded the oldest of a
+large batch), after each import and again when a title lands.
 The watch marks those `confirmed` (title when present) and refreshes Idle.
 A take imported over iCloud while the watch was away is confirmed on the next
 WatchConnectivity contact.
@@ -206,7 +211,8 @@ development environment creates them on first write.
   `OryneApp.init` so background deliveries reach it. `didReceive file`
   (background thread) synchronously moves the file into the App Group
   `WatchInbox/` folder, named by take ID, then hands off to the importer.
-  `didReceiveMessage` for the wake ping does nothing beyond activating.
+  `didReceiveMessage` for the wake ping also runs an import pass (harmless:
+  the importer is single-flight, and it gives a background launch its sweep).
 - **`WatchInboxReader`** (`Oryne/Services`): a `CKRecordZoneSubscription` on
   `WatchInbox` (silent push; the app already has the `remote-notification`
   background mode; adds a `UIApplicationDelegateAdaptor` to receive it), plus
