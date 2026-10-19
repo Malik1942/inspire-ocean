@@ -1,0 +1,16 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "NSMicrophoneUsageDescription" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Oryne 使用麦克风，在语音消失之前从手腕上接住它。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.1"
+}

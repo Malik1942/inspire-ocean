@@ -186,77 +186,27 @@ final class CaptureSession {
 
     /// Title + themes derived from the words the user kept. Voice thoughts
     /// with no transcript go through the post-hoc recognizer first; words the
-    /// user has touched are never overwritten (ownership contract).
+    /// user has touched are never overwritten (ownership contract). The pass
+    /// itself lives in `VoiceUnderstanding`, shared with wrist takes.
     func beginUnderstanding(nodeID: UUID) {
-        guard let ai else { return }
+        guard let ai, let context else { return }
         let tempURL = lastReleased?.nodeID == nodeID ? lastReleased?.draft.audioTempURL : nil
+        // Only a whisper still to be transcribed needs the user's words as hints.
+        if let node = fetch(nodeID), node.kind == .voice, (node.transcription ?? "").isEmpty {
+            ensureVocabulary()
+        }
+        let vocabulary = self.vocabulary
         understandingTask?.cancel()
-        understandingTask = Task { [weak self] in
-            guard let self, let node = self.fetch(nodeID) else { return }
-            if node.kind == .voice, (node.transcription ?? "").isEmpty {
-                await self.transcribeThenUnderstand(nodeID: nodeID, tempURL: tempURL, ai: ai)
-            } else {
-                // A confirmed transcript wins — the temp file has no further use.
-                if let tempURL { try? FileManager.default.removeItem(at: tempURL) }
-                await self.understand(nodeID: nodeID, ai: ai)
-            }
+        understandingTask = Task {
+            await VoiceUnderstanding.run(
+                nodeID: nodeID, audioTempURL: tempURL, context: context, ai: ai, vocabulary: vocabulary
+            )
         }
     }
 
-    private func transcribeThenUnderstand(nodeID: UUID, tempURL: URL?, ai: any OceanAIService) async {
-        // The recognizer wants a file URL; recreate one from the stored bytes
-        // when the temp didn't survive (a restored draft, re-released).
-        let url: URL
-        if let tempURL, FileManager.default.fileExists(atPath: tempURL.path) {
-            url = tempURL
-        } else if let data = fetch(nodeID)?.audioData {
-            url = FileManager.default.temporaryDirectory
-                .appendingPathComponent("transcribe-\(UUID().uuidString).m4a")
-            guard (try? data.write(to: url)) != nil else { return }
-        } else {
-            return
-        }
-        defer { try? FileManager.default.removeItem(at: url) }
-
-        ensureVocabulary()
-        guard let outcome = await ai.transcribeDetailed(audioURL: url, vocabulary: vocabulary) else { return }
-        guard !Task.isCancelled, let node = fetch(nodeID) else { return }
-        // Ownership: never overwrite words the user has touched.
-        guard !node.transcriptEditedByUser else { return }
-        node.transcription = outcome.text
-        node.transcriptLocale = outcome.localeID
-        node.alternateTranscription = outcome.alternateText
-        node.alternateTranscriptLocale = outcome.alternateLocaleID
-        node.updatedAt = .now
-        try? context?.save()
-        await understand(nodeID: nodeID, ai: ai)
-    }
-
-    private func understand(nodeID: UUID, ai: any OceanAIService) async {
-        guard let node = fetch(nodeID) else { return }
-        let basis = node.meaningText
-        guard !basis.isEmpty else { return }
-        let currents = context.map { CurrentSnap.candidates(in: $0, excluding: nodeID, forEntry: basis) } ?? []
-        let understanding = await ai.understand(basis, currents: currents)
-        guard !Task.isCancelled, let fresh = fetch(nodeID) else { return }
-        NodeComposer.applyUnderstanding(understanding, to: fresh)
-        try? context?.save()
-        await summarizeIfLong(nodeID: nodeID, ai: ai)
-    }
-
-    /// A long whisper gets a reading above its words. Only voice thoughts,
-    /// only when long, only once; the user's own text is never summarized.
+    /// A long whisper gets a reading above its words (`VoiceUnderstanding`
+    /// writes it; the Library backfill and the thought page read the bar).
     static let summaryThreshold = 240
-
-    func summarizeIfLong(nodeID: UUID, ai: any OceanAIService) async {
-        guard let node = fetch(nodeID), node.kind == .voice, node.summary == nil,
-              let transcript = node.transcription, transcript.count >= Self.summaryThreshold
-        else { return }
-        guard let summary = await ai.summarizeTranscript(transcript), !Task.isCancelled,
-              let fresh = fetch(nodeID), fresh.summary == nil else { return }
-        fresh.summary = summary
-        try? context?.save()
-    }
 
     // MARK: Undo
 
