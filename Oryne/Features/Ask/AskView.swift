@@ -40,7 +40,7 @@ struct AskView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                OceanBackground()
+                PageBackground()
                 transcript
                 ShoreGradient()
             }

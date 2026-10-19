@@ -76,12 +76,12 @@ struct OceanSendDiscStyle: ButtonStyle {
     }
 }
 
-/// The row every tab opens with: the tab's name in New York and the gear at
-/// the right, on one line. Tide and Ask draw it in their content; Library's
-/// system large title wears the same face (OceanType).
-struct PageTitleRow: View {
+/// The row every tab opens with: the tab's name in New York, its tools in
+/// one frosted group at the right. Same size, place and spacing on Tide,
+/// Ask and Library; it scrolls with the page.
+struct PageTitleRow<Tools: View>: View {
     let title: LocalizedStringKey
-    @Binding var showSettings: Bool
+    @ViewBuilder var tools: Tools
 
     var body: some View {
         HStack(alignment: .center) {
@@ -90,10 +90,119 @@ struct PageTitleRow: View {
                 .foregroundStyle(OceanTheme.foam)
                 .accessibilityAddTraits(.isHeader)
             Spacer()
-            SettingsGearButton(isPresented: $showSettings)
-                .buttonStyle(.oceanIcon)
+            OceanToolGroup { tools }
         }
         .padding(.top, 8)
+    }
+}
+
+extension PageTitleRow where Tools == SettingsTool {
+    /// The common case: the gear alone, which makes the group a circle.
+    init(title: LocalizedStringKey, showSettings: Binding<Bool>) {
+        self.init(title: title) { SettingsTool(isPresented: showSettings) }
+    }
+}
+
+/// Page tools in one frosted capsule, 36 pt tall in a 44 pt target. One tool
+/// makes a circle (Tide's and Ask's gear); three make a capsule (Library).
+struct OceanToolGroup<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        HStack(spacing: 0) { content }
+            .tint(OceanTheme.mist)
+            .frame(height: 36)
+            .background(.ultraThinMaterial, in: Capsule())
+            .frame(minHeight: 44)
+    }
+}
+
+/// One glyph in a tool group: 17 pt regular, mist, a 36 pt cell.
+struct OceanToolGlyph: View {
+    let systemName: String
+
+    var body: some View {
+        Image(systemName: systemName)
+            .font(.system(size: 17, weight: .regular))
+            .foregroundStyle(OceanTheme.mist)
+            .frame(width: 36, height: 36)
+            .contentShape(Rectangle())
+    }
+}
+
+struct SettingsTool: View {
+    @Binding var isPresented: Bool
+
+    var body: some View {
+        Button { isPresented = true } label: { OceanToolGlyph(systemName: "gearshape") }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Ocean settings")
+    }
+}
+
+/// A page's own search field, drawn like Tide's surfaces: the tile fill, a
+/// capsule, body type, mist glyphs.
+struct OceanSearchField: View {
+    @Binding var text: String
+    let prompt: LocalizedStringKey
+    var focused: FocusState<Bool>.Binding
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 17, weight: .regular))
+                .foregroundStyle(OceanTheme.mist)
+            TextField(text: $text) {
+                Text(prompt).foregroundStyle(OceanTheme.hint)
+            }
+            .font(.body)
+            .foregroundStyle(OceanTheme.foam)
+            .tint(OceanTheme.accent)
+            .submitLabel(.search)
+            .autocorrectionDisabled()
+            .focused(focused)
+            if !text.isEmpty {
+                Button { text = "" } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 17, weight: .regular))
+                        .foregroundStyle(OceanTheme.mist)
+                        .frame(width: 32, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Clear search")
+            }
+        }
+        .padding(.leading, 16)
+        .padding(.trailing, text.isEmpty ? 16 : 6)
+        .frame(height: 44)
+        .background(OceanTheme.fill, in: Capsule())
+    }
+}
+
+/// Every page stands on the same water and the same light: the moving
+/// ocean and one warm lamp high on the left. The lamp is a radial light
+/// across the whole screen, so it has no edge to show.
+struct PageBackground: View {
+    var lampLift: Double = 0
+    var lampDim: Double = 1
+
+    var body: some View {
+        ZStack {
+            OceanBackground()
+            GeometryReader { geo in
+                RadialGradient(
+                    colors: [OceanTheme.glowWarm.opacity((0.11 + lampLift) * lampDim),
+                             OceanTheme.glowWarm.opacity((0.04 + lampLift * 0.4) * lampDim),
+                             .clear],
+                    center: UnitPoint(x: 0.4, y: 0.3),
+                    startRadius: 0,
+                    endRadius: geo.size.height * 0.36
+                )
+            }
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+        }
     }
 }
 

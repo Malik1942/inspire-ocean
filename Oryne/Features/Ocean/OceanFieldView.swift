@@ -31,11 +31,8 @@ struct OceanFieldView: View {
     @State private var lampLift: Double = 0
     /// The lamp dims while a thought sinks.
     @State private var lampDim: Double = 1
-    /// "Let it rest", beat one: today's thought is going under.
+    /// "Let it rest": today's thought is going under.
     @State private var lettingGo = false
-    /// Beat two: the next thought, already in place, held just below and
-    /// unseen until it surfaces.
-    @State private var surfacing = false
     /// The thought being let go stays on screen until it has gone under;
     /// resting it re-picks today's thought at once.
     @State private var goingUnder: Node?
@@ -83,7 +80,7 @@ struct OceanFieldView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                OceanBackground()
+                PageBackground(lampLift: lampLift, lampDim: lampDim)
                 if nodes.isEmpty {
                     emptyState
                 } else {
@@ -94,9 +91,8 @@ struct OceanFieldView: View {
                                 // One thought goes under, then the next comes
                                 // up: never both on screen at once.
                                 resurfacingSection(shown)
-                                    .opacity(lettingGo || surfacing ? 0 : 1)
-                                    .blur(radius: !stilled && (lettingGo || surfacing) ? 4 : 0)
-                                    .offset(y: stilled ? 0 : (lettingGo ? 6 : (surfacing ? 8 : 0)))
+                                    .opacity(lettingGo ? 0 : 1)
+                                    .offset(y: stilled || !lettingGo ? 0 : 4)
                             }
                             newestSection
                             if !currents.isEmpty { currentsSection }
@@ -105,7 +101,6 @@ struct OceanFieldView: View {
                         .padding(.top, 8)
                         .padding(.bottom, FastCaptureLayout.contentClearance)
                     }
-                    .background(alignment: .top) { lamp }
                 }
                 ShoreGradient()
             }
@@ -135,23 +130,6 @@ struct OceanFieldView: View {
     private var pageTitle: some View {
         PageTitleRow(title: OceanTab.homeTitle, showSettings: $showSettings)
             .padding(.bottom, -4)
-    }
-
-    /// One lamp in the water behind the resurfacing thought: ambient light,
-    /// not a glow on an object. Absent when nothing resurfaces.
-    @ViewBuilder
-    private var lamp: some View {
-        if resurfacing != nil {
-            RadialGradient(
-                colors: [OceanTheme.glowWarm.opacity((0.11 + lampLift) * lampDim),
-                         OceanTheme.glowWarm.opacity((0.04 + lampLift * 0.4) * lampDim),
-                         .clear],
-                center: .center, startRadius: 0, endRadius: 260
-            )
-            .frame(width: 560, height: 420)
-            .offset(x: -40, y: 40)
-            .allowsHitTesting(false)
-        }
     }
 
     // MARK: Resurfacing
@@ -328,41 +306,41 @@ struct OceanFieldView: View {
             let byID = Dictionary(uniqueKeysWithValues: nodes.map { ($0.id, $0) })
             nearby = ids.compactMap { byID[$0] }
         }
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { nearbyOpen.toggle() }
+        withAnimation(OceanMotion.standard) { nearbyOpen.toggle() }
     }
 
     /// Today's thought goes under; the next one surfaces. It counts as met,
-    /// so it rests. Two quiet beats, never a crossfade: the thought fades,
-    /// drifts a few points down and softens while the lamp lowers a little;
-    /// unseen, the next takes its place and the page eases to its height;
-    /// then it rises out of the same softness as the lamp comes back and
-    /// warms a touch before settling. Calm and Reduce Motion: a plain fade.
+    /// so it rests. Three steps, one at a time: the thought fades and sinks
+    /// 4 pt while the lamp lowers a little; only once it is gone is the rest
+    /// written, so the page never reloads mid-motion, and the next thought
+    /// takes its place unseen while the page eases to its height; then it
+    /// rises from those 4 pt on a long ease-out as the lamp warms a touch.
+    /// Calm and Reduce Motion: a plain fade.
     private func rest(_ node: Node) {
+        guard goingUnder == nil else { return }
         goingUnder = node
-        Resurfacing.markMet(node, context: context)
-        Resurfacing.Rest.rest(node.id)
         let stilled = self.stilled
         Task { @MainActor in
-            withAnimation(.easeIn(duration: stilled ? 0.2 : 0.4)) {
+            withAnimation(stilled ? OceanMotion.quick : .easeInOut(duration: 0.45)) {
                 nearbyOpen = false
                 lettingGo = true
-                if !stilled { lampDim = 0.55 }
+                if !stilled { lampDim = 0.6 }
             }
-            try? await Task.sleep(for: .milliseconds(stilled ? 200 : 400))
-            withAnimation(.smooth(duration: stilled ? 0.2 : 0.35)) {
+            try? await Task.sleep(for: .milliseconds(stilled ? 180 : 450))
+            Resurfacing.markMet(node, context: context)
+            Resurfacing.Rest.rest(node.id)
+            withAnimation(OceanMotion.standard) {
                 goingUnder = nil
                 restTick += 1
-                lettingGo = false
-                surfacing = true
             }
-            if !stilled { try? await Task.sleep(for: .milliseconds(120)) }
-            withAnimation(.easeOut(duration: stilled ? 0.2 : 0.7)) {
-                surfacing = false
+            try? await Task.sleep(for: .milliseconds(stilled ? 0 : 320))
+            withAnimation(stilled ? OceanMotion.quick : OceanMotion.gentle) {
+                lettingGo = false
                 lampDim = 1
                 if !stilled { lampLift = 0.04 }
             }
             guard !stilled else { return }
-            try? await Task.sleep(for: .milliseconds(700))
+            try? await Task.sleep(for: .milliseconds(800))
             withAnimation(.easeInOut(duration: 1.4)) { lampLift = 0 }
         }
     }

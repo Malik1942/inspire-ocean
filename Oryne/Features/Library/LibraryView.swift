@@ -42,6 +42,7 @@ struct LibraryView: View {
     /// Where the grid last moved the way the capture bar already is; the bar
     /// changes only after real travel against it from here.
     @State private var foldAnchor: CGFloat = 0
+    @FocusState private var searchFocused: Bool
 
     #if DEBUG
     /// One-shot for `OCEAN_SHOW_RELATED_TITLE` (marketing recapture).
@@ -87,62 +88,12 @@ struct LibraryView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                OceanBackground(animated: false)
-                Group {
-                    if filtered.isEmpty {
-                        emptyState
-                    } else {
-                        grid
-                    }
-                }
+                PageBackground()
+                grid
                 ShoreGradient()
             }
             .navigationTitle("Library")
-            .searchable(text: $search, prompt: "Search the Ocean")
-            .toolbar {
-                // One group of three equal tools: the same glyph size and
-                // outline style in the same cell, a tight even gap.
-                ToolbarItem(placement: .topBarTrailing) {
-                    HStack(spacing: 2) {
-                        Menu {
-                            Picker("Arrangement", selection: $arrangement) {
-                                Label("Recent", systemImage: "clock").tag(Arrangement.recent)
-                                Label("Related", systemImage: "point.3.connected.trianglepath.dotted")
-                                    .tag(Arrangement.related)
-                            }
-                        } label: {
-                            toolbarGlyph(arrangement == .related
-                                ? "point.3.connected.trianglepath.dotted"
-                                : "arrow.up.arrow.down")
-                        }
-                        .accessibilityLabel("Arrangement")
-
-                        Menu {
-                            Picker("Kind", selection: $kindFilter) {
-                                Text("All kinds").tag(NodeKind?.none)
-                                ForEach(NodeKind.allCases) { k in
-                                    Label(k.label, systemImage: k.symbol).tag(NodeKind?.some(k))
-                                }
-                            }
-                            Toggle("Show archived", isOn: $showArchived)
-                            Divider()
-                            Button {
-                                showCurrents = true
-                            } label: {
-                                Label("Currents", systemImage: "water.waves")
-                            }
-                        } label: {
-                            toolbarGlyph("line.3.horizontal.decrease")
-                        }
-                        .accessibilityLabel("Filter")
-
-                        Button { showSettings = true } label: {
-                            toolbarGlyph("gearshape")
-                        }
-                        .accessibilityLabel("Ocean settings")
-                    }
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showSettings) { OceanSettingsView() }
             .sheet(isPresented: $showCurrents) { CurrentsPage() }
             .navigationDestination(for: Node.self) { node in
@@ -301,7 +252,11 @@ struct LibraryView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
-                    Color.clear.frame(height: 0).id(Self.gridTopID)
+                    header
+                        .id(Self.gridTopID)
+                    if filtered.isEmpty {
+                        emptyState
+                    }
                     if !search.trimmed.isEmpty, filtered.count >= 2 {
                         summarizeChip
                     }
@@ -340,6 +295,7 @@ struct LibraryView: View {
             // node anyway, so returning to the top is also the honest UX.
             .id(arrangement)
             .opacity(gridOpacity)
+            .scrollDismissesKeyboard(.interactively)
             // Reading down folds the capture bar into its disc.
             .onScrollGeometryChange(for: CGFloat.self) { geometry in
                 geometry.contentOffset.y + geometry.contentInsets.top
@@ -533,13 +489,50 @@ struct LibraryView: View {
         return height
     }
 
-    /// A toolbar tool: one glyph size and weight in one cell size, so the
-    /// three read as a set.
-    private func toolbarGlyph(_ systemName: String) -> some View {
-        Image(systemName: systemName)
-            .font(.system(size: 17, weight: .regular))
-            .frame(width: 36, height: 36)
-            .contentShape(Rectangle())
+    /// Tide's page header, with Library's three tools in the same frosted
+    /// group, then the page's own search field.
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            PageTitleRow(title: "Library") {
+                Menu {
+                    Picker("Arrangement", selection: $arrangement) {
+                        Label("Recent", systemImage: "clock").tag(Arrangement.recent)
+                        Label("Related", systemImage: "point.3.connected.trianglepath.dotted")
+                            .tag(Arrangement.related)
+                    }
+                } label: {
+                    OceanToolGlyph(systemName: arrangement == .related
+                        ? "point.3.connected.trianglepath.dotted"
+                        : "arrow.up.arrow.down")
+                }
+                .accessibilityLabel("Arrangement")
+
+                Menu {
+                    Picker("Kind", selection: $kindFilter) {
+                        Text("All kinds").tag(NodeKind?.none)
+                        ForEach(NodeKind.allCases) { k in
+                            Label(k.label, systemImage: k.symbol).tag(NodeKind?.some(k))
+                        }
+                    }
+                    Toggle("Show archived", isOn: $showArchived)
+                    Divider()
+                    Button {
+                        showCurrents = true
+                    } label: {
+                        Label("Currents", systemImage: "water.waves")
+                    }
+                } label: {
+                    OceanToolGlyph(systemName: "line.3.horizontal.decrease")
+                }
+                .accessibilityLabel("Filter")
+
+                SettingsTool(isPresented: $showSettings)
+            }
+            .padding(.bottom, -4)
+
+            OceanSearchField(text: $search, prompt: "Search the Ocean", focused: $searchFocused)
+        }
+        .padding(.bottom, 8)
     }
 
     // MARK: Folding the capture bar
@@ -565,7 +558,7 @@ struct LibraryView: View {
 
     private func setBarFolded(_ fold: Bool) {
         guard control.barFolded != fold else { return }
-        withAnimation(reduceMotion ? .easeInOut(duration: 0.2) : .smooth(duration: 0.38)) {
+        withAnimation(reduceMotion ? OceanMotion.quick : OceanMotion.standard) {
             control.barFolded = fold
         }
     }
@@ -616,12 +609,11 @@ struct LibraryView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "square.stack.3d.up.slash")
-                .font(.system(size: 48)).foregroundStyle(OceanTheme.surface)
-            Text((search.isEmpty ? "Nothing here yet" : "No fragments match") as LocalizedStringKey)
-                .font(.title3.weight(.semibold)).foregroundStyle(OceanTheme.foam)
-        }
+        Text((search.isEmpty ? "Nothing here yet" : "No fragments match") as LocalizedStringKey)
+            .font(.subheadline)
+            .foregroundStyle(OceanTheme.mist)
+            .frame(maxWidth: .infinity)
+            .padding(.top, OceanSpacing.block)
     }
 
     private func archive(_ node: Node) {

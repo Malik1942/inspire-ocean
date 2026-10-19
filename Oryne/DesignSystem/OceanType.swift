@@ -46,3 +46,11 @@ enum OceanSpacing {
     /// Between sections.
     static let section: CGFloat = 40
 }
+
+/// Three motions, used everywhere: a quick state change, the standard
+/// settle (layout, folding), and the gentle arrival of something new.
+enum OceanMotion {
+    static let quick = Animation.easeOut(duration: 0.18)
+    static let standard = Animation.smooth(duration: 0.35)
+    static let gentle = Animation.timingCurve(0.3, 0, 0.2, 1, duration: 0.8)
+}
