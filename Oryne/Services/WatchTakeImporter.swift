@@ -162,9 +162,10 @@ final class WatchTakeImporter {
     }
 
     /// The name the watch shows: the thought's title once it has one. Never
-    /// the "Whisper" fallback, which would pretend to be a name.
+    /// the kind label the Library stamps on an untitled thought, which would
+    /// pretend to be a name.
     private func title(of node: Node) -> String? {
         let title = node.title.trimmed
-        return title.isEmpty ? nil : title
+        return title.isEmpty || title == node.kind.label ? nil : title
     }
 }

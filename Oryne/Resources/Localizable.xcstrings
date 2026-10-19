@@ -4082,16 +4082,6 @@
         }
       }
     },
-    "Catch a thought" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "记一条灵感"
-          }
-        }
-      }
-    },
     "No Action Button? Add the Oryne complication to a watch face." : {
       "localizations" : {
         "zh-Hans" : {

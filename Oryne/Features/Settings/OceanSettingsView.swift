@@ -61,6 +61,11 @@ struct OceanSettingsView: View {
                 FastCaptureShortcutSection()
                     .listRowBackground(OceanTheme.fill)
 
+                if FastCaptureWatchSection.isAvailable {
+                    FastCaptureWatchSection()
+                        .listRowBackground(OceanTheme.fill)
+                }
+
                 Section {
                     Toggle("Calm Accessibility", isOn: $calmMode)
                 } footer: {
