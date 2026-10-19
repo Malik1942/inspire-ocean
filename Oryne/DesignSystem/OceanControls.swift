@@ -87,16 +87,19 @@ struct OceanIconButtonStyle: ButtonStyle {
     }
 }
 
-/// Primary in its icon form: a 44 pt accent-tinted glass circle.
+/// Primary in its icon form, the send and release arrow: a 44 pt glass
+/// circle that stays glass. Ready, it takes a faint white tint and a
+/// bright arrow, as the capture disc does while listening; never a solid
+/// light disc that would be the brightest thing on screen.
 struct OceanPrimaryIconButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 17, weight: .semibold))
-            .foregroundStyle(isEnabled ? OceanTheme.abyss : OceanTheme.mist)
+            .foregroundStyle(isEnabled ? OceanTheme.foam : OceanTheme.mist)
             .frame(width: OceanControlSize.height, height: OceanControlSize.height)
-            .oceanGlass(in: Circle(), tint: isEnabled ? OceanTheme.accent : nil)
+            .oceanGlass(in: Circle(), tint: isEnabled ? Color.white.opacity(0.18) : nil)
             .contentShape(Circle())
             .opacity(configuration.isPressed ? 0.85 : 1)
     }
@@ -131,17 +134,18 @@ struct SettingsGearButton: View {
     }
 }
 
-/// The send disc in Ask's bar, the twin of the capture disc: 44 pt, flat.
-/// Matte while there is nothing to send, Primary once there is.
+/// The send disc in Ask's bar, the twin of the capture disc: 44 pt glass.
+/// Plain with a mist arrow while there is nothing to send; a faint white
+/// tint and a bright arrow once there is.
 struct OceanSendDiscStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 17, weight: .semibold))
-            .foregroundStyle(isEnabled ? OceanTheme.abyss : OceanTheme.mist)
+            .foregroundStyle(isEnabled ? OceanTheme.foam : OceanTheme.mist)
             .frame(width: FastCaptureLayout.buttonSize, height: FastCaptureLayout.buttonSize)
-            .oceanGlass(in: Circle(), tint: isEnabled ? OceanTheme.accent : nil)
+            .oceanGlass(in: Circle(), tint: isEnabled ? Color.white.opacity(0.18) : nil)
             .opacity(configuration.isPressed ? 0.85 : 1)
             .contentShape(Circle())
             .animation(.easeOut(duration: 0.15), value: isEnabled)
