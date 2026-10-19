@@ -137,14 +137,16 @@ struct LibraryView: View {
         }
     }
 
-    /// The marker for fragments themed before the semantic understanding
-    /// layer existed; bump the suffix to re-run the migration after a
-    /// meaningful change to theme generation.
+    /// Set once this install's one-time semantic re-theme has run. It only
+    /// ever re-themes thoughts captured before the semantic layer existed
+    /// (`UnderstandingBackfill.semanticLayerLanded`); every later thought was
+    /// understood at capture and keeps its current.
     private static let semanticThemesMigrationKey = "ocean.semanticThemes.v1"
 
-    /// Interpret fragments that haven't been understood yet: untitled ones
-    /// (as before), plus — once — every fragment themed by the old keyword
-    /// extractor, so the whole Ocean groups and matches by meaning.
+    /// Interpret fragments that haven't been understood yet: untitled ones,
+    /// plus, once, any fragment captured before the semantic layer (themed by
+    /// the old keyword extractor). Both join existing currents the way a
+    /// capture does, rather than founding a current of their own.
     private func backfillUnderstanding() async {
         guard !backfilling else { return }
         backfilling = true
@@ -152,27 +154,38 @@ struct LibraryView: View {
 
         let migrate = !UserDefaults.standard.bool(forKey: Self.semanticThemesMigrationKey)
 
-        for node in allNodes {
-            // Examples are curated: seeded with final titles and themes, and
-            // re-localized wholesale on language change. Understanding must
-            // never retitle or re-theme them, and they carry no user-edit
-            // flags, so they are skipped here rather than protected per-field.
-            guard !node.isExample else { continue }
+        let pending = allNodes.compactMap { node -> (node: Node, work: UnderstandingBackfill.Work)? in
+            let work = UnderstandingBackfill.work(
+                isExample: node.isExample,
+                hasTitle: !node.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                createdAt: node.createdAt,
+                migrating: migrate
+            )
+            return work.map { (node, $0) }
+        }
+        // A keyword-era thought still waiting for its new themes is no
+        // current to join; it becomes one once re-themed.
+        var keywordEra = Set(pending.filter { $0.work == .retheme }.map(\.node.id))
 
-            let needsTitle = node.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            guard needsTitle || migrate else { continue }
+        for (node, work) in pending {
+            defer { keywordEra.remove(node.id) }
 
             let raw = node.rawContent
             if raw.isEmpty {
-                if needsTitle {
+                if work == .understand {
                     node.title = node.kind.label
                     try? context.save()
                 }
                 continue
             }
 
-            let understanding = await ai.understand(raw)
-            NodeComposer.applyUnderstanding(understanding, to: node, preserveTitle: !needsTitle)
+            let currents = CurrentSnap.candidates(
+                in: allNodes.filter { !keywordEra.contains($0.id) },
+                excluding: node.id,
+                forEntry: raw
+            )
+            let understanding = await ai.understand(raw, currents: currents)
+            NodeComposer.applyUnderstanding(understanding, to: node, preserveTitle: work == .retheme)
             try? context.save()
         }
 
