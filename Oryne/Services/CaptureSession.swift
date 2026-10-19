@@ -176,57 +176,18 @@ final class CaptureSession {
 
     /// Title + themes derived from the words the user kept. Voice thoughts
     /// with no transcript go through the post-hoc recognizer first; words the
-    /// user has touched are never overwritten (ownership contract).
+    /// user has touched are never overwritten (ownership contract). The pass
+    /// itself lives in `VoiceUnderstanding`, shared with wrist takes.
     func beginUnderstanding(nodeID: UUID) {
-        guard let ai else { return }
+        guard let ai, let context else { return }
         let tempURL = lastReleased?.nodeID == nodeID ? lastReleased?.draft.audioTempURL : nil
         understandingTask?.cancel()
         understandingTask = Task { [weak self] in
-            guard let self, let node = self.fetch(nodeID) else { return }
-            if node.kind == .voice, (node.transcription ?? "").isEmpty {
-                await self.transcribeThenUnderstand(nodeID: nodeID, tempURL: tempURL, ai: ai)
-            } else {
-                // A confirmed transcript wins — the temp file has no further use.
-                if let tempURL { try? FileManager.default.removeItem(at: tempURL) }
-                await self.understand(nodeID: nodeID, ai: ai)
-            }
+            guard let essence = await VoiceUnderstanding.run(
+                nodeID: nodeID, audioTempURL: tempURL, context: context, ai: ai
+            ) else { return }
+            self?.onUnderstood?(nodeID, essence)
         }
-    }
-
-    private func transcribeThenUnderstand(nodeID: UUID, tempURL: URL?, ai: any OceanAIService) async {
-        // The recognizer wants a file URL; recreate one from the stored bytes
-        // when the temp didn't survive (a restored draft, re-released).
-        let url: URL
-        if let tempURL, FileManager.default.fileExists(atPath: tempURL.path) {
-            url = tempURL
-        } else if let data = fetch(nodeID)?.audioData {
-            url = FileManager.default.temporaryDirectory
-                .appendingPathComponent("transcribe-\(UUID().uuidString).m4a")
-            guard (try? data.write(to: url)) != nil else { return }
-        } else {
-            return
-        }
-        defer { try? FileManager.default.removeItem(at: url) }
-
-        guard let transcript = await ai.transcribe(audioURL: url), !transcript.isEmpty else { return }
-        guard !Task.isCancelled, let node = fetch(nodeID) else { return }
-        // Ownership: never overwrite words the user has touched.
-        guard !node.transcriptEditedByUser else { return }
-        node.transcription = transcript
-        node.updatedAt = .now
-        try? context?.save()
-        await understand(nodeID: nodeID, ai: ai)
-    }
-
-    private func understand(nodeID: UUID, ai: any OceanAIService) async {
-        guard let node = fetch(nodeID) else { return }
-        let basis = node.meaningText
-        guard !basis.isEmpty else { return }
-        let understanding = await ai.understand(basis)
-        guard !Task.isCancelled, let fresh = fetch(nodeID) else { return }
-        NodeComposer.applyUnderstanding(understanding, to: fresh)
-        try? context?.save()
-        onUnderstood?(nodeID, understanding.essence)
     }
 
     // MARK: Undo
