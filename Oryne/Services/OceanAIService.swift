@@ -97,8 +97,8 @@ protocol OceanAIService {
 }
 
 extension OceanAIService {
-    /// Understanding with no currents to join (re-derives and migrations,
-    /// where the thought already has its place).
+    /// Understanding with no currents to join (re-derives, where the thought
+    /// already has its place).
     func understand(_ text: String) async -> ThoughtUnderstanding {
         await understand(text, currents: [])
     }
