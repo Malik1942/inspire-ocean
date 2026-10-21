@@ -44,9 +44,9 @@ WATCH_SCREEN = ROOT / "design/appstore/2.0/watch/en/03-in-your-ocean.png"
 WATCH_WIDTH = 1000                # a little under the phone frame's width
 WATCH_RADIUS = 0.20               # corner radius as a share of the display's width
 # The watch app's own background is the same abyss as this canvas, so with no
-# frame the display's edge cannot be seen. None keeps it that way (no bezel);
-# set a color, e.g. (38, 40, 45) (OceanTheme current), for a flat 3px hairline.
-WATCH_EDGE = None
+# frame the display's edge cannot be seen. A flat 3px hairline in OceanTheme's
+# current gray draws it, still matte; None leaves the display edgeless.
+WATCH_EDGE = (38, 40, 45)
 WRIST_SHOTS = [
     ("watch", WATCH_SCREEN, "Catch a whisper", "from your wrist."),
 ]

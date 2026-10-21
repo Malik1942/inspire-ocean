@@ -39,4 +39,4 @@ App Store Connect takes one watch size across all localizations. English files a
 03-in-your-ocean.png: In your Ocean, with the last thought's title.
 04-waiting.png: 2 waiting for iPhone, with the last thought's title.
 
-The phone shots are made by `design/appstore/make_screenshots.py` from the website's captures (recipe in `website/README.md`). 08-watch is made by the same script from `watch/en/03-in-your-ocean.png`. The watch captures are native Ultra 3 simulator screenshots from the DEBUG demo seams (`Scripts/watch-screens/run.sh`).
+The phone shots are made by `design/appstore/make_screenshots.py` from the website's captures (recipe in `website/README.md`). 08-watch is made by the same script from `watch/en/03-in-your-ocean.png`. The watch captures are native Ultra 3 simulator screenshots from the DEBUG demo seams, taken with the system clock at a real 9:41 by `Scripts/watch-screens/appstore-941.py`; the Chinese set names the last thought 灯塔咖啡馆. The two 01-recording shots keep the livelier waveform of an earlier capture (the recorder hears the Mac's microphone), with the clock area, which holds nothing else, taken from the 9:41 run.
