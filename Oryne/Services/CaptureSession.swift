@@ -192,7 +192,7 @@ final class CaptureSession {
         guard let ai, let context else { return }
         let tempURL = lastReleased?.nodeID == nodeID ? lastReleased?.draft.audioTempURL : nil
         // Only a whisper still to be transcribed needs the user's words as hints.
-        if let node = fetch(nodeID), node.kind == .voice, (node.transcription ?? "").isEmpty {
+        if let node = fetch(nodeID), WhisperRules.needsTranscription(node) {
             ensureVocabulary()
         }
         let vocabulary = self.vocabulary

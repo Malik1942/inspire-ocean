@@ -173,6 +173,11 @@ struct LibraryView: View {
             let raw = node.rawContent
             if raw.isEmpty {
                 if work == .understand {
+                    // A voice thought gets "Whisper" here: a placeholder, not
+                    // a name. Every language's form of this label must be in
+                    // `VoiceUnderstanding.whisperPlaceholders`, or a late
+                    // understanding keeps it as the title and the watch shows
+                    // it as the thought's name.
                     node.title = node.kind.label
                     try? context.save()
                 }

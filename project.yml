@@ -108,6 +108,11 @@ targets:
     sources:
       - path: Shared
       - path: SharedTests
+      # The watch's sender and the queue it drives hold no watch API, so
+      # their tests (TakeSyncTests) run here with the rest. Keep them
+      # free of WatchKit.
+      - path: OryneWatch/Services/TakeSync.swift
+      - path: OryneWatch/Services/TakeQueue.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.inspireocean.app.sharedtests

@@ -17,7 +17,7 @@ enum VoiceUnderstanding {
 
     /// The labels the Library backfill can have stamped on an untitled voice
     /// thought, in every language the app ships ("Whisper", 语音): a
-    /// placeholder, never a name.
+    /// placeholder, never a name (`WhisperRules.hasPlaceholderTitle`).
     static let whisperPlaceholders: Set<String> = {
         var labels: Set<String> = ["Whisper", NodeKind.voice.label]
         for language in Bundle.main.localizations {
@@ -42,7 +42,7 @@ enum VoiceUnderstanding {
         vocabulary: [String]
     ) async -> String? {
         guard let node = fetch(nodeID, in: context) else { return nil }
-        if node.kind == .voice, (node.transcription ?? "").isEmpty {
+        if WhisperRules.needsTranscription(node) {
             guard await transcribe(
                 nodeID: nodeID, tempURL: audioTempURL, context: context, ai: ai, vocabulary: vocabulary
             ) else { return nil }
@@ -94,7 +94,7 @@ enum VoiceUnderstanding {
         // A voice thought understood late may carry the Library's "Whisper"
         // stamp: a placeholder, not words, so it never leads the basis or
         // becomes part of the title.
-        if node.kind == .voice, !node.titleEditedByUser, whisperPlaceholders.contains(node.title.trimmed) {
+        if WhisperRules.hasPlaceholderTitle(node, placeholders: whisperPlaceholders) {
             node.title = ""
         }
         let basis = node.meaningText

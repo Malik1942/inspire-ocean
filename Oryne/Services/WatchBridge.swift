@@ -109,6 +109,7 @@ final class WatchBridge {
 
     private func linkActivated(isPaired: Bool) {
         activationKnown = true
+        // Waiters resume only after the reader exists (see `startInboxReader`).
         defer { resumeActivationWaiters() }
         guard isPaired, let importer else { return }
         // A watch that missed an update catches up on activation.
@@ -121,6 +122,11 @@ final class WatchBridge {
     private func startInboxReader() {
         guard inboxReader == nil, WatchInboxSchema.isSignedBuild, let inboxFolder else { return }
         inboxReader = WatchInboxReader(folder: inboxFolder, defaults: FastCapturePreferences.defaults)
+        // A refresh already waiting on activation (the push that cold-launched
+        // the app) fetches once it resumes, and the reader exists by then. A
+        // fetch of our own could win the single flight from it, and that push
+        // would answer no data for takes that did arrive.
+        guard activationWaiters.isEmpty else { return }
         Task { await refresh() }
     }
 }

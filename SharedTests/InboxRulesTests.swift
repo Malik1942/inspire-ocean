@@ -72,4 +72,36 @@ final class InboxRulesTests: XCTestCase {
 
         XCTAssertTrue(InboxDeletionQueue.load(from: defaults).isEmpty)
     }
+
+    // MARK: - Deletion batches
+
+    private func queue(of count: Int) -> InboxDeletionQueue {
+        var queue = InboxDeletionQueue()
+        (0..<count).forEach { _ in queue.add(UUID()) }
+        return queue
+    }
+
+    func test_batches_ofAnEmptyQueue_areNone() {
+        XCTAssertTrue(InboxDeletionQueue().batches().isEmpty)
+    }
+
+    /// CloudKit refuses more than 400 items in one modify.
+    func test_batches_stayWellUnderCloudKitsLimit() {
+        XCTAssertEqual(InboxDeletionQueue.maxPerModify, 200)
+    }
+
+    func test_batches_ofExactlyOneModify_areOne() {
+        let queue = queue(of: 200)
+
+        XCTAssertEqual(queue.batches(), [queue.ids])
+    }
+
+    func test_batches_splitOldestFirst_withTheRemainderLast() {
+        let queue = queue(of: 450)
+
+        let batches = queue.batches()
+
+        XCTAssertEqual(batches.map(\.count), [200, 200, 50])
+        XCTAssertEqual(batches.flatMap { $0 }, queue.ids)
+    }
 }
