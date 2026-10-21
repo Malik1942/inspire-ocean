@@ -6,7 +6,7 @@ import Network
 @main
 struct OryneApp: App {
     @UIApplicationDelegateAdaptor(OryneAppDelegate.self) private var appDelegate
-    let container = Persistence.shared
+    let container: ModelContainer
     @Environment(\.scenePhase) private var scenePhase
 
     /// The cloud seam (§14) activates itself when an `ANTHROPIC_API_KEY` is
@@ -17,6 +17,14 @@ struct OryneApp: App {
     private let ai: any OceanAIService = CloudOceanAIService(configuration: .fromEnvironment())
 
     init() {
+        #if DEBUG
+        // Before anything opens the store: see CloudKitSchema.
+        if ProcessInfo.processInfo.environment["OCEAN_INIT_CLOUDKIT_SCHEMA"] == "1" {
+            CloudKitSchema.initializeAndExit()
+        }
+        #endif
+        container = Persistence.shared
+
         OceanType.applyLargeTitleAppearance()
         #if DEBUG
         if ProcessInfo.processInfo.environment["OCEAN_SCREENSHOT_SEED"] == "1" {
