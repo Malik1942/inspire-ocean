@@ -194,7 +194,8 @@ final class WatchCaptureModel {
     #if DEBUG
     /// Screenshot seams (`SIMCTL_CHILD_` prefix on `simctl launch`):
     /// `ORYNE_WATCH_DEMO=empty|waiting|onItsWay|inOcean` shows a sample queue;
-    /// `ORYNE_WATCH_STAGE=recording|caught|denied|failed|nothing` shows that screen.
+    /// `ORYNE_WATCH_STAGE=recording|caught|denied|failed|nothing` shows that screen;
+    /// `ORYNE_WATCH_DEMO_TITLE` names the sample's last whisper.
     func applyDemoEnvironment() {
         let env = ProcessInfo.processInfo.environment
         let now = Date()
@@ -204,7 +205,7 @@ final class WatchCaptureModel {
         var demo = TakeQueueState()
         let named = take(600)
         demo.add(named, phoneReachableAtStop: true)
-        demo.apply([WatchConfirmation(id: named.id, title: "Lighthouse café")])
+        demo.apply([WatchConfirmation(id: named.id, title: env["ORYNE_WATCH_DEMO_TITLE"] ?? "Lighthouse café")])
         switch env["ORYNE_WATCH_DEMO"] {
         case "empty":
             queue.showDemo(TakeQueueState())
