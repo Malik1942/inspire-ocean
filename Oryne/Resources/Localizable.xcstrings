@@ -4091,6 +4091,246 @@
           }
         }
       }
+    },
+    "Apple Intelligence isn't available on this device, so this is a fixed reading. The thoughts below are the real find." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "此设备没有 Apple Intelligence，这段是固定措辞。下面找到的灵感才是真正的答案。"
+          }
+        }
+      }
+    },
+    "Apple Intelligence" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple Intelligence"
+          }
+        }
+      }
+    },
+    "Ready" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "可用"
+          }
+        }
+      }
+    },
+    "Unavailable" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "不可用"
+          }
+        }
+      }
+    },
+    "Titles, themes, whisper summaries and Ask answers are composed on this device. Nothing leaves it." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "标题、主题、语音摘要和提问的回答都在此设备上生成，不会离开设备。"
+          }
+        }
+      }
+    },
+    "Not available: %@. Titles come from your own words, and Ask gives a fixed reading of the thoughts it finds." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "不可用：%@。标题取自你自己的文字，提问只能对找到的灵感给出固定措辞的解读。"
+          }
+        }
+      }
+    },
+    "They keep circling %@." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "它们一直围绕着 %@。"
+          }
+        }
+      }
+    },
+    "One fragment drifts near this: %@. Tap it below to revisit." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "有一条碎片与此相近：%@。点下方即可回看。"
+          }
+        }
+      }
+    },
+    "%lld fragments drift near this. The closest is %@. Tap a source below to revisit." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "有 %lld 条碎片与此相近，最近的是 %@。点下方任一来源即可回看。"
+          }
+        }
+      }
+    },
+    "Reading across %@, a shared current emerges." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "读过 %@，能看到一条共同的海流。"
+          }
+        }
+      }
+    },
+    "These are not separate notes. They are the same idea, returning in different forms. The thread underneath seems to be about how these pieces want to connect." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "这些并不是彼此无关的记录，而是同一个想法以不同形态反复出现。底下那条线，似乎关乎这些片段想要如何相连。"
+          }
+        }
+      }
+    },
+    "Starting from %@, there is room to grow." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "从 %@ 出发，还有延展的空间。"
+          }
+        }
+      }
+    },
+    "You could push it further, question its assumption, or pull it toward something concrete. The suggested branches below are places it could go without losing the original." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "你可以把它再推进一步，质疑它的前提，或者让它落到具体的东西上。下方建议的延展是它可以去的方向，原有的灵感不会被改动。"
+          }
+        }
+      }
+    },
+    "If you want to go deeper, %@ point toward a few open directions." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "如果想再深入，%@ 指向几个尚未展开的方向。"
+          }
+        }
+      }
+    },
+    "The branches below frame what would be worth exploring next." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "下方的延展勾勒出接下来值得探索的内容。"
+          }
+        }
+      }
+    },
+    "What runs through these thoughts? Say what they share, where they pull apart, and what sits underneath. Speak to me directly, as you, never as the user." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "这些灵感之间贯穿着什么？说说它们的共同点、分歧处，以及底下藏着的东西。直接对我说，用“你”，不要说“用户”。"
+          }
+        }
+      }
+    },
+    "category.idea" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "想法"
+          }
+        }
+      }
+    },
+    "category.task" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "任务"
+          }
+        }
+      }
+    },
+    "category.bug" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bug"
+          }
+        }
+      }
+    },
+    "category.note" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "笔记"
+          }
+        }
+      }
+    },
+    "category.quote" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "引用"
+          }
+        }
+      }
+    },
+    "category.question" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "疑问"
+          }
+        }
+      }
+    },
+    "category.link" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "链接"
+          }
+        }
+      }
+    },
+    "category.memory" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "回忆"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

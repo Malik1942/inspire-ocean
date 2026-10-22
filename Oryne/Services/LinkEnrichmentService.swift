@@ -61,42 +61,13 @@ final class LinkEnrichmentService {
     /// Whether the device can summarize on-device right now, and if not, why —
     /// the reason is persisted so it's visible why a link lacks a summary.
     static var summarization: Summarization {
-        #if DEBUG
-        // Test hook: force either fork regardless of what the device reports, so
-        // both paths can be exercised on a single simulator. Never compiled into
-        // a release build. Set via `simctl launch ... ORYNE_FORCE_SUMMARIZATION=1|0`.
-        if let forced = ProcessInfo.processInfo.environment["ORYNE_FORCE_SUMMARIZATION"] {
-            return forced == "1" ? .available : .unavailable(reason: "forced off for testing")
-        }
-        #endif
-        #if canImport(FoundationModels)
-        if #available(iOS 26, *) {
-            switch SystemLanguageModel.default.availability {
-            case .available:
-                return .available
-            case .unavailable(let reason):
-                return .unavailable(reason: describe(reason))
-            @unknown default:
-                return .unavailable(reason: String(localized: "the on-device model is unavailable"))
-            }
-        }
-        return .unavailable(reason: String(localized: "this device runs an earlier iOS"))
-        #else
-        return .unavailable(reason: String(localized: "Foundation Models isn't in this build"))
-        #endif
-    }
-
-    #if canImport(FoundationModels)
-    @available(iOS 26, *)
-    private static func describe(_ reason: SystemLanguageModel.Availability.UnavailableReason) -> String {
-        switch reason {
-        case .deviceNotEligible:           return String(localized: "this device isn't eligible for Apple Intelligence")
-        case .appleIntelligenceNotEnabled: return String(localized: "Apple Intelligence is turned off")
-        case .modelNotReady:               return String(localized: "the on-device model is still downloading")
-        @unknown default:                  return String(localized: "Apple Intelligence is unavailable")
+        // One answer for the whole app (`OnDeviceModel`), including the DEBUG
+        // force hook, so a link's note and Settings never disagree.
+        switch OnDeviceModel.status {
+        case .ready: return .available
+        case .unavailable(let reason): return .unavailable(reason: reason)
         }
     }
-    #endif
 
     // MARK: Entry point
 

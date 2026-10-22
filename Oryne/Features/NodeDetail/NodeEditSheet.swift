@@ -532,6 +532,7 @@ struct NodeEditSheet: View {
         if themesChanged {
             node.themes = themesDraft
             node.themesEditedByUser = true
+            node.themeKeys = ThoughtReading.keys(fromEnglish: [], fallbackLabels: themesDraft)
         }
         if linkChanged {
             // The URL is the source of truth; a changed (or removed) link drops

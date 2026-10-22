@@ -128,3 +128,68 @@ enum MessageRole: String, Codable {
     case user
     case ocean
 }
+
+/// What kind of thought this is, as read by the understanding step. Fixed,
+/// so Ask can list and filter by it and the model can only choose, never
+/// invent (docs/plans/memory-layer/SPEC.md, layer 1).
+enum ThoughtCategory: String, CaseIterable, Codable, Identifiable, Sendable {
+    case idea
+    case task
+    case bug
+    case note
+    case quote
+    case question
+    case link
+    case memory
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .idea: return String(localized: "category.idea", defaultValue: "Idea")
+        case .task: return String(localized: "category.task", defaultValue: "Task")
+        case .bug: return String(localized: "category.bug", defaultValue: "Bug")
+        case .note: return String(localized: "category.note", defaultValue: "Note")
+        case .quote: return String(localized: "category.quote", defaultValue: "Quote")
+        case .question: return String(localized: "category.question", defaultValue: "Question")
+        case .link: return String(localized: "category.link", defaultValue: "Link")
+        case .memory: return String(localized: "category.memory", defaultValue: "Memory")
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .idea: return "lightbulb"
+        case .task: return "checkmark.circle"
+        case .bug: return "ant"
+        case .note: return "note.text"
+        case .quote: return "quote.opening"
+        case .question: return "questionmark.circle"
+        case .link: return "link"
+        case .memory: return "clock.arrow.circlepath"
+        }
+    }
+}
+
+/// The language a thought is written in, by the share of Han among its
+/// letters (`ThoughtReading.language(of:)`). Retrieval and the gist in the
+/// other language hang off this.
+enum ThoughtLanguage: String, Codable, Sendable {
+    case zh
+    case en
+    case mixed
+}
+
+/// Where a task or bug stands. Only the user sets it; the system reads it.
+enum ThoughtStatus: String, Codable, Sendable {
+    case open
+    case done
+}
+
+/// Which pass produced a thought's understanding record.
+enum UnderstandingSource: String, Codable, Sendable {
+    /// The on-device (or cloud) language model read the thought.
+    case model
+    /// The concept-space fallback: embeddings and heuristics, no model.
+    case concepts
+}

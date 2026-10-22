@@ -74,13 +74,15 @@ enum NodeComposer {
     static func applyUnderstanding(
         _ understanding: ThoughtUnderstanding,
         to node: Node,
-        preserveTitle: Bool = false
+        preserveTitle: Bool = false,
+        preserveThemes: Bool = false
     ) {
         if !node.titleEditedByUser,
            !preserveTitle || node.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             node.title = understanding.essence
         }
-        if !node.themesEditedByUser, !understanding.themes.isEmpty {
+        if !node.themesEditedByUser, !understanding.themes.isEmpty,
+           !preserveThemes || node.themes.isEmpty {
             node.themes = understanding.themes
             if let mood = understanding.mood { node.mood = mood }
             let key = understanding.themes.first ?? ""
@@ -90,6 +92,25 @@ enum NodeComposer {
                 node.fieldX = anchor.x
                 node.fieldY = anchor.y
             }
+        }
+
+        // The understanding record: system fields, filled whenever the pass
+        // has them. Theme keys follow the user's themes once they own them,
+        // so the record never contradicts what they wrote.
+        if let category = understanding.category { node.categoryRaw = category.rawValue }
+        if let language = understanding.language { node.languageRaw = language.rawValue }
+        if let gist = understanding.gistOther { node.gistOther = gist }
+        if !understanding.entities.isEmpty { node.entities = understanding.entities }
+        if node.themesEditedByUser {
+            node.themeKeys = ThoughtReading.keys(fromEnglish: [], fallbackLabels: node.themes)
+        } else if !understanding.themeKeys.isEmpty {
+            node.themeKeys = understanding.themeKeys
+        }
+        node.understandingSourceRaw = understanding.source.rawValue
+        // Only a full record (a category means the model read it) counts as
+        // this version; a partial one is enriched on a later open.
+        if understanding.category != nil {
+            node.understandingVersion = ThoughtReading.version
         }
         node.updatedAt = .now
     }

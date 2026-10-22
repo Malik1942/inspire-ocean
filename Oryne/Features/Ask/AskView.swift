@@ -139,6 +139,7 @@ struct AskView: View {
         case .offlineFallback: String(localized: "Composed offline")
         case .noSources: String(localized: "Nothing in your Ocean matches this yet")
         case .degraded: String(localized: "Your note was long, so I worked from a shortened version")
+        case .template: String(localized: "Apple Intelligence isn't available on this device, so this is a fixed reading. The thoughts below are the real find.")
         case .cloud, .onDevice, nil: nil
         }
     }

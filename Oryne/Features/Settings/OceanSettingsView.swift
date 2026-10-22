@@ -38,6 +38,10 @@ struct OceanSettingsView: View {
 
     @State private var pendingClearExamples = false
 
+    /// Read once per open, off the main thread: the availability query can
+    /// take over a second on ineligible hardware.
+    @State private var modelStatus: OnDeviceModel.Status?
+
     @State private var includeVoice = false
     @State private var exportState: ExportState = .idle
     @State private var zipURL: URL?
@@ -72,6 +76,16 @@ struct OceanSettingsView: View {
                     Text("Stills the water and its light, and makes the capture button tap to start and tap to stop instead of holding. The system Reduce Motion setting stills the water too.")
                 }
                 .listRowBackground(OceanTheme.fill)
+
+                Section {
+                    LabeledContent("Apple Intelligence", value: modelStatusValue)
+                } footer: {
+                    Text(modelStatusFooter)
+                }
+                .listRowBackground(OceanTheme.fill)
+                .task {
+                    modelStatus = await Task.detached(priority: .utility) { OnDeviceModel.status }.value
+                }
 
                 Section {
                     Toggle("Include voice recordings", isOn: $includeVoice)
@@ -119,6 +133,26 @@ struct OceanSettingsView: View {
             } message: {
                 Text("The starter thoughts drift out for good.")
             }
+        }
+    }
+
+    /// "Ready" or "Unavailable"; blank for the beat before the check returns.
+    private var modelStatusValue: String {
+        switch modelStatus {
+        case .ready: String(localized: "Ready")
+        case .unavailable: String(localized: "Unavailable")
+        case nil: ""
+        }
+    }
+
+    /// What the model does here, or why it cannot and what stands in. The
+    /// same reason a link's note gives, so the two never disagree.
+    private var modelStatusFooter: String {
+        switch modelStatus {
+        case .unavailable(let reason):
+            String(localized: "Not available: \(reason). Titles come from your own words, and Ask gives a fixed reading of the thoughts it finds.")
+        case .ready, nil:
+            String(localized: "Titles, themes, whisper summaries and Ask answers are composed on this device. Nothing leaves it.")
         }
     }
 

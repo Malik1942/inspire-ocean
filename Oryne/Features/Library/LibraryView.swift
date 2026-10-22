@@ -153,16 +153,25 @@ struct LibraryView: View {
         defer { backfilling = false }
 
         let migrate = !UserDefaults.standard.bool(forKey: Self.semanticThemesMigrationKey)
+        let modelReady = OnDeviceModel.isReadyCached
 
-        let pending = allNodes.compactMap { node -> (node: Node, work: UnderstandingBackfill.Work)? in
+        let all = allNodes.compactMap { node -> (node: Node, work: UnderstandingBackfill.Work)? in
             let work = UnderstandingBackfill.work(
                 isExample: node.isExample,
                 hasTitle: !node.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                 createdAt: node.createdAt,
-                migrating: migrate
+                migrating: migrate,
+                understandingVersion: node.understandingVersion,
+                modelAvailable: modelReady
             )
             return work.map { (node, $0) }
         }
+        // Naming and re-theming come first; enrichment of the understanding
+        // record runs newest first and only so many per open.
+        let enrichment = all.filter { $0.work == .enrich }
+            .sorted { $0.node.createdAt > $1.node.createdAt }
+            .prefix(UnderstandingBackfill.enrichmentPerOpen)
+        let pending = all.filter { $0.work != .enrich } + enrichment
         // A keyword-era thought still waiting for its new themes is no
         // current to join; it becomes one once re-themed.
         var keywordEra = Set(pending.filter { $0.work == .retheme }.map(\.node.id))
@@ -184,13 +193,18 @@ struct LibraryView: View {
                 continue
             }
 
-            let currents = CurrentSnap.candidates(
+            // An enriched thought already has its place: no current to join.
+            let currents = work == .enrich ? [] : CurrentSnap.candidates(
                 in: allNodes.filter { !keywordEra.contains($0.id) },
                 excluding: node.id,
                 forEntry: raw
             )
             let understanding = await ai.understand(raw, currents: currents)
-            NodeComposer.applyUnderstanding(understanding, to: node, preserveTitle: work == .retheme)
+            NodeComposer.applyUnderstanding(
+                understanding, to: node,
+                preserveTitle: work != .understand,
+                preserveThemes: work == .enrich
+            )
             try? context.save()
         }
 

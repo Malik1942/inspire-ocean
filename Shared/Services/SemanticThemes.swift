@@ -11,6 +11,20 @@ struct ThoughtUnderstanding {
     var themes: [String]
     /// Soft emotional tone ("bright" / "deep"), nil when there is no signal.
     var mood: String?
+
+    // The rest of the understanding record (docs/plans/memory-layer/SPEC.md,
+    // layer 1). Defaulted, so a pass that only knows the essence and themes
+    // still produces a valid understanding.
+
+    /// One of the eight fixed kinds; nil when no model read the thought.
+    var category: ThoughtCategory? = nil
+    var language: ThoughtLanguage? = nil
+    /// One line in the other language, or nil when the model gave none.
+    var gistOther: String? = nil
+    var entities: [String] = []
+    /// Language-neutral English slugs for `themes`.
+    var themeKeys: [String] = []
+    var source: UnderstandingSource = .concepts
 }
 
 /// On-device conceptual theme detection.
@@ -161,10 +175,14 @@ enum SemanticThemes {
     /// mood from the light valence heuristic.
     static func understand(_ text: String) -> ThoughtUnderstanding {
         let essence = TitleDistiller.essence(from: text)
+        let themes = themes(for: text, essence: essence)
         return ThoughtUnderstanding(
             essence: essence,
-            themes: themes(for: text, essence: essence),
-            mood: ThemeDetector.mood(from: text)
+            themes: themes,
+            mood: ThemeDetector.mood(from: text),
+            language: ThoughtReading.language(of: text),
+            themeKeys: ThoughtReading.keys(fromEnglish: [], fallbackLabels: themes),
+            source: .concepts
         )
     }
 

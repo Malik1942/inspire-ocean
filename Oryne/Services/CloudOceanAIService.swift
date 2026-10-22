@@ -226,16 +226,8 @@ final class CloudOceanAIService: OceanAIService {
         guard enabled else { return nil }
 
         let titles = sources.prefix(6).map { "“\($0.displayTitle)”" }.joined(separator: ", ")
-        let system = """
-        You are the outward-looking voice of a personal inspiration space \
-        called the Ocean. The user's own notes are answered separately — you \
-        bring what lies beyond them. From your general knowledge, name two or \
-        three specific directions worth exploring: thinkers, works, fields, \
-        or open questions that genuinely extend their interest. Write 2 to 4 \
-        calm sentences in plain prose — no lists, no exclamation marks. Be \
-        concrete with names. Never pretend to quote their notes, and never \
-        invent notes.
-        """
+        // Shared with the on-device path so the two seams never drift apart.
+        let system = LocalOceanAIService.outwardVoice
         let prompt = titles.isEmpty
             ? "They are exploring: \(query)"
             : "They are exploring: \(query)\nTheir related notes touch on: \(titles)"
@@ -334,13 +326,19 @@ final class CloudOceanAIService: OceanAIService {
             guard !essence.isEmpty else { return await fallback.understand(text, currents: currents) }
 
             let themes = lines.dropFirst().first.map(SemanticThemes.tidyThemeList) ?? []
-            return ThoughtUnderstanding(
-                essence: essence,
-                themes: themes.isEmpty
-                    ? SemanticThemes.themes(for: cleaned, essence: essence)
-                    : themes,
-                mood: ThemeDetector.mood(from: cleaned)
-            )
+            // The rest of the record (category, language, gist, entities,
+            // keys, the current it joins) comes from the on-device pass;
+            // Claude's title and themes sit on top, except that a current the
+            // local pass joined is kept, since joining is what makes the
+            // Ocean cohere.
+            var understanding = await fallback.understand(cleaned, currents: currents)
+            understanding.essence = essence
+            let joinedCurrent = understanding.themes.first.map { lead in currents.contains { $0.key == lead } } ?? false
+            if !themes.isEmpty, !joinedCurrent {
+                understanding.themes = themes
+                understanding.themeKeys = ThoughtReading.keys(fromEnglish: [], fallbackLabels: themes)
+            }
+            return understanding
         } catch {
             return await fallback.understand(text, currents: currents)
         }

@@ -74,18 +74,25 @@ Then select an iPhone simulator and press ⌘R (scheme: **Oryne**).
     *AI feels generic → ground responses in saved nodes*). Dialogue reflections
     and concise titles are composed with Apple's on-device **Foundation
     Models** (Apple Intelligence) when the device is eligible, with grounded
-    template / heuristic fallbacks otherwise.
+    template / heuristic fallbacks otherwise. The model also themes each
+    thought, picks which existing current it joins (`FoundationCurrentPicker`,
+    guided generation; measured by `Scripts/current-snap-eval`), summarizes
+    long whispers and saved links, and composes Ask's empty state. One check
+    (`OnDeviceModel`) answers for all of them; Settings shows it, and a
+    template answer in Ask says it is one.
   - `CloudOceanAIService` (the app's default) — the cloud seam (PRD §14),
-    wired to the Anthropic Claude API (`claude-opus-4-8`). It self-activates
-    when an `ANTHROPIC_API_KEY` is present in the environment (simulator:
-    `SIMCTL_CHILD_ANTHROPIC_API_KEY=… xcrun simctl launch …`) or as an
-    `AnthropicAPIKey` Info.plist entry injected from a local xcconfig —
-    **never commit a key**. Retrieval, themes, and transcription always stay
-    on-device; only the dialogue reflection and concise titles are composed in
-    the cloud, grounded in the handful of fragments retrieval already
-    selected. Without a key (or on any network failure) it behaves exactly
-    like `LocalOceanAIService`. Optional env overrides: `OCEAN_CLOUD_MODEL`,
-    `OCEAN_CLOUD_BASE_URL`.
+    wired to the Anthropic Claude API (`claude-opus-4-8`). **Debug builds
+    only:** it self-activates when an `ANTHROPIC_API_KEY` is present in the
+    environment (simulator: `SIMCTL_CHILD_ANTHROPIC_API_KEY=… xcrun simctl
+    launch …`) or as an `AnthropicAPIKey` Info.plist entry injected from a
+    local xcconfig — **never commit a key**. Release builds compile the key
+    lookup to nil, so every shipped build is on-device only until a backend
+    proxy carries the key. Retrieval, themes, and transcription always stay
+    on-device; only the dialogue reflection, Research's outward step and
+    concise titles are composed in the cloud, grounded in the handful of
+    fragments retrieval already selected. Without a key (or on any network
+    failure) it behaves exactly like `LocalOceanAIService`. Optional env
+    overrides: `OCEAN_CLOUD_MODEL`, `OCEAN_CLOUD_BASE_URL`.
 
 ### Data model (`Shared/Models`)
 - `Node` — one inspiration fragment ("drift"). Branching is a self-referential
@@ -153,7 +160,8 @@ Intelligence actions):
   Intelligence only run on Apple-Intelligence-capable Macs/iPhones. On
   ineligible hardware the model reports `deviceNotEligible` and the app falls
   back to heuristics (titles still read cleanly) — no code change needed; the
-  model path activates automatically on capable devices.
-- Natural next steps toward the PRD's longer arc: wire `CloudOceanAIService` to a
-  hosted model (for model-quality titles/dialogue on any device), add an Action
-  Button binding to `AddInspirationIntent`, and a Home Screen capture widget.
+  model path activates automatically on capable devices. Settings › Apple
+  Intelligence shows the status and the reason. Debug builds can force either
+  path on one simulator with `SIMCTL_CHILD_ORYNE_FORCE_MODEL=1|0`.
+- Natural next step toward the PRD's longer arc: a backend proxy so
+  `CloudOceanAIService` can ship (model-quality titles/dialogue on any device).

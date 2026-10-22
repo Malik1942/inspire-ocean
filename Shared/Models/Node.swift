@@ -106,6 +106,34 @@ final class Node {
     /// "Move to new current" action clears this.
     var anchorThemeKey: String?
 
+    // MARK: Understanding record (docs/plans/memory-layer/SPEC.md, layer 1)
+    //
+    // What the understanding step knows about the thought beyond its title
+    // and themes. Small text, so it syncs through CloudKit like the rest of
+    // the Ocean (decision 5); the vectors derived from it do not. Every field
+    // is defaulted so existing stores migrate lightly.
+
+    /// One of `ThoughtCategory`; nil until a model has read the thought.
+    var categoryRaw: String? = nil
+    /// One of `ThoughtLanguage`.
+    var languageRaw: String? = nil
+    /// One line on what the thought is about, in the other language (Chinese
+    /// for an English thought, English for a Chinese or mixed one), so a
+    /// question in either language can reach it.
+    var gistOther: String? = nil
+    /// Proper names the thought mentions: people, places, products, projects.
+    var entities: [String] = []
+    /// Language-neutral theme keys (English slugs), the bridge toward one
+    /// Ocean across languages. Phase 1 stores them; phase 3 groups by them.
+    var themeKeys: [String] = []
+    /// `ThoughtStatus` for a task or bug. The user's alone.
+    var statusRaw: String? = nil
+    /// `ThoughtReading.version` when a model produced the full record, else 0
+    /// so a later open with a model can enrich it.
+    var understandingVersion: Int = 0
+    /// `UnderstandingSource` of the last pass.
+    var understandingSourceRaw: String? = nil
+
     /// A short reading of a long whisper, written by the on-device model in
     /// the words' own language. Shown above the transcript; never replaces it.
     var summary: String?
@@ -267,6 +295,35 @@ extension Node {
     /// thought, which drifts in the adrift current.
     var currentKey: String? { anchorThemeKey ?? themes.first }
 
+    // MARK: Understanding record accessors
+
+    var category: ThoughtCategory? {
+        get { categoryRaw.flatMap(ThoughtCategory.init(rawValue:)) }
+        set { categoryRaw = newValue?.rawValue }
+    }
+
+    var language: ThoughtLanguage? {
+        get { languageRaw.flatMap(ThoughtLanguage.init(rawValue:)) }
+        set { languageRaw = newValue?.rawValue }
+    }
+
+    var status: ThoughtStatus? {
+        get { statusRaw.flatMap(ThoughtStatus.init(rawValue:)) }
+        set { statusRaw = newValue?.rawValue }
+    }
+
+    var understandingSource: UnderstandingSource? {
+        understandingSourceRaw.flatMap(UnderstandingSource.init(rawValue:))
+    }
+
+    /// The texts a question is compared against, one per language the
+    /// thought can be reached in: its own words, and its gist in the other
+    /// language. Apple's embeddings live in per-script spaces, so this is
+    /// what lets a Chinese question meet an English thought.
+    var retrievalTexts: [String] {
+        [searchableText, gistOther ?? ""].filter { !$0.isEmpty }
+    }
+
     /// A short, human-friendly display title, derived from content when empty.
     var displayTitle: String {
         if !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -284,7 +341,7 @@ extension Node {
     /// enriched context joins in so link drifts cluster and surface by what
     /// they're actually about, not by their URL.
     var searchableText: String {
-        [title, text, transcription ?? "", linkContext, themes.joined(separator: " ")]
+        [title, text, transcription ?? "", linkContext, themes.joined(separator: " "), entities.joined(separator: " ")]
             .filter { !$0.isEmpty }
             .joined(separator: " ")
     }
