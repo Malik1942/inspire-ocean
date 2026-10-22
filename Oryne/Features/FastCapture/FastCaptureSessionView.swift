@@ -205,17 +205,19 @@ struct FastCaptureSessionView: View {
     /// folds the card back into the bar, and what was typed waits there.
     /// Both rows stay for the whole session, empty or not.
     private var composer: some View {
-        VStack(alignment: .leading, spacing: FastCaptureLayout.discInset) {
+        VStack(alignment: .leading, spacing: cardInset) {
             if let imageData, let uiImage = UIImage(data: imageData) {
                 screenshotPreview(uiImage)
             }
             // Closed, the actions lie over the field's row, as on the bar.
-            VStack(alignment: .leading, spacing: cardShown ? 0 : -FastCaptureLayout.buttonSize) {
+            VStack(alignment: .leading, spacing: cardShown ? 8 : -FastCaptureLayout.buttonSize) {
                 composerField
                 actionRow
             }
         }
-        .padding(FastCaptureLayout.discInset)
+        // Open, one inset on every side: the lines start and wrap where the
+        // disc's edges are. Closed, the bar's own geometry.
+        .padding(cardInset)
         .frame(maxWidth: .infinity, alignment: .leading)
         // Everything in the card rides with it while it folds and the
         // keyboard drops; nothing inside jumps ahead to where it will end.
@@ -229,8 +231,8 @@ struct FastCaptureSessionView: View {
         // Folding away, it takes no more touches: a hold on the disc now
         // would start a take the closing overlay then drops.
         .allowsHitTesting(cardShown)
-        // A new line grows the card upward; the actions stay at its foot.
-        .animation(OceanMotion.standard, value: text)
+        // A new line grows the card upward at once, as in Messages: an
+        // animated resize lets the field scroll its words up and back.
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
             // The card and the 12 pt gap under it (bottomPadding).
             if !asSheet { control.composerHeight = height + 12 }
@@ -270,15 +272,19 @@ struct FastCaptureSessionView: View {
                 .opacity(cardShown ? 0 : 1)
                 .accessibilityHidden(true)
         }
-        // About even above the first line and below the last, so a new
-        // line grows the card without the words shifting inside it.
-        .padding(.vertical, 10)
-        .padding(.leading, FastCaptureLayout.fieldLeading - FastCaptureLayout.discInset)
-        .padding(.trailing, cardShown
-            ? FastCaptureLayout.fieldLeading - FastCaptureLayout.discInset
-            : FastCaptureLayout.buttonSize + 8)
-        .frame(maxWidth: .infinity, minHeight: FastCaptureLayout.buttonSize, alignment: .leading)
+        // Open, the first line keeps a fixed place under the top edge and
+        // the lines span the card's inset. Closed, the field is the bar's
+        // one line: where its placeholder sits, centered, clear of the disc.
+        .padding(.vertical, cardShown ? 2 : 10)
+        .padding(.leading, cardShown ? 0 : FastCaptureLayout.fieldLeading - FastCaptureLayout.discInset)
+        .padding(.trailing, cardShown ? 0 : FastCaptureLayout.buttonSize + 8)
+        .frame(maxWidth: .infinity, minHeight: cardShown ? nil : FastCaptureLayout.buttonSize, alignment: .leading)
         .accessibilityIdentifier("composer.field")
+    }
+
+    /// The card's padding: its one inset open, the bar's disc inset closed.
+    private var cardInset: CGFloat {
+        cardShown ? FastCaptureLayout.cardInset : FastCaptureLayout.discInset
     }
 
     /// The card's second row, at its foot: the disc at the trailing end,
@@ -287,7 +293,6 @@ struct FastCaptureSessionView: View {
     private var actionRow: some View {
         HStack(alignment: .center, spacing: 8) {
             composerCaptions
-                .padding(.leading, FastCaptureLayout.fieldLeading - FastCaptureLayout.discInset)
                 .opacity(cardShown ? 1 : 0)
             Spacer(minLength: 0)
             overlayDisc(inComposer: true, send: canRelease ? saveTyped : nil)
@@ -441,7 +446,7 @@ struct FastCaptureSessionView: View {
                 .frame(maxWidth: .infinity)
                 // Concentric with the card's corner.
                 .clipShape(RoundedRectangle(
-                    cornerRadius: FastCaptureLayout.cardRadius - FastCaptureLayout.discInset,
+                    cornerRadius: FastCaptureLayout.cardRadius - FastCaptureLayout.cardInset,
                     style: .continuous
                 ))
 

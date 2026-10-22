@@ -211,6 +211,9 @@ enum FastCaptureLayout {
     /// The open composer's corners: fixed and continuous, so a tall card
     /// keeps its text room instead of growing a capsule's round ends.
     static let cardRadius: CGFloat = 24
+    /// The open composer's one inset: the words and the disc keep it from
+    /// every edge, so the lines and the disc share both sides of the card.
+    static let cardInset: CGFloat = 12
     /// The tab bar (49 pt) plus the 12 pt gap under the bar.
     static let tabBarClearance: CGFloat = 49 + 12
     /// What scrolling content under the bar leaves clear: bar, gap, and a
