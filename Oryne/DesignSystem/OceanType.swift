@@ -38,8 +38,18 @@ enum OceanType {
 /// One gutter and one ladder. Things that belong together sit tight; groups
 /// sit far apart. The contrast between the two is the hierarchy.
 enum OceanSpacing {
-    /// Page margin, left and right, on every surface.
-    static let gutter: CGFloat = 20
+    /// Page margin, left and right, on every surface: the system's own
+    /// margin for this window, so page tools, fields, tiles, bars and words
+    /// start where a navigation bar puts its back button and a sheet its
+    /// close. UIKit uses 16 pt on standard iPhones and 20 on wide ones
+    /// (measured 2026-10-22: 16 at 402 pt, 20 at 420 and 440).
+    @MainActor static var gutter: CGFloat {
+        let width = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .map { $0.windows.first?.bounds.width ?? $0.screen.bounds.width }
+            .max() ?? 0
+        return width >= 414 ? 20 : 16
+    }
     /// A title and its meta line.
     static let tight: CGFloat = 4
     /// Items in one list.

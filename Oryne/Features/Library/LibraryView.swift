@@ -392,7 +392,7 @@ struct LibraryView: View {
         .padding(.horizontal, 14).padding(.vertical, 10)
         .background(.ultraThinMaterial, in: Capsule())
         .overlay(Capsule().strokeBorder(Color.white.opacity(0.08), lineWidth: 0.5))
-        .padding(.horizontal, 12).padding(.bottom, 6)
+        .padding(.horizontal, OceanSpacing.gutter).padding(.bottom, 6)
         .transition(.move(edge: .top).combined(with: .opacity))
     }
 
@@ -496,7 +496,7 @@ struct LibraryView: View {
     private func estimatedCardHeight(_ node: Node) -> CGFloat {
         var height: CGFloat = 92
         if node.kind == .image || node.linkImageData != nil { height += 120 }
-        if !node.snippet.isEmpty { height += CGFloat(min(4, node.snippet.count / 24)) * 20 }
+        if !node.snippet.isEmpty { height += CGFloat(min(2, node.snippet.count / 24)) * 20 }
         return height
     }
 
