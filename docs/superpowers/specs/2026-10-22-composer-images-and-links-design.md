@@ -15,7 +15,7 @@ thought's link card.
 | Decision | Choice |
 |---|---|
 | Where images come in | A + at the leading end of the open card's action row; the send disc stays at the trailing end |
-| What + opens | A short sheet: a strip of the latest photos (tap one: attached, sheet closes), then Camera and All Photos |
+| What + opens | A panel in the keyboard's place, as Messages does: a strip of the latest photos (tap one: attached, the keys come back), then Camera and All Photos. Was a short sheet until the simulator showed the embedded picker takes over any sheet it sits in (Malik chose the panel, 2026-10-22) |
 | Where attachments show | A row of square thumbnails at the top of the card, above the words, each with its own ✕ |
 | The Action Button screenshot | Becomes the first thumbnail of that row; the tall full-width preview goes |
 | How links come in | Sensed in the typed words; no link field |
@@ -43,7 +43,10 @@ thought's link card.
 - **The strip needs no permission.** SwiftUI's embedded `PhotosPicker` (iOS 17;
   the app targets 18) with `.photosPickerStyle(.compact)` draws a one-row picker
   out of process, with live selection (`selectionBehavior: .continuous`). The
-  app never reads the library itself, so there is no Photos prompt.
+  app never reads the library itself, so there is no Photos prompt. Found on
+  the simulator: embedded in any UIKit sheet it takes the sheet over (full
+  height, see-through, content at the top), even when added after the sheet
+  settles. Drawn in a panel inside the composer's overlay it behaves.
 - **Camera** needs `NSCameraUsageDescription`. The phone's privacy strings are
   English only today (no `InfoPlist.xcstrings` for the app target); this one
   joins them.
@@ -77,31 +80,44 @@ thought's link card.
 - Images are decoded into small thumbnails once, when attached; typing never
   re-decodes photos.
 
-### The + sheet
+### The + panel
 
 ```
-┌───────────────────────────────────────┐
-│ [▣][▣][▣][▣][▣][▣] → latest photos     │
-│  ◉  Camera                            │
-│  ▦  All Photos                        │
-└───────────────────────────────────────┘
+╭──────────────────────────────────────╮
+│ What are you noticing?               │  the card, where it sat on the keys
+│ (+)                              (≋) │
+╰──────────────────────────────────────╯
+╭──────────────────────────────────────╮
+│ [▣][▣][▣][▣][▣][▣] → latest photos    │  the panel, in the keyboard's place
+│  ◉  Camera                           │
+│  ▦  All Photos                       │
+╰──────────────────────────────────────╯
 ```
 
-- A system sheet at one fixed height (default sheet material, grabber shown).
+- + swaps the keyboard for the panel, and back. The panel is drawn by the
+  composer's overlay (never a sheet), with the card's gutter edges, 24 pt
+  continuous corners, 12 pt inset and glass. Its height is the keyboard's
+  less the home indicator's inset, so the card does not move when + swaps
+  them. The tab bar steps away under it, as it does under the keys.
+- Focusing the words (a tap on the field, the + again, a photo picked)
+  brings the keys back and the panel steps aside; so does a take starting,
+  open water, or anything that ends composing.
 - **Strip:** embedded `PhotosPicker`, compact style, images only, continuous
   selection, with search, collection navigation, the staging area and the
-  selection actions disabled and its accessories hidden. The first tap
-  attaches that photo and closes the sheet.
-- **Camera** (`camera`): closes the sheet, then the system camera full screen
+  selection actions disabled and its accessories hidden, filling the panel
+  above the rows. The first tap attaches that photo and the keys come back.
+  Inside a current's sheet (the composer `asSheet`) there is no strip, only
+  the rows: the strip would take that sheet over.
+- **Camera** (`camera`): the panel closes, then the system camera full screen
   (`UIImagePickerController`, photo only). One shot is attached. The row is
-  hidden where no camera exists (the simulator).
-- **All Photos** (`photo.on.rectangle`): closes the sheet, then the system
+  hidden where no camera exists.
+- **All Photos** (`photo.on.rectangle`): the panel closes, then the system
   Photos picker with multi-select up to the room left.
 - Every photo goes through `ImageDownsampler` (1600 px longest edge) before it
   is kept. When more were picked than fit, the existing notice shows in the
   captions: "Only added %lld, %lld images max."
-- Returning from the sheet, the camera or the picker (with or without a pick),
-  the field takes the keyboard again.
+- Returning from the camera or the picker (with or without a pick), the field
+  takes the keyboard again.
 
 ### Link sensing
 
@@ -177,8 +193,9 @@ the catalog if nothing else references them. No dashes in any of it.
 | `Shared/Services/LinkSensing.swift` | New. Find, choose, lift; pure, no UI |
 | `SharedTests/LinkSensingTests.swift` | New |
 | `Oryne/Features/FastCapture/CaptureAttachments.swift` | New. The row: thumbnails, link tile, ✕ badges |
-| `Oryne/Features/FastCapture/CaptureAttachSheet.swift` | New. The + sheet, and the camera wrapper |
-| `Oryne/Features/FastCapture/FastCaptureSessionView.swift` | Images as a list with thumbnails, +, the row, sensed link state, presenting sheet, camera and picker; release passes images, link and dismissals |
+| `Oryne/Features/FastCapture/CaptureAttachPanel.swift` | New. The + panel, and the camera wrapper |
+| `Oryne/App/RootTabView.swift` | The tab bar steps away while the + panel is up (`CaptureControl.attachPanelOpen`) |
+| `Oryne/Features/FastCapture/FastCaptureSessionView.swift` | Images as a list with thumbnails, +, the row, the + panel in the keyboard's place, sensed link state, camera and picker; release passes images, link and dismissals |
 | `Oryne/Features/FastCapture/CaptureControl.swift` | `ParkedCapture` holds images and dismissals; its line |
 | `Oryne/Services/CaptureSession.swift` | `CaptureDraft` loses `imageData`, gains dismissed links; `release` lifts and resolves the kind; `beginUnderstanding` starts link enrichment |
 | `project.yml` | `NSCameraUsageDescription` |
@@ -201,7 +218,7 @@ the catalog if nothing else references them. No dashes in any of it.
   empty words; Chinese trailing lift (`看这个 https://…`) and mid-sentence keep
   (`… xhslink.com/a/AbC123，复制后打开`); two links take the first; a dismissed
   first link takes the second; all dismissed gives none.
-- **Simulator:** + sheet strip attaches one photo; All Photos attaches several
+- **Simulator:** the + panel's strip attaches one photo and the card stays put; All Photos attaches several
   and the 10 cap notice shows; Action Button seed shows as a thumbnail; release
   writes `NodeImage` rows in order; a typed link shows the tile, and release
   writes `linkURLString`, lifted words and the kind, then the thought page
