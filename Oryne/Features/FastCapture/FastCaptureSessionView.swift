@@ -38,7 +38,8 @@ struct FastCaptureSessionView: View {
 
     @State private var phase: Phase = .composing
     @State private var text: String
-    @State private var imageData: Data?
+    /// The pictures on the card, in the order they were added.
+    @State private var images: [CaptureImage]
     @State private var session = CaptureSession()
     /// Words of the take that just ended, held for the settle animation.
     @State private var settlingWords = ""
@@ -67,7 +68,8 @@ struct FastCaptureSessionView: View {
         self.onFinish = onFinish
         self.asSheet = asSheet
         _text = State(initialValue: request.seedText)
-        _imageData = State(initialValue: request.imageData)
+        // The Action Button's screenshot is the card's first picture.
+        _images = State(initialValue: request.imageData.flatMap(CaptureImage.init(data:)).map { [$0] } ?? [])
     }
 
     private var listening: Bool { phase == .listening }
@@ -217,8 +219,11 @@ struct FastCaptureSessionView: View {
     /// Both rows stay for the whole session, empty or not.
     private var composer: some View {
         VStack(alignment: .leading, spacing: cardInset) {
-            if let imageData, let uiImage = UIImage(data: imageData) {
-                screenshotPreview(uiImage)
+            // What rides along sits above the words, only while the card
+            // is open, so the fold still lands on the bar's one line.
+            if cardShown, !images.isEmpty {
+                CaptureAttachments(images: images, onRemoveImage: removeImage)
+                    .transition(.opacity)
             }
             // Closed, the actions lie over the field's row, as on the bar.
             VStack(alignment: .leading, spacing: cardShown ? 8 : -FastCaptureLayout.buttonSize) {
@@ -279,7 +284,7 @@ struct FastCaptureSessionView: View {
         // the first line of the words, cut with an ellipsis.
         .opacity(cardShown ? 1 : 0)
         .overlay(alignment: .topLeading) {
-            CaptureBarWords(draft: canRelease ? ParkedCapture(text: text, imageData: imageData, heldDraft: heldDraft).line : nil)
+            CaptureBarWords(draft: canRelease ? ParkedCapture(text: text, images: images, heldDraft: heldDraft).line : nil)
                 .opacity(cardShown ? 0 : 1)
                 .accessibilityHidden(true)
         }
@@ -345,7 +350,7 @@ struct FastCaptureSessionView: View {
         fadeTask?.cancel()
         textFocused = false
         if canRelease, !asSheet {
-            control.parked = ParkedCapture(text: text, imageData: imageData, heldDraft: heldDraft)
+            control.parked = ParkedCapture(text: text, images: images, heldDraft: heldDraft)
         }
         closeCard()
     }
@@ -355,7 +360,7 @@ struct FastCaptureSessionView: View {
         guard !asSheet, let parked = control.parked else { return }
         control.parked = nil
         text = parked.text
-        imageData = parked.imageData
+        images = parked.images
         heldDraft = parked.heldDraft
     }
 
@@ -462,34 +467,13 @@ struct FastCaptureSessionView: View {
         return max(0, frame.maxY - keyboardFrame.minY)
     }
 
-    private func screenshotPreview(_ uiImage: UIImage) -> some View {
-        ZStack(alignment: .topTrailing) {
-            Image(uiImage: uiImage)
-                .resizable()
-                .scaledToFill()
-                .frame(height: 116)
-                .frame(maxWidth: .infinity)
-                // Concentric with the card's corner.
-                .clipShape(RoundedRectangle(
-                    cornerRadius: FastCaptureLayout.cardRadius - FastCaptureLayout.cardInset,
-                    style: .continuous
-                ))
-
-            Button {
-                withAnimation(.snappy) { imageData = nil }
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.title3)
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(.white)
-                    .padding(6)
-            }
-            .accessibilityLabel("Remove screenshot")
-        }
+    private var canRelease: Bool {
+        !text.trimmed.isEmpty || !images.isEmpty || heldDraft?.audioData != nil
     }
 
-    private var canRelease: Bool {
-        !text.trimmed.isEmpty || imageData != nil || heldDraft?.audioData != nil
+    /// A picture's ✕.
+    private func removeImage(_ id: CaptureImage.ID) {
+        withAnimation(.snappy) { images.removeAll { $0.id == id } }
     }
 
     // MARK: Listening
@@ -534,7 +518,7 @@ struct FastCaptureSessionView: View {
 
         // A press just past the hold threshold with nothing said: not a
         // thought. Back to the field, keyboard up, nothing minted.
-        if words.isEmpty, note.isEmpty, imageData == nil, heldDraft == nil, elapsed < 1 {
+        if words.isEmpty, note.isEmpty, images.isEmpty, heldDraft == nil, elapsed < 1 {
             if let url { try? FileManager.default.removeItem(at: url) }
             withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .composing }
             textFocused = true
@@ -549,7 +533,7 @@ struct FastCaptureSessionView: View {
             draft.audioData = data
             draft.audioTempURL = url
         }
-        draft.imageData = imageData
+        draft.imageDatas = images.map(\.data)
         draft.anchorThemeKey = request.anchorThemeKey
         heldDraft = nil
 
@@ -588,10 +572,11 @@ struct FastCaptureSessionView: View {
             draft.transcript = trimmed
             draft.text = ""
         } else {
-            draft.kind = (imageData != nil && trimmed.isEmpty) ? .image : .text
+            // `release` names a thought of only pictures (NodeKind.captured).
+            draft.kind = .text
             draft.text = trimmed
         }
-        draft.imageData = imageData
+        draft.imageDatas = images.map(\.data)
         draft.anchorThemeKey = request.anchorThemeKey
         guard let nodeID = session.release(draft) else {
             message = String(localized: "Couldn't save yet. Release tries again.")
@@ -631,7 +616,7 @@ struct FastCaptureSessionView: View {
         fadeTask?.cancel()
         isSaving = false
         text = ""
-        imageData = nil
+        images = []
         heldDraft = nil
         message = nil
         settlingWords = ""
@@ -652,7 +637,7 @@ struct FastCaptureSessionView: View {
         isSaving = false
         heldDraft = draft.audioData != nil ? draft : nil
         text = [draft.text, draft.transcript].map(\.trimmed).filter { !$0.isEmpty }.joined(separator: " ")
-        imageData = draft.imageData
+        images = draft.imageDatas.compactMap(CaptureImage.init(data:))
         control.toastShowing = false
         withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .composing }
         textFocused = true

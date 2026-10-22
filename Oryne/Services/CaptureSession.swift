@@ -16,10 +16,8 @@ struct CaptureDraft {
     /// Temp file backing the recording — only needed when no live transcript
     /// exists and the post-hoc recognizer must listen again.
     var audioTempURL: URL? = nil
-    /// Single-image input (Fast Capture's one screenshot). The Capture surface
-    /// uses `imageDatas` for multi-image; `release` normalizes either into the
-    /// node's image set.
-    var imageData: Data? = nil
+    /// The pictures on the card, in the order they were added (at most
+    /// `Node.maxImages`).
     var imageDatas: [Data] = []
     var linkURLString: String? = nil
 
@@ -33,7 +31,6 @@ struct CaptureDraft {
         text.trimmed.isEmpty
             && transcript.trimmed.isEmpty
             && audioData == nil
-            && imageData == nil
             && imageDatas.isEmpty
             && (linkURLString ?? "").isEmpty
     }
@@ -126,14 +123,20 @@ final class CaptureSession {
         guard let context, !draft.isEmpty else { return nil }
         let meaning = [draft.text, draft.transcript]
             .map(\.trimmed).filter { !$0.isEmpty }.joined(separator: " ")
-        let imageDatas = draft.imageDatas.isEmpty ? [draft.imageData].compactMap { $0 } : draft.imageDatas
         let node = NodeComposer.make(
-            kind: draft.kind,
+            // What it holds names it: a whisper, a thought, or (with no
+            // words) its pictures or its link.
+            kind: NodeKind.captured(
+                voice: draft.kind == .voice || draft.audioData != nil,
+                words: meaning,
+                images: draft.imageDatas.count,
+                link: draft.linkURLString != nil
+            ),
             text: draft.text.trimmed,
             transcription: draft.transcript.trimmed.isEmpty ? nil : draft.transcript.trimmed,
             linkURLString: draft.linkURLString,
             audioData: draft.audioData,
-            imageDatas: imageDatas,
+            imageDatas: draft.imageDatas,
             detectThemes: !meaning.isEmpty
         )
         // The user's placement intent, applied before insert and independent of

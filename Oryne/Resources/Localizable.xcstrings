@@ -2474,16 +2474,6 @@
         }
       }
     },
-    "Remove screenshot" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "移除截图"
-          }
-        }
-      }
-    },
     "Remove theme %@" : {
       "localizations" : {
         "zh-Hans" : {
@@ -4098,6 +4088,16 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "没有操作按钮？把 Oryne 复杂功能添加到表盘上。"
+          }
+        }
+      }
+    },
+    "%lld images" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 张图片"
           }
         }
       }

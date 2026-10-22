@@ -24,6 +24,13 @@ enum ImageDownsampler {
     /// memory. Returns nil when the bytes aren't a decodable image, so callers
     /// can fall back to the original.
     static func downsample(_ data: Data, maxPixel: CGFloat, quality: CGFloat = 0.8) -> Data? {
+        image(data, maxPixel: maxPixel)?.jpegData(compressionQuality: quality)
+    }
+
+    /// The picture in `data`, decoded upright and no larger than `maxPixel`
+    /// on its longest edge (ImageIO never decodes the full image). Nil when
+    /// the bytes aren't a picture.
+    static func image(_ data: Data, maxPixel: CGFloat) -> UIImage? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
@@ -33,7 +40,7 @@ enum ImageDownsampler {
         guard let cg = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
             return nil
         }
-        return UIImage(cgImage: cg).jpegData(compressionQuality: quality)
+        return UIImage(cgImage: cg)
     }
 
     /// The single path every multi-image surface (Capture, edit sheet, branch
