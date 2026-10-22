@@ -96,6 +96,9 @@ struct CaptureAttachments: View {
             .overlay(alignment: .topTrailing) {
                 RemoveBadge { onRemoveImage(image.id) }
             }
+            // VoiceOver's ring is the tile, not the filled picture spilling
+            // past it.
+            .contentShape(.accessibility, tileShape)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(position(number))
             .accessibilityAction(named: Text("Remove image")) { onRemoveImage(image.id) }
@@ -111,6 +114,7 @@ struct CaptureAttachments: View {
             .overlay(alignment: .topTrailing) {
                 RemoveBadge(action: onCancelLoading)
             }
+            .contentShape(.accessibility, tileShape)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(position(number))
             .accessibilityValue(Text("Loading"))
@@ -144,6 +148,7 @@ struct CaptureAttachments: View {
         .overlay(alignment: .topTrailing) {
             RemoveBadge { onRemoveLink(link.urlString) }
         }
+        .contentShape(.accessibility, tileShape)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(NodeKind.link.label))
         .accessibilityValue(Text(verbatim: link.host))
