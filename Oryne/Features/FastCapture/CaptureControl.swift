@@ -60,6 +60,9 @@ final class CaptureControl {
     /// The overlay is only its toast now: the bar comes back, and a tap or a
     /// hold on it starts the next capture in the same overlay.
     var toastShowing = false
+    /// The composer's + panel stands in the keyboard's place: the tab bar
+    /// steps away under it, as it does under the keys.
+    var attachPanelOpen = false
     /// The bar has a place on the tab on screen (Tide). The toast sits just
     /// above it there, and in its spot on a tab without one.
     var barOnTab = true

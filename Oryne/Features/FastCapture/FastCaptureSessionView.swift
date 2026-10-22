@@ -47,9 +47,9 @@ struct FastCaptureSessionView: View {
     /// The send was tapped while pictures were still loading: it goes once
     /// they are in, so a release never leaves one behind.
     @State private var releaseWhenLoaded = false
-    @State private var attachSheetShown = false
-    /// Where the + sheet hands over once it has closed.
-    @State private var attachRoute: AttachRoute?
+    /// The + panel stands in the keyboard's place: the latest photos,
+    /// Camera, All Photos.
+    @State private var attachPanelShown = false
     @State private var cameraShown = false
     @State private var libraryShown = false
     @State private var libraryItems: [PhotosPickerItem] = []
@@ -98,6 +98,27 @@ struct FastCaptureSessionView: View {
         ZStack(alignment: .bottom) {
             backdrop
 
+            if attachPanelShown, phase == .composing {
+                CaptureAttachPanel(
+                    showsStrip: !asSheet,
+                    onPick: { item in
+                        attach([item])
+                        textFocused = true
+                    },
+                    onCamera: {
+                        closePanel()
+                        cameraShown = true
+                    },
+                    onLibrary: {
+                        closePanel()
+                        libraryShown = true
+                    }
+                )
+                .frame(height: panelHeight)
+                .padding(.horizontal, OceanSpacing.gutter)
+                .transition(stilled ? .opacity : .move(edge: .bottom).combined(with: .opacity))
+            }
+
             VStack(alignment: .leading, spacing: 14) {
                 switch phase {
                 case .composing:
@@ -144,7 +165,9 @@ struct FastCaptureSessionView: View {
             // decoded once, off the main actor.
             if let screenshot = request.imageData {
                 let shot = await CaptureImage.make(from: [screenshot])
-                images.insert(contentsOf: shot, at: 0)
+                withAnimation(stilled ? OceanMotion.quick : OceanMotion.standard) {
+                    images.insert(contentsOf: shot, at: 0)
+                }
             }
             // Opened to type: a draft put away earlier is back in the field
             // (before the bar's send below looks for it).
@@ -216,15 +239,18 @@ struct FastCaptureSessionView: View {
             guard phase != .active else { return }
             finishInterruptedCapture()
         }
-        .sheet(isPresented: $attachSheetShown, onDismiss: attachSheetClosed) {
-            CaptureAttachSheet(
-                onPick: { item in
-                    attachSheetShown = false
-                    attach([item])
-                },
-                onCamera: { route(to: .camera) },
-                onLibrary: { route(to: .library) }
-            )
+        // Focusing the words (a tap on the field, the + again, a photo
+        // picked) brings the keys back and the panel steps aside; so does
+        // anything that ends composing.
+        .onChange(of: textFocused) { _, focused in
+            if focused { closePanel() }
+        }
+        .onChange(of: phase) { _, phase in
+            if phase != .composing { attachPanelShown = false }
+        }
+        .onChange(of: attachPanelShown) { _, shown in
+            // The tab bar steps away under the panel, as under the keys.
+            if ownsControl { withAnimation(panelMotion) { control.attachPanelOpen = shown } }
         }
         .fullScreenCover(isPresented: $cameraShown, onDismiss: { textFocused = true }) {
             CameraPicker(onFinish: attachShot)
@@ -261,6 +287,7 @@ struct FastCaptureSessionView: View {
                     putAway()
                 } else {
                     textFocused = false
+                    closePanel()
                 }
             }
             // Outermost, so the content shape steps aside with it: while
@@ -377,13 +404,17 @@ struct FastCaptureSessionView: View {
         .frame(minHeight: FastCaptureLayout.buttonSize)
     }
 
-    /// The card's +, the send disc's twin: the latest photos, Camera, All
-    /// Photos. The keyboard steps down for the sheet and comes back after.
+    /// The card's +, the send disc's twin: it swaps the keyboard for the
+    /// panel (the latest photos, Camera, All Photos), and back again.
     /// Dimmed once the thought holds all the pictures it can.
     private var attachButton: some View {
         Button {
-            textFocused = false
-            attachSheetShown = true
+            if attachPanelShown {
+                textFocused = true
+            } else {
+                textFocused = false
+                withAnimation(panelMotion) { attachPanelShown = true }
+            }
         } label: {
             Image(systemName: "plus")
         }
@@ -427,6 +458,9 @@ struct FastCaptureSessionView: View {
     private func putAway() {
         fadeTask?.cancel()
         textFocused = false
+        closePanel()
+        // A send waiting on pictures goes no further: the draft waits instead.
+        releaseWhenLoaded = false
         if hasDraft, !asSheet {
             control.parked = ParkedCapture(text: text, images: images, heldDraft: heldDraft)
         }
@@ -461,6 +495,7 @@ struct FastCaptureSessionView: View {
         control.overlayID = nil
         control.overlayOpen = false
         control.composerHeight = 0
+        control.attachPanelOpen = false
         control.toastShowing = false
         control.isListening = false
         control.level = 0
@@ -556,7 +591,30 @@ struct FastCaptureSessionView: View {
             return FastCaptureLayout.tabBarClearance
                 + (control.barOnTab ? FastCaptureLayout.barHeight + 12 : 0)
         }
+        if attachPanelShown { return panelHeight + 12 }
         return asSheet || keyboardUp ? 12 : FastCaptureLayout.tabBarClearance
+    }
+
+    /// The panel stands where the keys stood, so the card stays put when +
+    /// swaps them: the keyboard's height less the home indicator's inset,
+    /// which the panel keeps clear of. Inside a current's sheet it is only
+    /// its rows (no strip there).
+    private var panelHeight: CGFloat {
+        let rows = CGFloat(CameraPicker.isAvailable ? 2 : 1) * OceanControlSize.height
+            + 2 * FastCaptureLayout.cardInset
+        guard !asSheet else { return rows }
+        let resting = UIApplication.shared.connectedScenes
+            .compactMap { ($0 as? UIWindowScene)?.keyWindow }
+            .first?.safeAreaInsets.bottom ?? 0
+        let keys = keyboardFrame?.height ?? 336
+        return max(keys - resting, rows + 8 + 120)
+    }
+
+    private var panelMotion: Animation { stilled ? OceanMotion.quick : OceanMotion.standard }
+
+    private func closePanel() {
+        guard attachPanelShown else { return }
+        withAnimation(panelMotion) { attachPanelShown = false }
     }
 
     /// The part of the keyboard the safe area left out. SwiftUI can miss a
@@ -587,27 +645,6 @@ struct FastCaptureSessionView: View {
     /// A picture's ✕.
     private func removeImage(_ id: CaptureImage.ID) {
         withAnimation(.snappy) { images.removeAll { $0.id == id } }
-    }
-
-    private enum AttachRoute { case camera, library }
-
-    /// The + sheet's Camera or All Photos: the sheet closes first, then the
-    /// one chosen opens (`attachSheetClosed`).
-    private func route(to route: AttachRoute) {
-        attachRoute = route
-        attachSheetShown = false
-    }
-
-    /// The + sheet has closed: on to the camera or the whole library when
-    /// one was chosen, else back to the words.
-    private func attachSheetClosed() {
-        let route = attachRoute
-        attachRoute = nil
-        switch route {
-        case .camera: cameraShown = true
-        case .library: libraryShown = true
-        case nil: textFocused = true
-        }
     }
 
     /// Picked photos join the card in the order picked, each shrunk to the
@@ -648,7 +685,9 @@ struct FastCaptureSessionView: View {
         let fresh = await CaptureImage.make(from: datas)
         pendingImages = max(0, pendingImages - placeholders)
         withAnimation(.snappy) { images.append(contentsOf: fresh) }
-        if releaseWhenLoaded, pendingImages == 0 {
+        // Only while this overlay still holds the card: a send that waited
+        // here and was put away since stays put away.
+        if releaseWhenLoaded, pendingImages == 0, phase == .composing, ownsControl {
             releaseWhenLoaded = false
             saveTyped()
         }
@@ -659,6 +698,7 @@ struct FastCaptureSessionView: View {
     private func startListening() async {
         guard phase == .composing, !session.transcriber.isRecording else { return }
         textFocused = false
+        closePanel()
         message = nil
         let started = await session.startRecording(onInterruption: { [self] in
             // A call, Siri, a lost mic: the take ends as a lift would.
@@ -693,6 +733,10 @@ struct FastCaptureSessionView: View {
 
         let note = text.trimmed
         let words = transcript.trimmed
+        // Pictures still loading ride with the take: wait for them, briefly.
+        for _ in 0..<60 where pendingImages > 0 {
+            try? await Task.sleep(for: .milliseconds(50))
+        }
 
         // Under a second with nothing said: not a thought, nothing minted.
         // Opened to whisper (the disc, a widget), it was a change of mind
@@ -827,7 +871,13 @@ struct FastCaptureSessionView: View {
         isSaving = false
         heldDraft = draft.audioData != nil ? draft : nil
         text = [draft.text, draft.transcript].map(\.trimmed).filter { !$0.isEmpty }.joined(separator: " ")
-        images = draft.imageDatas.compactMap(CaptureImage.init(data:))
+        // The pictures come back through their loading tiles, decoded off
+        // the main actor; a send meanwhile waits for them.
+        images = []
+        if !draft.imageDatas.isEmpty {
+            pendingImages += draft.imageDatas.count
+            Task { await add(draft.imageDatas, standingIn: draft.imageDatas.count) }
+        }
         control.toastShowing = false
         withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .composing }
         textFocused = true
@@ -838,6 +888,7 @@ struct FastCaptureSessionView: View {
     private func cancel() {
         fadeTask?.cancel()
         textFocused = false
+        releaseWhenLoaded = false
         if listening {
             Task { await session.transcriber.cancel() }
             control.isListening = false
