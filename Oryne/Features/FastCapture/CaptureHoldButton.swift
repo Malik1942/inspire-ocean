@@ -142,7 +142,10 @@ struct CaptureHoldButton: View {
             return
         }
         if let send, sends {
-            if inside { send() }
+            // A tap sends. A press long enough to be a hold, the disc's
+            // other habit, lets go without sending.
+            let tapped = pressBegan.map { Date.now.timeIntervalSince($0) < 0.5 } ?? false
+            if inside, tapped { send() }
             return
         }
         if tapToToggle {
