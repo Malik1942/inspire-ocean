@@ -87,6 +87,8 @@ struct ParkedCapture {
     var text: String
     var images: [CaptureImage] = []
     var heldDraft: CaptureDraft?
+    /// Links taken off the card: they are still words when it comes back.
+    var dismissedLinks: Set<String> = []
 
     /// The bar's line: the words' first line, or what rides along when
     /// nothing was typed.

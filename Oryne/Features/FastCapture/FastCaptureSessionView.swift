@@ -53,6 +53,13 @@ struct FastCaptureSessionView: View {
     @State private var cameraShown = false
     @State private var libraryShown = false
     @State private var libraryItems: [PhotosPickerItem] = []
+    /// Links taken off the card with the tile's ✕: they stay in the words
+    /// as text and are never attached.
+    @State private var dismissedLinks: Set<String> = []
+    /// The link the tile shows, sensed from the field a moment after the
+    /// last edit. A release senses the words afresh.
+    @State private var sensedLink: LinkSensing.Sensed?
+    @State private var senseTask: Task<Void, Never>?
     @State private var session = CaptureSession()
     /// Words of the take that just ended, held for the settle animation.
     @State private var settlingWords = ""
@@ -175,6 +182,9 @@ struct FastCaptureSessionView: View {
                request.seedText.isEmpty, request.imageData == nil, request.anchorThemeKey == nil {
                 takeBackParked()
             }
+            // Words already in the field (a seed, a draft brought back) show
+            // their link at once.
+            senseLink(now: true)
             if control.touch != .up {
                 // The hold began on the floating button: keep listening.
                 await startListening()
@@ -239,6 +249,7 @@ struct FastCaptureSessionView: View {
             guard phase != .active else { return }
             finishInterruptedCapture()
         }
+        .onChange(of: text) { _, _ in senseLink() }
         // Focusing the words (a tap on the field, the + again, a photo
         // picked) brings the keys back and the panel steps aside; so does
         // anything that ends composing.
@@ -298,20 +309,28 @@ struct FastCaptureSessionView: View {
             .allowsHitTesting(phase != .linger)
     }
 
-    /// Typing: the bar's capsule unfolds into a card on two rows. The words
-    /// on top, across the whole card; under them one disc at the trailing
-    /// end, which whispers while the field is empty and sends once there
-    /// are words. The disc sits where the bar's disc sits, so the card
-    /// grows up from it and it never moves. There is no close: open water
-    /// folds the card back into the bar, and what was typed waits there.
-    /// Both rows stay for the whole session, empty or not.
+    /// Typing: the bar's capsule unfolds into a card. Above the words, what
+    /// rides along (pictures, the sensed link), only when there is some;
+    /// the words across the whole card; under them the + at the leading end
+    /// and one disc at the trailing end, which whispers while the field is
+    /// empty and sends once there is something to send. The disc sits where
+    /// the bar's disc sits, so the card grows up from it and it never moves.
+    /// There is no close: open water folds the card back into the bar, and
+    /// what was typed waits there. The words and the action row stay for
+    /// the whole session, empty or not.
     private var composer: some View {
         VStack(alignment: .leading, spacing: cardInset) {
             // What rides along sits above the words, only while the card
             // is open, so the fold still lands on the bar's one line.
-            if cardShown, !images.isEmpty || pendingImages > 0 {
-                CaptureAttachments(images: images, pending: pendingImages, onRemoveImage: removeImage)
-                    .transition(.opacity)
+            if cardShown, !images.isEmpty || pendingImages > 0 || sensedLink != nil {
+                CaptureAttachments(
+                    images: images,
+                    pending: pendingImages,
+                    link: sensedLink,
+                    onRemoveImage: removeImage,
+                    onRemoveLink: dismissLink
+                )
+                .transition(.opacity)
             }
             // Closed, the actions lie over the field's row, as on the bar.
             VStack(alignment: .leading, spacing: cardShown ? 8 : -FastCaptureLayout.buttonSize) {
@@ -464,7 +483,7 @@ struct FastCaptureSessionView: View {
         // A send waiting on pictures goes no further: the draft waits instead.
         releaseWhenLoaded = false
         if hasDraft, !asSheet {
-            control.parked = ParkedCapture(text: text, images: images, heldDraft: heldDraft)
+            control.parked = ParkedCapture(text: text, images: images, heldDraft: heldDraft, dismissedLinks: dismissedLinks)
         }
         closeCard()
     }
@@ -476,6 +495,8 @@ struct FastCaptureSessionView: View {
         text = parked.text
         images = parked.images
         heldDraft = parked.heldDraft
+        dismissedLinks = parked.dismissedLinks
+        senseLink(now: true)
     }
 
     /// This overlay holds the shared capture state (the bar's taps, the
@@ -655,6 +676,32 @@ struct FastCaptureSessionView: View {
         withAnimation(.snappy) { images.removeAll { $0.id == id } }
     }
 
+    /// The tile follows the field half a second behind, so a link still
+    /// being typed never flickers in; `now` shows it at once.
+    private func senseLink(now: Bool = false) {
+        senseTask?.cancel()
+        guard !now else {
+            sensedLink = LinkSensing.chosen(in: text, dismissed: dismissedLinks)
+            return
+        }
+        senseTask = Task {
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            withAnimation(.snappy) {
+                sensedLink = LinkSensing.chosen(in: text, dismissed: dismissedLinks)
+            }
+        }
+    }
+
+    /// The link tile's ✕: the link stays in the words as text and is never
+    /// attached; the words' next link, if any, takes the tile.
+    private func dismissLink(_ urlString: String) {
+        dismissedLinks.insert(urlString)
+        withAnimation(.snappy) {
+            sensedLink = LinkSensing.chosen(in: text, dismissed: dismissedLinks)
+        }
+    }
+
     /// Picked photos join the card in the order picked, each shrunk to the
     /// attachment size first, as many as the thought has room for; a quiet
     /// tile holds each one's place meanwhile.
@@ -765,6 +812,10 @@ struct FastCaptureSessionView: View {
             draft.audioTempURL = url
         }
         draft.imageDatas = images.map(\.data)
+        // A typed note's link rides with the whisper; spoken words are
+        // never scanned.
+        draft.linkURLString = LinkSensing.chosen(in: note, dismissed: dismissedLinks)?.urlString
+        draft.dismissedLinks = dismissedLinks
         draft.anchorThemeKey = request.anchorThemeKey
         heldDraft = nil
 
@@ -813,6 +864,10 @@ struct FastCaptureSessionView: View {
             draft.text = trimmed
         }
         draft.imageDatas = images.map(\.data)
+        // The words' first link the user kept becomes the thought's link;
+        // `release` lifts it out of the words when it sits at an edge.
+        draft.linkURLString = LinkSensing.chosen(in: trimmed, dismissed: dismissedLinks)?.urlString
+        draft.dismissedLinks = dismissedLinks
         draft.anchorThemeKey = request.anchorThemeKey
         guard let nodeID = session.release(draft) else {
             message = String(localized: "Couldn't save yet. Release tries again.")
@@ -856,6 +911,9 @@ struct FastCaptureSessionView: View {
         text = ""
         images = []
         heldDraft = nil
+        dismissedLinks = []
+        senseTask?.cancel()
+        sensedLink = nil
         message = nil
         settlingWords = ""
         settled = false
@@ -882,6 +940,8 @@ struct FastCaptureSessionView: View {
             pendingImages += draft.imageDatas.count
             Task { await add(draft.imageDatas, standingIn: draft.imageDatas.count) }
         }
+        dismissedLinks = draft.dismissedLinks
+        senseLink(now: true)
         control.toastShowing = false
         withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .composing }
         textFocused = true

@@ -26,10 +26,11 @@ struct CaptureImage: Identifiable {
     }
 }
 
-/// What rides on the composer's card above the words: its pictures, and a
-/// quiet tile for each one still loading. Square tiles of 64 pt whose
-/// corners sit concentric with the card's, each with its own ✕. The row
-/// scrolls sideways once it is wider than the card.
+/// What rides on the composer's card above the words: its pictures, a
+/// quiet tile for each one still loading, and the link sensed in the
+/// words. Square tiles of 64 pt whose corners sit concentric with the
+/// card's, each with its own ✕. The row scrolls sideways once it is wider
+/// than the card.
 struct CaptureAttachments: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.calmAccessibility) private var calm
@@ -37,7 +38,11 @@ struct CaptureAttachments: View {
     let images: [CaptureImage]
     /// Pictures picked but not yet loaded.
     var pending = 0
+    /// The link a release would attach.
+    var link: LinkSensing.Sensed? = nil
     var onRemoveImage: (CaptureImage.ID) -> Void
+    /// The link tile's ✕, with the link's URL.
+    var onRemoveLink: (String) -> Void = { _ in }
 
     static let tileSize: CGFloat = 64
     /// The card's corner less its inset, so the tiles sit concentric.
@@ -61,6 +66,10 @@ struct CaptureAttachments: View {
                 }
                 ForEach(0..<pending, id: \.self) { _ in
                     loadingTile
+                        .transition(.opacity)
+                }
+                if let link {
+                    linkTile(link)
                         .transition(.opacity)
                 }
             }
@@ -87,6 +96,35 @@ struct CaptureAttachments: View {
             .frame(width: Self.tileSize, height: Self.tileSize)
             .overlay { ProgressView().tint(OceanTheme.mist) }
             .accessibilityHidden(true)
+    }
+
+    /// The sensed link: its site's name under the link glyph, on the quiet
+    /// fill of a content control. Its ✕ leaves the link in the words as
+    /// text, never attached.
+    private func linkTile(_ link: LinkSensing.Sensed) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Image(systemName: "link")
+                .font(.footnote.weight(.medium))
+                .foregroundStyle(OceanTheme.mist)
+            Spacer(minLength: 0)
+            Text(verbatim: link.host)
+                .font(.footnote)
+                .foregroundStyle(OceanTheme.foam)
+                .lineLimit(1)
+        }
+        .padding(10)
+        .frame(
+            minWidth: Self.tileSize, maxWidth: 168,
+            minHeight: Self.tileSize, maxHeight: Self.tileSize,
+            alignment: .leading
+        )
+        .background(Color.white.opacity(0.08), in: tileShape)
+        .overlay(alignment: .topTrailing) {
+            RemoveBadge(label: Text("Remove link")) { onRemoveLink(link.urlString) }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text(NodeKind.link.label))
+        .accessibilityValue(Text(verbatim: link.host))
     }
 }
 

@@ -19,7 +19,13 @@ struct CaptureDraft {
     /// The pictures on the card, in the order they were added (at most
     /// `Node.maxImages`).
     var imageDatas: [Data] = []
+    /// The link a release attaches, sensed in the words. `text` keeps the
+    /// words as typed (for Undo); `release` lifts the link out of the
+    /// thought's words when it sits at their start or end.
     var linkURLString: String? = nil
+    /// Links the user took off the card: they stay words, and Undo brings
+    /// them back that way.
+    var dismissedLinks: Set<String> = []
 
     /// When set, the released node is spatially anchored to this current
     /// (`Node.anchorThemeKey`) at creation — placement is the user's intent;
@@ -121,8 +127,12 @@ final class CaptureSession {
     @discardableResult
     func release(_ draft: CaptureDraft) -> UUID? {
         guard let context, !draft.isEmpty else { return nil }
-        let meaning = [draft.text, draft.transcript]
-            .map(\.trimmed).filter { !$0.isEmpty }.joined(separator: " ")
+        // A link at the start or end of the words leaves them: its card
+        // carries it.
+        let link = draft.linkURLString
+        let text = LinkSensing.words(draft.text, lifting: link)
+        let transcript = LinkSensing.words(draft.transcript, lifting: link)
+        let meaning = [text, transcript].filter { !$0.isEmpty }.joined(separator: " ")
         let node = NodeComposer.make(
             // What it holds names it: a whisper, a thought, or (with no
             // words) its pictures or its link.
@@ -130,11 +140,11 @@ final class CaptureSession {
                 voice: draft.kind == .voice || draft.audioData != nil,
                 words: meaning,
                 images: draft.imageDatas.count,
-                link: draft.linkURLString != nil
+                link: link != nil
             ),
-            text: draft.text.trimmed,
-            transcription: draft.transcript.trimmed.isEmpty ? nil : draft.transcript.trimmed,
-            linkURLString: draft.linkURLString,
+            text: text,
+            transcription: transcript.isEmpty ? nil : transcript,
+            linkURLString: link,
             audioData: draft.audioData,
             imageDatas: draft.imageDatas,
             detectThemes: !meaning.isEmpty
@@ -204,6 +214,11 @@ final class CaptureSession {
             await VoiceUnderstanding.run(
                 nodeID: nodeID, audioTempURL: tempURL, context: context, ai: ai, vocabulary: vocabulary
             )
+        }
+        // A link becomes a rich card, and what its page says joins the
+        // thought's meaning (best effort; a link alone is named by its page).
+        if fetch(nodeID)?.linkURL != nil {
+            LinkEnrichmentService.shared.enrich(nodeID: nodeID, context: context, ai: ai)
         }
     }
 
