@@ -106,11 +106,9 @@ final class LinkEnrichmentService {
     func enrich(nodeID: UUID, context: ModelContext, ai: any OceanAIService, force: Bool = false) {
         guard !inFlight.contains(nodeID) else { return }
         guard let node = Self.fetch(nodeID, in: context), let url = node.linkURL else { return }
-        switch node.linkEnrichmentState {
-        case .enriched where !force:                            return
-        case .fetchingMeta, .fetchingContent, .summarizing:     return
-        default:                                                break
-        }
+        // Nothing runs for it in this process (checked above), so a state
+        // still in progress was cut off when the app last quit: run again.
+        if node.linkEnrichmentState == .enriched, !force { return }
         inFlight.insert(nodeID)
         Task { await run(nodeID: nodeID, url: url, context: context, ai: ai) }
     }

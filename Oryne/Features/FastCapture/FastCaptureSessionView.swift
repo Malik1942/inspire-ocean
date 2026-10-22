@@ -47,6 +47,8 @@ struct FastCaptureSessionView: View {
     /// The send was tapped while pictures were still loading: it goes once
     /// they are in, so a release never leaves one behind.
     @State private var releaseWhenLoaded = false
+    /// The loads behind the loading tiles, so a tile's ✕ can let them go.
+    @State private var loadTasks: [Task<Void, Never>] = []
     /// The + panel stands in the keyboard's place: the latest photos,
     /// Camera, All Photos.
     @State private var attachPanelShown = false
@@ -328,7 +330,8 @@ struct FastCaptureSessionView: View {
                     pending: pendingImages,
                     link: sensedLink,
                     onRemoveImage: removeImage,
-                    onRemoveLink: dismissLink
+                    onRemoveLink: dismissLink,
+                    onCancelLoading: cancelLoading
                 )
                 .transition(.opacity)
             }
@@ -480,8 +483,7 @@ struct FastCaptureSessionView: View {
         fadeTask?.cancel()
         textFocused = false
         closePanel()
-        // A send waiting on pictures goes no further: the draft waits instead.
-        releaseWhenLoaded = false
+        senseTask?.cancel()
         if hasDraft, !asSheet {
             control.parked = ParkedCapture(text: text, images: images, heldDraft: heldDraft, dismissedLinks: dismissedLinks)
         }
@@ -681,25 +683,27 @@ struct FastCaptureSessionView: View {
     private func senseLink(now: Bool = false) {
         senseTask?.cancel()
         guard !now else {
-            sensedLink = LinkSensing.chosen(in: text, dismissed: dismissedLinks)
+            sensedLink = chosenLink
             return
         }
         senseTask = Task {
             try? await Task.sleep(for: .milliseconds(500))
             guard !Task.isCancelled else { return }
-            withAnimation(.snappy) {
-                sensedLink = LinkSensing.chosen(in: text, dismissed: dismissedLinks)
-            }
+            withAnimation(.snappy) { sensedLink = chosenLink }
         }
+    }
+
+    /// The link a release would attach right now: the words' first link
+    /// the user has not taken off the card.
+    private var chosenLink: LinkSensing.Sensed? {
+        LinkSensing.chosen(in: text, dismissed: dismissedLinks)
     }
 
     /// The link tile's ✕: the link stays in the words as text and is never
     /// attached; the words' next link, if any, takes the tile.
     private func dismissLink(_ urlString: String) {
         dismissedLinks.insert(urlString)
-        withAnimation(.snappy) {
-            sensedLink = LinkSensing.chosen(in: text, dismissed: dismissedLinks)
-        }
+        withAnimation(.snappy) { sensedLink = chosenLink }
     }
 
     /// Picked photos join the card in the order picked, each shrunk to the
@@ -712,10 +716,10 @@ struct FastCaptureSessionView: View {
         }
         guard !fits.isEmpty else { return }
         pendingImages += fits.count
-        Task {
+        loadTasks.append(Task {
             let datas = await ImageDownsampler.attachmentData(from: fits)
             await add(datas, standingIn: fits.count)
-        }
+        })
     }
 
     /// The camera's shot, shrunk off the main actor like a picked photo.
@@ -723,14 +727,14 @@ struct FastCaptureSessionView: View {
         cameraShown = false
         guard let shot, room > 0 else { return }
         pendingImages += 1
-        Task {
+        loadTasks.append(Task {
             let data = await Task.detached {
                 shot.jpegData(compressionQuality: 0.9).flatMap {
                     ImageDownsampler.downsample($0, maxPixel: ImageDownsampler.Size.attachment)
                 }
             }.value
             await add([data].compactMap { $0 }, standingIn: 1)
-        }
+        })
     }
 
     /// Loaded pictures take their tiles' places. A send tapped meanwhile
@@ -738,11 +742,26 @@ struct FastCaptureSessionView: View {
     @MainActor
     private func add(_ datas: [Data], standingIn placeholders: Int) async {
         let fresh = await CaptureImage.make(from: datas)
+        // Let go by a loading tile's ✕: its tiles are already gone.
+        guard !Task.isCancelled else { return }
         pendingImages = max(0, pendingImages - placeholders)
         withAnimation(.snappy) { images.append(contentsOf: fresh) }
-        // Only while this overlay still holds the card: a send that waited
-        // here and was put away since stays put away.
+        if pendingImages == 0 { loadTasks = [] }
+        // Only while this overlay still holds the card (a newer overlay may
+        // have taken it over).
         if releaseWhenLoaded, pendingImages == 0, phase == .composing, ownsControl {
+            releaseWhenLoaded = false
+            saveTyped()
+        }
+    }
+
+    /// A loading tile's ✕: the pictures still on their way are let go, and
+    /// a send that was waiting for them goes with what has landed.
+    private func cancelLoading() {
+        loadTasks.forEach { $0.cancel() }
+        loadTasks = []
+        withAnimation(.snappy) { pendingImages = 0 }
+        if releaseWhenLoaded {
             releaseWhenLoaded = false
             saveTyped()
         }
@@ -938,7 +957,7 @@ struct FastCaptureSessionView: View {
         images = []
         if !draft.imageDatas.isEmpty {
             pendingImages += draft.imageDatas.count
-            Task { await add(draft.imageDatas, standingIn: draft.imageDatas.count) }
+            loadTasks.append(Task { await add(draft.imageDatas, standingIn: draft.imageDatas.count) })
         }
         dismissedLinks = draft.dismissedLinks
         senseLink(now: true)
@@ -951,6 +970,7 @@ struct FastCaptureSessionView: View {
     /// release it only closes, never deletes. Deleting is Undo's job.
     private func cancel() {
         fadeTask?.cancel()
+        senseTask?.cancel()
         textFocused = false
         releaseWhenLoaded = false
         if listening {

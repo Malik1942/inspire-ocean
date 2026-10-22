@@ -200,12 +200,14 @@ final class CaptureSession {
     /// Title + themes derived from the words the user kept. Voice thoughts
     /// with no transcript go through the post-hoc recognizer first; words the
     /// user has touched are never overwritten (ownership contract). The pass
-    /// itself lives in `VoiceUnderstanding`, shared with wrist takes.
+    /// itself lives in `VoiceUnderstanding`, shared with wrist takes. A link
+    /// is enriched alongside, so what its page says joins the meaning.
     func beginUnderstanding(nodeID: UUID) {
         guard let ai, let context else { return }
         let tempURL = lastReleased?.nodeID == nodeID ? lastReleased?.draft.audioTempURL : nil
+        let node = fetch(nodeID)
         // Only a whisper still to be transcribed needs the user's words as hints.
-        if let node = fetch(nodeID), WhisperRules.needsTranscription(node) {
+        if let node, WhisperRules.needsTranscription(node) {
             ensureVocabulary()
         }
         let vocabulary = self.vocabulary
@@ -217,7 +219,7 @@ final class CaptureSession {
         }
         // A link becomes a rich card, and what its page says joins the
         // thought's meaning (best effort; a link alone is named by its page).
-        if fetch(nodeID)?.linkURL != nil {
+        if node?.linkURL != nil {
             LinkEnrichmentService.shared.enrich(nodeID: nodeID, context: context, ai: ai)
         }
     }

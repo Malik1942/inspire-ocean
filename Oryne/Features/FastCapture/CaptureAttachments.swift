@@ -28,9 +28,9 @@ struct CaptureImage: Identifiable {
 
 /// What rides on the composer's card above the words: its pictures, a
 /// quiet tile for each one still loading, and the link sensed in the
-/// words. Square tiles of 64 pt whose corners sit concentric with the
-/// card's, each with its own ✕. The row scrolls sideways once it is wider
-/// than the card.
+/// words. Tiles 64 pt high whose corners sit concentric with the card's,
+/// each with its own ✕. The row scrolls sideways once it is wider than
+/// the card.
 struct CaptureAttachments: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.calmAccessibility) private var calm
@@ -43,6 +43,8 @@ struct CaptureAttachments: View {
     var onRemoveImage: (CaptureImage.ID) -> Void
     /// The link tile's ✕, with the link's URL.
     var onRemoveLink: (String) -> Void = { _ in }
+    /// A loading tile's ✕: lets go of the pictures still on their way.
+    var onCancelLoading: () -> Void = {}
 
     static let tileSize: CGFloat = 64
     /// The card's corner less its inset, so the tiles sit concentric.
@@ -90,12 +92,17 @@ struct CaptureAttachments: View {
             .accessibilityLabel(Text(NodeKind.image.label))
     }
 
+    /// A picture still on its way. Its ✕ lets go of the loads, so one that
+    /// stalls (an iCloud original while offline) never holds the card.
     private var loadingTile: some View {
         tileShape
             .fill(Color.white.opacity(0.08))
             .frame(width: Self.tileSize, height: Self.tileSize)
             .overlay { ProgressView().tint(OceanTheme.mist) }
-            .accessibilityHidden(true)
+            .overlay(alignment: .topTrailing) {
+                RemoveBadge(label: Text("Cancel"), action: onCancelLoading)
+            }
+            .accessibilityElement(children: .contain)
     }
 
     /// The sensed link: its site's name under the link glyph, on the quiet
@@ -106,11 +113,14 @@ struct CaptureAttachments: View {
             Image(systemName: "link")
                 .font(.footnote.weight(.medium))
                 .foregroundStyle(OceanTheme.mist)
+                .accessibilityHidden(true)
             Spacer(minLength: 0)
+            // Read once, as the tile's value.
             Text(verbatim: link.host)
                 .font(.footnote)
                 .foregroundStyle(OceanTheme.foam)
                 .lineLimit(1)
+                .accessibilityHidden(true)
         }
         .padding(10)
         .frame(
