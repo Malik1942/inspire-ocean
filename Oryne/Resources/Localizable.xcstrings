@@ -2003,6 +2003,16 @@
         }
       }
     },
+    "Opens the keyboard. The button beside it releases the draft." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开键盘。旁边的按钮把草稿汇入海洋。"
+          }
+        }
+      }
+    },
     "Opens the keyboard. The button beside it whispers." : {
       "localizations" : {
         "zh-Hans" : {
@@ -2067,12 +2077,12 @@
         }
       }
     },
-    "Oryne is a quiet ocean for whatever crosses your mind. Tap the bar to type a thought, or hold the disc and whisper, and it drifts in. Thoughts that share a theme gather into currents like this one. Each day one older thought resurfaces here on Tide. Ask across the whole Ocean from the Ask tab, or summarize a current. The Library lays everything out when you want to browse. Seen enough? Clear these examples in Settings." : {
+    "Oryne is a quiet ocean for whatever crosses your mind. Tap the bar to type a thought, or tap the disc and whisper, and it drifts in. Thoughts that share a theme gather into currents like this one. Each day one older thought resurfaces here on Tide. Ask across the whole Ocean from the Ask tab, or summarize a current. The Library lays everything out when you want to browse. Seen enough? Clear these examples in Settings." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Oryne 是一片安放灵感的海洋。轻点输入栏写下一条灵感，或按住圆钮说一段语音，它就会漂进来。主题相近的灵感会聚成一条条洋流，就像这一条。每天都有一条旧灵感在潮汐页浮上来。在提问页可以向整片海洋发问，也可以为一条洋流生成摘要。想翻看时，库把一切都铺在那里。看完了？到设置里清空示例就好。"
+            "value" : "Oryne 是一片安放灵感的海洋。轻点输入栏写下一条灵感，或轻点圆钮说一段语音，它就会漂进来。主题相近的灵感会聚成一条条洋流，就像这一条。每天都有一条旧灵感在潮汐页浮上来。在提问页可以向整片海洋发问，也可以为一条洋流生成摘要。想翻看时，库把一切都铺在那里。看完了？到设置里清空示例就好。"
           }
         }
       }
@@ -3098,12 +3108,12 @@
         }
       }
     },
-    "Tap the bar to type, or hold the disc and whisper. From the Action Button, Control Center or the widget, it is one press. The Ocean receives the thought without asking you to organize it first." : {
+    "Tap the bar to type, or tap the disc and whisper. From the Action Button, Control Center or the widget, it is one press. The Ocean receives the thought without asking you to organize it first." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "轻点输入栏打字，或按住圆钮说一段语音。从操作按钮、控制中心或小组件进来，只要一下。海洋会直接接住这条灵感，不必你先整理。"
+            "value" : "轻点输入栏打字，或轻点圆钮说一段语音。从操作按钮、控制中心或小组件进来，只要一下。海洋会直接接住这条灵感，不必你先整理。"
           }
         }
       }
@@ -3139,22 +3149,22 @@
         }
       }
     },
+    "Tap to start or stop a whisper. Or hold, and let go to end it." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轻点开始或停止语音。也可以按住说话，松手结束。"
+          }
+        }
+      }
+    },
     "Tap to type the words or re-transcribe." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "点按以输入文字，或重新转写。"
-          }
-        }
-      }
-    },
-    "Tap to type. Hold to whisper. Slide up to keep listening." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "轻点输入，按住录一段语音，上滑可持续聆听。"
           }
         }
       }

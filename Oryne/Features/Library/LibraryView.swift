@@ -8,8 +8,6 @@ struct LibraryView: View {
     @Environment(\.modelContext) private var context
     @Environment(AppState.self) private var appState
     @Environment(\.oceanAI) private var ai
-    @Environment(CaptureControl.self) private var control
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(sort: \Node.createdAt, order: .reverse) private var allNodes: [Node]
 
     @State private var search = ""
@@ -39,14 +37,8 @@ struct LibraryView: View {
     @State private var focusRelatedRank: [UUID: Int] = [:]
 
     @State private var showCurrents = false
-    /// Where the grid last moved the way the capture bar already is; the bar
-    /// changes only after real travel against it from here. A plain object,
-    /// not observed state: it changes every scroll frame and must not make
-    /// the grid re-render (that was the pull-down stutter).
-    @State private var foldTracker = FoldTracker()
     @FocusState private var searchFocused: Bool
-    /// The Library's navigation. A thought on screen keeps the capture bar
-    /// open; only reading the grid folds it.
+    /// The Library's navigation.
     @State private var path = NavigationPath()
 
     #if DEBUG
@@ -329,7 +321,7 @@ struct LibraryView: View {
                 }
                 .padding(.horizontal, OceanSpacing.gutter)
                 .padding(.bottom, 8)
-                .padding(.bottom, FastCaptureLayout.contentClearance)
+                .padding(.bottom, FastCaptureLayout.pageClearance)
             }
             // Fresh scroll view per arrangement. Lazy columns realize cells
             // incrementally from the top; carrying a deep scroll offset across an
@@ -339,17 +331,7 @@ struct LibraryView: View {
             .id(arrangement)
             .opacity(gridOpacity)
             .scrollDismissesKeyboard(.immediately)
-            // Reading down folds the capture bar into its disc.
-            .onScrollGeometryChange(for: CGFloat.self) { geometry in
-                geometry.contentOffset.y + geometry.contentInsets.top
-            } action: { old, new in
-                scrollMoved(from: old, to: new)
-            }
-            .onDisappear { setBarFolded(false) }
-            .onChange(of: path.count) { _, count in
-                if count > 0 { setBarFolded(false) }
-                withAnimation(OceanMotion.quick) { control.readingThought = count > 0 }
-            }
+            .modifier(CaptureComposerEdge())
             // Engage and clear put the front at offset 0. Focus is not an
             // arrangement change, so `.id` does not reset scroll; steer explicitly
             // or the viewport strands past realized content (the spike's mid-reorder
@@ -586,36 +568,6 @@ struct LibraryView: View {
         .padding(.bottom, 8)
     }
 
-    // MARK: Folding the capture bar
-
-    /// Reading down folds the capture bar into its disc; heading back up, or
-    /// reaching the top, unfolds it. It changes only after 24 pt of travel
-    /// against its current state, so a bounce or a small correction never
-    /// makes it flicker.
-    private func scrollMoved(from old: CGFloat, to new: CGFloat) {
-        // Only the grid itself folds the bar, never a thought pushed over it.
-        guard path.isEmpty else { return }
-        if new < 40 {
-            setBarFolded(false)
-            foldTracker.anchor = new
-            return
-        }
-        let goingDown = new > old
-        if goingDown == control.barFolded {
-            foldTracker.anchor = new
-        } else if abs(new - foldTracker.anchor) > 24 {
-            setBarFolded(goingDown)
-            foldTracker.anchor = new
-        }
-    }
-
-    private func setBarFolded(_ fold: Bool) {
-        guard control.barFolded != fold else { return }
-        withAnimation(reduceMotion ? OceanMotion.quick : OceanMotion.standard) {
-            control.barFolded = fold
-        }
-    }
-
     /// Time sections wear Tide's labels: New York italic, mist.
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
@@ -732,8 +684,3 @@ private func rankRelated(anchorID: UUID, among inputs: [FocusInput]) -> [UUID] {
     return scored.sorted { $0.score > $1.score }.map(\.id)
 }
 
-/// Scroll bookkeeping for folding the capture bar, kept out of SwiftUI's
-/// observation so it never invalidates the view.
-private final class FoldTracker {
-    var anchor: CGFloat = 0
-}

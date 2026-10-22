@@ -1,62 +1,82 @@
 import SwiftUI
 
-/// The capture bar above the tab bar on Tide and Library, like a message
-/// composer: a field to tap and the disc to hold. Its geometry is fixed so
-/// the disc sits concentric with the capsule's end (FastCaptureLayout).
+/// The capture bar above the tab bar on Tide, like a message composer:
+/// words to tap to type, and a disc to tap or hold to whisper. Its
+/// geometry is fixed so the disc sits concentric with the capsule's end
+/// (FastCaptureLayout). The Library has none: it is for finding, and its
+/// one input is its search.
 ///
-/// Folded, it is only the disc in a 56 pt circle at the same spot: the
-/// capsule's leading edge slides in to meet it and the words fade first,
-/// so they are clipped, never squashed. The disc itself never moves, and
-/// it still taps to type and holds to whisper.
+/// A draft put away unsent waits here: its first line in place of the
+/// question, and the disc is its send. Tapping the words brings it back.
 struct CaptureBar: View {
     @Environment(CaptureControl.self) private var control
-    var folded = false
 
     var body: some View {
         ZStack(alignment: .trailing) {
             Button {
                 control.tap()
             } label: {
-                Text("What are you noticing?")
-                    .font(.body)
-                    .foregroundStyle(OceanTheme.hint)
-                    .lineLimit(1)
-                    .fixedSize()
+                CaptureBarWords(draft: control.parked?.line)
                     .padding(.leading, FastCaptureLayout.fieldLeading)
-                    // minWidth 0: the words keep their width and overflow
+                    // A draft's line stops short of the disc.
+                    .padding(.trailing, control.parked == nil ? 0 : FastCaptureLayout.buttonSize + FastCaptureLayout.discInset + 8)
+                    // minWidth 0: long words keep their width and overflow
                     // into the clip instead of widening the bar.
                     .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .opacity(folded ? 0 : 1)
-            .animation(folded ? .easeOut(duration: 0.1) : .easeOut(duration: 0.2).delay(0.3), value: folded)
-            .allowsHitTesting(!folded)
-            .accessibilityHidden(folded)
             .accessibilityLabel("Capture a thought")
-            .accessibilityHint("Opens the keyboard. The button beside it whispers.")
+            .accessibilityValue(Text(verbatim: control.parked?.text ?? ""))
+            .accessibilityHint(control.parked == nil
+                ? Text("Opens the keyboard. The button beside it whispers.")
+                : Text("Opens the keyboard. The button beside it releases the draft."))
+            .accessibilityIdentifier("captureBar.field")
 
-            CaptureHoldButton(size: FastCaptureLayout.buttonSize)
-                .padding(.trailing, FastCaptureLayout.discInset)
+            CaptureHoldButton(
+                size: FastCaptureLayout.buttonSize,
+                send: control.parked == nil ? nil : { control.releaseParked = true }
+            )
+            .padding(.trailing, FastCaptureLayout.discInset)
         }
-        .frame(maxWidth: folded ? FastCaptureLayout.barHeight : .infinity, alignment: .trailing)
+        .frame(maxWidth: .infinity, alignment: .trailing)
         .frame(height: FastCaptureLayout.barHeight)
-        // Words out first, then the fold; unfolding, the words return only
-        // once the capsule is wide again. They never slide with the edge.
-        .animation(folded ? .smooth(duration: 0.4).delay(0.1) : .smooth(duration: 0.4), value: folded)
-        // The words never spill past the folding edge; the surface and its
-        // shadow sit outside the clip.
+        // The words never spill past the capsule's ends; the surface and
+        // its shadow sit outside the clip.
         .clipShape(Capsule())
         .background(OceanBarBackground())
         .frame(maxWidth: .infinity, alignment: .trailing)
     }
 }
 
-/// The one container every capture state wears: the bar's Liquid Glass
-/// capsule, at the bar's frame. Typing and listening in the overlay draw
-/// in it too, so the bar never changes shape or material. Taller content
-/// (wrapped words, a screenshot) grows it into a rounded rectangle with
-/// the same end radius, which at one line is exactly the capsule.
+/// What the bar says: its question, or the first line of a draft put away,
+/// cut with an ellipsis clear of the disc. The composer's card says the
+/// same in the same place while it is folded, so the fold lands on the bar.
+struct CaptureBarWords: View {
+    let draft: String?
+
+    var body: some View {
+        if let draft {
+            Text(verbatim: draft)
+                .font(.body)
+                .foregroundStyle(OceanTheme.foam)
+                .lineLimit(1)
+                .truncationMode(.tail)
+        } else {
+            Text("What are you noticing?")
+                .font(.body)
+                .foregroundStyle(OceanTheme.hint)
+                .lineLimit(1)
+                .fixedSize()
+        }
+    }
+}
+
+/// The bar's Liquid Glass capsule, at the bar's frame: listening in the
+/// overlay draws in it, so the bar never changes shape or material.
+/// Taller content grows it into a rounded rectangle with the same end
+/// radius, which at one line is exactly the capsule. Typing grows the
+/// same glass into the composer's card instead.
 struct CaptureCapsule<Content: View>: View {
     @ViewBuilder var content: Content
 
@@ -68,19 +88,19 @@ struct CaptureCapsule<Content: View>: View {
     }
 }
 
-/// Places the bar above the tab bar. Hidden on Ask, which has its own input.
+/// Places the bar above the tab bar on Tide. The Library's one input is its
+/// search, and Ask has its own bar.
 struct CaptureBarPlacement: ViewModifier {
     let show: Bool
     /// A hold that began on the bar's disc: the overlay's identical capsule
     /// is drawn in the same frame, so the bar goes invisible but keeps the
     /// finger until it lifts or locks.
     var keepsTouch = false
-    var folded = false
     let control: CaptureControl
 
     func body(content: Content) -> some View {
         content.overlay(alignment: .bottom) {
-            CaptureBar(folded: folded)
+            CaptureBar()
                 .environment(control)
                 .padding(.horizontal, OceanSpacing.gutter)
                 .padding(.bottom, FastCaptureLayout.tabBarClearance)
@@ -99,12 +119,14 @@ struct CaptureBarPlacement: ViewModifier {
 struct OceanBarBackground: View {
     /// nil draws a capsule.
     var cornerRadius: CGFloat? = nil
+    /// Circular by default: at half the height that is exactly the
+    /// capsule, so a bar growing past one line keeps its ends. The open
+    /// composer's card is continuous.
+    var style: RoundedCornerStyle = .circular
 
     var body: some View {
         if let cornerRadius {
-            // Circular corners: at half the height this is exactly the
-            // capsule, so a bar growing past one line keeps its ends.
-            surface(RoundedRectangle(cornerRadius: cornerRadius, style: .circular))
+            surface(RoundedRectangle(cornerRadius: cornerRadius, style: style))
         } else {
             surface(Capsule())
         }
@@ -144,5 +166,25 @@ struct ShoreGradient: View {
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)
+    }
+}
+
+/// While the composer is open over a page, the page's scroll view keeps an
+/// empty bar of the composer's height at its bottom edge, so the system's
+/// scroll edge effect softens what runs under the card instead of letting
+/// it refract into the glass's rim. Closed, the bar is 0 pt: nothing moves.
+struct CaptureComposerEdge: ViewModifier {
+    @Environment(CaptureControl.self) private var control
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content.safeAreaBar(edge: .bottom, spacing: 0) {
+                Color.clear
+                    .frame(height: control.composerHeight)
+                    .allowsHitTesting(false)
+            }
+        } else {
+            content
+        }
     }
 }

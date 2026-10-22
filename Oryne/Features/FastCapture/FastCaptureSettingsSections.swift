@@ -22,6 +22,7 @@ struct FastCaptureOpensWithRows: View {
         }
         .pickerStyle(.menu)
         Toggle("Auto Screenshot", isOn: $autoScreenshot)
+            .accessibilityIdentifier("settings.autoScreenshot")
     }
 }
 

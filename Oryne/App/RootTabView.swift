@@ -3,8 +3,8 @@ import SwiftData
 import StoreKit
 
 /// Primary navigation: Ocean · Ask · Library, with the capture bar above the
-/// tab bar. Capture is a gesture, not a tab: tap the field to type, hold the
-/// disc to whisper (docs/plans/phone-refocus/SPEC.md).
+/// tab bar. Capture is a gesture, not a tab: tap the field to type, tap or
+/// hold the disc to whisper (docs/plans/phone-refocus/SPEC.md).
 struct RootTabView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var currentRows: [Current]
@@ -73,25 +73,29 @@ struct RootTabView: View {
                 )
                 .environment(appState)
                 .environment(control)
+                // Each request its own overlay: one opened while the last
+                // still fades out is a new view, not the old one revived.
+                .id(request.id)
                 .transition(.opacity)
             }
         }
-        // The capture bar rides above the tab bar (Tide and Library). The
-        // moment the overlay is up it draws the same capsule in the same
-        // frame (typing, listening), so the bar steps aside and only one
-        // capsule is ever on screen. A hold that began on the bar's disc
-        // keeps its finger on the now invisible bar until it lifts or
-        // locks. While the overlay is only its toast, the bar is back.
+        // The capture bar rides above the tab bar on Tide; the Library is
+        // for finding and keeps search as its one input. The moment the
+        // overlay is up it draws the same capsule in the same frame
+        // (typing, listening), so the bar steps aside and only one capsule
+        // is ever on screen. A hold that began on the bar's disc keeps its
+        // finger on the now invisible bar until it lifts. While the overlay
+        // is only its toast, the bar is back.
         .modifier(CaptureBarPlacement(
-            show: appState.selectedTab != .ask
-                && !(appState.selectedTab == .library && control.readingThought)
+            show: appState.selectedTab == .ocean
                 && !keyboardUp
                 && (appState.fastCaptureRequest == nil || control.toastShowing),
             keepsTouch: control.isHeld,
-            // Only the Library folds the bar, while reading down its grid.
-            folded: control.barFolded && appState.selectedTab == .library,
             control: control
         ))
+        .onChange(of: appState.selectedTab, initial: true) { _, tab in
+            control.barOnTab = tab == .ocean
+        }
         .sheet(isPresented: $showFastCaptureOnboarding) {
             OceanOnboardingView(
                 onComplete: {
@@ -144,9 +148,9 @@ struct RootTabView: View {
         .onOpenURL { url in
             appState.handleDeepLink(url)
         }
-        // The floating button's gesture, resolved: a short press opens the
-        // overlay typing-first; a hold (or a tap in tap-to-toggle mode) opens
-        // it listening, the finger still down.
+        // The bar's gestures, resolved: a tap on its words opens the overlay
+        // typing-first; a tap on its disc opens it listening until Stop, and
+        // a hold opens it listening with the finger still down.
         .onChange(of: control.tapCount) { _, _ in
             guard appState.fastCaptureRequest == nil, !control.overlayOpen else { return }
             appState.startFastCapture(source: .inApp, inputPreference: .typingFirst)
@@ -154,6 +158,11 @@ struct RootTabView: View {
         .onChange(of: control.touch) { _, touch in
             guard appState.fastCaptureRequest == nil, !control.overlayOpen, touch != .up else { return }
             appState.startFastCapture(source: .inApp, inputPreference: .voiceFirst)
+        }
+        // The bar's send on a parked draft: the overlay opens to release it.
+        .onChange(of: control.releaseParked) { _, release in
+            guard release, appState.fastCaptureRequest == nil, !control.overlayOpen else { return }
+            appState.startFastCapture(source: .inApp, inputPreference: .typingFirst)
         }
         // A value-has-landed moment armed the once-ever review ask; fire it here,
         // where the environment action lives and every surface funnels through.
@@ -216,11 +225,20 @@ enum FastCaptureLayout {
     static let fieldLeading: CGFloat = barHeight / 2 - 8
     /// The capsule's end radius, kept when the container grows taller.
     static let endRadius: CGFloat = barHeight / 2
+    /// The open composer's corners: fixed and continuous, so a tall card
+    /// keeps its text room instead of growing a capsule's round ends.
+    static let cardRadius: CGFloat = 24
+    /// The open composer's one inset: the words and the disc keep it from
+    /// every edge, so the lines and the disc share both sides of the card.
+    static let cardInset: CGFloat = 12
     /// The tab bar (49 pt) plus the 12 pt gap under the bar.
     static let tabBarClearance: CGFloat = 49 + 12
     /// What scrolling content under the bar leaves clear: bar, gap, and a
     /// breath above it.
     static let contentClearance: CGFloat = tabBarClearance + barHeight + 16
+    /// The same for a page without the bar (the Library): the tab bar and
+    /// the same breath above it.
+    static let pageClearance: CGFloat = tabBarClearance + 16
     /// Ask's bar lives in its page's bottom safe-area inset, which already
     /// clears the tab bar; this lifts it to the capture bar's exact height.
     static let insetBarLift: CGFloat = 12

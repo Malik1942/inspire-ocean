@@ -130,7 +130,7 @@ private struct OceanOnboardingPage {
         OceanOnboardingPage(
             visual: .capture,
             title: "Catch fragments before they disappear.",
-            text: "Tap the bar to type, or hold the disc and whisper. From the Action Button, Control Center or the widget, it is one press. The Ocean receives the thought without asking you to organize it first."
+            text: "Tap the bar to type, or tap the disc and whisper. From the Action Button, Control Center or the widget, it is one press. The Ocean receives the thought without asking you to organize it first."
         ),
         OceanOnboardingPage(
             visual: .resurface,
@@ -232,7 +232,7 @@ private struct FastCaptureSetupPage: View {
                                 .font(.subheadline.weight(.medium))
                                 .foregroundStyle(OceanTheme.foam)
                         }
-                        .tint(OceanTheme.accent)
+                        .toggleStyle(.oceanSwitch)
 
                         Text("The Action Button and Camera Control shortcuts live in Settings, under the gear on any tab.")
                             .font(.caption)
