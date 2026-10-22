@@ -142,6 +142,11 @@ struct RootTabView: View {
             guard appState.fastCaptureRequest == nil, !control.overlayOpen, touch != .up else { return }
             appState.startFastCapture(source: .inApp, inputPreference: .voiceFirst)
         }
+        // The bar's send on a parked draft: the overlay opens to release it.
+        .onChange(of: control.releaseParked) { _, release in
+            guard release, appState.fastCaptureRequest == nil, !control.overlayOpen else { return }
+            appState.startFastCapture(source: .inApp, inputPreference: .typingFirst)
+        }
         // A value-has-landed moment armed the once-ever review ask; fire it here,
         // where the environment action lives and every surface funnels through.
         // Held back, and retried, until nothing is covering the tabs, so the

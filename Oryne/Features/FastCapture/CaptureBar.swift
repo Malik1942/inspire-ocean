@@ -8,6 +8,9 @@ import SwiftUI
 /// capsule's leading edge slides in to meet it and the words fade first,
 /// so they are clipped, never squashed. The disc itself never moves, and
 /// it still taps to type and holds to whisper.
+///
+/// A draft put away unsent waits here: its first line in place of the
+/// question, and the disc is its send. Tapping the words brings it back.
 struct CaptureBar: View {
     @Environment(CaptureControl.self) private var control
     var folded = false
@@ -17,12 +20,10 @@ struct CaptureBar: View {
             Button {
                 control.tap()
             } label: {
-                Text("What are you noticing?")
-                    .font(.body)
-                    .foregroundStyle(OceanTheme.hint)
-                    .lineLimit(1)
-                    .fixedSize()
+                CaptureBarWords(draft: control.parked?.line)
                     .padding(.leading, FastCaptureLayout.fieldLeading)
+                    // A draft's line stops short of the disc.
+                    .padding(.trailing, control.parked == nil ? 0 : FastCaptureLayout.buttonSize + FastCaptureLayout.discInset + 8)
                     // minWidth 0: the words keep their width and overflow
                     // into the clip instead of widening the bar.
                     .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -34,11 +35,17 @@ struct CaptureBar: View {
             .allowsHitTesting(!folded)
             .accessibilityHidden(folded)
             .accessibilityLabel("Capture a thought")
-            .accessibilityHint("Opens the keyboard. The button beside it whispers.")
+            .accessibilityValue(Text(verbatim: control.parked?.text ?? ""))
+            .accessibilityHint(control.parked == nil
+                ? Text("Opens the keyboard. The button beside it whispers.")
+                : Text("Opens the keyboard. The button beside it releases the draft."))
             .accessibilityIdentifier("captureBar.field")
 
-            CaptureHoldButton(size: FastCaptureLayout.buttonSize)
-                .padding(.trailing, FastCaptureLayout.discInset)
+            CaptureHoldButton(
+                size: FastCaptureLayout.buttonSize,
+                send: control.parked == nil ? nil : { control.releaseParked = true }
+            )
+            .padding(.trailing, FastCaptureLayout.discInset)
         }
         .frame(maxWidth: folded ? FastCaptureLayout.barHeight : .infinity, alignment: .trailing)
         .frame(height: FastCaptureLayout.barHeight)
@@ -50,6 +57,29 @@ struct CaptureBar: View {
         .clipShape(Capsule())
         .background(OceanBarBackground())
         .frame(maxWidth: .infinity, alignment: .trailing)
+    }
+}
+
+/// What the bar says: its question, or the first line of a draft put away,
+/// cut with an ellipsis clear of the disc. The composer's card says the
+/// same in the same place while it is folded, so the fold lands on the bar.
+struct CaptureBarWords: View {
+    let draft: String?
+
+    var body: some View {
+        if let draft {
+            Text(verbatim: draft)
+                .font(.body)
+                .foregroundStyle(OceanTheme.foam)
+                .lineLimit(1)
+                .truncationMode(.tail)
+        } else {
+            Text("What are you noticing?")
+                .font(.body)
+                .foregroundStyle(OceanTheme.hint)
+                .lineLimit(1)
+                .fixedSize()
+        }
     }
 }
 

@@ -48,6 +48,13 @@ final class CaptureControl {
     /// and gap; 0 when it is closed. The page keeps a bar this tall so the
     /// system's scroll edge effect runs behind the glass.
     var composerHeight: CGFloat = 0
+    /// What the composer held when a tap in open water put it away. The
+    /// bar shows its first line and its disc sends; tapping the bar brings
+    /// it back to the field.
+    var parked: ParkedCapture?
+    /// The bar's send was tapped: the overlay releases the parked draft,
+    /// opening for it if it isn't up, so the toast and Undo are the same.
+    var releaseParked = false
     /// The overlay is only its toast now: the bar comes back, and a tap or a
     /// hold on it starts the next capture in the same overlay.
     var toastShowing = false
@@ -69,5 +76,22 @@ final class CaptureControl {
     @MainActor
     static var assistiveTechnologyRunning: Bool {
         UIAccessibility.isVoiceOverRunning || UIAccessibility.isSwitchControlRunning
+    }
+}
+
+/// A draft put away unsent: the words, and a screenshot or a take's audio
+/// riding along with them. It lives as long as the app does.
+struct ParkedCapture {
+    var text: String
+    var imageData: Data?
+    var heldDraft: CaptureDraft?
+
+    /// The bar's line: the words' first line, or what rides along when
+    /// nothing was typed.
+    var line: String {
+        if let first = text.split(whereSeparator: \.isNewline).map({ $0.trimmingCharacters(in: .whitespaces) }).first(where: { !$0.isEmpty }) {
+            return first
+        }
+        return heldDraft?.audioData != nil ? String(localized: "Whisper") : String(localized: "Screenshot")
     }
 }

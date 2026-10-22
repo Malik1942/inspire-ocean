@@ -114,6 +114,12 @@ struct FastCaptureSessionView: View {
             session.configure(context: context, ai: ai)
             guard !hasStarted else { return }
             hasStarted = true
+            // Opened to type: a draft put away earlier is back in the field
+            // (before the bar's send below looks for it).
+            if control.touch == .up, request.inputPreference != .voiceFirst,
+               request.seedText.isEmpty, request.imageData == nil, request.anchorThemeKey == nil {
+                takeBackParked()
+            }
             if control.touch != .up {
                 // The hold began on the floating button: keep listening.
                 await startListening()
@@ -122,6 +128,10 @@ struct FastCaptureSessionView: View {
                 // hold, so the take locks and runs until Stop.
                 control.touch = .locked
                 await startListening()
+            } else if control.releaseParked {
+                // The bar's send: the parked draft goes straight in.
+                control.releaseParked = false
+                if canRelease { saveTyped() } else { openCard(); textFocused = true }
             } else {
                 textFocused = true
             }
@@ -147,6 +157,13 @@ struct FastCaptureSessionView: View {
         .onChange(of: control.stopCount) { _, _ in
             if listening { Task { await catchTake() } }
         }
+        .onChange(of: control.releaseParked) { _, release in
+            // The bar's send while the toast shows: the next release.
+            guard release, phase == .linger else { return }
+            control.releaseParked = false
+            beginNextCapture()
+            saveTyped()
+        }
         .onChange(of: control.tapCount) { _, _ in
             // A tap on the bar while the toast shows starts the next thought.
             if phase == .linger { beginNextCapture() }
@@ -169,9 +186,11 @@ struct FastCaptureSessionView: View {
             .allowsHitTesting(phase != .linger)
             .contentShape(Rectangle())
             .onTapGesture {
-                // Open water: fold the keyboard, or leave if nothing is here.
-                if phase == .composing, text.trimmed.isEmpty, imageData == nil, heldDraft == nil {
-                    cancel()
+                // Open water puts the card away; anything in it waits in
+                // the bar. In a sheet (no bar) it only folds the keyboard
+                // while there is something to keep; the sheet swipes away.
+                if phase == .composing, !(asSheet && canRelease) {
+                    putAway()
                 } else {
                     textFocused = false
                 }
@@ -179,10 +198,11 @@ struct FastCaptureSessionView: View {
     }
 
     /// Typing: the bar's capsule unfolds into a card on two rows. The words
-    /// on top, across the whole card; under them the way out at the leading
-    /// end and one disc at the trailing end, which whispers while the field
-    /// is empty and sends once there are words. The disc sits where the
-    /// bar's disc sits, so the card grows up from it and it never moves.
+    /// on top, across the whole card; under them one disc at the trailing
+    /// end, which whispers while the field is empty and sends once there
+    /// are words. The disc sits where the bar's disc sits, so the card
+    /// grows up from it and it never moves. There is no close: open water
+    /// folds the card back into the bar, and what was typed waits there.
     /// Both rows stay for the whole session, empty or not.
     private var composer: some View {
         VStack(alignment: .leading, spacing: FastCaptureLayout.discInset) {
@@ -197,6 +217,9 @@ struct FastCaptureSessionView: View {
         }
         .padding(FastCaptureLayout.discInset)
         .frame(maxWidth: .infinity, alignment: .leading)
+        // Everything in the card rides with it while it folds and the
+        // keyboard drops; nothing inside jumps ahead to where it will end.
+        .geometryGroup()
         .background(OceanBarBackground(
             cornerRadius: cardShown ? FastCaptureLayout.cardRadius : FastCaptureLayout.endRadius,
             style: .continuous
@@ -239,6 +262,14 @@ struct FastCaptureSessionView: View {
         .foregroundStyle(OceanTheme.foam)
         .tint(OceanTheme.accent)
         .submitLabel(.return)
+        // Folded, the card reads exactly as the bar does: its question, or
+        // the first line of the words, cut with an ellipsis.
+        .opacity(cardShown ? 1 : 0)
+        .overlay(alignment: .topLeading) {
+            CaptureBarWords(draft: canRelease ? ParkedCapture(text: text, imageData: imageData, heldDraft: heldDraft).line : nil)
+                .opacity(cardShown ? 0 : 1)
+                .accessibilityHidden(true)
+        }
         // About even above the first line and below the last, so a new
         // line grows the card without the words shifting inside it.
         .padding(.vertical, 10)
@@ -250,26 +281,22 @@ struct FastCaptureSessionView: View {
         .accessibilityIdentifier("composer.field")
     }
 
-    /// The card's second row, at its foot: the way out at the leading end,
-    /// the disc at the trailing end, and between them what the card has
-    /// to say. Closed, only the disc shows, as on the bar.
+    /// The card's second row, at its foot: the disc at the trailing end,
+    /// and before it what the card has to say. Folded, only the disc shows,
+    /// as on the bar.
     private var actionRow: some View {
         HStack(alignment: .center, spacing: 8) {
-            // Nothing to close while a finger holds the disc and the
-            // microphone wakes: lifting catches.
-            closeButton
-                .opacity(cardShown && !control.isHeld ? 1 : 0)
-                .allowsHitTesting(cardShown && !control.isHeld)
-                .accessibilityHidden(!cardShown)
             composerCaptions
+                .padding(.leading, FastCaptureLayout.fieldLeading - FastCaptureLayout.discInset)
                 .opacity(cardShown ? 1 : 0)
             Spacer(minLength: 0)
             overlayDisc(inComposer: true, send: canRelease ? saveTyped : nil)
         }
+        .frame(minHeight: FastCaptureLayout.buttonSize)
     }
 
     /// A refusal, and the current a thought added from a stream flows
-    /// into: in the action row between the two controls, inside the card.
+    /// into: in the action row before the disc, inside the card.
     private var composerCaptions: some View {
         VStack(alignment: .leading, spacing: 2) {
             if let message {
@@ -289,9 +316,31 @@ struct FastCaptureSessionView: View {
     private var cardShown: Bool { cardOpen || stilled }
 
     /// The card unfolds from the bar's capsule as the keyboard rises. With
-    /// Reduce Motion it is open from the start and fades in instead.
+    /// Reduce Motion it is open from the start and fades in instead. Not
+    /// for the bar's send: that draft goes straight in, the card unopened.
     private func openCard() {
+        guard phase == .composing, !control.releaseParked else { return }
         withAnimation(stilled ? OceanMotion.quick : OceanMotion.standard) { cardOpen = true }
+    }
+
+    /// Open water: the card folds back into the bar. Anything in it waits
+    /// there, its first line showing, until the bar is tapped again.
+    private func putAway() {
+        fadeTask?.cancel()
+        textFocused = false
+        if canRelease, !asSheet {
+            control.parked = ParkedCapture(text: text, imageData: imageData, heldDraft: heldDraft)
+        }
+        closeCard()
+    }
+
+    /// A draft put away earlier comes back to the field.
+    private func takeBackParked() {
+        guard !asSheet, let parked = control.parked else { return }
+        control.parked = nil
+        text = parked.text
+        imageData = parked.imageData
+        heldDraft = parked.heldDraft
     }
 
     /// The card folds back into the bar's capsule before the bar takes over,
@@ -362,9 +411,9 @@ struct FastCaptureSessionView: View {
 
     private var stilled: Bool { reduceMotion || calm }
 
-    /// Mid-take it cancels (nothing is saved yet); composing it closes and
-    /// lets the draft go, so it stays an X. A small glass body like the
-    /// capture button, not a badge on the card.
+    /// The listening capsule's way out: it cancels the take (nothing is
+    /// saved yet). A small glass body like the capture button, not a badge
+    /// on the card. The composer has none; open water puts it away.
     private var closeButton: some View {
         Button(action: cancel) {
             Image(systemName: "xmark")
@@ -546,7 +595,8 @@ struct FastCaptureSessionView: View {
     }
 
     /// The bar was tapped or held while the toast showed: the toast steps
-    /// aside and the same overlay takes the next thought, empty.
+    /// aside and the same overlay takes the next thought, empty, or the
+    /// draft the bar was holding.
     private func beginNextCapture() {
         fadeTask?.cancel()
         isSaving = false
@@ -556,6 +606,7 @@ struct FastCaptureSessionView: View {
         message = nil
         settlingWords = ""
         settled = false
+        takeBackParked()
         control.toastShowing = false
         withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .composing }
     }
