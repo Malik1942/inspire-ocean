@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import PhotosUI
 
 /// The one capture surface. Every entry point (the floating button, the
 /// Action Button, Control Center, the widget, Siri, a share, a current's +)
@@ -40,6 +41,17 @@ struct FastCaptureSessionView: View {
     @State private var text: String
     /// The pictures on the card, in the order they were added.
     @State private var images: [CaptureImage]
+    /// Pictures picked but still loading: a quiet tile each.
+    @State private var pendingImages = 0
+    /// The send was tapped while pictures were still loading: it goes once
+    /// they are in, so a release never leaves one behind.
+    @State private var releaseWhenLoaded = false
+    @State private var attachSheetShown = false
+    /// Where the + sheet hands over once it has closed.
+    @State private var attachRoute: AttachRoute?
+    @State private var cameraShown = false
+    @State private var libraryShown = false
+    @State private var libraryItems: [PhotosPickerItem] = []
     @State private var session = CaptureSession()
     /// Words of the take that just ended, held for the settle animation.
     @State private var settlingWords = ""
@@ -194,6 +206,35 @@ struct FastCaptureSessionView: View {
             guard phase != .active else { return }
             finishInterruptedCapture()
         }
+        .sheet(isPresented: $attachSheetShown, onDismiss: attachSheetClosed) {
+            CaptureAttachSheet(
+                onPick: { item in
+                    attachSheetShown = false
+                    attach([item])
+                },
+                onCamera: { route(to: .camera) },
+                onLibrary: { route(to: .library) }
+            )
+        }
+        .fullScreenCover(isPresented: $cameraShown, onDismiss: { textFocused = true }) {
+            CameraPicker(onFinish: attachShot)
+                .ignoresSafeArea()
+        }
+        .photosPicker(
+            isPresented: $libraryShown,
+            selection: $libraryItems,
+            maxSelectionCount: max(room, 1),
+            selectionBehavior: .ordered,
+            matching: .images
+        )
+        .onChange(of: libraryItems) { _, items in
+            guard !items.isEmpty else { return }
+            libraryItems = []
+            attach(items)
+        }
+        .onChange(of: libraryShown) { _, shown in
+            if !shown { textFocused = true }
+        }
     }
 
     // MARK: Pieces
@@ -228,8 +269,8 @@ struct FastCaptureSessionView: View {
         VStack(alignment: .leading, spacing: cardInset) {
             // What rides along sits above the words, only while the card
             // is open, so the fold still lands on the bar's one line.
-            if cardShown, !images.isEmpty {
-                CaptureAttachments(images: images, onRemoveImage: removeImage)
+            if cardShown, !images.isEmpty || pendingImages > 0 {
+                CaptureAttachments(images: images, pending: pendingImages, onRemoveImage: removeImage)
                     .transition(.opacity)
             }
             // Closed, the actions lie over the field's row, as on the bar.
@@ -291,7 +332,7 @@ struct FastCaptureSessionView: View {
         // the first line of the words, cut with an ellipsis.
         .opacity(cardShown ? 1 : 0)
         .overlay(alignment: .topLeading) {
-            CaptureBarWords(draft: canRelease ? ParkedCapture(text: text, images: images, heldDraft: heldDraft).line : nil)
+            CaptureBarWords(draft: hasDraft ? ParkedCapture(text: text, images: images, heldDraft: heldDraft).line : nil)
                 .opacity(cardShown ? 0 : 1)
                 .accessibilityHidden(true)
         }
@@ -310,17 +351,37 @@ struct FastCaptureSessionView: View {
         cardShown ? FastCaptureLayout.cardInset : FastCaptureLayout.discInset
     }
 
-    /// The card's second row, at its foot: the disc at the trailing end,
-    /// and before it what the card has to say. Folded, only the disc shows,
-    /// as on the bar.
+    /// The card's second row, at its foot: the + at the leading end, the
+    /// disc at the trailing end, and between them what the card has to
+    /// say. Folded, only the disc shows, as on the bar.
     private var actionRow: some View {
         HStack(alignment: .center, spacing: 8) {
-            composerCaptions
-                .opacity(cardShown ? 1 : 0)
+            Group {
+                attachButton
+                composerCaptions
+            }
+            .opacity(cardShown ? 1 : 0)
             Spacer(minLength: 0)
             overlayDisc(inComposer: true, send: canRelease ? saveTyped : nil)
         }
         .frame(minHeight: FastCaptureLayout.buttonSize)
+    }
+
+    /// The card's +, the send disc's twin: the latest photos, Camera, All
+    /// Photos. The keyboard steps down for the sheet and comes back after.
+    /// Dimmed once the thought holds all the pictures it can.
+    private var attachButton: some View {
+        Button {
+            textFocused = false
+            attachSheetShown = true
+        } label: {
+            Image(systemName: "plus")
+        }
+        .buttonStyle(.oceanIcon)
+        .disabled(room == 0)
+        .opacity(room == 0 ? 0.4 : 1)
+        .accessibilityLabel("Add image")
+        .accessibilityIdentifier("composer.attach")
     }
 
     /// A refusal, and the current a thought added from a stream flows
@@ -356,7 +417,7 @@ struct FastCaptureSessionView: View {
     private func putAway() {
         fadeTask?.cancel()
         textFocused = false
-        if canRelease, !asSheet {
+        if hasDraft, !asSheet {
             control.parked = ParkedCapture(text: text, images: images, heldDraft: heldDraft)
         }
         closeCard()
@@ -474,13 +535,85 @@ struct FastCaptureSessionView: View {
         return max(0, frame.maxY - keyboardFrame.minY)
     }
 
-    private var canRelease: Bool {
+    /// Something to release: what the card holds, or pictures on their way.
+    private var canRelease: Bool { hasDraft || pendingImages > 0 }
+
+    /// What the card holds now, which open water parks in the bar.
+    private var hasDraft: Bool {
         !text.trimmed.isEmpty || !images.isEmpty || heldDraft?.audioData != nil
     }
+
+    /// Pictures the thought can still take (`Node.maxImages` in all).
+    private var room: Int { max(0, Node.maxImages - images.count - pendingImages) }
 
     /// A picture's ✕.
     private func removeImage(_ id: CaptureImage.ID) {
         withAnimation(.snappy) { images.removeAll { $0.id == id } }
+    }
+
+    private enum AttachRoute { case camera, library }
+
+    /// The + sheet's Camera or All Photos: the sheet closes first, then the
+    /// one chosen opens (`attachSheetClosed`).
+    private func route(to route: AttachRoute) {
+        attachRoute = route
+        attachSheetShown = false
+    }
+
+    /// The + sheet has closed: on to the camera or the whole library when
+    /// one was chosen, else back to the words.
+    private func attachSheetClosed() {
+        let route = attachRoute
+        attachRoute = nil
+        switch route {
+        case .camera: cameraShown = true
+        case .library: libraryShown = true
+        case nil: textFocused = true
+        }
+    }
+
+    /// Picked photos join the card in the order picked, each shrunk to the
+    /// attachment size first, as many as the thought has room for; a quiet
+    /// tile holds each one's place meanwhile.
+    private func attach(_ items: [PhotosPickerItem]) {
+        let fits = Array(items.prefix(room))
+        if fits.count < items.count {
+            message = String(localized: "Only added \(fits.count), \(Node.maxImages) images max.")
+        }
+        guard !fits.isEmpty else { return }
+        pendingImages += fits.count
+        Task {
+            let datas = await ImageDownsampler.attachmentData(from: fits)
+            await add(datas, standingIn: fits.count)
+        }
+    }
+
+    /// The camera's shot, shrunk off the main actor like a picked photo.
+    private func attachShot(_ shot: UIImage?) {
+        cameraShown = false
+        guard let shot, room > 0 else { return }
+        pendingImages += 1
+        Task {
+            let data = await Task.detached {
+                shot.jpegData(compressionQuality: 0.9).flatMap {
+                    ImageDownsampler.downsample($0, maxPixel: ImageDownsampler.Size.attachment)
+                }
+            }.value
+            await add([data].compactMap { $0 }, standingIn: 1)
+        }
+    }
+
+    /// Loaded pictures take their tiles' places. A send tapped meanwhile
+    /// goes now.
+    @MainActor
+    private func add(_ datas: [Data], standingIn placeholders: Int) async {
+        let fresh = await CaptureImage.make(from: datas)
+        pendingImages = max(0, pendingImages - placeholders)
+        withAnimation(.snappy) { images.append(contentsOf: fresh) }
+        if releaseWhenLoaded, pendingImages == 0 {
+            releaseWhenLoaded = false
+            saveTyped()
+        }
     }
 
     // MARK: Listening
@@ -570,6 +703,11 @@ struct FastCaptureSessionView: View {
 
     private func saveTyped() {
         guard !isSaving, canRelease else { return }
+        // Pictures still loading go too: the send waits for them.
+        guard pendingImages == 0 else {
+            releaseWhenLoaded = true
+            return
+        }
         let trimmed = text.trimmed
         var draft = heldDraft ?? CaptureDraft()
         if draft.audioData != nil {
