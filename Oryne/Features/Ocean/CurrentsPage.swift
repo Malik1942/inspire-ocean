@@ -38,7 +38,8 @@ struct CurrentGroup: Identifiable {
 /// All currents, readable and searchable. Each current is its name, set as
 /// a heading in New York italic with a ›, and its two newest thoughts as
 /// tiles under it. The name opens the whole current; a tile opens its
-/// thought. No cards around currents, no counts, no expanding in place.
+/// thought, and swiping it left archives or deletes it. No cards around
+/// currents, no counts, no expanding in place.
 struct CurrentsPage: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AppState.self) private var appState
@@ -47,9 +48,16 @@ struct CurrentsPage: View {
 
     @State private var search = ""
     @State private var stream: StreamSelection?
+    /// Thoughts opened from this page. A path, not `NavigationLink`s: a
+    /// link in a `List` draws a chevron the tiles don't wear.
+    @State private var path: [Node] = []
+    /// The way back from a swiped delete or archive.
+    @State private var removals = ThoughtRemovals()
 
     /// Newest thoughts previewed under each current's name.
     private static let previewCount = 2
+    /// From one current's last tile to the next current's name.
+    private static let currentGap: CGFloat = OceanSpacing.section - 8
 
     private var groups: [CurrentGroup] { CurrentGroup.build(from: nodes) }
 
@@ -71,27 +79,30 @@ struct CurrentsPage: View {
     }
 
     var body: some View {
-        NavigationStack {
+        let entries = visible
+        NavigationStack(path: $path) {
             ZStack {
                 OceanBackground(animated: false)
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: OceanSpacing.section - 8) {
-                        if visible.isEmpty {
-                            Text("Nothing drifts near this yet")
-                                .font(.subheadline)
-                                .foregroundStyle(OceanTheme.mist)
-                                .padding(.top, OceanSpacing.block)
-                                .frame(maxWidth: .infinity)
-                        }
-                        ForEach(visible, id: \.group.id) { entry in
-                            current(entry.group, rows: entry.rows, forced: entry.forced)
-                        }
+                List {
+                    if entries.isEmpty {
+                        Text("Nothing drifts near this yet")
+                            .font(.subheadline)
+                            .foregroundStyle(OceanTheme.mist)
+                            .frame(maxWidth: .infinity)
+                            .tileRow(top: OceanSpacing.block)
                     }
-                    .padding(.horizontal, OceanSpacing.gutter)
-                    .padding(.top, 8)
-                    .padding(.bottom, OceanSpacing.section)
+                    ForEach(entries, id: \.group.id) { entry in
+                        current(entry.group, rows: entry.rows, forced: entry.forced,
+                                isFirst: entry.group.id == entries.first?.group.id)
+                    }
                 }
+                .tileList()
+                .contentMargins(.bottom, OceanSpacing.section, for: .scrollContent)
+                .thoughtRemovalToast(removals)
             }
+            // The page as one container, for UI tests and pointing tools.
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("currents.page")
             // No custom bar background: it would swap in its own appearance
             // and drop the New York large title Library wears.
             .navigationTitle("Currents")
@@ -115,41 +126,45 @@ struct CurrentsPage: View {
                 if tab == .ask { dismiss() }
             }
         }
+        .settlesThoughtRemovals(removals)
     }
 
     // MARK: Current
 
-    /// One current, one entry: its name and a › open the whole current
+    /// One current, as rows: its name and a › open the whole current
     /// (Summarize and Add a thought at the top, every thought below); its
     /// two newest thoughts sit under the name as a preview, each a way into
-    /// that thought. Searching, every match is listed.
-    private func current(_ group: CurrentGroup, rows: [Node], forced: Bool) -> some View {
+    /// that thought, and each swipes away. Searching, every match is listed.
+    @ViewBuilder
+    private func current(_ group: CurrentGroup, rows: [Node], forced: Bool, isFirst: Bool) -> some View {
         let shown = forced ? rows : Array(rows.prefix(Self.previewCount))
-        return VStack(alignment: .leading, spacing: OceanSpacing.item) {
-            Button { stream = StreamSelection(theme: group.key) } label: {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(group.label)
-                        .font(OceanType.sectionLabel)
-                        .foregroundStyle(group.isAdrift ? OceanTheme.mist : OceanTheme.foam)
-                        .lineLimit(1)
-                        .padding(.leading, 2)
-                    Spacer(minLength: 8)
-                    Image(systemName: "chevron.right")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(OceanTheme.mist)
-                }
-                .frame(minHeight: OceanControlSize.height)
-                .contentShape(Rectangle())
+        Button { stream = StreamSelection(theme: group.key) } label: {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(group.label)
+                    .font(OceanType.sectionLabel)
+                    .foregroundStyle(group.isAdrift ? OceanTheme.mist : OceanTheme.foam)
+                    .lineLimit(1)
+                    .padding(.leading, 2)
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(OceanTheme.mist)
             }
-            .buttonStyle(.plain)
-            .accessibilityHint("Opens every thought in this current.")
-
-            ForEach(shown) { node in
-                NavigationLink(value: node) { NodeRow(node: node, showsCurrent: false) }
-                    .buttonStyle(.plain)
-            }
+            .frame(minHeight: OceanControlSize.height)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .accessibilityHint("Opens every thought in this current.")
         .opacity(group.isAdrift ? 0.75 : 1)
+        .tileRow(top: isFirst ? 8 : Self.currentGap - OceanSpacing.item / 2)
+
+        ForEach(shown) { node in
+            Button { path.append(node) } label: { NodeRow(node: node, showsCurrent: false) }
+                .buttonStyle(.plain)
+                .opacity(group.isAdrift ? 0.75 : 1)
+                .thoughtSwipeActions(node, removals: removals)
+                .tileRow()
+        }
     }
 }
 
