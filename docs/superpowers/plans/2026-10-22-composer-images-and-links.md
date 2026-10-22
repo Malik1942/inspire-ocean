@@ -1012,6 +1012,8 @@ git log --oneline -1
 
 ### Task 3: The + and its sheet
 
+> **Superseded in part (2026-10-22).** On the simulator the embedded `PhotosPicker` took over the system sheet this task presents (full height, see-through). Malik chose a panel in the keyboard's place instead: `CaptureAttachPanel`, drawn by the composer's overlay, with the tab bar stepping away under it. See the spec's "The + panel" and the fix briefs in the SDD ledger. The camera, All Photos, loading tiles and strings below stand.
+
 **Files:**
 - Create: `Oryne/Features/FastCapture/CaptureAttachSheet.swift`
 - Modify: `Oryne/Features/FastCapture/FastCaptureSessionView.swift`
@@ -2057,7 +2059,7 @@ sqlite3 "$GROUP/InspireOcean.store" "select n.ZKINDRAW, quote(n.ZTEXT), quote(n.
 - [ ] **Step 5: Link only.** Type "apple.com/newsroom"; send. Store: `link`, `''` text, `'https://apple.com/newsroom'`. After enrichment the Library card reads the page's title, not the URL.
 - [ ] **Step 6: Mid-sentence and dismissed.** Type "read https://example.com/essay before friday"; send. Store: words unchanged, link set. Then type "see https://example.org", tap the tile's ✕ (tile goes), send. Store: `'see https://example.org'`, NULL link.
 - [ ] **Step 7: Park and Undo.** Attach a photo and type "Coastline https://www.are.na/block/9"; tap open water. The bar reads "Coastline https://www.are.na/block/9". Tap the bar: the thumbnail and the tile are back. Send, then Undo: the words (URL included), the thumbnail and the tile come back. A draft of only two pictures parked reads "2 images".
-- [ ] **Step 8: Whisper with pictures.** Attach a photo, then hold the disc and speak a few words, lift. Store: `voice` with 1 image.
+- [ ] **Step 8: Whisper with pictures.** Attach a photo, then hold the disc and speak a few words, lift. Store: `voice` with 1 image. *(Cannot happen: with pictures on the card the disc is the send. Only a take that opens with the Action Button's screenshot carries a picture.)*
 - [ ] **Step 9: Cap.** Attach until 10; the + dims and does not open.
 - [ ] **Step 10: zh-Hans.** Relaunch with `-AppleLanguages '(zh-Hans)'`: the sheet's row reads 所有照片; a parked two-picture draft reads 2 张图片.
 - [ ] **Step 11: Reduce Motion.** `xcrun simctl spawn "$UDID" defaults write com.apple.Accessibility ReduceMotionEnabled -bool true`, relaunch: the card is open from the start and new thumbnails fade in. Turn it back off after.

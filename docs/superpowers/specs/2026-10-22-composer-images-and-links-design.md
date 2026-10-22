@@ -1,6 +1,6 @@
 # Composer images and link sensing — Design Spec
 
-**Date:** 2026-10-22 · **Branch:** `am/image-link-input-318138` · **Status:** approved in brainstorming (2026-10-22); awaiting review of this written spec
+**Date:** 2026-10-22 · **Branch:** `am/image-link-input-318138` · **Status:** approved 2026-10-22; built on this branch (plan: `docs/superpowers/plans/2026-10-22-composer-images-and-links.md`), reviewed per task and as a whole
 
 ## Goal
 
@@ -82,6 +82,10 @@ thought's link card.
   words as text and is never attached.
 - Images are decoded into small thumbnails once, when attached; typing never
   re-decodes photos.
+- A picture still loading shows a quiet tile with the same ✕: it lets go of
+  the loads on their way, so a stalled one (an iCloud original while offline)
+  never holds the card. A send tapped while pictures load waits for them, and
+  goes with what landed if their ✕ is tapped.
 
 ### The + panel
 
@@ -128,21 +132,29 @@ A new pure `LinkSensing` in `Shared/Services` (so `SharedTests` can test it):
 
 - **Find:** `NSDataDetector` links, `http` and `https` only. A match typed
   without a scheme becomes `https://` + the match; a typed `http://` stays.
-  A sentence's final `?` right after a link is the sentence's, not the URL's
-  (the detector reads it as an empty query, which means nothing).
+  Every final `?` right after a link is the sentence's, not the URL's (the
+  detector reads it as an empty query, which means nothing). A link ends
+  where prose typed right against it begins: CJK text and its marks,
+  full-width forms, curly quotes and dashes (the detector would carry them
+  in, so "https://a.com这个不错" would store a broken link).
 - **Choose:** the first sensed link whose URL the user has not dismissed.
 - **Lift:** the chosen link is at the **leading edge** when only whitespace
   precedes it, and at the **trailing edge** when only whitespace and sentence
-  punctuation (`. , ; ! ? … 。 ， ； ！ ？`) follow it. At an edge, the link and
+  punctuation (`. , ; ! ? … 。 ， ； ！ ？ 、`) follow it. At an edge, the link and
   that trailing punctuation leave the words, and so does whatever joined the
-  link to them (`- – — | · : ： , ， ; ；` beside it): "Great read - link",
+  link to them (`- – — | · : ： , ， ; ； 、` beside it): "Great read - link",
   "Love this: link", "link, great read" and "看这个：link" keep "Great read",
   "Love this", "great read" and "看这个". A question or exclamation mark before
-  the link stays. Anywhere else the words keep the link. Words that were only
-  the link become empty.
+  the link stays. A link at the start leaves the words only when something
+  sets it apart from what follows: a space, a separator then a space, a
+  full-width mark, or CJK text ("https://a.com这个不错" keeps "这个不错").
+  Otherwise the words keep it: "stripe.com’s new docs" stays whole, and
+  "https://a.com -5 degrees" keeps its minus. Anywhere else the words keep
+  the link. Words that were only the link become empty.
 - **The tile** follows the field: sensed half a second after the last edit
   (so a half-typed `apple.co` never shows), and at once when the card opens
-  with words already in it (a seed, a parked draft, an undo).
+  with words already in it (a seed, a parked draft, an undo) or a paste adds
+  more than one character.
 
 ### Release
 
@@ -175,7 +187,8 @@ A new pure `LinkSensing` in `Shared/Services` (so `SharedTests` can test it):
   picture that hasn't landed.
   `ParkedCapture.line` with no words reads "Whisper" when audio waits, else
   "Image" for one picture and "%lld images" for more (was "Screenshot").
-- Undo returns words, images, link dismissals and audio to the card.
+- Undo returns words, images, link dismissals and audio to the card; the
+  pictures come back through their loading tiles, decoded off the main actor.
 
 ### Copy
 
