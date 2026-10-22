@@ -2033,6 +2033,16 @@
         }
       }
     },
+    "Opens the keyboard. The button beside it releases the draft." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开键盘。旁边的按钮把草稿汇入海洋。"
+          }
+        }
+      }
+    },
     "Opens the keyboard. The button beside it whispers." : {
       "localizations" : {
         "zh-Hans" : {

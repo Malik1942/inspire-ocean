@@ -142,6 +142,11 @@ struct RootTabView: View {
             guard appState.fastCaptureRequest == nil, !control.overlayOpen, touch != .up else { return }
             appState.startFastCapture(source: .inApp, inputPreference: .voiceFirst)
         }
+        // The bar's send on a parked draft: the overlay opens to release it.
+        .onChange(of: control.releaseParked) { _, release in
+            guard release, appState.fastCaptureRequest == nil, !control.overlayOpen else { return }
+            appState.startFastCapture(source: .inApp, inputPreference: .typingFirst)
+        }
         // A value-has-landed moment armed the once-ever review ask; fire it here,
         // where the environment action lives and every surface funnels through.
         // Held back, and retried, until nothing is covering the tabs, so the
@@ -203,6 +208,12 @@ enum FastCaptureLayout {
     static let fieldLeading: CGFloat = barHeight / 2 - 8
     /// The capsule's end radius, kept when the container grows taller.
     static let endRadius: CGFloat = barHeight / 2
+    /// The open composer's corners: fixed and continuous, so a tall card
+    /// keeps its text room instead of growing a capsule's round ends.
+    static let cardRadius: CGFloat = 24
+    /// The open composer's one inset: the words and the disc keep it from
+    /// every edge, so the lines and the disc share both sides of the card.
+    static let cardInset: CGFloat = 12
     /// The tab bar (49 pt) plus the 12 pt gap under the bar.
     static let tabBarClearance: CGFloat = 49 + 12
     /// What scrolling content under the bar leaves clear: bar, gap, and a
