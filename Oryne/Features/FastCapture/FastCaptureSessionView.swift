@@ -272,9 +272,11 @@ struct FastCaptureSessionView: View {
         .onChange(of: attachPanelShown) { _, shown in
             // The tab bar steps away under the panel, as under the keys. A
             // composer in a sheet leaves the page behind it alone.
-            // On iPad the tab bar sits at the top, away from the panel.
-            if ownsControl, !asSheet, sizeClass == .compact {
-                withAnimation(motion) { control.attachPanelOpen = shown }
+            // The tab bar steps away only where it sits at the bottom (any
+            // iPhone, or a compact iPad window), and always comes back.
+            let barAtBottom = UIDevice.current.userInterfaceIdiom == .phone || sizeClass == .compact
+            if ownsControl, !asSheet {
+                withAnimation(motion) { control.attachPanelOpen = shown && barAtBottom }
             }
         }
         .fullScreenCover(isPresented: $cameraShown, onDismiss: { textFocused = true }) {

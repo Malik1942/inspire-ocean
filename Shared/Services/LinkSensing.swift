@@ -30,9 +30,13 @@ enum LinkSensing {
                   let found = Range(match.range, in: text) else { return nil }
             var typed = String(text[found])
             // The detector carries prose typed right against a link into it
-            // (Chinese needs no space, a curly quote or dash none either):
-            // the link ends where that prose begins.
-            if let end = typed.firstIndex(where: endsLink) { typed = String(typed[..<end]) }
+            // (Chinese needs no space, a curly quote, dash or emoji none
+            // either): the link ends where that prose begins.
+            if let end = linkEnd(in: typed) {
+                typed = String(typed[..<end])
+                // A cut right after a dot leaves the sentence's dot behind.
+                while typed.hasSuffix(".") { typed.removeLast() }
+            }
             // A final "?" belongs to the sentence, not the URL: the detector
             // reads it as an empty query.
             while typed.hasSuffix("?") { typed.removeLast() }
@@ -93,10 +97,17 @@ enum LinkSensing {
 
     /// CJK text and its marks: they need no space to end a link.
     private static func isCJK(_ character: Character) -> Bool {
+        isCJKLetter(character) || character.unicodeScalars.contains { scalar in
+            (0x3000...0x303F).contains(scalar.value) || (0xFF00...0xFFEF).contains(scalar.value)
+        }
+    }
+
+    /// Han, kana and hangul.
+    private static func isCJKLetter(_ character: Character) -> Bool {
         character.unicodeScalars.contains { scalar in
             switch scalar.value {
-            case 0x2E80...0x2FFF, 0x3000...0x303F, 0x3040...0x30FF, 0x3400...0x4DBF,
-                 0x4E00...0x9FFF, 0xAC00...0xD7AF, 0xF900...0xFAFF, 0xFF00...0xFFEF:
+            case 0x2E80...0x2FFF, 0x3040...0x30FF, 0x3400...0x4DBF,
+                 0x4E00...0x9FFF, 0xAC00...0xD7AF, 0xF900...0xFAFF:
                 return true
             default:
                 return false
@@ -104,10 +115,38 @@ enum LinkSensing {
         }
     }
 
-    /// Where a link the detector ran on ends: CJK text and marks, and the
-    /// curly quotes and dashes typed right against it.
-    private static func endsLink(_ character: Character) -> Bool {
-        isCJK(character) || character.unicodeScalars.contains { (0x2010...0x201F).contains($0.value) }
+    /// Where a link the detector ran on really ends: at CJK text and marks,
+    /// curly quotes, dashes or emoji typed right against it. CJK letters
+    /// that open a path segment are the link's own ("/wiki/海洋").
+    private static func linkEnd(in typed: String) -> String.Index? {
+        // The path starts at the first slash after the host, not in "://".
+        let host = typed.range(of: "://")?.upperBound ?? typed.startIndex
+        var inPath = false
+        var segmentIsCJK = false
+        var previous: Character?
+        for index in typed.indices {
+            let character = typed[index]
+            defer { previous = character }
+            if character == "/" {
+                if index >= host { inPath = true }
+                segmentIsCJK = false
+            } else if isCJKLetter(character) {
+                if inPath, previous == "/" { segmentIsCJK = true }
+                if !segmentIsCJK { return index }
+            } else if isCJK(character) || isProseMark(character) {
+                return index
+            }
+        }
+        return nil
+    }
+
+    /// Curly quotes, dashes and emoji: prose, never part of a typed link.
+    private static func isProseMark(_ character: Character) -> Bool {
+        character.unicodeScalars.contains { scalar in
+            (0x2010...0x201F).contains(scalar.value)
+                || scalar.properties.isEmojiPresentation
+                || scalar.value == 0xFE0F
+        }
     }
 
     private static let detector = try! NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)

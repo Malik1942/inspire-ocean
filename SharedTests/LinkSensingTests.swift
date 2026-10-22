@@ -206,6 +206,28 @@ final class LinkSensingTests: XCTestCase {
         XCTAssertEqual(LinkSensing.words("Wow! https://a.com", lifting: "https://a.com"), "Wow!")
     }
 
+    func testEmojiTypedAgainstALinkEndIt() {
+        XCTAssertEqual(LinkSensing.links(in: "这个https://a.com👍").map(\.urlString), ["https://a.com"])
+        XCTAssertEqual(LinkSensing.links(in: "https://a.com🔥").map(\.urlString), ["https://a.com"])
+        XCTAssertEqual(LinkSensing.links(in: "nice https://a.com/x👍").map(\.urlString), ["https://a.com/x"])
+        XCTAssertEqual(LinkSensing.links(in: "call 1234 or see https://a.com/2#3").map(\.urlString), ["https://a.com/2#3"])
+    }
+
+    func testCJKLettersOpeningAPathSegmentAreTheLinks() {
+        let wiki = URL(string: "https://zh.wikipedia.org/wiki/海洋")!.absoluteString
+        XCTAssertEqual(LinkSensing.links(in: "https://zh.wikipedia.org/wiki/海洋").map(\.urlString), [wiki])
+        XCTAssertEqual(LinkSensing.links(in: "zh.wikipedia.org/wiki/海洋").map(\.urlString), [wiki])
+        XCTAssertEqual(LinkSensing.links(in: "https://zh.wikipedia.org/wiki/海洋，很美").map(\.urlString), [wiki])
+        XCTAssertEqual(
+            LinkSensing.links(in: "https://baike.baidu.com/item/海洋/1101").map(\.urlString),
+            [URL(string: "https://baike.baidu.com/item/海洋/1101")!.absoluteString]
+        )
+    }
+
+    func testACutRightAfterADotLeavesTheDotBehind() {
+        XCTAssertEqual(LinkSensing.links(in: "https://a.com.这个").map(\.urlString), ["https://a.com"])
+    }
+
     func testWithoutALinkTheWordsAreOnlyTrimmed() {
         XCTAssertEqual(LinkSensing.words("  hello  ", lifting: nil), "hello")
         XCTAssertEqual(LinkSensing.words("hello", lifting: "https://a.com"), "hello")
