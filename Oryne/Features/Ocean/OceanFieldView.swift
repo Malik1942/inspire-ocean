@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import AVFoundation
+import WidgetKit
 
 /// Tide: where the Ocean meets you. What rose today, what just drifted
 /// in, which currents are moving (docs/plans/phone-refocus/SPEC.md,
@@ -27,6 +28,8 @@ struct OceanFieldView: View {
     @State private var nearby: [Node] = []
     /// Bumped by "Let it rest" so today's pick recomputes.
     @State private var restTick = 0
+    /// The Resurfacing widget was reloaded since Tide first appeared.
+    @State private var widgetReloaded = false
     /// The lamp's extra warmth while a new thought rises; 0 at rest.
     @State private var lampLift: Double = 0
     /// The lamp dims while a thought sinks.
@@ -112,6 +115,15 @@ struct OceanFieldView: View {
             .onChange(of: resurfacing?.id) { _, _ in
                 nearbyOpen = false
                 nearby = []
+            }
+            // The Resurfacing widget shows this same pick: reload it when the
+            // pick changes, and once when Tide first appears, for a change made
+            // while the app was closed (a sync, a reseed). `initial` runs again
+            // on every return to this tab; those reload nothing.
+            .onChange(of: resurfacing?.id, initial: true) { old, new in
+                guard old != new || !widgetReloaded else { return }
+                widgetReloaded = true
+                WidgetCenter.shared.reloadTimelines(ofKind: Resurfacing.widgetKind)
             }
             .sheet(item: $sheet) { item in
                 switch item {

@@ -26,6 +26,11 @@ enum Resurfacing {
     /// How long a met fragment rests before it may rise again.
     static let restAfterMeeting: TimeInterval = 60 * 60 * 24 * 14
 
+    /// The Home Screen widget's kind. The app reloads the widget by it when
+    /// today's pick changes; placed widgets are keyed by it, so it never
+    /// changes.
+    static let widgetKind = "com.inspireocean.app.widgets.resurfacing"
+
     /// "Let it rest": the thought the user sent back down today. It is
     /// excluded from today's pick (and marked met), so another rises; the
     /// widget reads the same key, so every surface agrees. One per day.

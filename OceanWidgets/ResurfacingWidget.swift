@@ -9,7 +9,7 @@ import SwiftData
 /// surfaces, via the shared `Resurfacing` pick. Tapping opens the app with the
 /// node focused in the Ocean.
 struct ResurfacingWidget: Widget {
-    let kind = "com.inspireocean.app.widgets.resurfacing"
+    let kind = Resurfacing.widgetKind
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: ResurfacingProvider()) { entry in
@@ -54,6 +54,7 @@ struct ResurfacingProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<ResurfacingEntry>) -> Void) {
         // The pick changes daily — refresh just after the next midnight.
+        // Within the day, the app reloads this when Tide's pick changes.
         let nextMidnight = Calendar.current.nextDate(
             after: .now, matching: DateComponents(hour: 0, minute: 5), matchingPolicy: .nextTime
         ) ?? .now.addingTimeInterval(60 * 60 * 6)
