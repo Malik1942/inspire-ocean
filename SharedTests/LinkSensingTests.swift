@@ -110,11 +110,13 @@ final class LinkSensingTests: XCTestCase {
 
     func testALinkMidSentenceStays() {
         let words = "read https://x.com/someone/status/123 before friday"
+        XCTAssertEqual(LinkSensing.links(in: words).map(\.urlString), ["https://x.com/someone/status/123"])
         XCTAssertEqual(LinkSensing.words(words, lifting: "https://x.com/someone/status/123"), words)
     }
 
     func testAChineseLinkMidSentenceStays() {
         let words = "小红书链接 xhslink.com/a/AbC123，复制后打开"
+        XCTAssertEqual(LinkSensing.links(in: words).map(\.urlString), ["https://xhslink.com/a/AbC123"])
         XCTAssertEqual(LinkSensing.words(words, lifting: "https://xhslink.com/a/AbC123"), words)
     }
 
@@ -131,6 +133,38 @@ final class LinkSensingTests: XCTestCase {
 
     func testOnlyTheChosenOfTwoLinksIsLifted() {
         XCTAssertEqual(LinkSensing.words("https://a.com https://b.com", lifting: "https://a.com"), "https://b.com")
+    }
+
+    func testAFinalQuestionMarkIsNotTheLinks() {
+        XCTAssertEqual(LinkSensing.links(in: "Is this real https://a.com?").map(\.urlString), ["https://a.com"])
+        XCTAssertEqual(LinkSensing.words("Is this real https://a.com?", lifting: "https://a.com"), "Is this real")
+        XCTAssertEqual(
+            LinkSensing.links(in: "see https://a.com/search?q=1").map(\.urlString),
+            ["https://a.com/search?q=1"]
+        )
+    }
+
+    func testALinkWithOnlyItsSentenceEndLeavesNoWords() {
+        XCTAssertEqual(LinkSensing.words("https://a.com.", lifting: "https://a.com"), "")
+        XCTAssertEqual(LinkSensing.words("https://a.com !", lifting: "https://a.com"), "")
+        XCTAssertEqual(
+            LinkSensing.words("https://www.bilibili.com/video/BV1xx。", lifting: "https://www.bilibili.com/video/BV1xx"),
+            ""
+        )
+    }
+
+    func testALeadingLinkTakesItsSentenceEnd() {
+        XCTAssertEqual(LinkSensing.words("https://a.com. Great read", lifting: "https://a.com"), "Great read")
+        XCTAssertEqual(LinkSensing.words("https://a.com。看这个", lifting: "https://a.com"), "看这个")
+    }
+
+    func testEverySentenceEndAndJointLeavesWithATrailingLink() {
+        for end in ["!", "?", "…", "，", "；", "！", "？"] {
+            XCTAssertEqual(LinkSensing.words("see https://a.com\(end)", lifting: "https://a.com"), "see", end)
+        }
+        for joint in ["–", "—", "|", "·", ";", "，", "；"] {
+            XCTAssertEqual(LinkSensing.words("Great read \(joint) https://a.com", lifting: "https://a.com"), "Great read", joint)
+        }
     }
 
     func testWithoutALinkTheWordsAreOnlyTrimmed() {

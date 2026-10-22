@@ -27,9 +27,15 @@ enum LinkSensing {
         return detector.matches(in: text, range: whole).compactMap { match in
             guard let url = match.url, let scheme = url.scheme?.lowercased(),
                   scheme == "http" || scheme == "https",
-                  let range = Range(match.range, in: text) else { return nil }
-            let typed = text[range].lowercased()
+                  var range = Range(match.range, in: text) else { return nil }
             var urlString = url.absoluteString
+            // A question that ends on a link keeps its mark: the detector
+            // reads a final "?" as an empty query, which means nothing.
+            if text[range].hasSuffix("?") {
+                range = range.lowerBound..<text.index(before: range.upperBound)
+                if urlString.hasSuffix("?") { urlString.removeLast() }
+            }
+            let typed = text[range].lowercased()
             // A bare domain comes back as http; the web is https now.
             if !typed.hasPrefix("http://"), !typed.hasPrefix("https://"), urlString.hasPrefix("http://") {
                 urlString = "https://" + urlString.dropFirst("http://".count)
@@ -44,27 +50,29 @@ enum LinkSensing {
     }
 
     /// The words a thought keeps, trimmed. When `urlString` sits at their
-    /// start or end it leaves them, with the punctuation that joined it to
-    /// them; anywhere else the words keep it.
+    /// start or end it leaves them, with the punctuation that ended it or
+    /// joined it to them; anywhere else the words keep it.
     static func words(_ text: String, lifting urlString: String?) -> String {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let urlString,
               let link = links(in: text).first(where: { $0.urlString == urlString }) else { return text }
         let before = text[..<link.range.lowerBound]
         let after = text[link.range.upperBound...]
-        if before.allSatisfy(\.isWhitespace) {
-            return String(after.drop { $0.isWhitespace || joints.contains($0) })
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-        }
+        // The end first: a link followed by nothing but its sentence's end
+        // leaves no words of its own behind, wherever it starts.
         if after.allSatisfy({ $0.isWhitespace || sentenceEnds.contains($0) }) {
             var kept = before
             while let last = kept.last, last.isWhitespace || joints.contains(last) { kept.removeLast() }
             return String(kept)
         }
+        if before.allSatisfy(\.isWhitespace) {
+            return String(after.drop { $0.isWhitespace || sentenceEnds.contains($0) || joints.contains($0) })
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        }
         return text
     }
 
-    /// What ends a sentence after a link at the end of the words.
+    /// What ends a sentence after a link.
     private static let sentenceEnds: Set<Character> = [".", ",", ";", "!", "?", "…", "。", "，", "；", "！", "？"]
     /// What joins a link to the words beside it ("Great read - link",
     /// "link, great read", "看这个：link").
