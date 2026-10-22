@@ -70,25 +70,29 @@ struct RootTabView: View {
                 )
                 .environment(appState)
                 .environment(control)
+                // Each request its own overlay: one opened while the last
+                // still fades out is a new view, not the old one revived.
+                .id(request.id)
                 .transition(.opacity)
             }
         }
-        // The capture bar rides above the tab bar (Tide and Library). The
-        // moment the overlay is up it draws the same capsule in the same
-        // frame (typing, listening), so the bar steps aside and only one
-        // capsule is ever on screen. A hold that began on the bar's disc
-        // keeps its finger on the now invisible bar until it lifts or
-        // locks. While the overlay is only its toast, the bar is back.
+        // The capture bar rides above the tab bar on Tide; the Library is
+        // for finding and keeps search as its one input. The moment the
+        // overlay is up it draws the same capsule in the same frame
+        // (typing, listening), so the bar steps aside and only one capsule
+        // is ever on screen. A hold that began on the bar's disc keeps its
+        // finger on the now invisible bar until it lifts. While the overlay
+        // is only its toast, the bar is back.
         .modifier(CaptureBarPlacement(
-            show: appState.selectedTab != .ask
-                && !(appState.selectedTab == .library && control.readingThought)
+            show: appState.selectedTab == .ocean
                 && !keyboardUp
                 && (appState.fastCaptureRequest == nil || control.toastShowing),
             keepsTouch: control.isHeld,
-            // Only the Library folds the bar, while reading down its grid.
-            folded: control.barFolded && appState.selectedTab == .library,
             control: control
         ))
+        .onChange(of: appState.selectedTab, initial: true) { _, tab in
+            control.barOnTab = tab == .ocean
+        }
         .sheet(isPresented: $showFastCaptureOnboarding) {
             OceanOnboardingView(
                 onComplete: {
@@ -219,6 +223,9 @@ enum FastCaptureLayout {
     /// What scrolling content under the bar leaves clear: bar, gap, and a
     /// breath above it.
     static let contentClearance: CGFloat = tabBarClearance + barHeight + 16
+    /// The same for a page without the bar (the Library): the tab bar and
+    /// the same breath above it.
+    static let pageClearance: CGFloat = tabBarClearance + 16
     /// Ask's bar lives in its page's bottom safe-area inset, which already
     /// clears the tab bar; this lifts it to the capture bar's exact height.
     static let insetBarLift: CGFloat = 12

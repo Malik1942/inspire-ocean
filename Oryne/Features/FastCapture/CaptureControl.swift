@@ -42,6 +42,10 @@ final class CaptureControl {
     var isListening = false
     var level: Double = 0
     var overlayOpen = false
+    /// The overlay that holds the shared state above: its request's id.
+    /// An overlay lets go the moment it finishes, so one still fading out
+    /// never answers the bar; the next opens at once.
+    var overlayID: UUID?
     /// How much of the page's bottom edge the open composer covers, card
     /// and gap; 0 when it is closed. The page keeps a bar this tall so the
     /// system's scroll edge effect runs behind the glass.
@@ -56,12 +60,9 @@ final class CaptureControl {
     /// The overlay is only its toast now: the bar comes back, and a tap or a
     /// hold on it starts the next capture in the same overlay.
     var toastShowing = false
-    /// Reading down the Library folds the bar into its disc; heading back
-    /// up, or reaching the top, unfolds it.
-    var barFolded = false
-    /// A thought is open in the Library: it is a page to read, so the bar
-    /// (and the tab bar) step away until you go back.
-    var readingThought = false
+    /// The bar has a place on the tab on screen (Tide). The toast sits just
+    /// above it there, and in its spot on a tab without one.
+    var barOnTab = true
 
     /// VoiceOver, Switch Control and Calm Accessibility Mode turn the hold
     /// off: the disc only taps to start and stop. The hold is an

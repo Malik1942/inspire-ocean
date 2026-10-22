@@ -1,20 +1,15 @@
 import SwiftUI
 
-/// The capture bar above the tab bar on Tide and Library, like a message
-/// composer: words to tap to type, and a disc to tap or hold to whisper.
-/// Its geometry is fixed so the disc sits concentric with the capsule's
-/// end (FastCaptureLayout).
-///
-/// Folded, it is only the disc in a 56 pt circle at the same spot: the
-/// capsule's leading edge slides in to meet it and the words fade first,
-/// so they are clipped, never squashed. The disc itself never moves, and
-/// it still taps or holds to whisper.
+/// The capture bar above the tab bar on Tide, like a message composer:
+/// words to tap to type, and a disc to tap or hold to whisper. Its
+/// geometry is fixed so the disc sits concentric with the capsule's end
+/// (FastCaptureLayout). The Library has none: it is for finding, and its
+/// one input is its search.
 ///
 /// A draft put away unsent waits here: its first line in place of the
 /// question, and the disc is its send. Tapping the words brings it back.
 struct CaptureBar: View {
     @Environment(CaptureControl.self) private var control
-    var folded = false
 
     var body: some View {
         ZStack(alignment: .trailing) {
@@ -25,16 +20,12 @@ struct CaptureBar: View {
                     .padding(.leading, FastCaptureLayout.fieldLeading)
                     // A draft's line stops short of the disc.
                     .padding(.trailing, control.parked == nil ? 0 : FastCaptureLayout.buttonSize + FastCaptureLayout.discInset + 8)
-                    // minWidth 0: the words keep their width and overflow
+                    // minWidth 0: long words keep their width and overflow
                     // into the clip instead of widening the bar.
                     .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .opacity(folded ? 0 : 1)
-            .animation(folded ? .easeOut(duration: 0.1) : .easeOut(duration: 0.2).delay(0.3), value: folded)
-            .allowsHitTesting(!folded)
-            .accessibilityHidden(folded)
             .accessibilityLabel("Capture a thought")
             .accessibilityValue(Text(verbatim: control.parked?.text ?? ""))
             .accessibilityHint(control.parked == nil
@@ -48,13 +39,10 @@ struct CaptureBar: View {
             )
             .padding(.trailing, FastCaptureLayout.discInset)
         }
-        .frame(maxWidth: folded ? FastCaptureLayout.barHeight : .infinity, alignment: .trailing)
+        .frame(maxWidth: .infinity, alignment: .trailing)
         .frame(height: FastCaptureLayout.barHeight)
-        // Words out first, then the fold; unfolding, the words return only
-        // once the capsule is wide again. They never slide with the edge.
-        .animation(folded ? .smooth(duration: 0.4).delay(0.1) : .smooth(duration: 0.4), value: folded)
-        // The words never spill past the folding edge; the surface and its
-        // shadow sit outside the clip.
+        // The words never spill past the capsule's ends; the surface and
+        // its shadow sit outside the clip.
         .clipShape(Capsule())
         .background(OceanBarBackground())
         .frame(maxWidth: .infinity, alignment: .trailing)
@@ -100,19 +88,19 @@ struct CaptureCapsule<Content: View>: View {
     }
 }
 
-/// Places the bar above the tab bar. Hidden on Ask, which has its own input.
+/// Places the bar above the tab bar on Tide. The Library's one input is its
+/// search, and Ask has its own bar.
 struct CaptureBarPlacement: ViewModifier {
     let show: Bool
     /// A hold that began on the bar's disc: the overlay's identical capsule
     /// is drawn in the same frame, so the bar goes invisible but keeps the
     /// finger until it lifts or locks.
     var keepsTouch = false
-    var folded = false
     let control: CaptureControl
 
     func body(content: Content) -> some View {
         content.overlay(alignment: .bottom) {
-            CaptureBar(folded: folded)
+            CaptureBar()
                 .environment(control)
                 .padding(.horizontal, OceanSpacing.gutter)
                 .padding(.bottom, FastCaptureLayout.tabBarClearance)
