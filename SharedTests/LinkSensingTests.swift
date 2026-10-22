@@ -167,6 +167,45 @@ final class LinkSensingTests: XCTestCase {
         }
     }
 
+    func testProseTypedAgainstALinkEndsIt() {
+        XCTAssertEqual(LinkSensing.links(in: "https://a.com这个不错").map(\.urlString), ["https://a.com"])
+        XCTAssertEqual(LinkSensing.links(in: "看这个https://a.com/x复制").map(\.urlString), ["https://a.com/x"])
+        XCTAssertEqual(LinkSensing.links(in: "https://a.com—great").map(\.urlString), ["https://a.com"])
+        XCTAssertEqual(LinkSensing.links(in: "see https://a.com/“quoted”").map(\.urlString), ["https://a.com/"])
+        XCTAssertTrue(LinkSensing.links(in: "https://这个").isEmpty)
+    }
+
+    func testChineseRightAfterALeadingLinkIsTheWords() {
+        XCTAssertEqual(LinkSensing.words("https://a.com这个不错", lifting: "https://a.com"), "这个不错")
+        XCTAssertEqual(LinkSensing.words("https://a.com、看看", lifting: "https://a.com"), "看看")
+        XCTAssertEqual(LinkSensing.words("看这个 https://a.com、", lifting: "https://a.com"), "看这个")
+        let words = "看这个https://a.com/x复制"
+        XCTAssertEqual(LinkSensing.words(words, lifting: "https://a.com/x"), words)
+    }
+
+    func testALeadingLinkNeedsSomethingToSetItApart() {
+        XCTAssertEqual(LinkSensing.links(in: "stripe.com’s new docs are great").map(\.urlString), ["https://stripe.com"])
+        XCTAssertEqual(
+            LinkSensing.words("stripe.com’s new docs are great", lifting: "https://stripe.com"),
+            "stripe.com’s new docs are great"
+        )
+        XCTAssertEqual(LinkSensing.words("https://a.com -5 degrees", lifting: "https://a.com"), "-5 degrees")
+        XCTAssertEqual(LinkSensing.words("https://a.com :) nice", lifting: "https://a.com"), ":) nice")
+        XCTAssertEqual(LinkSensing.words("https://a.com - great", lifting: "https://a.com"), "great")
+        XCTAssertEqual(LinkSensing.words("https://a.com! Amazing", lifting: "https://a.com"), "Amazing")
+    }
+
+    func testEveryFinalQuestionMarkIsTheSentences() {
+        XCTAssertEqual(LinkSensing.links(in: "really https://a.com??").map(\.urlString), ["https://a.com"])
+    }
+
+    func testASCIIMarksAroundALink() {
+        XCTAssertEqual(LinkSensing.words("see https://a.com,", lifting: "https://a.com"), "see")
+        XCTAssertEqual(LinkSensing.words("see https://a.com;", lifting: "https://a.com"), "see")
+        XCTAssertEqual(LinkSensing.words("Great read, https://a.com", lifting: "https://a.com"), "Great read")
+        XCTAssertEqual(LinkSensing.words("Wow! https://a.com", lifting: "https://a.com"), "Wow!")
+    }
+
     func testWithoutALinkTheWordsAreOnlyTrimmed() {
         XCTAssertEqual(LinkSensing.words("  hello  ", lifting: nil), "hello")
         XCTAssertEqual(LinkSensing.words("hello", lifting: "https://a.com"), "hello")

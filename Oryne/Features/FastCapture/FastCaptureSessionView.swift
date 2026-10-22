@@ -18,6 +18,7 @@ struct FastCaptureSessionView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.calmAccessibility) private var calm
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(CaptureControl.self) private var control
 
     let request: FastCaptureRequest
@@ -79,6 +80,10 @@ struct FastCaptureSessionView: View {
     /// Where the keyboard is headed, in screen points, from its own
     /// notifications. Only consulted when the safe area missed it.
     @State private var keyboardFrame: CGRect?
+    /// The id this overlay holds the shared capture state by, pinned when it
+    /// first appears: a current's sheet rebuilds its request (a new id) on
+    /// every render, and ownership must outlive that.
+    @State private var ownerID: UUID
     @FocusState private var textFocused: Bool
 
     init(
@@ -93,6 +98,7 @@ struct FastCaptureSessionView: View {
         // The Action Button's screenshot joins in `.task`: this view is
         // rebuilt whenever the tabs redraw, and a decode here would rerun.
         _images = State(initialValue: [])
+        _ownerID = State(initialValue: request.id)
     }
 
     private var listening: Bool { phase == .listening }
@@ -165,7 +171,7 @@ struct FastCaptureSessionView: View {
             keyboardFrame = note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
         }
         .task {
-            control.overlayID = request.id
+            control.overlayID = ownerID
             control.overlayOpen = true
             // A panel an earlier overlay left open is not this one's.
             control.attachPanelOpen = false
@@ -251,7 +257,9 @@ struct FastCaptureSessionView: View {
             guard phase != .active else { return }
             finishInterruptedCapture()
         }
-        .onChange(of: text) { _, _ in senseLink() }
+        // A paste (more than one character at once) shows its link at once,
+        // so a send right after it never attaches a link the card didn't show.
+        .onChange(of: text) { old, new in senseLink(now: new.count - old.count > 1) }
         // Focusing the words (a tap on the field, the + again, a photo
         // picked) brings the keys back and the panel steps aside; so does
         // anything that ends composing.
@@ -264,7 +272,10 @@ struct FastCaptureSessionView: View {
         .onChange(of: attachPanelShown) { _, shown in
             // The tab bar steps away under the panel, as under the keys. A
             // composer in a sheet leaves the page behind it alone.
-            if ownsControl, !asSheet { withAnimation(motion) { control.attachPanelOpen = shown } }
+            // On iPad the tab bar sits at the top, away from the panel.
+            if ownsControl, !asSheet, sizeClass == .compact {
+                withAnimation(motion) { control.attachPanelOpen = shown }
+            }
         }
         .fullScreenCover(isPresented: $cameraShown, onDismiss: { textFocused = true }) {
             CameraPicker(onFinish: attachShot)
@@ -503,7 +514,7 @@ struct FastCaptureSessionView: View {
 
     /// This overlay holds the shared capture state (the bar's taps, the
     /// take's level) until it finishes or a newer overlay takes over.
-    private var ownsControl: Bool { control.overlayID == request.id }
+    private var ownsControl: Bool { control.overlayID == ownerID }
 
     /// Done: hand the bar back first, then close. A tap on the disc while
     /// this overlay still fades out opens the next one at once instead of
@@ -746,13 +757,14 @@ struct FastCaptureSessionView: View {
         guard !Task.isCancelled else { return }
         pendingImages = max(0, pendingImages - placeholders)
         withAnimation(.snappy) { images.append(contentsOf: fresh) }
-        if pendingImages == 0 { loadTasks = [] }
-        // Only while this overlay still holds the card (a newer overlay may
-        // have taken it over).
-        if releaseWhenLoaded, pendingImages == 0, phase == .composing, ownsControl {
-            releaseWhenLoaded = false
-            saveTyped()
-        }
+        guard pendingImages == 0 else { return }
+        loadTasks = []
+        // A send that waited for these goes now, only while this overlay
+        // still holds the card; either way the wait is over, so a later load
+        // (an Undo's) never sends on its own.
+        let sendNow = releaseWhenLoaded && phase == .composing && ownsControl
+        releaseWhenLoaded = false
+        if sendNow { saveTyped() }
     }
 
     /// A loading tile's ✕: the pictures still on their way are let go, and

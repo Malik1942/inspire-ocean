@@ -27,20 +27,21 @@ enum LinkSensing {
         return detector.matches(in: text, range: whole).compactMap { match in
             guard let url = match.url, let scheme = url.scheme?.lowercased(),
                   scheme == "http" || scheme == "https",
-                  var range = Range(match.range, in: text) else { return nil }
-            var urlString = url.absoluteString
-            // A question that ends on a link keeps its mark: the detector
-            // reads a final "?" as an empty query, which means nothing.
-            if text[range].hasSuffix("?") {
-                range = range.lowerBound..<text.index(before: range.upperBound)
-                if urlString.hasSuffix("?") { urlString.removeLast() }
-            }
-            let typed = text[range].lowercased()
-            // A bare domain comes back as http; the web is https now.
-            if !typed.hasPrefix("http://"), !typed.hasPrefix("https://"), urlString.hasPrefix("http://") {
-                urlString = "https://" + urlString.dropFirst("http://".count)
-            }
-            return Sensed(urlString: urlString, range: range)
+                  let found = Range(match.range, in: text) else { return nil }
+            var typed = String(text[found])
+            // The detector carries prose typed right against a link into it
+            // (Chinese needs no space, a curly quote or dash none either):
+            // the link ends where that prose begins.
+            if let end = typed.firstIndex(where: endsLink) { typed = String(typed[..<end]) }
+            // A final "?" belongs to the sentence, not the URL: the detector
+            // reads it as an empty query.
+            while typed.hasSuffix("?") { typed.removeLast() }
+            let lowered = typed.lowercased()
+            // A bare domain gets https; the web is https now.
+            let candidate = lowered.hasPrefix("http://") || lowered.hasPrefix("https://") ? typed : "https://" + typed
+            guard let link = URL(string: candidate), link.host?.isEmpty == false else { return nil }
+            let range = found.lowerBound..<text.index(found.lowerBound, offsetBy: typed.count)
+            return Sensed(urlString: link.absoluteString, range: range)
         }
     }
 
@@ -66,17 +67,48 @@ enum LinkSensing {
             return String(kept)
         }
         if before.allSatisfy(\.isWhitespace) {
-            return String(after.drop { $0.isWhitespace || sentenceEnds.contains($0) || joints.contains($0) })
-                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let spaced = after.first?.isWhitespace ?? true
+            var rest = after.drop(while: \.isWhitespace)
+            let marks = rest.prefix { joints.contains($0) || sentenceEnds.contains($0) }
+            let past = rest.dropFirst(marks.count)
+            if !marks.isEmpty, past.first?.isWhitespace ?? true || marks.contains(where: isCJK) {
+                // A separator after the link goes with it: "link, words",
+                // "link - words", "link。字".
+                rest = past.drop(while: \.isWhitespace)
+            } else if !spaced, !(rest.first.map(isCJK) ?? false) {
+                // Nothing sets the link apart from what follows
+                // ("stripe.com’s docs"): the words keep it.
+                return text
+            }
+            return String(rest).trimmingCharacters(in: .whitespacesAndNewlines)
         }
         return text
     }
 
     /// What ends a sentence after a link.
-    private static let sentenceEnds: Set<Character> = [".", ",", ";", "!", "?", "…", "。", "，", "；", "！", "？"]
+    private static let sentenceEnds: Set<Character> = [".", ",", ";", "!", "?", "…", "。", "，", "；", "！", "？", "、"]
     /// What joins a link to the words beside it ("Great read - link",
     /// "link, great read", "看这个：link").
-    private static let joints: Set<Character> = ["-", "–", "—", "|", "·", ":", "：", ",", "，", ";", "；"]
+    private static let joints: Set<Character> = ["-", "–", "—", "|", "·", ":", "：", ",", "，", ";", "；", "、"]
+
+    /// CJK text and its marks: they need no space to end a link.
+    private static func isCJK(_ character: Character) -> Bool {
+        character.unicodeScalars.contains { scalar in
+            switch scalar.value {
+            case 0x2E80...0x2FFF, 0x3000...0x303F, 0x3040...0x30FF, 0x3400...0x4DBF,
+                 0x4E00...0x9FFF, 0xAC00...0xD7AF, 0xF900...0xFAFF, 0xFF00...0xFFEF:
+                return true
+            default:
+                return false
+            }
+        }
+    }
+
+    /// Where a link the detector ran on ends: CJK text and marks, and the
+    /// curly quotes and dashes typed right against it.
+    private static func endsLink(_ character: Character) -> Bool {
+        isCJK(character) || character.unicodeScalars.contains { (0x2010...0x201F).contains($0.value) }
+    }
 
     private static let detector = try! NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
 }
