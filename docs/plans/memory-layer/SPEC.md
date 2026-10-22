@@ -1,7 +1,7 @@
 # Memory layer: a denser understanding of every thought, and an Ask that can use it
 
-Status: decided 2026-10-22 (Malik). Phase 1 in progress on branch
-`am/apple-intelligence-oryne-248869`.
+Status: decided 2026-10-22 (Malik). Phases 1 and 2 built on branch
+`am/apple-intelligence-oryne-248869` (phase 1 landed in 00cfbc5).
 
 ## Why
 
@@ -109,22 +109,32 @@ no-op decisions made by the model over the recent captures. User edits
 teach: a renamed current becomes the label, a corrected category becomes
 an example in the reader's prompt.
 
-## What this gives Ask (phase 2)
+## What this gives Ask (phase 2, built)
 
-Tools over the record instead of one prompt: find thoughts by meaning in
-either language, list by category / current / date range / entity, read
-one thought in full, translate, and later web search. The model decides
-which to call; guided generation shapes the final answer. Token budgeting
-by `tokenCount(for:)` rather than character cuts. The on-device model runs
-all of this on iOS 26; the server model (iOS 27, PCC) slots in behind an
-availability check for synthesis and long sets.
+`AskAgent`: one session with four tools over value snapshots of the
+thoughts. `findThoughts` searches by meaning in either language (each
+thought's own words and its gist), then by the question's content words,
+then by a kind the question names; `listThoughts` filters by category,
+topic, recency or a name; `readThought` returns one thought in full;
+`translateThought` translates one thought in a session of its own (the
+agent's own session echoed the original). Thoughts carry short references
+(t1, t2) the model cites; the citations become the answer's sources, with
+what the tools surfaced as the fallback. The prompt names the question's
+language and ends with the rules the small model weighs most. The budget
+(results per call, snippet and read lengths, history) follows the window:
+8K devices get the roomy one, and a context overflow retries once on the
+tight one. When the model never calls a tool, or fails, the answer is
+dropped and the single-prompt grounded path stands. The Library filters by
+category and a thought's page names it. `Scripts/ask-agent-eval` runs the
+shipping agent on a fixed bilingual Ocean. The server model (iOS 27, PCC)
+slots in behind an availability check later for synthesis and long sets.
 
 ## Phases
 
 | | scope | lands |
 |---|---|---|
 | 1 | Understanding record on Node; one guided reading call with fallback; per-language vectors and a disk cache; backfill on Library open; Mac eval for the reading prompt | this branch |
-| 2 | Ask as an agent with tools; category filter in the Library and on the thought page; token budgeting | next |
+| 2 | Ask as an agent with tools; category filter in the Library and on the thought page; a budget per window | this branch |
 | 3 | Current entity, migration, rename / merge / split, bilingual merge | |
 | 4 | MemoryRecord, Settings page, consolidation task | |
 | 5 | Conversation memory | |

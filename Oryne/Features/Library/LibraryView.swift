@@ -14,6 +14,7 @@ struct LibraryView: View {
 
     @State private var search = ""
     @State private var kindFilter: NodeKind?
+    @State private var categoryFilter: ThoughtCategory?
     @State private var showArchived = false
     @State private var backfilling = false
     @State private var pendingDelete: Node?
@@ -72,6 +73,7 @@ struct LibraryView: View {
         allNodes.filter { node in
             (showArchived || !node.isArchived)
             && (kindFilter == nil || node.kind == kindFilter)
+            && (categoryFilter == nil || node.category == categoryFilter)
             && (search.trimmed.isEmpty || node.searchableText.localizedCaseInsensitiveContains(search.trimmed))
         }
     }
@@ -552,6 +554,12 @@ struct LibraryView: View {
                             Label("All kinds", systemImage: "square.grid.2x2").tag(NodeKind?.none)
                             ForEach(NodeKind.allCases) { k in
                                 Label(k.label, systemImage: k.symbol).tag(NodeKind?.some(k))
+                            }
+                        }
+                        Picker("Category", selection: $categoryFilter) {
+                            Label("Any category", systemImage: "tag").tag(ThoughtCategory?.none)
+                            ForEach(ThoughtCategory.allCases) { c in
+                                Label(c.label, systemImage: c.symbol).tag(ThoughtCategory?.some(c))
                             }
                         }
                         Toggle(isOn: $showArchived) {

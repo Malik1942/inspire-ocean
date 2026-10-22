@@ -254,8 +254,8 @@ struct AskView: View {
 
     private var samplePrompts: [String] {
         [String(localized: "That idea I had about water"),
-         String(localized: "What patterns keep resurfacing?"),
-         String(localized: "What tension am I circling?")]
+         String(localized: "What bugs have I noted?"),
+         String(localized: "What patterns keep resurfacing?")]
     }
 
     // MARK: Input

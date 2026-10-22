@@ -79,7 +79,12 @@ Then select an iPhone simulator and press ⌘R (scheme: **Oryne**).
     guided generation; measured by `Scripts/current-snap-eval`), summarizes
     long whispers and saved links, and composes Ask's empty state. One check
     (`OnDeviceModel`) answers for all of them; Settings shows it, and a
-    template answer in Ask says it is one.
+    template answer in Ask says it is one. Every thought carries an
+    understanding record (category, language, a gist in the other language,
+    entities, language-neutral theme keys; `docs/plans/memory-layer/SPEC.md`),
+    and Ask runs as an agent over it (`AskAgent`: find by meaning in either
+    language, list by kind or topic or name, read, translate), measured by
+    `Scripts/understanding-eval` and `Scripts/ask-agent-eval`.
   - `CloudOceanAIService` (the app's default) — the cloud seam (PRD §14),
     wired to the Anthropic Claude API (`claude-opus-4-8`). **Debug builds
     only:** it self-activates when an `ANTHROPIC_API_KEY` is present in the

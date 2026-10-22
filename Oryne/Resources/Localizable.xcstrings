@@ -4331,6 +4331,36 @@
           }
         }
       }
+    },
+    "What bugs have I noted?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "我记过哪些 bug？"
+          }
+        }
+      }
+    },
+    "Category" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "类别"
+          }
+        }
+      }
+    },
+    "Any category" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "所有类别"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

@@ -251,6 +251,41 @@ final class LocalOceanAIService: OceanAIService {
         // the reply never presents itself as a full read of the question.
         let (query, degraded) = Self.boundedQuery(rawQuery)
 
+        // 0. On the phone's one lens, the model works as an agent: it finds,
+        //    lists and reads the thoughts itself (`AskAgent`). Nil means it
+        //    never used a tool or failed, and the grounded path below stands.
+        if mode == .synthesis, #available(iOS 26, *), Self.foundationModelAvailable,
+           let answer = await AskAgent.answer(
+               query: query,
+               history: history.map { AskAgent.Turn(isUser: $0.isUser, text: $0.text) },
+               thoughts: active.map(AskAgent.Thought.init(node:))
+           ) {
+            let byID = Dictionary(uniqueKeysWithValues: active.map { ($0.id, $0) })
+            // What the answer cited; failing that, what it read and what the
+            // tools surfaced, so the sources are never empty while the tools
+            // found something.
+            let sourceIDs = answer.cited.isEmpty
+                ? Array((answer.read + answer.surfaced.filter { !answer.read.contains($0) }).prefix(12))
+                : answer.cited
+            let sources = sourceIDs.compactMap { byID[$0] }
+            // Open sea only when the Ocean had nothing: a list of two bugs
+            // is a complete answer, and a note "beyond" it reads as a lecture
+            // (observed 2026-10-22: "what bugs have I noted" drew three
+            // paragraphs on malware).
+            var outward: String?
+            if sources.isEmpty {
+                outward = await foundationModelOutward(query: query, sources: [])
+            }
+            return OceanResponse(
+                reflection: answer.text,
+                sourceNodeIDs: sources.map(\.id),
+                patternSummary: nil,
+                suggestedBranches: [],
+                outwardNote: outward,
+                provenance: sources.isEmpty ? .noSources : (degraded ? .degraded : .onDevice)
+            )
+        }
+
         // 1. Retrieve only the fragments that clear the relevance floor.
         //    Follow-ups that merely point back ("tell me more") borrow the
         //    previous user turn; a fresh question retrieves on its own words.
@@ -765,5 +800,29 @@ final class LocalOceanAIService: OceanAIService {
     /// app's language the way the sentence around it does.
     private func joinNaturally(_ items: [String]) -> String {
         ListFormatter.localizedString(byJoining: items)
+    }
+}
+
+// MARK: - Node → agent snapshot
+
+@available(iOS 26, *)
+extension AskAgent.Thought {
+    /// A value snapshot of a thought for the agent's tools.
+    init(node: Node) {
+        self.init(
+            id: node.id,
+            title: node.displayTitle,
+            body: [node.text, node.transcription ?? "", node.linkContext]
+                .filter { !$0.isEmpty }
+                .joined(separator: "\n"),
+            gist: node.gistOther,
+            summary: node.summary,
+            createdAt: node.createdAt,
+            category: node.category,
+            kind: node.kind,
+            themes: node.themes,
+            themeKeys: node.themeKeys,
+            entities: node.entities
+        )
     }
 }

@@ -89,8 +89,8 @@ final class EmbeddingService {
         }
         lock.unlock()
 
-        let result = cachedVector(from: primary, namespace: "a", text: key)
-            ?? cachedVector(from: fallback, namespace: "b", text: key)
+        let result = cachedVector(from: primary, text: key)
+            ?? cachedVector(from: fallback, text: key)
             ?? []
         lock.lock()
         cache[key] = result
@@ -103,9 +103,9 @@ final class EmbeddingService {
     /// memory-layer/SPEC.md, decision 5). Cached per backend: the two live
     /// in different vector spaces, and a backend that has no answer today
     /// (assets not downloaded) is simply asked again next time.
-    private func cachedVector(from backend: EmbeddingBackend, namespace: String, text: String) -> [Double]? {
+    private func cachedVector(from backend: EmbeddingBackend, text: String) -> [Double]? {
         guard let disk else { return backend.vector(for: text) }
-        let diskKey = namespace + ":" + EmbeddingDiskCache.digest(text)
+        let diskKey = String(describing: type(of: backend)) + ":" + EmbeddingDiskCache.digest(text)
         if let hit = disk.vector(forKey: diskKey) { return hit }
         guard let computed = backend.vector(for: text) else { return nil }
         disk.store(computed, forKey: diskKey)
@@ -154,6 +154,12 @@ final class EmbeddingService {
     /// question meets every thought in the question's own language; the
     /// cross-script comparison scores near zero and simply loses.
     func rank<ID>(query: String, candidates: [(id: ID, texts: [String])], limit: Int, floor: Double = 0) -> [ID] {
+        rankScored(query: query, candidates: candidates, limit: limit, floor: floor).map(\.id)
+    }
+
+    /// `rank`, with each candidate's best score, for callers that gate on
+    /// the distribution rather than one fixed floor.
+    func rankScored<ID>(query: String, candidates: [(id: ID, texts: [String])], limit: Int, floor: Double = 0) -> [(id: ID, score: Double)] {
         let cutoff = Swift.max(floor, 0.0001)
         let scored = candidates.compactMap { candidate -> (id: ID, score: Double)? in
             let best = candidate.texts
@@ -163,10 +169,9 @@ final class EmbeddingService {
             guard let best, best >= cutoff else { return nil }
             return (candidate.id, best)
         }
-        return scored
+        return Array(scored
             .sorted { $0.score > $1.score }
-            .prefix(limit)
-            .map { $0.id }
+            .prefix(limit))
     }
 
     // MARK: - Math
