@@ -5,8 +5,9 @@
 ## Goal
 
 The capture composer has no way to add a picture or a link. Give it the image
-input people already know from Claude and ChatGPT (a + in the composer, a short
-sheet with your latest photos, attachments as thumbnails inside the card), and
+input people already know from Claude and ChatGPT (a + in the composer, your
+latest photos in the keyboard's place, attachments as thumbnails inside the
+card), and
 make links need no input at all: a link in the words is sensed and becomes the
 thought's link card.
 
@@ -43,7 +44,9 @@ thought's link card.
 - **The strip needs no permission.** SwiftUI's embedded `PhotosPicker` (iOS 17;
   the app targets 18) with `.photosPickerStyle(.compact)` draws a one-row picker
   out of process, with live selection (`selectionBehavior: .continuous`). The
-  app never reads the library itself, so there is no Photos prompt. Found on
+  app never reads the library itself, so there is no Photos permission prompt
+  (Photos shows its own one-time "Private Access to Photos" notice over the
+  strip the first time). Found on
   the simulator: embedded in any UIKit sheet it takes the sheet over (full
   height, see-through, content at the top), even when added after the sheet
   settles. Drawn in a panel inside the composer's overlay it behaves.
@@ -167,7 +170,9 @@ A new pure `LinkSensing` in `Shared/Services` (so `SharedTests` can test it):
   take that starts with pictures already on the card (the Action Button's
   screenshot opened to whisper) carries them, and the sensed link of any
   typed note, into the whisper.
-- Open water parks the draft with its images and dismissals.
+- Open water parks the draft with its images and dismissals. While pictures
+  are still loading it only folds the keys or the panel: the bar can't hold a
+  picture that hasn't landed.
   `ParkedCapture.line` with no words reads "Whisper" when audio waits, else
   "Image" for one picture and "%lld images" for more (was "Screenshot").
 - Undo returns words, images, link dismissals and audio to the card.
@@ -183,6 +188,7 @@ A new pure `LinkSensing` in `Shared/Services` (so `SharedTests` can test it):
 | Only added %lld, %lld images max. | 仅添加了 %lld 张，最多 %lld 张图片。 | exists |
 | Camera | 相机 | new |
 | All Photos | 所有照片 | new |
+| Show keyboard | 显示键盘 | new (the +, while the panel is open) |
 | %lld images | %lld 张图片 | new (parked line) |
 | NSCameraUsageDescription: Oryne uses the camera to catch what you see. | (English only, like its siblings) | new |
 
