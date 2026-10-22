@@ -162,8 +162,11 @@ A new pure `LinkSensing` in `Shared/Services` (so `SharedTests` can test it):
 
 ### Drafts: whisper, park, undo
 
-- Attaching then holding the disc: the images (and the sensed link) ride along
-  with the whisper, as the screenshot does today.
+- With pictures on the card the disc is the send, as with words: an
+  attachment is something to send, the way Claude and ChatGPT treat it. A
+  take that starts with pictures already on the card (the Action Button's
+  screenshot opened to whisper) carries them, and the sensed link of any
+  typed note, into the whisper.
 - Open water parks the draft with its images and dismissals.
   `ParkedCapture.line` with no words reads "Whisper" when audio waits, else
   "Image" for one picture and "%lld images" for more (was "Screenshot").
