@@ -5,11 +5,12 @@ import SwiftData
 /// Action Button, Control Center, the widget, Siri, a share, a current's +)
 /// lands here.
 ///
-/// Tap the button to type; hold it to whisper. While the finger is down the
-/// words land on the water as subtitles and the button breathes with the
-/// microphone. Lift, and the words settle into the Ocean: saved first, then
-/// the chime, then one toast above the bar with the way back. No review
-/// beat, no mode picker (docs/plans/phone-refocus/SPEC.md, Phase 1).
+/// Tap the bar's words to type. Tap its disc to whisper and tap Stop to
+/// keep it, or hold the disc and lift. While a take is live the words land
+/// on the water as subtitles and the disc breathes with the microphone.
+/// Then the words settle into the Ocean: saved first, then the chime, then
+/// one toast above the bar with the way back. No review beat, no mode
+/// picker (docs/plans/phone-refocus/SPEC.md, Phase 1).
 struct FastCaptureSessionView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.oceanAI) private var ai
@@ -119,6 +120,7 @@ struct FastCaptureSessionView: View {
             keyboardFrame = note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
         }
         .task {
+            control.overlayID = request.id
             control.overlayOpen = true
             session.configure(context: context, ai: ai)
             guard !hasStarted else { return }
@@ -146,40 +148,48 @@ struct FastCaptureSessionView: View {
             }
         }
         .onDisappear {
-            control.overlayOpen = false
-            control.composerHeight = 0
-            control.toastShowing = false
-            control.isListening = false
-            control.level = 0
-            if control.touch == .locked { control.touch = .up }
+            // A take still live here ends with the overlay (a sheet swiped
+            // away mid-take): nothing records in a view that is gone.
+            if session.transcriber.isRecording { Task { await session.transcriber.cancel() } }
+            releaseControl()
         }
         .onChange(of: control.touch) { old, new in
+            guard ownsControl else { return }
             switch new {
             case .held, .locked:
-                // A hold on the bar while the toast shows starts the next take.
+                // A tap or a hold on the bar's disc while the toast shows
+                // starts the next take.
                 if phase == .linger { beginNextCapture() }
                 if phase == .composing { Task { await startListening() } }
             case .up:
-                if case .held = old, listening { Task { await catchTake() } }
+                guard case .held(let since) = old, listening else { break }
+                if Date.now.timeIntervalSince(since) < 0.4, session.transcriber.partial.trimmed.isEmpty {
+                    // Let go before a word, just past the hold threshold:
+                    // a slow tap, so the take runs on until Stop or ✕.
+                    control.touch = .locked
+                } else {
+                    Task { await catchTake() }
+                }
             }
         }
         .onChange(of: control.stopCount) { _, _ in
-            if listening { Task { await catchTake() } }
+            if ownsControl, listening { Task { await catchTake() } }
         }
         .onChange(of: control.releaseParked) { _, release in
             // The bar's send while the toast shows: the next release.
-            guard release, phase == .linger else { return }
+            guard ownsControl, release, phase == .linger else { return }
             control.releaseParked = false
             beginNextCapture()
             saveTyped()
         }
         .onChange(of: control.tapCount) { _, _ in
             // A tap on the bar while the toast shows starts the next thought.
+            guard ownsControl else { return }
             if phase == .linger { beginNextCapture() }
             if phase == .composing { textFocused = true }
         }
         .onChange(of: session.transcriber.level) { _, level in
-            control.level = listening ? level : 0
+            if ownsControl { control.level = listening ? level : 0 }
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase != .active else { return }
@@ -359,26 +369,51 @@ struct FastCaptureSessionView: View {
         heldDraft = parked.heldDraft
     }
 
+    /// This overlay holds the shared capture state (the bar's taps, the
+    /// take's level) until it finishes or a newer overlay takes over.
+    private var ownsControl: Bool { control.overlayID == request.id }
+
+    /// Done: hand the bar back first, then close. A tap on the disc while
+    /// this overlay still fades out opens the next one at once instead of
+    /// landing here.
+    private func finish() {
+        releaseControl()
+        onFinish()
+    }
+
+    /// Lets go of the shared capture state, unless a newer overlay has
+    /// already taken it.
+    private func releaseControl() {
+        guard ownsControl else { return }
+        control.overlayID = nil
+        control.overlayOpen = false
+        control.composerHeight = 0
+        control.toastShowing = false
+        control.isListening = false
+        control.level = 0
+        if control.touch == .locked { control.touch = .up }
+    }
+
     /// The card folds back into the bar's capsule before the bar takes over,
     /// so the way out is the way in reversed. Reduce Motion and the sheet
     /// only fade.
     private func closeCard() {
         guard phase == .composing, cardOpen, !stilled, !asSheet else {
-            onFinish()
+            finish()
             return
         }
         withAnimation(OceanMotion.standard) {
             cardOpen = false
         } completion: {
-            onFinish()
+            finish()
         }
     }
 
     /// Listening: the same capsule in the same frame. The way out (cancel,
     /// nothing is saved yet) is a glass disc at the leading end mirroring
-    /// the record disc, on the far side so the finger sliding up to lock
-    /// never crosses it. Between them, a note already typed (it releases
-    /// with the whisper) and the one honest line when no live words come.
+    /// the record disc, so Stop (keep) and ✕ (let go) sit at opposite ends.
+    /// Between them, a note already typed (it releases with the whisper)
+    /// and the one honest line when no live words come.
     private var listeningRow: some View {
         CaptureCapsule {
             HStack(alignment: .center, spacing: 10) {
@@ -443,7 +478,10 @@ struct FastCaptureSessionView: View {
     /// the toast sits above the capture bar, which stays usable under it.
     private func bottomPadding(keyboardUp: Bool) -> CGFloat {
         if phase == .linger {
-            return asSheet ? 24 : FastCaptureLayout.tabBarClearance + FastCaptureLayout.barHeight + 12
+            if asSheet { return 24 }
+            // Above the bar on Tide; in the bar's own spot where there is none.
+            return FastCaptureLayout.tabBarClearance
+                + (control.barOnTab ? FastCaptureLayout.barHeight + 12 : 0)
         }
         return asSheet || keyboardUp ? 12 : FastCaptureLayout.tabBarClearance
     }
@@ -532,10 +570,15 @@ struct FastCaptureSessionView: View {
         let note = text.trimmed
         let words = transcript.trimmed
 
-        // A press just past the hold threshold with nothing said: not a
-        // thought. Back to the field, keyboard up, nothing minted.
+        // Under a second with nothing said: not a thought, nothing minted.
+        // Opened to whisper (the disc, a widget), it was a change of mind
+        // and the overlay closes; opened to type, the field comes back.
         if words.isEmpty, note.isEmpty, imageData == nil, heldDraft == nil, elapsed < 1 {
             if let url { try? FileManager.default.removeItem(at: url) }
+            if request.inputPreference == .voiceFirst, !asSheet {
+                finish()
+                return
+            }
             withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .composing }
             textFocused = true
             return
@@ -619,8 +662,10 @@ struct FastCaptureSessionView: View {
             while !Task.isCancelled, session.undoAvailable(for: nodeID) {
                 try? await Task.sleep(for: .seconds(0.5))
             }
-            guard !Task.isCancelled else { return }
-            await MainActor.run { onFinish() }
+            // A tap that started the next thought cancels this; check again
+            // right where the overlay would close.
+            guard !Task.isCancelled, phase == .linger else { return }
+            finish()
         }
     }
 
@@ -646,7 +691,7 @@ struct FastCaptureSessionView: View {
     private func undoCapture() {
         fadeTask?.cancel()
         guard let draft = session.undoLastRelease() else {
-            if phase == .linger { onFinish() }
+            if phase == .linger { finish() }
             return
         }
         isSaving = false
@@ -668,7 +713,7 @@ struct FastCaptureSessionView: View {
             control.isListening = false
             control.level = 0
             control.touch = .up
-            onFinish()
+            finish()
             return
         }
         if let url = heldDraft?.audioTempURL {

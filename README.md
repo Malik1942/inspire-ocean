@@ -48,7 +48,7 @@ Then select an iPhone simulator and press ⌘R (scheme: **Oryne**).
 
 | PRD | Feature | Where |
 | --- | --- | --- |
-| §7 | Drift Capture — one surface for text and voice: tap the floating button to type, hold to whisper | `Features/FastCapture` |
+| §7 | Drift Capture — one surface for text and voice: tap the bar to type; tap the disc to whisper and tap Stop to keep it, or hold it and lift | `Features/FastCapture` |
 | §7 | Share-sheet capture (screenshots, text, links from any app) | `ShareExtension/` |
 | §8 | Ocean Field v1 — legible atmospheric field: layered, theme-clustered, hierarchical, focus-isolating | `Features/Ocean` |
 | §9 | Expanded Node View — why it mattered, nearby thoughts, branch, ask | `Features/NodeDetail` |
