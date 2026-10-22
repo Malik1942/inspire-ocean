@@ -113,8 +113,12 @@ A new pure `LinkSensing` in `Shared/Services` (so `SharedTests` can test it):
 - **Lift:** the chosen link is at the **leading edge** when only whitespace
   precedes it, and at the **trailing edge** when only whitespace and sentence
   punctuation (`. , ; ! ? … 。 ， ； ！ ？`) follow it. At an edge, the link and
-  that trailing punctuation leave the words, which are trimmed again. Anywhere
-  else the words keep it. Words that were only the link become empty.
+  that trailing punctuation leave the words, and so does whatever joined the
+  link to them (`- – — | · : ： , ， ; ；` beside it): "Great read - link",
+  "Love this: link", "link, great read" and "看这个：link" keep "Great read",
+  "Love this", "great read" and "看这个". A question or exclamation mark before
+  the link stays. Anywhere else the words keep the link. Words that were only
+  the link become empty.
 - **The tile** follows the field: sensed half a second after the last edit
   (so a half-typed `apple.co` never shows), and at once when the card opens
   with words already in it (a seed, a parked draft, an undo).
