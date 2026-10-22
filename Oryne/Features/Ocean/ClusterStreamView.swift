@@ -3,7 +3,8 @@ import SwiftData
 
 /// The inside of one current: its name, what can be done with all of it
 /// (labelled, not bare glyphs), then every thought that expresses the
-/// concept, newest first. Each tile opens the familiar thought page.
+/// concept, newest first. Each tile opens the familiar thought page;
+/// swiping it left archives or deletes it.
 ///
 /// Membership is by *meaning*, not by storage: any thought whose themes
 /// include the concept appears here, so a thought can surface in more than
@@ -15,6 +16,11 @@ struct ClusterStreamView: View {
     @Environment(\.modelContext) private var context
     @Environment(AppState.self) private var appState
     @State private var showCapture = false
+    /// Thoughts opened from this stream. A path, not `NavigationLink`s: a
+    /// link in a `List` draws a chevron the tiles don't wear.
+    @State private var path: [Node] = []
+    /// The way back from a swiped delete or archive.
+    @State private var removals = ThoughtRemovals()
     @Query(filter: #Predicate<Node> { !$0.isArchived }, sort: \Node.createdAt, order: .reverse)
     private var allNodes: [Node]
     @Query private var currentRows: [Current]
@@ -46,37 +52,40 @@ struct ClusterStreamView: View {
     private var selectedNodes: [Node] { members.filter { selected.contains($0.id) } }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: OceanSpacing.item) {
-                    header
-                        .padding(.bottom, OceanSpacing.block - OceanSpacing.item)
-                    ForEach(members) { node in
-                        if selecting {
-                            Button {
-                                if selected.contains(node.id) { selected.remove(node.id) } else { selected.insert(node.id) }
-                            } label: {
-                                HStack(spacing: 12) {
-                                    Image(systemName: selected.contains(node.id) ? "checkmark.circle.fill" : "circle")
-                                        .foregroundStyle(selected.contains(node.id) ? OceanTheme.accent : OceanTheme.mist)
-                                    NodeRow(node: node, showsCurrent: false)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                        } else {
-                            NavigationLink { NodeDetailContent(node: node) } label: {
+        NavigationStack(path: $path) {
+            List {
+                header
+                    .tileRow(top: 4, bottom: OceanSpacing.block - OceanSpacing.item / 2)
+                ForEach(members) { node in
+                    if selecting {
+                        // No swipes while picking.
+                        Button {
+                            if selected.contains(node.id) { selected.remove(node.id) } else { selected.insert(node.id) }
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: selected.contains(node.id) ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(selected.contains(node.id) ? OceanTheme.accent : OceanTheme.mist)
                                 NodeRow(node: node, showsCurrent: false)
                             }
-                            .buttonStyle(.plain)
                         }
+                        .buttonStyle(.plain)
+                        .tileRow()
+                    } else {
+                        Button { path.append(node) } label: { NodeRow(node: node, showsCurrent: false) }
+                            .buttonStyle(.plain)
+                            .thoughtSwipeActions(node, removals: removals)
+                            .tileRow()
                     }
                 }
-                .padding(.horizontal, OceanSpacing.gutter)
-                .padding(.top, 4)
-                .padding(.bottom, OceanSpacing.section)
             }
+            .tileList()
+            .contentMargins(.bottom, OceanSpacing.section, for: .scrollContent)
+            .thoughtRemovalToast(removals)
             .background(OceanBackground())
             .navigationBarTitleDisplayMode(.inline)
+            .navigationDestination(for: Node.self) { node in
+                NodeDetailContent(node: node)
+            }
             .toolbar {
                 if !isAdrift {
                     ToolbarItem(placement: .topBarLeading) {
@@ -123,6 +132,7 @@ struct ClusterStreamView: View {
                 MoveToCurrentSheet(nodes: selectedNodes)
             }
         }
+        .settlesThoughtRemovals(removals)
         .presentationDetents([.medium, .large])
         .presentationBackground(.clear)
         // A summary or a question opens in Ask: step out of the way.

@@ -611,6 +611,11 @@ struct LibraryView: View {
                 Label("Delete", systemImage: "trash")
             }
         }
+        // VoiceOver: the menu's removals as actions on the card.
+        .accessibilityActions {
+            Button("Delete") { pendingDelete = node }
+            Button((node.isArchived ? "Restore" : "Archive") as LocalizedStringKey) { archive(node) }
+        }
     }
 
     private var emptyState: some View {

@@ -3420,6 +3420,26 @@
         }
       }
     },
+    "Thought archived" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "灵感已归档"
+          }
+        }
+      }
+    },
+    "Thought deleted" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "灵感已删除"
+          }
+        }
+      }
+    },
     "Thoughts gather into currents and resurface when they matter. Ask a question, and the Ocean answers from everything you have caught." : {
       "extractionState" : "stale",
       "localizations" : {
