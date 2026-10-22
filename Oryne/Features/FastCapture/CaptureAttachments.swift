@@ -8,12 +8,13 @@ struct CaptureImage: Identifiable {
     let data: Data
     let thumbnail: UIImage
 
-    /// A tile's 64 pt at 3x.
+    /// A tile's 64 pt at 3x, on the picture's short edge, so any shape
+    /// fills the square tile without upscaling.
     static let thumbnailPixels: CGFloat = 192
 
     /// Nil when the bytes aren't a picture ImageIO can read.
     init?(data: Data) {
-        guard let thumbnail = ImageDownsampler.image(data, maxPixel: Self.thumbnailPixels) else { return nil }
+        guard let thumbnail = ImageDownsampler.image(data, fillingSquare: Self.thumbnailPixels) else { return nil }
         self.data = data
         self.thumbnail = thumbnail
     }

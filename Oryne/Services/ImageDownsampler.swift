@@ -32,6 +32,24 @@ enum ImageDownsampler {
     /// the bytes aren't a picture.
     static func image(_ data: Data, maxPixel: CGFloat) -> UIImage? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        return thumbnail(of: source, maxPixel: maxPixel)
+    }
+
+    /// The picture in `data`, decoded upright with its short edge at `side`
+    /// pixels (or its own, when smaller): enough to fill a square of that
+    /// side without upscaling, whatever the picture's shape. Nil when the
+    /// bytes aren't a picture.
+    static func image(_ data: Data, fillingSquare side: CGFloat) -> UIImage? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+              let width = properties[kCGImagePropertyPixelWidth] as? Int,
+              let height = properties[kCGImagePropertyPixelHeight] as? Int,
+              min(width, height) > 0 else { return nil }
+        let aspect = CGFloat(max(width, height)) / CGFloat(min(width, height))
+        return thumbnail(of: source, maxPixel: (side * aspect).rounded(.up))
+    }
+
+    private static func thumbnail(of source: CGImageSource, maxPixel: CGFloat) -> UIImage? {
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,

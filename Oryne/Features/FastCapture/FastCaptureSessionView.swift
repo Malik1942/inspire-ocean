@@ -68,8 +68,9 @@ struct FastCaptureSessionView: View {
         self.onFinish = onFinish
         self.asSheet = asSheet
         _text = State(initialValue: request.seedText)
-        // The Action Button's screenshot is the card's first picture.
-        _images = State(initialValue: request.imageData.flatMap(CaptureImage.init(data:)).map { [$0] } ?? [])
+        // The Action Button's screenshot joins in `.task`: this view is
+        // rebuilt whenever the tabs redraw, and a decode here would rerun.
+        _images = State(initialValue: [])
     }
 
     private var listening: Bool { phase == .listening }
@@ -125,6 +126,12 @@ struct FastCaptureSessionView: View {
             session.configure(context: context, ai: ai)
             guard !hasStarted else { return }
             hasStarted = true
+            // The Action Button's screenshot is the card's first picture,
+            // decoded once, off the main actor.
+            if let screenshot = request.imageData {
+                let shot = await CaptureImage.make(from: [screenshot])
+                images.insert(contentsOf: shot, at: 0)
+            }
             // Opened to type: a draft put away earlier is back in the field
             // (before the bar's send below looks for it).
             if control.touch == .up, request.inputPreference != .voiceFirst,
