@@ -14,6 +14,7 @@ import SwiftData
 /// - **Echoes.** A thought that shares a current with what the user captured
 ///   most recently gets a gentle lift — the Ocean brings back what feels
 ///   connected to what they're exploring now (the promise onboarding makes).
+///   Its own themes never count: a thought does not echo itself.
 /// - **Rest.** A fragment that actually got met (opened) rests for a couple
 ///   of weeks before it can rise again, so one loud memory can't loop.
 /// - **Daily shimmer.** A small deterministic per-day variation keeps the
@@ -101,13 +102,15 @@ enum Resurfacing {
         }
         let pool = rested.isEmpty ? aged : rested
 
-        // The themes of the five newest captures — what the user is
-        // exploring now. Sharing one is an echo worth surfacing.
-        let recentThemes = Set(
-            live.sorted { $0.createdAt > $1.createdAt }
-                .prefix(5)
-                .flatMap(\.themes)
-        )
+        // The five newest captures: what the user is exploring now. Sharing
+        // a theme with one of them is an echo worth surfacing, but never with
+        // itself: a thought among the five would always match its own
+        // themes, and a week-old note would beat a forgotten one.
+        let newest = live.sorted { $0.createdAt > $1.createdAt }.prefix(5)
+
+        func echoes(_ node: Node) -> Bool {
+            newest.contains { $0.id != node.id && !Set($0.themes).isDisjoint(with: node.themes) }
+        }
 
         func score(_ node: Node) -> Double {
             // Idle time ignores a same-day meeting, so opening today's pick
@@ -119,7 +122,7 @@ enum Resurfacing {
             let idleDays = min(now.timeIntervalSince(lastTouch) / 86_400, 120)
 
             var s = (idleDays / 120) * 0.55
-            if !recentThemes.isEmpty, !recentThemes.isDisjoint(with: node.themes) {
+            if echoes(node) {
                 s += 0.25
             }
             // Deterministic per-day shimmer: same inputs, same pick, in the

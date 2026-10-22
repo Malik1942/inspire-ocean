@@ -2,7 +2,8 @@ import XCTest
 import Foundation
 
 /// Unit tests for `Resurfacing.pick`: once a thought rises today, it holds
-/// all day, whatever else is captured, archived or deleted.
+/// all day, whatever else is captured, archived or deleted; and a thought's
+/// own themes never lift it.
 ///
 /// The observed bug (2026-10-22): archiving "A button that doesn't need a
 /// label" from Tide's "Drifted in" moved today's pick from "Warm to cool,
@@ -144,5 +145,45 @@ final class ResurfacingTests: XCTestCase {
         ocean.warm.isArchived = false
 
         XCTAssertEqual(pick(ocean.all)?.title, ocean.warm.title)
+    }
+
+    // MARK: - Echoes
+
+    /// The observed case (2026-10-22): the screenshot seed, with "Are.na
+    /// Editorial" just captured. "A button that doesn't need a label", a
+    /// week old and itself one of the five newest, echoed its own theme and
+    /// rose over "Apple Design Principles", three weeks old, which shares
+    /// that theme with the button. A thought's own themes never lift it, so
+    /// the older one rises: it is the only thought with an echo, a lift no
+    /// shimmer can match. The three contenders keep the ids the seed drew
+    /// that day, so without the fix that day's shimmer replays and the
+    /// button wins again.
+    func test_aThoughtsOwnThemes_neverEchoIt() throws {
+        let observed = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-10-22T11:20:24Z"))
+        let seeded = observed.addingTimeInterval(-144)
+        func seed(days: Double = 0, hours: Double = 0) -> Date {
+            seeded.addingTimeInterval(-(days * 24 + hours) * 3_600)
+        }
+        func id(_ uuid: String) throws -> UUID {
+            try XCTUnwrap(UUID(uuidString: uuid))
+        }
+
+        let thoughts = try [
+            Node(createdAt: observed.addingTimeInterval(-30), title: "Are.na Editorial", themes: ["reading", "collecting"]),
+            Node(createdAt: seed(hours: 5), title: "Half a sentence from the train", themes: ["product ideas"]),
+            Node(createdAt: seed(hours: 8), title: "Weeknight noodles", themes: ["cooking"]),
+            Node(id: id("E5F65E09-744D-49D4-96EC-81E864D405ED"), createdAt: seed(days: 2),
+                 title: "Four notes in the cafe", themes: ["sound & music"]),
+            Node(id: id("4AB8CB83-59D5-4F0A-BBD0-D75FC89979D1"), createdAt: seed(days: 7),
+                 title: "A button that doesn't need a label", themes: ["interface design"]),
+            Node(createdAt: seed(days: 9), title: "Desk at 6pm", themes: ["light and color", "interior"]),
+            Node(createdAt: seed(days: 12), title: "Warm to cool, not a filter", themes: ["light and color"]),
+            Node(createdAt: seed(days: 16), title: "Golden hour on the walk home", themes: ["light and color", "visual study"]),
+            Node(createdAt: seed(days: 18), title: "Sunset gradient study", themes: ["light and color", "visual study"]),
+            Node(id: id("AEFEB4B7-90B1-499B-8E99-E0F52C92E907"), createdAt: seed(days: 20),
+                 title: "Apple Design Principles", themes: ["user experience", "interface design"]),
+        ]
+
+        XCTAssertEqual(pick(thoughts, on: observed)?.title, "Apple Design Principles")
     }
 }
