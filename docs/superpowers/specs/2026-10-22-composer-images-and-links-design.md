@@ -135,8 +135,11 @@ A new pure `LinkSensing` in `Shared/Services` (so `SharedTests` can test it):
   Every final `?` right after a link is the sentence's, not the URL's (the
   detector reads it as an empty query, which means nothing). A link ends
   where prose typed right against it begins: CJK text and its marks,
-  full-width forms, curly quotes and dashes (the detector would carry them
-  in, so "https://a.com这个不错" would store a broken link).
+  full-width forms, curly quotes, dashes and emoji (the detector would carry
+  them in, so "https://a.com这个不错" would store a broken link), and a dot
+  left at the cut goes too. CJK letters that open a path segment are the
+  link's own ("https://zh.wikipedia.org/wiki/海洋" stays whole); a CJK mark
+  still ends it.
 - **Choose:** the first sensed link whose URL the user has not dismissed.
 - **Lift:** the chosen link is at the **leading edge** when only whitespace
   precedes it, and at the **trailing edge** when only whitespace and sentence
