@@ -61,6 +61,18 @@ struct NodeDetailContent: View {
     }
 
     var body: some View {
+        // Undo can take back the thought this page shows (the capture toast
+        // floats over a pushed page), and a sync can delete it elsewhere.
+        // Reading any \Node attribute on the detached object faults (see
+        // NodeRow), so render nothing and leave.
+        if node.modelContext == nil {
+            Color.clear.onAppear { dismiss() }
+        } else {
+            page
+        }
+    }
+
+    private var page: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 subject

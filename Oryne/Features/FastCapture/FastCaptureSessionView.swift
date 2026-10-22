@@ -53,6 +53,9 @@ struct FastCaptureSessionView: View {
     /// The composer's card is open: two rows. It is drawn closed first, at
     /// the bar's capsule, and unfolds from there; closing folds it back.
     @State private var cardOpen = false
+    /// Where the keyboard is headed, in screen points, from its own
+    /// notifications. Only consulted when the safe area missed it.
+    @State private var keyboardFrame: CGRect?
     @FocusState private var textFocused: Bool
 
     init(
@@ -73,7 +76,9 @@ struct FastCaptureSessionView: View {
         GeometryReader { geo in
         // With the keyboard up the bottom safe area is the keyboard itself,
         // so the card sits right on it; otherwise it clears the tab bar.
-        let keyboardUp = geo.safeAreaInsets.bottom > 120
+        // Whatever of the keyboard SwiftUI missed lifts the card on top.
+        let missed = missedKeyboard(in: geo)
+        let keyboardUp = geo.safeAreaInsets.bottom + missed > 120
         ZStack(alignment: .bottom) {
             backdrop
 
@@ -104,10 +109,14 @@ struct FastCaptureSessionView: View {
                 }
             }
             .padding(.horizontal, OceanSpacing.gutter)
-            .padding(.bottom, bottomPadding(keyboardUp: keyboardUp))
+            .padding(.bottom, bottomPadding(keyboardUp: keyboardUp) + missed)
             .frame(maxWidth: .infinity, alignment: .leading)
             .animation(.spring(response: 0.36, dampingFraction: 0.86), value: phase)
+            .animation(.easeOut(duration: 0.25), value: missed)
         }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { note in
+            keyboardFrame = note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
         }
         .task {
             control.overlayOpen = true
@@ -183,7 +192,6 @@ struct FastCaptureSessionView: View {
     private var backdrop: some View {
         Color.black.opacity(asSheet || phase == .linger ? 0 : 0.24)
             .ignoresSafeArea()
-            .allowsHitTesting(phase != .linger)
             .contentShape(Rectangle())
             .onTapGesture {
                 // Open water puts the card away; anything in it waits in
@@ -195,6 +203,9 @@ struct FastCaptureSessionView: View {
                     textFocused = false
                 }
             }
+            // Outermost, so the content shape steps aside with it: while
+            // only the toast shows, every other tap reaches the tabs.
+            .allowsHitTesting(phase != .linger)
     }
 
     /// Typing: the bar's capsule unfolds into a card on two rows. The words
@@ -435,6 +446,20 @@ struct FastCaptureSessionView: View {
             return asSheet ? 24 : FastCaptureLayout.tabBarClearance + FastCaptureLayout.barHeight + 12
         }
         return asSheet || keyboardUp ? 12 : FastCaptureLayout.tabBarClearance
+    }
+
+    /// The part of the keyboard the safe area left out. SwiftUI can miss a
+    /// keyboard that rises while a pushed thought page pops (Undo from the
+    /// page, or the bar tapped as the page closes): the overlay keeps only
+    /// the home indicator inset and the card sits under the keys until the
+    /// keyboard next moves. Usually the safe area already ends at the
+    /// keyboard's top and this is nothing.
+    private func missedKeyboard(in geo: GeometryProxy) -> CGFloat {
+        guard let keyboardFrame else { return 0 }
+        let frame = geo.frame(in: .global)
+        // A floating or split keyboard (iPad) never pushes content up.
+        guard keyboardFrame.maxY >= frame.maxY + geo.safeAreaInsets.bottom - 1 else { return 0 }
+        return max(0, frame.maxY - keyboardFrame.minY)
     }
 
     private func screenshotPreview(_ uiImage: UIImage) -> some View {
