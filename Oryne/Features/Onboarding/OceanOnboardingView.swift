@@ -232,7 +232,7 @@ private struct FastCaptureSetupPage: View {
                                 .font(.subheadline.weight(.medium))
                                 .foregroundStyle(OceanTheme.foam)
                         }
-                        .tint(OceanTheme.accent)
+                        .toggleStyle(.oceanSwitch)
 
                         Text("The Action Button and Camera Control shortcuts live in Settings, under the gear on any tab.")
                             .font(.caption)

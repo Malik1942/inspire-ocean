@@ -118,6 +118,21 @@ extension ButtonStyle where Self == OceanIconButtonStyle {
     static var oceanIcon: OceanIconButtonStyle { OceanIconButtonStyle() }
 }
 
+/// The system switch with its on state in `OceanTheme.switchOn`. The app's
+/// monochrome tint drew a near-white track under the white knob, so on read
+/// like off.
+struct OceanSwitchToggleStyle: ToggleStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        Toggle(configuration)
+            .toggleStyle(.switch)
+            .tint(OceanTheme.switchOn)
+    }
+}
+
+extension ToggleStyle where Self == OceanSwitchToggleStyle {
+    static var oceanSwitch: OceanSwitchToggleStyle { OceanSwitchToggleStyle() }
+}
+
 /// The settings gear every tab wears in the same place. Toolbar items take
 /// the system's own treatment (iOS 26 draws its glass around them), so the
 /// Icon style is for controls inside content, not in toolbars.

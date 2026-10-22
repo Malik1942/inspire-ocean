@@ -89,6 +89,7 @@ struct OceanSettingsView: View {
                 .listRowBackground(OceanTheme.fill)
             }
             .tint(OceanTheme.accent)
+            .toggleStyle(.oceanSwitch)
             .listRowSeparatorTint(Color.white.opacity(0.08))
             .scrollContentBackground(.hidden)
             .background(OceanBackground(animated: false))
