@@ -158,6 +158,8 @@ struct FastCaptureSessionView: View {
         .task {
             control.overlayID = request.id
             control.overlayOpen = true
+            // A panel an earlier overlay left open is not this one's.
+            control.attachPanelOpen = false
             session.configure(context: context, ai: ai)
             guard !hasStarted else { return }
             hasStarted = true
@@ -165,9 +167,7 @@ struct FastCaptureSessionView: View {
             // decoded once, off the main actor.
             if let screenshot = request.imageData {
                 let shot = await CaptureImage.make(from: [screenshot])
-                withAnimation(stilled ? OceanMotion.quick : OceanMotion.standard) {
-                    images.insert(contentsOf: shot, at: 0)
-                }
+                withAnimation(motion) { images.insert(contentsOf: shot, at: 0) }
             }
             // Opened to type: a draft put away earlier is back in the field
             // (before the bar's send below looks for it).
@@ -249,8 +249,9 @@ struct FastCaptureSessionView: View {
             if phase != .composing { attachPanelShown = false }
         }
         .onChange(of: attachPanelShown) { _, shown in
-            // The tab bar steps away under the panel, as under the keys.
-            if ownsControl { withAnimation(panelMotion) { control.attachPanelOpen = shown } }
+            // The tab bar steps away under the panel, as under the keys. A
+            // composer in a sheet leaves the page behind it alone.
+            if ownsControl, !asSheet { withAnimation(motion) { control.attachPanelOpen = shown } }
         }
         .fullScreenCover(isPresented: $cameraShown, onDismiss: { textFocused = true }) {
             CameraPicker(onFinish: attachShot)
@@ -283,7 +284,9 @@ struct FastCaptureSessionView: View {
                 // Open water puts the card away; anything in it waits in
                 // the bar. In a sheet (no bar) it only folds the keyboard
                 // while there is something to keep; the sheet swipes away.
-                if phase == .composing, !(asSheet && canRelease) {
+                // Pictures still loading keep the card out until they land:
+                // the bar can't hold a picture that hasn't arrived.
+                if phase == .composing, pendingImages == 0, !(asSheet && canRelease) {
                     putAway()
                 } else {
                     textFocused = false
@@ -412,8 +415,7 @@ struct FastCaptureSessionView: View {
             if attachPanelShown {
                 textFocused = true
             } else {
-                textFocused = false
-                withAnimation(panelMotion) { attachPanelShown = true }
+                openPanel()
             }
         } label: {
             Image(systemName: "plus")
@@ -421,7 +423,7 @@ struct FastCaptureSessionView: View {
         .buttonStyle(.oceanIcon)
         .disabled(room == 0)
         .opacity(room == 0 ? 0.4 : 1)
-        .accessibilityLabel("Add image")
+        .accessibilityLabel(attachPanelShown ? Text("Show keyboard") : Text("Add image"))
         .accessibilityIdentifier("composer.attach")
     }
 
@@ -450,7 +452,7 @@ struct FastCaptureSessionView: View {
     /// for the bar's send: that draft goes straight in, the card unopened.
     private func openCard() {
         guard phase == .composing, !control.releaseParked else { return }
-        withAnimation(stilled ? OceanMotion.quick : OceanMotion.standard) { cardOpen = true }
+        withAnimation(motion) { cardOpen = true }
     }
 
     /// Open water: the card folds back into the bar. Anything in it waits
@@ -600,21 +602,27 @@ struct FastCaptureSessionView: View {
     /// which the panel keeps clear of. Inside a current's sheet it is only
     /// its rows (no strip there).
     private var panelHeight: CGFloat {
-        let rows = CGFloat(CameraPicker.isAvailable ? 2 : 1) * OceanControlSize.height
-            + 2 * FastCaptureLayout.cardInset
-        guard !asSheet else { return rows }
-        let resting = UIApplication.shared.connectedScenes
-            .compactMap { ($0 as? UIWindowScene)?.keyWindow }
-            .first?.safeAreaInsets.bottom ?? 0
-        let keys = keyboardFrame?.height ?? 336
-        return max(keys - resting, rows + 8 + 120)
+        let least = CaptureAttachPanel.leastHeight(showsStrip: !asSheet)
+        guard !asSheet else { return least }
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        let scene = scenes.first { $0.activationState == .foregroundActive } ?? scenes.first
+        let resting = scene?.keyWindow?.safeAreaInsets.bottom ?? 0
+        let keys = keyboardFrame?.height ?? CaptureAttachPanel.usualKeyboardHeight
+        return max(keys - resting, least)
     }
 
-    private var panelMotion: Animation { stilled ? OceanMotion.quick : OceanMotion.standard }
+    /// The card's and the panel's one motion; Reduce Motion takes the
+    /// quick one.
+    private var motion: Animation { stilled ? OceanMotion.quick : OceanMotion.standard }
+
+    private func openPanel() {
+        textFocused = false
+        withAnimation(motion) { attachPanelShown = true }
+    }
 
     private func closePanel() {
         guard attachPanelShown else { return }
-        withAnimation(panelMotion) { attachPanelShown = false }
+        withAnimation(motion) { attachPanelShown = false }
     }
 
     /// The part of the keyboard the safe area left out. SwiftUI can miss a
@@ -733,10 +741,6 @@ struct FastCaptureSessionView: View {
 
         let note = text.trimmed
         let words = transcript.trimmed
-        // Pictures still loading ride with the take: wait for them, briefly.
-        for _ in 0..<60 where pendingImages > 0 {
-            try? await Task.sleep(for: .milliseconds(50))
-        }
 
         // Under a second with nothing said: not a thought, nothing minted.
         // Opened to whisper (the disc, a widget), it was a change of mind

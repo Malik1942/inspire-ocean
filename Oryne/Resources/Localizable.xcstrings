@@ -4121,6 +4121,16 @@
           }
         }
       }
+    },
+    "Show keyboard" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示键盘"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

@@ -16,9 +16,26 @@ struct CaptureAttachPanel: View {
     var onLibrary: () -> Void
 
     @State private var selection: [PhotosPickerItem] = []
+    /// The first tap is the pick: the strip takes no second one while the
+    /// panel steps away.
+    @State private var picked = false
+
+    /// Between the strip and the rows.
+    private static let spacing: CGFloat = 8
+    /// The strip never shrinks below a row of thumbnails you can hit.
+    private static let leastStripHeight: CGFloat = 120
+    /// An iPhone's keyboard, for when none has shown yet.
+    static let usualKeyboardHeight: CGFloat = 336
+
+    /// The least the panel needs: its rows, and the strip when it has one.
+    static func leastHeight(showsStrip: Bool) -> CGFloat {
+        let rows = CGFloat(CameraPicker.isAvailable ? 2 : 1) * OceanControlSize.height
+        let strip = showsStrip ? leastStripHeight + spacing : 0
+        return rows + strip + 2 * FastCaptureLayout.cardInset
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Self.spacing) {
             if showsStrip {
                 PhotosPicker(
                     selection: $selection,
@@ -31,11 +48,14 @@ struct CaptureAttachPanel: View {
                 .photosPickerStyle(.compact)
                 .photosPickerDisabledCapabilities([.search, .collectionNavigation, .stagingArea, .selectionActions])
                 .photosPickerAccessoryVisibility(.hidden, edges: .all)
-                .frame(maxHeight: .infinity)
+                .frame(minHeight: Self.leastStripHeight, maxHeight: .infinity)
                 // Concentric with the panel's corner, as the card's tiles are.
                 .clipShape(RoundedRectangle(cornerRadius: CaptureAttachments.tileRadius, style: .continuous))
+                .allowsHitTesting(!picked)
                 .onChange(of: selection) { _, items in
-                    if let item = items.first { onPick(item) }
+                    guard !picked, let item = items.first else { return }
+                    picked = true
+                    onPick(item)
                 }
             }
             VStack(spacing: 0) {
@@ -49,6 +69,9 @@ struct CaptureAttachPanel: View {
         .padding(FastCaptureLayout.cardInset)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(OceanBarBackground(cornerRadius: FastCaptureLayout.cardRadius, style: .continuous))
+        // Taps on its margins stay on the panel instead of reaching open
+        // water behind it, which would put the card away.
+        .contentShape(RoundedRectangle(cornerRadius: FastCaptureLayout.cardRadius, style: .continuous))
     }
 
     private func row(_ title: LocalizedStringKey, systemImage: String, action: @escaping () -> Void) -> some View {
