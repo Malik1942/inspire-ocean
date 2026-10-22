@@ -6,12 +6,21 @@ import SwiftUI
 /// move with the microphone, then a Stop square once locked. No glow, no
 /// ring, no highlight (Philosophy §4). Every instance drives the shared
 /// `CaptureControl`, so the bar's disc and the overlay's disc are one control.
+///
+/// In the open composer the disc is the card's one trailing action: it
+/// whispers while the field is empty, and once there are words it is the
+/// send, in place. Only the glyph (replaced, not moved) and the tint change.
 struct CaptureHoldButton: View {
     @Environment(CaptureControl.self) private var control
     @Environment(\.calmAccessibility) private var calm
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var size: CGFloat = 44
+    /// The disc in the open composer, where VoiceOver calls it Whisper.
+    var inComposer = false
+    /// The composer's release, once there is something to release: a tap
+    /// sends, and the disc wears the send's tint and arrow. No hold then.
+    var send: (() -> Void)? = nil
 
     @State private var pressBegan: Date?
     @State private var holdTask: Task<Void, Never>?
@@ -23,29 +32,41 @@ struct CaptureHoldButton: View {
     private var listening: Bool { control.isListening }
     private var locked: Bool { control.touch == .locked }
     private var stilled: Bool { reduceMotion || calm }
+    private var sends: Bool { send != nil && !listening }
 
     var body: some View {
         ZStack {
-            // Glass, like every control; a lighter tint while listening.
+            // Glass, like every control; a lighter tint while listening,
+            // and the send's own (OceanPrimaryIconButtonStyle) when ready.
             Color.clear
                 .frame(width: size, height: size)
-                .oceanGlass(in: Circle(), tint: listening ? Color.white.opacity(0.18) : nil, interactive: false)
+                .oceanGlass(in: Circle(), tint: listening || sends ? Color.white.opacity(0.18) : nil, interactive: false)
                 .opacity(isPressed ? 0.75 : 1)
 
             glyph
         }
         .frame(width: size, height: size)
+        // One body: without it the glyph (a symbol with a content
+        // transition) jumps ahead of its glass while the card folds.
+        .geometryGroup()
         .contentShape(Circle())
         .animation(.easeOut(duration: 0.15), value: listening)
+        .animation(.easeOut(duration: 0.15), value: sends)
         .animation(.easeOut(duration: 0.1), value: isPressed)
         .gesture(pressGesture)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(listening ? Text("Stop whisper") : Text("Capture"))
-        .accessibilityHint(tapToToggle ? Text("Tap to start or stop a whisper.") : Text("Tap to type. Hold to whisper. Slide up to keep listening."))
+        .accessibilityLabel(accessibilityName)
+        .accessibilityHint(sends ? Text(verbatim: "") : tapToToggle ? Text("Tap to start or stop a whisper.") : Text("Tap to type. Hold to whisper. Slide up to keep listening."))
         .accessibilityAddTraits(.isButton)
         .accessibilityAction {
-            if listening { control.stop() } else { control.touch = .locked }
+            if let send, !listening { send() } else if listening { control.stop() } else { control.touch = .locked }
         }
+    }
+
+    private var accessibilityName: Text {
+        if listening { return Text("Stop whisper") }
+        if sends { return Text("Release into the Ocean") }
+        return inComposer ? Text("Whisper") : Text("Capture")
     }
 
     @ViewBuilder
@@ -59,9 +80,12 @@ struct CaptureHoldButton: View {
             LevelBars(level: stilled ? 0.5 : control.level, size: size)
                 .transition(.opacity)
         } else {
-            Image(systemName: "waveform")
-                .font(.system(size: size * 0.4, weight: .regular))
-                .foregroundStyle(OceanTheme.accent)
+            // One image for both, so the waveform is replaced by the
+            // arrow where it stands. The arrow is the send's: 17 semibold.
+            Image(systemName: sends ? "arrow.up" : "waveform")
+                .font(.system(size: sends ? 17 : size * 0.4, weight: sends ? .semibold : .regular))
+                .foregroundStyle(sends ? OceanTheme.foam : OceanTheme.accent)
+                .contentTransition(.symbolEffect(.replace))
                 .transition(.opacity)
         }
     }
@@ -81,7 +105,12 @@ struct CaptureHoldButton: View {
                     CaptureFeedback.touch(.rigid)
                 }
             }
-            .onEnded { _ in end() }
+            .onEnded { value in
+                // The send, like a button, lets go without firing when the
+                // finger slides well off the disc first.
+                let reach = CGRect(x: 0, y: 0, width: size, height: size).insetBy(dx: -16, dy: -16)
+                end(inside: reach.contains(value.location))
+            }
     }
 
     private func begin() {
@@ -90,7 +119,7 @@ struct CaptureHoldButton: View {
         tapOnLockedTake = listening && (locked || tapToToggle)
         lockedThisTouch = false
         holdTask?.cancel()
-        guard !tapToToggle, !tapOnLockedTake else { return }
+        guard !sends, !tapToToggle, !tapOnLockedTake else { return }
         holdTask = Task { @MainActor in
             try? await Task.sleep(for: CaptureControl.holdThreshold)
             guard !Task.isCancelled, pressBegan != nil else { return }
@@ -99,7 +128,7 @@ struct CaptureHoldButton: View {
         }
     }
 
-    private func end() {
+    private func end(inside: Bool) {
         holdTask?.cancel()
         holdTask = nil
         isPressed = false
@@ -110,6 +139,10 @@ struct CaptureHoldButton: View {
         }
         if tapOnLockedTake {
             control.stop()
+            return
+        }
+        if let send, sends {
+            if inside { send() }
             return
         }
         if tapToToggle {

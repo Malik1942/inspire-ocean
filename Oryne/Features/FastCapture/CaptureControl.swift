@@ -44,6 +44,10 @@ final class CaptureControl {
     var isListening = false
     var level: Double = 0
     var overlayOpen = false
+    /// How much of the page's bottom edge the open composer covers, card
+    /// and gap; 0 when it is closed. The page keeps a bar this tall so the
+    /// system's scroll edge effect runs behind the glass.
+    var composerHeight: CGFloat = 0
     /// The overlay is only its toast now: the bar comes back, and a tap or a
     /// hold on it starts the next capture in the same overlay.
     var toastShowing = false

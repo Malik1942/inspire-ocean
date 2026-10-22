@@ -50,6 +50,9 @@ struct FastCaptureSessionView: View {
     @State private var isSaving = false
     @State private var hasStarted = false
     @State private var fadeTask: Task<Void, Never>?
+    /// The composer's card is open: two rows. It is drawn closed first, at
+    /// the bar's capsule, and unfolds from there; closing folds it back.
+    @State private var cardOpen = false
     @FocusState private var textFocused: Bool
 
     init(
@@ -125,6 +128,7 @@ struct FastCaptureSessionView: View {
         }
         .onDisappear {
             control.overlayOpen = false
+            control.composerHeight = 0
             control.toastShowing = false
             control.isListening = false
             control.level = 0
@@ -174,71 +178,100 @@ struct FastCaptureSessionView: View {
             }
     }
 
-    /// Typing: the bar's own capsule, the field where its placeholder sits.
-    /// The way out floats above the capsule's end, centered on the disc,
-    /// off the container so it never reads as a badge on the words.
+    /// Typing: the bar's capsule unfolds into a card on two rows. The words
+    /// on top, across the whole card; under them the way out at the leading
+    /// end and one disc at the trailing end, which whispers while the field
+    /// is empty and sends once there are words. The disc sits where the
+    /// bar's disc sits, so the card grows up from it and it never moves.
+    /// Both rows stay for the whole session, empty or not.
     private var composer: some View {
-        VStack(alignment: .trailing, spacing: 8) {
-            HStack(alignment: .bottom, spacing: 8) {
-                composerCaptions
-                Spacer(minLength: 8)
-                // Nothing to close while a finger holds the disc and the
-                // microphone wakes: lifting catches.
-                closeButton
-                    .padding(.trailing, FastCaptureLayout.discInset)
-                    .opacity(control.isHeld ? 0 : 1)
-                    .allowsHitTesting(!control.isHeld)
+        VStack(alignment: .leading, spacing: FastCaptureLayout.discInset) {
+            if let imageData, let uiImage = UIImage(data: imageData) {
+                screenshotPreview(uiImage)
             }
-            CaptureCapsule {
-                VStack(alignment: .leading, spacing: FastCaptureLayout.discInset) {
-                    if let imageData, let uiImage = UIImage(data: imageData) {
-                        screenshotPreview(uiImage)
-                    }
-
-                    HStack(alignment: .bottom, spacing: 8) {
-                        // The bar's own words in its own color, so opening
-                        // the keyboard changes nothing but the cursor.
-                        TextField(
-                            "What are you noticing?",
-                            text: $text,
-                            prompt: Text("What are you noticing?").foregroundStyle(OceanTheme.hint),
-                            axis: .vertical
-                        )
-                            .textFieldStyle(.plain)
-                            .font(.body)
-                            .lineLimit(1...6)
-                            .lineSpacing(2)
-                            .focused($textFocused)
-                            .foregroundStyle(OceanTheme.foam)
-                            .tint(OceanTheme.accent)
-                            .submitLabel(.return)
-                            .padding(.vertical, 4)
-                            .padding(.leading, FastCaptureLayout.fieldLeading - FastCaptureLayout.discInset)
-                            .frame(minHeight: FastCaptureLayout.buttonSize)
-
-                        if canRelease {
-                            Button(action: saveTyped) {
-                                Image(systemName: "arrow.up")
-                            }
-                            .buttonStyle(.oceanPrimaryIcon)
-                            .disabled(isSaving)
-                            .accessibilityLabel("Release into the Ocean")
-                            .transition(.scale.combined(with: .opacity))
-                        }
-
-                        overlayDisc
-                    }
-                }
-                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: canRelease)
+            // Closed, the actions lie over the field's row, as on the bar.
+            VStack(alignment: .leading, spacing: cardShown ? 0 : -FastCaptureLayout.buttonSize) {
+                composerField
+                actionRow
             }
+        }
+        .padding(FastCaptureLayout.discInset)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(OceanBarBackground(
+            cornerRadius: cardShown ? FastCaptureLayout.cardRadius : FastCaptureLayout.endRadius,
+            style: .continuous
+        ))
+        // Reduce Motion: nothing unfolds; the open card fades in instead.
+        .opacity(stilled && !cardOpen ? 0 : 1)
+        // Folding away, it takes no more touches: a hold on the disc now
+        // would start a take the closing overlay then drops.
+        .allowsHitTesting(cardShown)
+        // A new line grows the card upward; the actions stay at its foot.
+        .animation(OceanMotion.standard, value: text)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+            // The card and the 12 pt gap under it (bottomPadding).
+            if !asSheet { control.composerHeight = height + 12 }
+        }
+        .onAppear(perform: openCard)
+        .onDisappear {
+            cardOpen = false
+            control.composerHeight = 0
         }
         .transition(.opacity)
     }
 
-    /// What the capsule can't hold: a refusal, and the current a thought
-    /// added from a stream flows into. Above it, on the leading side.
+    /// The bar's own words in its own color, so opening the keyboard
+    /// changes nothing but the cursor. Open, the field spans the card and
+    /// grows to six lines, then scrolls; closed, it is the bar's one line,
+    /// clear of the disc.
+    private var composerField: some View {
+        TextField(
+            "What are you noticing?",
+            text: $text,
+            prompt: Text("What are you noticing?").foregroundStyle(OceanTheme.hint),
+            axis: .vertical
+        )
+        .textFieldStyle(.plain)
+        .font(.body)
+        .lineLimit(cardShown ? 1...6 : 1...1)
+        .lineSpacing(2)
+        .focused($textFocused)
+        .foregroundStyle(OceanTheme.foam)
+        .tint(OceanTheme.accent)
+        .submitLabel(.return)
+        // About even above the first line and below the last, so a new
+        // line grows the card without the words shifting inside it.
+        .padding(.vertical, 10)
+        .padding(.leading, FastCaptureLayout.fieldLeading - FastCaptureLayout.discInset)
+        .padding(.trailing, cardShown
+            ? FastCaptureLayout.fieldLeading - FastCaptureLayout.discInset
+            : FastCaptureLayout.buttonSize + 8)
+        .frame(maxWidth: .infinity, minHeight: FastCaptureLayout.buttonSize, alignment: .leading)
+        .accessibilityIdentifier("composer.field")
+    }
+
+    /// The card's second row, at its foot: the way out at the leading end,
+    /// the disc at the trailing end, and between them what the card has
+    /// to say. Closed, only the disc shows, as on the bar.
+    private var actionRow: some View {
+        HStack(alignment: .center, spacing: 8) {
+            // Nothing to close while a finger holds the disc and the
+            // microphone wakes: lifting catches.
+            closeButton
+                .opacity(cardShown && !control.isHeld ? 1 : 0)
+                .allowsHitTesting(cardShown && !control.isHeld)
+                .accessibilityHidden(!cardShown)
+            composerCaptions
+                .opacity(cardShown ? 1 : 0)
+            Spacer(minLength: 0)
+            overlayDisc(inComposer: true, send: canRelease ? saveTyped : nil)
+        }
+    }
+
+    /// A refusal, and the current a thought added from a stream flows
+    /// into: in the action row between the two controls, inside the card.
     private var composerCaptions: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             if let message {
                 Text(message)
                     .font(.caption)
@@ -250,7 +283,30 @@ struct FastCaptureSessionView: View {
                     .foregroundStyle(OceanTheme.faint)
             }
         }
-        .padding(.leading, FastCaptureLayout.fieldLeading)
+        .lineLimit(2)
+    }
+
+    private var cardShown: Bool { cardOpen || stilled }
+
+    /// The card unfolds from the bar's capsule as the keyboard rises. With
+    /// Reduce Motion it is open from the start and fades in instead.
+    private func openCard() {
+        withAnimation(stilled ? OceanMotion.quick : OceanMotion.standard) { cardOpen = true }
+    }
+
+    /// The card folds back into the bar's capsule before the bar takes over,
+    /// so the way out is the way in reversed. Reduce Motion and the sheet
+    /// only fade.
+    private func closeCard() {
+        guard phase == .composing, cardOpen, !stilled, !asSheet else {
+            onFinish()
+            return
+        }
+        withAnimation(OceanMotion.standard) {
+            cardOpen = false
+        } completion: {
+            onFinish()
+        }
     }
 
     /// Listening: the same capsule in the same frame. The way out (cancel,
@@ -264,7 +320,7 @@ struct FastCaptureSessionView: View {
                 closeButton
                 listeningNotes
                 Spacer(minLength: 8)
-                overlayDisc
+                overlayDisc()
             }
         }
         .transition(.opacity)
@@ -273,10 +329,12 @@ struct FastCaptureSessionView: View {
     /// The overlay's own disc, in the composer and the listening capsule.
     /// While the hold that opened this overlay still has its finger on the
     /// capture bar's disc (invisible, in the same frame), that disc owns
-    /// the gesture; once the take locks this one is the Stop.
-    private var overlayDisc: some View {
-        CaptureHoldButton(size: FastCaptureLayout.buttonSize)
+    /// the gesture; once the take locks this one is the Stop. In the
+    /// composer it is the send once there are words.
+    private func overlayDisc(inComposer: Bool = false, send: (() -> Void)? = nil) -> some View {
+        CaptureHoldButton(size: FastCaptureLayout.buttonSize, inComposer: inComposer, send: send)
             .allowsHitTesting(asSheet || !control.isHeld)
+            .accessibilityIdentifier(inComposer ? "composer.action" : "capture.overlayDisc")
     }
 
     private var listeningNotes: some View {
@@ -304,14 +362,16 @@ struct FastCaptureSessionView: View {
 
     private var stilled: Bool { reduceMotion || calm }
 
-    /// Mid-take it cancels (nothing is saved yet); composing it closes. A
-    /// small glass body like the capture button, not a badge on the card.
+    /// Mid-take it cancels (nothing is saved yet); composing it closes and
+    /// lets the draft go, so it stays an X. A small glass body like the
+    /// capture button, not a badge on the card.
     private var closeButton: some View {
         Button(action: cancel) {
             Image(systemName: "xmark")
         }
         .buttonStyle(.oceanIcon)
         .accessibilityLabel(listening ? Text("Cancel whisper") : Text("Close"))
+        .accessibilityIdentifier("capture.close")
     }
 
     /// Composing and listening clear the tab bar (or sit on the keyboard);
@@ -330,10 +390,10 @@ struct FastCaptureSessionView: View {
                 .scaledToFill()
                 .frame(height: 116)
                 .frame(maxWidth: .infinity)
-                // Concentric with the capsule's end.
+                // Concentric with the card's corner.
                 .clipShape(RoundedRectangle(
-                    cornerRadius: FastCaptureLayout.endRadius - FastCaptureLayout.discInset,
-                    style: .circular
+                    cornerRadius: FastCaptureLayout.cardRadius - FastCaptureLayout.discInset,
+                    style: .continuous
                 ))
 
             Button {
@@ -533,7 +593,7 @@ struct FastCaptureSessionView: View {
         if let url = heldDraft?.audioTempURL {
             try? FileManager.default.removeItem(at: url)
         }
-        onFinish()
+        closeCard()
     }
 
     private func finishInterruptedCapture() {

@@ -101,6 +101,7 @@ struct OceanFieldView: View {
                         .padding(.top, 0)
                         .padding(.bottom, FastCaptureLayout.contentClearance)
                     }
+                    .modifier(CaptureComposerEdge())
                 }
                 ShoreGradient()
             }

@@ -321,6 +321,7 @@ struct LibraryView: View {
             .id(arrangement)
             .opacity(gridOpacity)
             .scrollDismissesKeyboard(.immediately)
+            .modifier(CaptureComposerEdge())
             // Reading down folds the capture bar into its disc.
             .onScrollGeometryChange(for: CGFloat.self) { geometry in
                 geometry.contentOffset.y + geometry.contentInsets.top

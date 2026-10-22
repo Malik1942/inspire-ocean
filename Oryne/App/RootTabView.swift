@@ -203,6 +203,9 @@ enum FastCaptureLayout {
     static let fieldLeading: CGFloat = barHeight / 2 - 8
     /// The capsule's end radius, kept when the container grows taller.
     static let endRadius: CGFloat = barHeight / 2
+    /// The open composer's corners: fixed and continuous, so a tall card
+    /// keeps its text room instead of growing a capsule's round ends.
+    static let cardRadius: CGFloat = 24
     /// The tab bar (49 pt) plus the 12 pt gap under the bar.
     static let tabBarClearance: CGFloat = 49 + 12
     /// What scrolling content under the bar leaves clear: bar, gap, and a
