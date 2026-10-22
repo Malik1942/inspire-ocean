@@ -9,9 +9,11 @@ enum NodeKind: String, CaseIterable, Codable, Identifiable {
 
     var id: String { rawValue }
 
+    /// The kind by name. A typed thought is "Text": "Thought" is the app's
+    /// word for every kind, so it can't also name one of them.
     var label: String {
         switch self {
-        case .text: return String(localized: "Thought")
+        case .text: return String(localized: "kind.text", defaultValue: "Text")
         case .voice: return String(localized: "Whisper")
         case .image: return String(localized: "Image")
         case .link: return String(localized: "Link")

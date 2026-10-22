@@ -98,9 +98,12 @@ final class LinkEnrichmentService {
         // ---- Stage A: metadata ----
         setState(.fetchingMeta, nodeID: nodeID, context: context)
 
-        let lp = await Self.fetchLinkMetadata(url)          // title + image (LinkPresentation)
+        let lp = await Self.fetchLinkMetadata(url)          // title + image + site icon (LinkPresentation)
         let html = await PageContent.fetchHTML(url)          // one fetch: description now, content later
-        Self.log("Stage A — lpTitle:\(lp.title != nil) lpImage:\(lp.imageData != nil) html:\(html?.count ?? 0)b")
+        Self.log("Stage A — lpTitle:\(lp.title != nil) lpImage:\(lp.imageData != nil) icon:\(lp.iconData != nil) html:\(html?.count ?? 0)b")
+        if let icon = lp.iconData, let site = SiteIcons.site(of: url) {
+            SiteIcons.shared.store(icon, for: site)
+        }
 
         var thumbnail = lp.imageData.flatMap { Self.thumbnail(from: $0) }
         if thumbnail == nil, let html, let imageURL = PageContent.ogImageURL(from: html, relativeTo: url),
@@ -234,9 +237,10 @@ final class LinkEnrichmentService {
         let value: Value
     }
 
-    /// Title + a preview image via `LPMetadataProvider` (the system's blessed
-    /// rich-link path). Best-effort: returns nils on any failure.
-    private static func fetchLinkMetadata(_ url: URL) async -> (title: String?, imageData: Data?) {
+    /// Title, a preview image and the site's icon via `LPMetadataProvider`
+    /// (the system's blessed rich-link path). Best-effort: returns nils on
+    /// any failure.
+    private static func fetchLinkMetadata(_ url: URL) async -> (title: String?, imageData: Data?, iconData: Data?) {
         await withCheckedContinuation { continuation in
             let provider = LPMetadataProvider()
             provider.timeout = 10
@@ -244,20 +248,26 @@ final class LinkEnrichmentService {
             provider.startFetchingMetadata(for: url) { [providerBox] metadata, error in
                 _ = providerBox   // keep the provider alive until completion
                 guard let metadata, error == nil else {
-                    continuation.resume(returning: (nil, nil))
+                    continuation.resume(returning: (nil, nil, nil))
                     return
                 }
                 let title = metadata.title
-                guard let imageProvider = metadata.imageProvider,
-                      imageProvider.canLoadObject(ofClass: UIImage.self) else {
-                    continuation.resume(returning: (title, nil))
-                    return
-                }
-                imageProvider.loadObject(ofClass: UIImage.self) { object, _ in
-                    let data = (object as? UIImage)?.pngData()   // downsampled by the caller
-                    continuation.resume(returning: (title, data))
+                let preview = metadata.imageProvider
+                loadPNG(metadata.iconProvider) { icon in
+                    // The preview is downsampled by the caller.
+                    loadPNG(preview) { image in
+                        continuation.resume(returning: (title, image, icon))
+                    }
                 }
             }
+        }
+    }
+
+    /// An item provider's picture as PNG bytes, or nil when it has none.
+    nonisolated private static func loadPNG(_ provider: NSItemProvider?, _ done: @escaping @Sendable (Data?) -> Void) {
+        guard let provider, provider.canLoadObject(ofClass: UIImage.self) else { return done(nil) }
+        provider.loadObject(ofClass: UIImage.self) { object, _ in
+            done((object as? UIImage)?.pngData())
         }
     }
 

@@ -47,13 +47,11 @@ struct OceanFieldView: View {
     private enum OceanSheet: Identifiable {
         case thought(Node)
         case stream(theme: String)
-        case currents
 
         var id: String {
             switch self {
             case .thought(let node): return node.id.uuidString
             case .stream(let theme): return "stream·\(theme)"
-            case .currents: return "currents"
             }
         }
     }
@@ -119,7 +117,6 @@ struct OceanFieldView: View {
                 switch item {
                 case .thought(let node): ExpandedNodeView(node: node)
                 case .stream(let theme): ClusterStreamView(theme: theme)
-                case .currents: CurrentsPage()
                 }
             }
             .sheet(isPresented: $showSettings) { OceanSettingsView() }
@@ -272,8 +269,9 @@ struct OceanFieldView: View {
             HStack(alignment: .firstTextBaseline) {
                 sectionLabel("Currents")
                 Spacer()
+                // Every current is in the Library, under Currents.
                 Button {
-                    sheet = .currents
+                    appState.showAllCurrents()
                 } label: {
                     // A quiet accessory to the section label, never louder
                     // than it: the label's mist, regular weight.

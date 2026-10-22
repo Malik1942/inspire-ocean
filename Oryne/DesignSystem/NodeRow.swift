@@ -6,6 +6,19 @@ struct NodeRow: View {
     /// Off inside a current, where every row shares it.
     var showsCurrent = true
 
+    /// The picture at the trailing edge, decoded once. Until the node's
+    /// images have been looked at, an image thought holds the picture's
+    /// place, so the row never shifts when it lands.
+    @State private var thumbnail: UIImage?
+    @State private var pictureResolved = false
+    @State private var hasPicture = false
+    /// A whisper's length, read once.
+    @State private var length: String?
+
+    /// The picture's side: a control's height, so it sits inside the row's
+    /// two lines without growing it.
+    private static let pictureSide: CGFloat = 44
+
     var body: some View {
         // A just-deleted node can linger for one render pass before its @Query
         // drops the row — and deleting a node with branches cascades, which
@@ -20,23 +33,74 @@ struct NodeRow: View {
         }
     }
 
-    /// Text only. A row is a place to go, not a preview: the title, then one
-    /// meta line that says what kind of thought it is (a small glyph for a
-    /// whisper, a link or a picture), when, and which current. Pictures are
-    /// for cards and the thought itself. A fill, no border, no chevron.
+    /// A row is a place to go, not a preview: the title, then one meta line
+    /// that says what kind of thought it is, when, and which current. Each
+    /// kind keeps what tells it apart without opening it: a thought with a
+    /// picture shows it small at the trailing edge, a link leads its meta
+    /// line with its site's icon and domain, a whisper with its length.
+    /// A fill, no border, no chevron.
     private var row: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(node.displayTitle)
-                .font(OceanType.tileTitle)
-                .foregroundStyle(OceanTheme.foam)
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
-            NodeMeta(node: node, showsCurrent: showsCurrent)
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(node.displayTitle)
+                    .font(OceanType.tileTitle)
+                    .foregroundStyle(OceanTheme.foam)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                NodeMeta(node: node, detail: node.linkDomain ?? length, siteIcon: siteIcon, showsCurrent: showsCurrent)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            if pictureResolved ? hasPicture : node.kind == .image {
+                picture
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous)))
         .contentShape(RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous))
+        .task(id: node.id) { await resolveCues() }
+    }
+
+    private var siteIcon: UIImage? {
+        node.linkDomain.flatMap { SiteIcons.shared.icon(for: $0) }
+    }
+
+    /// The hue placeholder holds the square; the picture fills it and is
+    /// clipped to a thumbnail's corners.
+    private var picture: some View {
+        OceanTheme.color(forHue: node.hue).opacity(0.25)
+            .frame(width: Self.pictureSide, height: Self.pictureSide)
+            .overlay {
+                if let thumbnail {
+                    Image(uiImage: thumbnail)
+                        .resizable()
+                        .scaledToFill()
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: OceanRadius.thumbnail, style: .continuous))
+            .accessibilityHidden(true)
+    }
+
+    /// Everything the row needs beyond its title, each read once: the site's
+    /// icon (from the cache, or fetched for a link saved before icons were
+    /// kept), a whisper's length, and the first picture, downsampled off the
+    /// main thread.
+    private func resolveCues() async {
+        if let site = node.linkDomain, let url = node.linkURL {
+            SiteIcons.shared.load(site: site, pageURL: url)
+        }
+        if node.kind == .voice, length == nil, let data = node.audioData,
+           let seconds = AudioDurations.seconds(for: data, id: node.id) {
+            length = AudioDurations.format(seconds)
+        }
+        guard !pictureResolved else { return }
+        let data = node.imageDatas.first
+        hasPicture = data != nil
+        pictureResolved = true
+        guard let data else { return }
+        let side = Self.pictureSide * 3
+        thumbnail = await Task.detached(priority: .utility) { () -> UIImage? in
+            UIImage(data: ImageDownsampler.downsample(data, maxPixel: side) ?? data)
+        }.value
     }
 }
 

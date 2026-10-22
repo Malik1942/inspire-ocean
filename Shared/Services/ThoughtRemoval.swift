@@ -46,6 +46,13 @@ struct ThoughtRemoval: Identifiable {
         return ThoughtRemoval(kind: .archive, node: node, hidden: hidden, previousUpdatedAt: previous)
     }
 
+    /// Whether this is a delete still waiting to happen for `node`: the
+    /// thought itself or a branch it hid. A delete only archives until the
+    /// way back closes, so a list of archived thoughts leaves these out.
+    func deletes(_ node: Node) -> Bool {
+        kind == .delete && (node.id == self.node.id || hidden.contains { $0.id == node.id })
+    }
+
     /// Takes the removal back. A node deleted meanwhile (by a sync from
     /// another device) is detached, and touching it would fault: skipped.
     func undo() {

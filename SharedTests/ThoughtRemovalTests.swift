@@ -96,6 +96,26 @@ final class ThoughtRemovalTests: XCTestCase {
         XCTAssertEqual(root.updatedAt, stamp)
     }
 
+    // MARK: - what a pending delete covers
+
+    func test_deletes_coversTheThoughtAndTheBranchesItHid_notAnArchive() throws {
+        let root = thought("Root")
+        let branch = thought("Branch", parent: root)
+        let shelved = thought("Shelved", parent: root, archived: true)
+        let other = thought("Other")
+        try context.save()
+
+        let delete = ThoughtRemoval.delete(root)
+        XCTAssertTrue(delete.deletes(root))
+        XCTAssertTrue(delete.deletes(branch))
+        XCTAssertFalse(delete.deletes(shelved), "Archived before: it stays in the archive")
+        XCTAssertFalse(delete.deletes(other))
+        delete.undo()
+
+        let archive = ThoughtRemoval.archive(other)
+        XCTAssertFalse(archive.deletes(other), "An archive is not a delete: the thought belongs in Archived")
+    }
+
     // MARK: - undo after a sync
 
     func test_undo_skipsABranchDeletedMeanwhile() throws {

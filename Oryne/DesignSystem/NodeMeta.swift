@@ -9,6 +9,8 @@ struct NodeMeta: View {
     let node: Node
     /// Lead-in after the kind glyph (a whisper's length, a link's domain).
     var detail: String? = nil
+    /// A link's site icon, in the kind glyph's place.
+    var siteIcon: UIImage? = nil
     var showsCurrent = true
 
     private var line: String {
@@ -21,9 +23,20 @@ struct NodeMeta: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Image(systemName: node.kind.symbol)
-                .font(.caption2)
-                .frame(width: 14)
+            if let siteIcon {
+                Image(uiImage: siteIcon)
+                    .resizable()
+                    .interpolation(.high)
+                    .frame(width: 14, height: 14)
+                    .clipShape(RoundedRectangle(cornerRadius: 3.5, style: .continuous))
+                    .accessibilityHidden(true)
+            } else {
+                // Any thought that carries a link reads as one, even a
+                // typed thought a link was pasted into.
+                Image(systemName: node.linkURL != nil ? NodeKind.link.symbol : node.kind.symbol)
+                    .font(.caption2)
+                    .frame(width: 14)
+            }
             if node.isBranch, let bt = node.branchType {
                 Image(systemName: bt.symbol).font(.caption2)
             }
