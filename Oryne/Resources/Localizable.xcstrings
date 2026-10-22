@@ -291,16 +291,6 @@
         }
       }
     },
-    "Assign the Fast Capture shortcut." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "指定「快速捕捉」快捷指令。"
-          }
-        }
-      }
-    },
     "Assign where available" : {
       "localizations" : {
         "zh-Hans" : {
@@ -1279,16 +1269,6 @@
         }
       }
     },
-    "From the Action Button, Control Center and the widget. The bar itself always offers both." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "仅影响操作按钮、控制中心和小组件的入口。输入栏本身两种都有。"
-          }
-        }
-      }
-    },
     "From the page" : {
       "localizations" : {
         "zh-Hans" : {
@@ -1937,16 +1917,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "一按，一念汇入。"
-          }
-        }
-      }
-    },
-    "One zip: a Markdown file per current, a full JSON backup, and your images. Examples stay behind." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "一个压缩包：每条水流一份 Markdown 文件、一份完整的 JSON 备份，还有你的图片。示例不会包含在内。"
           }
         }
       }
@@ -2984,16 +2954,6 @@
         }
       }
     },
-    "Stills the water and its light, and makes the capture button tap to start and tap to stop instead of holding. The system Reduce Motion setting stills the water too." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "让水面和光静止，并把捕捉按钮改为轻点开始、再轻点停止，不必按住。系统的“减弱动态效果”同样会让水面静止。"
-          }
-        }
-      }
-    },
     "Stills the water, brightens the words that carry meaning, and widens every touch target. Nothing about your Ocean changes, only how it moves. The system Reduce Motion setting stills the water too." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3676,16 +3636,6 @@
         }
       }
     },
-    "Use a screenshot handoff shortcut." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用截图接力快捷指令。"
-          }
-        }
-      }
-    },
     "Voice" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -4132,26 +4082,6 @@
         }
       }
     },
-    "Titles, themes, whisper summaries and Ask answers are composed on this device. Nothing leaves it." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "标题、主题、语音摘要和提问的回答都在此设备上生成，不会离开设备。"
-          }
-        }
-      }
-    },
-    "Not available: %@. Titles come from your own words, and Ask gives a fixed reading of the thoughts it finds." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "不可用：%@。标题取自你自己的文字，提问只能对找到的灵感给出固定措辞的解读。"
-          }
-        }
-      }
-    },
     "They keep circling %@." : {
       "localizations" : {
         "zh-Hans" : {
@@ -4592,16 +4522,6 @@
         }
       }
     },
-    "Nothing yet. Oryne writes these once it has read a few of your thoughts, on a day the phone is charging." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "还没有。Oryne 读过你的一些灵感之后，会在手机充电的某一天写下这些。"
-          }
-        }
-      }
-    },
     "Edited by you" : {
       "localizations" : {
         "zh-Hans" : {
@@ -4622,32 +4542,12 @@
         }
       }
     },
-    "Written from your own thoughts by the on-device model, once a day while the phone charges. Tap a line to put it in your words; swipe to delete one, and it will not come back." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "由本机模型从你自己的灵感中写出，每天一次，在手机充电时进行。点一行可以改成你自己的说法；左滑删除后不会再出现。"
-          }
-        }
-      }
-    },
     "Last refreshed %@." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "上次刷新：%@。"
-          }
-        }
-      }
-    },
-    "Added %lld, removed %lld." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "新增 %lld 条，移除 %lld 条。"
           }
         }
       }
@@ -4668,6 +4568,16 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "内容"
+          }
+        }
+      }
+    },
+    "Nothing yet." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "还没有。"
           }
         }
       }

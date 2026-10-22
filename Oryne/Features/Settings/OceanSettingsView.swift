@@ -57,23 +57,16 @@ struct OceanSettingsView: View {
                     Toggle("Haptics", isOn: $captureHaptics)
                 } header: {
                     Text("Capture")
-                } footer: {
-                    Text("From the Action Button, Control Center and the widget. The bar itself always offers both.")
                 }
                 .listRowBackground(OceanTheme.fill)
 
+                // Rows and controls only: no footers, no explanatory lines
+                // (Malik, 2026-10-22: a settings page is clean or it is noise).
                 FastCaptureShortcutSection()
                     .listRowBackground(OceanTheme.fill)
 
-                if FastCaptureWatchSection.isAvailable {
-                    FastCaptureWatchSection()
-                        .listRowBackground(OceanTheme.fill)
-                }
-
                 Section {
                     Toggle("Calm Accessibility", isOn: $calmMode)
-                } footer: {
-                    Text("Stills the water and its light, and makes the capture button tap to start and tap to stop instead of holding. The system Reduce Motion setting stills the water too.")
                 }
                 .listRowBackground(OceanTheme.fill)
 
@@ -84,8 +77,6 @@ struct OceanSettingsView: View {
                     } label: {
                         Text("What Oryne knows about you")
                     }
-                } footer: {
-                    Text(modelStatusFooter)
                 }
                 .listRowBackground(OceanTheme.fill)
                 .task {
@@ -102,8 +93,6 @@ struct OceanSettingsView: View {
                     }
                 } header: {
                     Text("Your Ocean")
-                } footer: {
-                    Text("One zip: a Markdown file per current, a full JSON backup, and your images. Examples stay behind.")
                 }
                 .listRowBackground(OceanTheme.fill)
             }
@@ -147,17 +136,6 @@ struct OceanSettingsView: View {
         case .ready: String(localized: "Ready")
         case .unavailable: String(localized: "Unavailable")
         case nil: ""
-        }
-    }
-
-    /// What the model does here, or why it cannot and what stands in. The
-    /// same reason a link's note gives, so the two never disagree.
-    private var modelStatusFooter: String {
-        switch modelStatus {
-        case .unavailable(let reason):
-            String(localized: "Not available: \(reason). Titles come from your own words, and Ask gives a fixed reading of the thoughts it finds.")
-        case .ready, nil:
-            String(localized: "Titles, themes, whisper summaries and Ask answers are composed on this device. Nothing leaves it.")
         }
     }
 

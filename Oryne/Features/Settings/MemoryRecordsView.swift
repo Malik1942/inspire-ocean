@@ -14,7 +14,6 @@ struct MemoryRecordsView: View {
     @State private var draft = ""
     @State private var refreshing = false
     @State private var lastRun = Consolidation.lastRun
-    @State private var lastSummary: Consolidation.Summary?
 
     private var grouped: [(kind: MemoryKind, records: [MemoryRecord])] {
         MemoryKind.allCases.compactMap { kind in
@@ -27,7 +26,7 @@ struct MemoryRecordsView: View {
         Form {
             if records.isEmpty {
                 Section {
-                    Text("Nothing yet. Oryne writes these once it has read a few of your thoughts, on a day the phone is charging.")
+                    Text("Nothing yet.")
                         .font(.subheadline)
                         .foregroundStyle(OceanTheme.mist)
                 }
@@ -69,6 +68,8 @@ struct MemoryRecordsView: View {
                 }
                 .listRowBackground(OceanTheme.fill)
             }
+            // One action, one line under it. The page explains itself by its
+            // rows; the how and when belong to the Settings footer above it.
             Section {
                 Button {
                     refresh()
@@ -80,15 +81,11 @@ struct MemoryRecordsView: View {
                     }
                 }
                 .disabled(refreshing)
+                .accessibilityIdentifier("memory.refresh")
             } footer: {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Written from your own thoughts by the on-device model, once a day while the phone charges. Tap a line to put it in your words; swipe to delete one, and it will not come back.")
-                    if let lastRun {
-                        Text("Last refreshed \(lastRun.formatted(.relative(presentation: .named))).")
-                    }
-                    if let lastSummary {
-                        Text("Added \(lastSummary.recordsAdded), removed \(lastSummary.recordsRemoved).")
-                    }
+                if let lastRun {
+                    Text("Last refreshed \(lastRun.formatted(.relative(presentation: .named))).")
+                        .accessibilityIdentifier("memory.lastRefreshed")
                 }
             }
             .listRowBackground(OceanTheme.fill)
@@ -122,8 +119,8 @@ struct MemoryRecordsView: View {
         refreshing = true
         Task {
             let summary = await Consolidation.run(context: context, ai: ai, reason: .manual)
+            _ = summary
             await MainActor.run {
-                lastSummary = summary
                 lastRun = Consolidation.lastRun
                 refreshing = false
             }
