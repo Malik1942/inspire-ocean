@@ -9,6 +9,8 @@ final class OryneAppDelegate: NSObject, UIApplicationDelegate {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         application.registerForRemoteNotifications()
+        // Must be registered before launch finishes.
+        Consolidation.register()
         return true
     }
 

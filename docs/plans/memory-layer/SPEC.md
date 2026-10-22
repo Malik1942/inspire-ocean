@@ -1,8 +1,8 @@
 # Memory layer: a denser understanding of every thought, and an Ask that can use it
 
-Status: decided 2026-10-22 (Malik). Phases 1 to 3 built on branch
+Status: decided 2026-10-22 (Malik). Phases 1 to 4 built on branch
 `am/apple-intelligence-oryne-248869` (phase 1 in 00cfbc5, phase 2 in
-6b7ba71).
+6b7ba71, phase 3 in 83eb2a3).
 
 ## Why
 
@@ -99,26 +99,40 @@ new current) are on the Currents page and a current's stream. Chinese and
 English currents whose thoughts name each other are suggested for a merge
 (three in five members), and the user confirms.
 
-### 3. What Oryne knows about you (phase 4)
+### 3. What Oryne knows about you (phase 4, built)
 
 A `MemoryRecord` model: `kind` (concern / project / person / preference /
-habit), `text` (one line), `evidenceNodeIDs`, `createdAt`, `updatedAt`,
-`userEdited`. Written only by consolidation, read by Ask as a capped
-(about 300 tokens) preamble. Shown in Settings; every record deletable.
+habit), `text` (one sentence addressed to the person), `evidenceNodeIDs`,
+`createdAt`, `updatedAt`, `userEdited`. Written only by consolidation:
+`FoundationMemoryExtractor` reads the newest 40 thoughts of the last 45
+days (with their categories and entities) and the records already kept,
+and proposes at most four observations each resting on two or more
+thoughts; `MemoryRules` keeps only what is new (content-word overlap under
+0.6 against every record), not what the user deleted (deleted texts are
+remembered), and removes a record once every thought it rested on is gone,
+never one the user edited; 24 records at most. Ask reads the newest eight
+as background appended to its instructions, marked as not a source.
+Settings › Apple Intelligence › What Oryne knows about you lists them by
+kind; tap to put one in your words, swipe to delete; Refresh now runs the
+pass.
 
 ### 4. Conversation memory (phase 5)
 
 Ask threads are listed and resumable; a thread's sources carry into the
 next turn; a long thread gets a model summary. Small on purpose.
 
-## Consolidation (phase 4)
+## Consolidation (phase 4, built)
 
-A daily background task while charging: fill missing understanding
-records, re-embed with a new model version, propose current merges (user
-confirms), and maintain the MemoryRecords with add / update / delete /
-no-op decisions made by the model over the recent captures. User edits
-teach: a renamed current becomes the label, a corrected category becomes
-an example in the reader's prompt.
+`Consolidation`: a `BGProcessingTask` (`com.inspireocean.consolidation`,
+external power required, no network, at the earliest a day after the last
+scheduling, rescheduled on every background), registered in the app
+delegate. The pass: enrich up to 60 thoughts whose understanding record
+predates the reader; write one sentence per current whose membership
+changed (up to 12 a run, in the language most of its thoughts are in);
+maintain the memory records as above. Vectors are not re-embedded by the
+pass: the disk cache is keyed by backend and text and refills lazily.
+Merge suggestions are computed live on the Currents page rather than here.
+Not yet: user edits teaching the reader's prompt.
 
 ## What this gives Ask (phase 2, built)
 
@@ -147,7 +161,7 @@ slots in behind an availability check later for synthesis and long sets.
 | 1 | Understanding record on Node; one guided reading call with fallback; per-language vectors and a disk cache; backfill on Library open; Mac eval for the reading prompt | this branch |
 | 2 | Ask as an agent with tools; category filter in the Library and on the thought page; a budget per window | this branch |
 | 3 | Current entity, migration, rename / merge / split, bilingual merge | this branch |
-| 4 | MemoryRecord, Settings page, consolidation task | |
+| 4 | MemoryRecord, Settings page, consolidation task | this branch |
 | 5 | Conversation memory | |
 
 Each phase that adds a model field needs the CloudKit schema initialized

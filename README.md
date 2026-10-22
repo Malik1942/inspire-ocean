@@ -84,7 +84,13 @@ Then select an iPhone simulator and press ⌘R (scheme: **Oryne**).
     entities, language-neutral theme keys; `docs/plans/memory-layer/SPEC.md`),
     and Ask runs as an agent over it (`AskAgent`: find by meaning in either
     language, list by kind or topic or name, read, translate), measured by
-    `Scripts/understanding-eval` and `Scripts/ask-agent-eval`.
+    `Scripts/understanding-eval` and `Scripts/ask-agent-eval`. Currents are
+    entities (`Current`, keyed across languages; rename, merge, split on the
+    Currents page), and a daily pass while charging (`Consolidation`, a
+    background processing task) fills records, writes current summaries and
+    maintains what Oryne knows about you (`MemoryRecord`, in Settings).
+    Debug: `SIMCTL_CHILD_OCEAN_CONSOLIDATE_ON_LAUNCH=1` runs the pass at
+    launch.
   - `CloudOceanAIService` (the app's default) — the cloud seam (PRD §14),
     wired to the Anthropic Claude API (`claude-opus-4-8`). **Debug builds
     only:** it self-activates when an `ANTHROPIC_API_KEY` is present in the

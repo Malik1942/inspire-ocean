@@ -79,6 +79,11 @@ struct OceanSettingsView: View {
 
                 Section {
                     LabeledContent("Apple Intelligence", value: modelStatusValue)
+                    NavigationLink {
+                        MemoryRecordsView()
+                    } label: {
+                        Text("What Oryne knows about you")
+                    }
                 } footer: {
                     Text(modelStatusFooter)
                 }

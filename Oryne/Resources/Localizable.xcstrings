@@ -4531,6 +4531,146 @@
           }
         }
       }
+    },
+    "memory.kind.concern" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "关切"
+          }
+        }
+      }
+    },
+    "memory.kind.project" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "项目"
+          }
+        }
+      }
+    },
+    "memory.kind.person" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "人"
+          }
+        }
+      }
+    },
+    "memory.kind.preference" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "偏好"
+          }
+        }
+      }
+    },
+    "memory.kind.habit" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "习惯"
+          }
+        }
+      }
+    },
+    "What Oryne knows about you" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Oryne 了解的你"
+          }
+        }
+      }
+    },
+    "Nothing yet. Oryne writes these once it has read a few of your thoughts, on a day the phone is charging." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "还没有。Oryne 读过你的一些灵感之后，会在手机充电的某一天写下这些。"
+          }
+        }
+      }
+    },
+    "Edited by you" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "你改过"
+          }
+        }
+      }
+    },
+    "Refresh now" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "立即刷新"
+          }
+        }
+      }
+    },
+    "Written from your own thoughts by the on-device model, once a day while the phone charges. Tap a line to put it in your words; swipe to delete one, and it will not come back." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "由本机模型从你自己的灵感中写出，每天一次，在手机充电时进行。点一行可以改成你自己的说法；左滑删除后不会再出现。"
+          }
+        }
+      }
+    },
+    "Last refreshed %@." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "上次刷新：%@。"
+          }
+        }
+      }
+    },
+    "Added %lld, removed %lld." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "新增 %lld 条，移除 %lld 条。"
+          }
+        }
+      }
+    },
+    "In your words" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "用你的话说"
+          }
+        }
+      }
+    },
+    "Text" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "内容"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

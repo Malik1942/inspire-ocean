@@ -429,6 +429,18 @@ enum AskAgent {
     /// The question, its language named, and the rules the small model
     /// weighs most when they come last: call a tool first, answer in the
     /// question's language, in its own words, citing references.
+    /// The instructions, with what Oryne knows about the person appended
+    /// when there is anything: background for reading their question, never
+    /// a source, never something to recite.
+    static func instructions(aboutPerson: String?) -> String {
+        guard let aboutPerson, !aboutPerson.isEmpty else { return instructions }
+        return instructions + """
+         What you know about this person from their own thoughts, as background only (it may be \
+        out of date, it is not a source, and you do not repeat it unless asked):
+        \(aboutPerson)
+        """
+    }
+
     static func prompt(query: String, history: [Turn], budget: Budget) -> String {
         let turns = history.suffix(budget.historyTurns).map {
             ($0.isUser ? "They said: " : "You said: ") + $0.text.prefix(budget.historyLength)
@@ -545,7 +557,7 @@ enum AskAgent {
     /// model never used a tool (an answer from nowhere is not grounded), or
     /// failed outright; a context overflow is retried once on the tight
     /// budget before giving up.
-    static func answer(query: String, history: [Turn], thoughts: [Thought]) async -> Answer? {
+    static func answer(query: String, history: [Turn], thoughts: [Thought], aboutPerson: String? = nil) async -> Answer? {
         #if canImport(FoundationModels)
         // A translation is an intent the question states outright, and the
         // small model, having read the thought, tends to echo it instead of
@@ -578,7 +590,7 @@ enum AskAgent {
             do {
                 let session = LanguageModelSession(
                     tools: [FindThoughts(ocean: ocean), ListThoughts(ocean: ocean), ReadThought(ocean: ocean), TranslateThought(ocean: ocean)]
-                ) { Self.instructions }
+                ) { Self.instructions(aboutPerson: aboutPerson) }
                 var response = try await session.respond(to: prompt(query: query, history: history, budget: budget))
                 if await ocean.ledger.toolCalls == 0 {
                     // The model answered from nowhere. Run the find for it and

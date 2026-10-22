@@ -86,6 +86,10 @@ targets:
         UIBackgroundModes:
           # CloudKit delivers sync changes via silent push notifications.
           - remote-notification
+          # The daily consolidation pass while charging (Consolidation).
+          - processing
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.inspireocean.consolidation
         NSMicrophoneUsageDescription: "Oryne uses the microphone to catch voice drifts before they disappear."
         NSSpeechRecognitionUsageDescription: "Oryne transcribes your voice captures so they can resurface and connect."
         NSPhotoLibraryUsageDescription: "Oryne lets you capture screenshots and photos as inspiration fragments."

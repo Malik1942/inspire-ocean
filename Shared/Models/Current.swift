@@ -20,8 +20,10 @@ final class Current {
     var labelZH: String? = nil
     /// The user's name for it. Final: no pass rewrites it (decision 2).
     var pinnedName: String? = nil
-    /// A model-written line on what runs through it (phase 4 fills it).
+    /// A model-written line on what runs through it, and how many thoughts
+    /// it described, so it is refreshed when the membership moves.
     var summary: String? = nil
+    var summaryMemberCount: Int = 0
     var createdAt: Date = Date.now
     var updatedAt: Date = Date.now
     /// Keys of currents merged into this one, oldest merge first.

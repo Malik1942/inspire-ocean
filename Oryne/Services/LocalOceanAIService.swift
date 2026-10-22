@@ -260,7 +260,8 @@ final class LocalOceanAIService: OceanAIService {
            let answer = await AskAgent.answer(
                query: query,
                history: history.map { AskAgent.Turn(isUser: $0.isUser, text: $0.text) },
-               thoughts: active.map(AskAgent.Thought.init(node:))
+               thoughts: active.map(AskAgent.Thought.init(node:)),
+               aboutPerson: await MainActor.run { Consolidation.preamble(context: Persistence.shared.mainContext) }
            ) {
             let byID = Dictionary(uniqueKeysWithValues: active.map { ($0.id, $0) })
             // What the answer cited; failing that, what it read and what the
