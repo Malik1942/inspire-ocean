@@ -41,12 +41,36 @@ struct CurrentGroup: Identifiable {
 /// thought. No cards around currents, no counts, no expanding in place.
 struct CurrentsPage: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
     @Environment(AppState.self) private var appState
     @Query(filter: #Predicate<Node> { !$0.isArchived }, sort: \Node.createdAt, order: .reverse)
     private var nodes: [Node]
+    @Query private var currentRows: [Current]
 
     @State private var search = ""
     @State private var stream: StreamSelection?
+
+    /// Rename and merge, from a current's context menu.
+    @State private var renaming: CurrentGroup?
+    @State private var newName = ""
+    @State private var merging: CurrentGroup?
+    /// Suggestions the user sent away this session; the rest persist.
+    @State private var dismissedMerges = CurrentRegistry.dismissedMerges()
+
+    /// Chinese and English currents the thoughts say are one topic, offered
+    /// for the user to merge (SPEC decision 2: never silently).
+    private var mergeSuggestions: [CurrentRegistry.MergeSuggestion] {
+        let keys = Set(currentRows.map(\.key))
+        let members = nodes.filter { !$0.isExample }.compactMap { node -> (currentKey: String, themeKey: String?)? in
+            node.currentKey.map { ($0, node.themeKeys.first) }
+        }
+        return CurrentRegistry.suggestions(currentKeys: keys, members: members)
+            .filter { !dismissedMerges.contains($0.id) }
+    }
+
+    private func row(forKey key: String) -> Current? {
+        currentRows.first { $0.key == key }
+    }
 
     /// Newest thoughts previewed under each current's name.
     private static let previewCount = 2
@@ -83,6 +107,9 @@ struct CurrentsPage: View {
                                 .padding(.top, OceanSpacing.block)
                                 .frame(maxWidth: .infinity)
                         }
+                        if query.isEmpty, !mergeSuggestions.isEmpty {
+                            suggestions
+                        }
                         ForEach(visible, id: \.group.id) { entry in
                             current(entry.group, rows: entry.rows, forced: entry.forced)
                         }
@@ -108,6 +135,23 @@ struct CurrentsPage: View {
             }
             .sheet(item: $stream) { selection in
                 ClusterStreamView(theme: selection.theme)
+            }
+            .sheet(item: $merging) { group in
+                MergeCurrentSheet(from: group, groups: groups.filter { $0.key != group.key && !$0.isAdrift }) { into in
+                    if let fromRow = row(forKey: group.key), let intoRow = row(forKey: into.key) {
+                        CurrentRegistry.merge(fromRow, into: intoRow, context: context)
+                    }
+                }
+            }
+            .alert("Rename current", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
+                TextField("Name", text: $newName)
+                Button("Cancel", role: .cancel) { renaming = nil }
+                Button("Rename") {
+                    if let group = renaming, let current = row(forKey: group.key) {
+                        CurrentRegistry.rename(current, to: newName, context: context)
+                    }
+                    renaming = nil
+                }
             }
             // A summary or a question opens in Ask: step out of the way so
             // the answer is what you see.
@@ -143,6 +187,17 @@ struct CurrentsPage: View {
             }
             .buttonStyle(.plain)
             .accessibilityHint("Opens every thought in this current.")
+            .contextMenu {
+                if !group.isAdrift {
+                    Button {
+                        newName = group.label
+                        renaming = group
+                    } label: { Label("Rename", systemImage: "pencil") }
+                    Button {
+                        merging = group
+                    } label: { Label("Merge into…", systemImage: "arrow.triangle.merge") }
+                }
+            }
 
             ForEach(shown) { node in
                 NavigationLink(value: node) { NodeRow(node: node, showsCurrent: false) }
@@ -150,6 +205,99 @@ struct CurrentsPage: View {
             }
         }
         .opacity(group.isAdrift ? 0.75 : 1)
+    }
+}
+
+extension CurrentsPage {
+    /// Pairs the thoughts say are one topic across languages, each with
+    /// Merge and Not now. Confirmed merges keep the second current's key.
+    private var suggestions: some View {
+        VStack(alignment: .leading, spacing: OceanSpacing.item) {
+            Text("Suggested merges")
+                .font(OceanType.sectionLabel)
+                .foregroundStyle(OceanTheme.mist)
+                .padding(.leading, 2)
+            ForEach(mergeSuggestions) { suggestion in
+                let fromName = OceanLayoutEngine.displayLabel(for: suggestion.fromKey)
+                let intoName = OceanLayoutEngine.displayLabel(for: suggestion.intoKey)
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("“\(fromName)” and “\(intoName)” look like one current.")
+                        .font(.subheadline)
+                        .foregroundStyle(OceanTheme.text)
+                        .fixedSize(horizontal: false, vertical: true)
+                    HStack(spacing: 8) {
+                        Button {
+                            if let from = row(forKey: suggestion.fromKey), let into = row(forKey: suggestion.intoKey) {
+                                CurrentRegistry.merge(from, into: into, context: context)
+                            }
+                        } label: { Label("Merge", systemImage: "arrow.triangle.merge") }
+                        .buttonStyle(.oceanSecondary)
+                        Button {
+                            CurrentRegistry.dismiss(suggestion)
+                            dismissedMerges.insert(suggestion.id)
+                        } label: { Text("Not now") }
+                        .buttonStyle(.oceanSecondary)
+                    }
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous)))
+            }
+        }
+    }
+}
+
+/// Which current another one flows into.
+struct MergeCurrentSheet: View {
+    let from: CurrentGroup
+    let groups: [CurrentGroup]
+    let onMerge: (CurrentGroup) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                OceanBackground(animated: false)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Its thoughts move over, and “\(from.label)” goes.")
+                            .font(.footnote)
+                            .foregroundStyle(OceanTheme.mist)
+                            .padding(.bottom, 2)
+                        ForEach(groups) { group in
+                            Button {
+                                onMerge(group)
+                                dismiss()
+                            } label: {
+                                HStack {
+                                    Text(group.label)
+                                        .font(.subheadline.weight(.medium))
+                                        .foregroundStyle(OceanTheme.foam)
+                                        .lineLimit(1)
+                                    Spacer()
+                                    Text("\(group.members.count)")
+                                        .font(.footnote)
+                                        .foregroundStyle(OceanTheme.mist)
+                                }
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
+                                .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.white.opacity(0.07), lineWidth: 0.5))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding()
+                    .padding(.bottom, 32)
+                }
+            }
+            .navigationTitle(Text("Merge “\(from.label)” into"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) { Button("Cancel") { dismiss() } }
+            }
+        }
+        .presentationDetents([.medium, .large])
     }
 }
 

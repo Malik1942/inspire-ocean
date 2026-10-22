@@ -24,6 +24,9 @@ struct ThoughtUnderstanding {
     var entities: [String] = []
     /// Language-neutral English slugs for `themes`.
     var themeKeys: [String] = []
+    /// The current the thought joins (a pick among existing keys) or founds
+    /// (its first theme key). Nil when there is nothing to group by.
+    var currentKey: String? = nil
     var source: UnderstandingSource = .concepts
 }
 
@@ -176,12 +179,14 @@ enum SemanticThemes {
     static func understand(_ text: String) -> ThoughtUnderstanding {
         let essence = TitleDistiller.essence(from: text)
         let themes = themes(for: text, essence: essence)
+        let keys = ThoughtReading.keys(fromEnglish: [], fallbackLabels: themes)
         return ThoughtUnderstanding(
             essence: essence,
             themes: themes,
             mood: ThemeDetector.mood(from: text),
             language: ThoughtReading.language(of: text),
-            themeKeys: ThoughtReading.keys(fromEnglish: [], fallbackLabels: themes),
+            themeKeys: keys,
+            currentKey: keys.first,
             source: .concepts
         )
     }

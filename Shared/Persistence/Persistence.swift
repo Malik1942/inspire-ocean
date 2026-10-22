@@ -17,7 +17,8 @@ enum Persistence {
         Node.self,
         NodeImage.self,
         Conversation.self,
-        ChatMessage.self
+        ChatMessage.self,
+        Current.self
     ])
 
     /// Process-wide container shared by the app and its App Intents, so a Siri

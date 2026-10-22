@@ -4361,6 +4361,176 @@
           }
         }
       }
+    },
+    "Rename current" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "重命名海流"
+          }
+        }
+      }
+    },
+    "Rename" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "重命名"
+          }
+        }
+      }
+    },
+    "Name" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "名称"
+          }
+        }
+      }
+    },
+    "Merge into…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "合并到…"
+          }
+        }
+      }
+    },
+    "Merge" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "合并"
+          }
+        }
+      }
+    },
+    "Merge “%@” into" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "把“%@”合并到"
+          }
+        }
+      }
+    },
+    "Its thoughts move over, and “%@” goes." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "它的灵感会移过去，“%@”随之消失。"
+          }
+        }
+      }
+    },
+    "Not now" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "暂不"
+          }
+        }
+      }
+    },
+    "Suggested merges" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "建议合并"
+          }
+        }
+      }
+    },
+    "“%@” and “%@” look like one current." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“%@”和“%@”看起来是同一条海流。"
+          }
+        }
+      }
+    },
+    "New current…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "新建海流…"
+          }
+        }
+      }
+    },
+    "New current" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "新建海流"
+          }
+        }
+      }
+    },
+    "The thoughts you chose start it." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "你选中的灵感将开启这条海流。"
+          }
+        }
+      }
+    },
+    "Move" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "移动"
+          }
+        }
+      }
+    },
+    "Select thoughts" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "选择灵感"
+          }
+        }
+      }
+    },
+    "Current actions" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "海流操作"
+          }
+        }
+      }
+    },
+    "Move %lld to a current" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "把 %lld 条移到海流"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

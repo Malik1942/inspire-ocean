@@ -570,8 +570,8 @@ struct NodeDetailContent: View {
             sectionTitle("Themes")
             FlowLayout(spacing: 8) {
                 ForEach(node.themes, id: \.self) { theme in
-                    Button { themeStream = StreamSelection(theme: theme) } label: {
-                        Text(OceanLayoutEngine.displayLabel(for: theme))
+                    Button { themeStream = StreamSelection(theme: ThoughtReading.slug(theme)) } label: {
+                        Text(CurrentKey.humanized(theme))
                     }
                     .buttonStyle(.oceanSecondary)
                     .accessibilityHint("Shows every thought with this theme.")

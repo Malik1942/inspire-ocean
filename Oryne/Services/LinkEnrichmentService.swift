@@ -202,6 +202,7 @@ final class LinkEnrichmentService {
         guard let fresh = Self.fetch(nodeID, in: context) else { return }
         NodeComposer.applyUnderstanding(understanding, to: fresh)
         try? context.save()
+        CurrentRegistry.reconcile(context: context)
     }
 
     // MARK: State helpers

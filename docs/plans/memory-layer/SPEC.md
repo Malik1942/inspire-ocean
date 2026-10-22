@@ -1,7 +1,8 @@
 # Memory layer: a denser understanding of every thought, and an Ask that can use it
 
-Status: decided 2026-10-22 (Malik). Phases 1 and 2 built on branch
-`am/apple-intelligence-oryne-248869` (phase 1 landed in 00cfbc5).
+Status: decided 2026-10-22 (Malik). Phases 1 to 3 built on branch
+`am/apple-intelligence-oryne-248869` (phase 1 in 00cfbc5, phase 2 in
+6b7ba71).
 
 ## Why
 
@@ -78,15 +79,25 @@ Retrieval uses two vectors per thought, one for its own text and one for
 question's own language. Vectors are cached on disk per device (layer 5
 decision), keyed by backend and text.
 
-### 2. Currents as entities (phase 3)
+### 2. Currents as entities (phase 3, built)
 
-A `Current` model: `key` (the language-neutral slug), `labels` per
-language, `pinnedName` (the user's, final), `summary` (model-written,
-refreshed on membership change), `createdAt`, `updatedAt`, `mergedFrom`.
-`Node.currentKey` moves from "first theme string" to a key. Migration:
-every distinct string key becomes a Current whose label is that string;
-Chinese and English currents the model judges to be one topic are merged
-with the user's confirmation, never silently.
+A `Current` model: `key` (the language-neutral slug), `labelEN` and
+`labelZH`, `pinnedName` (the user's, final), `summary` (phase 4 fills it),
+`createdAt`, `updatedAt`, `mergedFromKeys`. Membership stays on the
+thought: `Node.anchorThemeKey` is the key for every live thought, written
+by understanding (unless the user pinned the thought by moving it) and read
+through `Node.currentKey`; `CurrentRegistry.reconcile` creates and removes
+rows to match and fills labels from members whose own theme names the
+current. `CurrentDirectory` keeps the names in memory for every view.
+Migration (`CurrentRegistry.migrateIfNeeded`, once): every thought's old
+anchor or first theme, slugged, becomes its key. New thoughts join through
+the snap, which now offers every current whatever the entry's language
+(measured: 18/18 joined, 0 false merges), or through their own English
+theme key when a current already has it. Rename, merge into another
+current, and split (select thoughts in a stream, move them to another or a
+new current) are on the Currents page and a current's stream. Chinese and
+English currents whose thoughts name each other are suggested for a merge
+(three in five members), and the user confirms.
 
 ### 3. What Oryne knows about you (phase 4)
 
@@ -135,7 +146,7 @@ slots in behind an availability check later for synthesis and long sets.
 |---|---|---|
 | 1 | Understanding record on Node; one guided reading call with fallback; per-language vectors and a disk cache; backfill on Library open; Mac eval for the reading prompt | this branch |
 | 2 | Ask as an agent with tools; category filter in the Library and on the thought page; a budget per window | this branch |
-| 3 | Current entity, migration, rename / merge / split, bilingual merge | |
+| 3 | Current entity, migration, rename / merge / split, bilingual merge | this branch |
 | 4 | MemoryRecord, Settings page, consolidation task | |
 | 5 | Conversation memory | |
 

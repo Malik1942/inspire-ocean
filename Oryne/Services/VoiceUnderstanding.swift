@@ -104,6 +104,7 @@ enum VoiceUnderstanding {
         guard !Task.isCancelled, let fresh = fetch(nodeID, in: context) else { return nil }
         NodeComposer.applyUnderstanding(understanding, to: fresh)
         try? context.save()
+        CurrentRegistry.reconcile(context: context)
         await summarizeIfLong(nodeID: nodeID, context: context, ai: ai)
         return understanding.essence
     }

@@ -15,7 +15,7 @@ struct NodeMeta: View {
         var parts: [String] = []
         if let detail, !detail.isEmpty { parts.append(detail) }
         parts.append(node.createdAt.formatted(.relative(presentation: .named)))
-        if showsCurrent, let theme = node.themes.first { parts.append(OceanLayoutEngine.displayLabel(for: theme)) }
+        if showsCurrent, let key = node.currentKey { parts.append(OceanLayoutEngine.displayLabel(for: key)) }
         return parts.joined(separator: " · ")
     }
 

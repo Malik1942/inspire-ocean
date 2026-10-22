@@ -85,9 +85,17 @@ enum NodeComposer {
            !preserveThemes || node.themes.isEmpty {
             node.themes = understanding.themes
             if let mood = understanding.mood { node.mood = mood }
-            let key = understanding.themes.first ?? ""
-            node.hue = hue(for: key.isEmpty ? node.id.uuidString : key)
-            if !node.positionPinnedByUser {
+        }
+
+        // Membership: the current the understanding joined or founded, unless
+        // the user placed the thought themself (the move is the lock).
+        if !node.positionPinnedByUser, !preserveThemes {
+            let key = understanding.currentKey
+                ?? understanding.themeKeys.first
+                ?? understanding.themes.first.map(ThoughtReading.slug)
+            if let key, !key.isEmpty {
+                node.anchorThemeKey = key
+                node.hue = hue(for: key)
                 let anchor = fieldAnchor(themeKey: key, jitterKey: node.id.uuidString)
                 node.fieldX = anchor.x
                 node.fieldY = anchor.y

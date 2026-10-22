@@ -293,7 +293,10 @@ extension Node {
     /// The current this thought belongs to: the user's placement
     /// (`anchorThemeKey`) wins over the primary theme. Nil for a themeless
     /// thought, which drifts in the adrift current.
-    var currentKey: String? { anchorThemeKey ?? themes.first }
+    var currentKey: String? {
+        if let anchorThemeKey, !anchorThemeKey.isEmpty { return anchorThemeKey }
+        return themes.first.map(ThoughtReading.slug)
+    }
 
     // MARK: Understanding record accessors
 
@@ -377,7 +380,7 @@ extension Node {
     /// meaning fields: fresh nodes drift by semantic current; edited nodes
     /// keep their spatial anchor. (Themeless floaters simply stay floaters.)
     func anchorInPlace() {
-        if anchorThemeKey == nil { anchorThemeKey = themes.first }
+        if anchorThemeKey == nil { anchorThemeKey = currentKey }
         positionPinnedByUser = true
     }
 }

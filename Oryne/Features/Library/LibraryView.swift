@@ -199,7 +199,8 @@ struct LibraryView: View {
             let currents = work == .enrich ? [] : CurrentSnap.candidates(
                 in: allNodes.filter { !keywordEra.contains($0.id) },
                 excluding: node.id,
-                forEntry: raw
+                forEntry: raw,
+                names: CurrentDirectory.shared.names
             )
             let understanding = await ai.understand(raw, currents: currents)
             NodeComposer.applyUnderstanding(
@@ -213,6 +214,7 @@ struct LibraryView: View {
         if migrate {
             UserDefaults.standard.set(true, forKey: Self.semanticThemesMigrationKey)
         }
+        if !pending.isEmpty { CurrentRegistry.reconcile(context: context) }
 
         // Long whispers from before summaries existed get their reading now,
         // one at a time, in the background.

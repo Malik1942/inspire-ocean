@@ -87,14 +87,16 @@ final class LocalOceanAIService: OceanAIService {
         if #available(iOS 26, *), Self.foundationModelAvailable {
             async let pick = FoundationCurrentPicker.pick(entry: cleaned, candidates: currents)
             var understanding = await foundationModelUnderstanding(for: cleaned)
-            let joined = CurrentSnap.resolve(themes: understanding.themes, pick: await pick, candidates: currents)
-            if joined != understanding.themes, let lead = joined.first {
-                // The thought joined a current: its key leads the keys too, so
-                // the record and the grouping agree.
-                let leadKey = ThoughtReading.slug(lead)
-                understanding.themeKeys = Array(([leadKey] + understanding.themeKeys.filter { $0 != leadKey }).prefix(ThoughtReading.maxThemes))
-            }
-            understanding.themes = joined
+            // The current it joins: the model's constrained pick; failing
+            // that, its own English theme key when a current already has
+            // it (the bridge across languages); failing that, it founds one.
+            let joined = CurrentSnap.joinKey(pick: await pick, candidates: currents)
+            let ownKey = understanding.themeKeys.first
+            let existing = Set(currents.map(\.key))
+            understanding.currentKey = joined
+                ?? (ownKey.map { existing.contains($0) } == true ? ownKey : nil)
+                ?? ownKey
+                ?? understanding.themes.first.map(ThoughtReading.slug)
             return understanding
         }
         return SemanticThemes.understand(cleaned)
