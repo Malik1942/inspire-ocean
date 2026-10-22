@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 import PhotosUI
 
 /// What the composer's + shows in the keyboard's place, as Messages does:
@@ -20,12 +19,18 @@ struct CaptureAttachPanel: View {
     /// panel steps away.
     @State private var picked = false
 
+    private enum Row: Hashable { case camera, library }
+    /// VoiceOver moves to the first row when the panel opens: the panel
+    /// took the keyboard's place, so that is where the next swipe goes.
+    @AccessibilityFocusState private var focusedRow: Row?
+
     /// Between the strip and the rows.
     private static let spacing: CGFloat = 8
     /// The strip never shrinks below a row of thumbnails you can hit.
     private static let leastStripHeight: CGFloat = 120
-    /// An iPhone's keyboard, for when none has shown yet.
-    static let usualKeyboardHeight: CGFloat = 336
+    /// An iPhone's keyboard, upright or turned, for a width none has shown
+    /// at yet.
+    static func usualKeyboardHeight(turned: Bool) -> CGFloat { turned ? 207 : 336 }
 
     /// The least the panel needs: its rows, and the strip when it has one.
     static func leastHeight(showsStrip: Bool) -> CGFloat {
@@ -61,8 +66,10 @@ struct CaptureAttachPanel: View {
             VStack(spacing: 0) {
                 if CameraPicker.isAvailable {
                     row("Camera", systemImage: "camera", action: onCamera)
+                        .accessibilityFocused($focusedRow, equals: .camera)
                 }
                 row("All Photos", systemImage: "photo.on.rectangle", action: onLibrary)
+                    .accessibilityFocused($focusedRow, equals: .library)
             }
         }
         // The card's own inset and glass: the two read as one family.
@@ -72,6 +79,12 @@ struct CaptureAttachPanel: View {
         // Taps on its margins stay on the panel instead of reaching open
         // water behind it, which would put the card away.
         .contentShape(RoundedRectangle(cornerRadius: FastCaptureLayout.cardRadius, style: .continuous))
+        .task {
+            // Once the panel has risen into place, so the row is there to
+            // land on.
+            try? await Task.sleep(for: .milliseconds(400))
+            focusedRow = CameraPicker.isAvailable ? .camera : .library
+        }
     }
 
     private func row(_ title: LocalizedStringKey, systemImage: String, action: @escaping () -> Void) -> some View {
@@ -83,43 +96,5 @@ struct CaptureAttachPanel: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-    }
-}
-
-/// The system camera, for one photo. `UIImagePickerController` is still
-/// the only system camera screen an app can present.
-struct CameraPicker: UIViewControllerRepresentable {
-    /// The shot, or nil when the camera was closed without one.
-    var onFinish: (UIImage?) -> Void
-
-    static var isAvailable: Bool { UIImagePickerController.isSourceTypeAvailable(.camera) }
-
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.sourceType = .camera
-        picker.cameraCaptureMode = .photo
-        picker.delegate = context.coordinator
-        return picker
-    }
-
-    func updateUIViewController(_ picker: UIImagePickerController, context: Context) {}
-
-    func makeCoordinator() -> Coordinator { Coordinator(onFinish: onFinish) }
-
-    final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let onFinish: (UIImage?) -> Void
-
-        init(onFinish: @escaping (UIImage?) -> Void) { self.onFinish = onFinish }
-
-        func imagePickerController(
-            _ picker: UIImagePickerController,
-            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
-        ) {
-            onFinish(info[.originalImage] as? UIImage)
-        }
-
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            onFinish(nil)
-        }
     }
 }
