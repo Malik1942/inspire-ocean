@@ -1,11 +1,13 @@
 import SwiftUI
 
 /// The capture disc: a flat matte circle, 44 pt, with the waveform glyph.
-/// Tap to type, hold to whisper, slide up to lock, tap the locked disc to
-/// stop. While a take is live the glyph itself carries the state: bars that
-/// move with the microphone, then a Stop square once locked. No glow, no
-/// ring, no highlight (Philosophy §4). Every instance drives the shared
-/// `CaptureControl`, so the bar's disc and the overlay's disc are one control.
+/// Tap to start a whisper and tap its Stop to keep it, as in Voice Memos
+/// and every AI app's dictation; or hold to whisper and lift to keep it.
+/// While a take is live the glyph itself carries the state: bars that move
+/// with the microphone under a finger, a Stop square for a tapped take. No
+/// glow, no ring, no highlight (Philosophy §4). Every instance drives the
+/// shared `CaptureControl`, so the bar's disc and the overlay's disc are
+/// one control.
 ///
 /// In the open composer the disc is the card's one trailing action: it
 /// whispers while the field is empty, and once there are words it is the
@@ -24,7 +26,6 @@ struct CaptureHoldButton: View {
 
     @State private var pressBegan: Date?
     @State private var holdTask: Task<Void, Never>?
-    @State private var lockedThisTouch = false
     @State private var tapOnLockedTake = false
     @State private var isPressed = false
 
@@ -56,7 +57,7 @@ struct CaptureHoldButton: View {
         .gesture(pressGesture)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityName)
-        .accessibilityHint(sends ? Text(verbatim: "") : tapToToggle ? Text("Tap to start or stop a whisper.") : Text("Tap to type. Hold to whisper. Slide up to keep listening."))
+        .accessibilityHint(sends ? Text(verbatim: "") : tapToToggle ? Text("Tap to start or stop a whisper.") : Text("Tap to start or stop a whisper. Or hold, and let go to end it."))
         .accessibilityAddTraits(.isButton)
         .accessibilityAction {
             if let send, !listening { send() } else if listening { control.stop() } else { control.touch = .locked }
@@ -92,18 +93,12 @@ struct CaptureHoldButton: View {
 
     // MARK: Gesture
 
-    /// One DragGesture carries tap, hold, lock and stop so the finger never
-    /// has to leave the disc to change its mind.
+    /// One DragGesture carries tap, hold and stop, so a press can still
+    /// become a hold after it begins.
     private var pressGesture: some Gesture {
         DragGesture(minimumDistance: 0, coordinateSpace: .local)
-            .onChanged { value in
+            .onChanged { _ in
                 if pressBegan == nil { begin() }
-                guard !tapToToggle, !tapOnLockedTake, !lockedThisTouch else { return }
-                if case .held = control.touch, value.translation.height < -CaptureControl.lockDistance {
-                    lockedThisTouch = true
-                    control.touch = .locked
-                    CaptureFeedback.touch(.rigid)
-                }
             }
             .onEnded { value in
                 // The send, like a button, lets go without firing when the
@@ -117,7 +112,6 @@ struct CaptureHoldButton: View {
         pressBegan = .now
         isPressed = true
         tapOnLockedTake = listening && (locked || tapToToggle)
-        lockedThisTouch = false
         holdTask?.cancel()
         guard !sends, !tapToToggle, !tapOnLockedTake else { return }
         holdTask = Task { @MainActor in
@@ -134,11 +128,10 @@ struct CaptureHoldButton: View {
         isPressed = false
         defer {
             pressBegan = nil
-            lockedThisTouch = false
             tapOnLockedTake = false
         }
         if tapOnLockedTake {
-            control.stop()
+            control.stop()               // a tapped take's Stop: keep it
             return
         }
         if let send, sends {
@@ -148,17 +141,15 @@ struct CaptureHoldButton: View {
             if inside, tapped { send() }
             return
         }
-        if tapToToggle {
-            control.touch = .locked
-            return
-        }
         switch control.touch {
         case .held:
             control.touch = .up          // lift = catch
         case .locked:
-            break                        // slid up: runs until Stop
+            break                        // a take already starting
         case .up:
-            control.tap()
+            // A tap starts a take that runs until Stop.
+            control.touch = .locked
+            CaptureFeedback.touch(.soft)
         }
     }
 }

@@ -1,13 +1,14 @@
 import SwiftUI
 
 /// The capture bar above the tab bar on Tide and Library, like a message
-/// composer: a field to tap and the disc to hold. Its geometry is fixed so
-/// the disc sits concentric with the capsule's end (FastCaptureLayout).
+/// composer: words to tap to type, and a disc to tap or hold to whisper.
+/// Its geometry is fixed so the disc sits concentric with the capsule's
+/// end (FastCaptureLayout).
 ///
 /// Folded, it is only the disc in a 56 pt circle at the same spot: the
 /// capsule's leading edge slides in to meet it and the words fade first,
 /// so they are clipped, never squashed. The disc itself never moves, and
-/// it still taps to type and holds to whisper.
+/// it still taps or holds to whisper.
 ///
 /// A draft put away unsent waits here: its first line in place of the
 /// question, and the disc is its send. Tapping the words brings it back.

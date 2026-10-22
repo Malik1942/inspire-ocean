@@ -2,8 +2,8 @@ import SwiftUI
 import StoreKit
 
 /// Primary navigation: Ocean · Ask · Library, with the capture bar above the
-/// tab bar. Capture is a gesture, not a tab: tap the field to type, hold the
-/// disc to whisper (docs/plans/phone-refocus/SPEC.md).
+/// tab bar. Capture is a gesture, not a tab: tap the field to type, tap or
+/// hold the disc to whisper (docs/plans/phone-refocus/SPEC.md).
 struct RootTabView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.requestReview) private var requestReview
@@ -131,9 +131,9 @@ struct RootTabView: View {
         .onOpenURL { url in
             appState.handleDeepLink(url)
         }
-        // The floating button's gesture, resolved: a short press opens the
-        // overlay typing-first; a hold (or a tap in tap-to-toggle mode) opens
-        // it listening, the finger still down.
+        // The bar's gestures, resolved: a tap on its words opens the overlay
+        // typing-first; a tap on its disc opens it listening until Stop, and
+        // a hold opens it listening with the finger still down.
         .onChange(of: control.tapCount) { _, _ in
             guard appState.fastCaptureRequest == nil, !control.overlayOpen else { return }
             appState.startFastCapture(source: .inApp, inputPreference: .typingFirst)

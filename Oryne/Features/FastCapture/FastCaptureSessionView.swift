@@ -5,11 +5,12 @@ import SwiftData
 /// Action Button, Control Center, the widget, Siri, a share, a current's +)
 /// lands here.
 ///
-/// Tap the button to type; hold it to whisper. While the finger is down the
-/// words land on the water as subtitles and the button breathes with the
-/// microphone. Lift, and the words settle into the Ocean: saved first, then
-/// the chime, then one toast above the bar with the way back. No review
-/// beat, no mode picker (docs/plans/phone-refocus/SPEC.md, Phase 1).
+/// Tap the bar's words to type. Tap its disc to whisper and tap Stop to
+/// keep it, or hold the disc and lift. While a take is live the words land
+/// on the water as subtitles and the disc breathes with the microphone.
+/// Then the words settle into the Ocean: saved first, then the chime, then
+/// one toast above the bar with the way back. No review beat, no mode
+/// picker (docs/plans/phone-refocus/SPEC.md, Phase 1).
 struct FastCaptureSessionView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.oceanAI) private var ai
@@ -156,11 +157,19 @@ struct FastCaptureSessionView: View {
         .onChange(of: control.touch) { old, new in
             switch new {
             case .held, .locked:
-                // A hold on the bar while the toast shows starts the next take.
+                // A tap or a hold on the bar's disc while the toast shows
+                // starts the next take.
                 if phase == .linger { beginNextCapture() }
                 if phase == .composing { Task { await startListening() } }
             case .up:
-                if case .held = old, listening { Task { await catchTake() } }
+                guard case .held(let since) = old, listening else { break }
+                if Date.now.timeIntervalSince(since) < 0.4, session.transcriber.partial.trimmed.isEmpty {
+                    // Let go before a word, just past the hold threshold:
+                    // a slow tap, so the take runs on until Stop or ✕.
+                    control.touch = .locked
+                } else {
+                    Task { await catchTake() }
+                }
             }
         }
         .onChange(of: control.stopCount) { _, _ in
@@ -376,9 +385,9 @@ struct FastCaptureSessionView: View {
 
     /// Listening: the same capsule in the same frame. The way out (cancel,
     /// nothing is saved yet) is a glass disc at the leading end mirroring
-    /// the record disc, on the far side so the finger sliding up to lock
-    /// never crosses it. Between them, a note already typed (it releases
-    /// with the whisper) and the one honest line when no live words come.
+    /// the record disc, so Stop (keep) and ✕ (let go) sit at opposite ends.
+    /// Between them, a note already typed (it releases with the whisper)
+    /// and the one honest line when no live words come.
     private var listeningRow: some View {
         CaptureCapsule {
             HStack(alignment: .center, spacing: 10) {
@@ -532,10 +541,15 @@ struct FastCaptureSessionView: View {
         let note = text.trimmed
         let words = transcript.trimmed
 
-        // A press just past the hold threshold with nothing said: not a
-        // thought. Back to the field, keyboard up, nothing minted.
+        // Under a second with nothing said: not a thought, nothing minted.
+        // Opened to whisper (the disc, a widget), it was a change of mind
+        // and the overlay closes; opened to type, the field comes back.
         if words.isEmpty, note.isEmpty, imageData == nil, heldDraft == nil, elapsed < 1 {
             if let url { try? FileManager.default.removeItem(at: url) }
+            if request.inputPreference == .voiceFirst, !asSheet {
+                onFinish()
+                return
+            }
             withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .composing }
             textFocused = true
             return
