@@ -53,6 +53,9 @@ enum OceanTheme {
 
     /// Soft near-white for interactive accents — kept monochrome.
     static let accent   = Color(red: 0.82, green: 0.84, blue: 0.88)
+    /// A switch's on state, #0770E8: a shade deeper and a touch more saturated
+    /// than system blue, so on reads at a glance against the near-white knob.
+    static let switchOn = Color(red: 0.027, green: 0.439, blue: 0.910)
     /// Whisper-warm white that sets a resurfacing fragment apart by temperature
     /// rather than saturation.
     static let glowWarm = Color(red: 0.95, green: 0.93, blue: 0.88)
