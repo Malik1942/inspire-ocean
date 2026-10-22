@@ -109,6 +109,8 @@ A new pure `LinkSensing` in `Shared/Services` (so `SharedTests` can test it):
 
 - **Find:** `NSDataDetector` links, `http` and `https` only. A match typed
   without a scheme becomes `https://` + the match; a typed `http://` stays.
+  A sentence's final `?` right after a link is the sentence's, not the URL's
+  (the detector reads it as an empty query, which means nothing).
 - **Choose:** the first sensed link whose URL the user has not dismissed.
 - **Lift:** the chosen link is at the **leading edge** when only whitespace
   precedes it, and at the **trailing edge** when only whitespace and sentence
