@@ -3,8 +3,10 @@ import SwiftUI
 /// A vertical, variable-height card for a fragment, sized for the Library
 /// masonry grid. `NodeRow` is the compact list form; this is the
 /// content-forward grid form: a full-bleed picture or link preview, the
-/// title, a few lines of its words, and the meta line (a link's domain
-/// leads it). The same anatomy and type as Tide's cards; no tag capsules.
+/// title, its words, and the meta line (a link's domain leads it). Title
+/// and words stop at two lines each, so the title leads and a screen holds
+/// more whole cards. The same anatomy and type as Tide's cards; no tag
+/// capsules.
 struct NodeCard: View {
     let node: Node
 
@@ -71,14 +73,14 @@ struct NodeCard: View {
                 Text(node.displayTitle)
                     .font(OceanType.tileTitle)
                     .foregroundStyle(OceanTheme.foam)
-                    .lineLimit(3)
+                    .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if !node.snippet.isEmpty, node.snippet != node.displayTitle {
                     Text(node.snippet)
                         .font(.subheadline)
                         .foregroundStyle(OceanTheme.text)
-                        .lineLimit(showBanner ? 2 : 4)
+                        .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
