@@ -67,13 +67,7 @@ struct MoveToCurrentSheet: View {
                 OceanBackground(animated: false)
                 list
             }
-            .navigationTitle(nodes.count == 1 ? Text("Move to a current") : Text("Move \(nodes.count) to a current"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
             .alert("New current", isPresented: $naming) {
                 TextField("Name", text: $newName)
                 Button("Cancel", role: .cancel) { newName = "" }
@@ -87,18 +81,23 @@ struct MoveToCurrentSheet: View {
 
     private var list: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: OceanSpacing.item) {
+                OceanSheetHeader(
+                    title: nodes.count == 1 ? Text("Move to a current") : Text("Move \(nodes.count) to a current")
+                )
+                .padding(.bottom, OceanSpacing.block - OceanSpacing.item)
                 Text("It will stay where you put it.")
-                    .font(.footnote)
+                    .font(OceanType.meta)
                     .foregroundStyle(OceanTheme.mist)
-                    .padding(.bottom, 2)
+                    .padding(.bottom, OceanSpacing.hairline)
                 newCurrentRow
                 ForEach(currents) { current in
                     row(current)
                 }
             }
-            .padding()
-            .padding(.bottom, 32)
+            .padding(.horizontal, OceanSpacing.gutter)
+            .padding(.top, OceanSpacing.gap)
+            .padding(.bottom, OceanSpacing.section)
         }
     }
 
@@ -106,20 +105,16 @@ struct MoveToCurrentSheet: View {
     /// thoughts found it.
     private var newCurrentRow: some View {
         Button { naming = true } label: {
-            HStack(spacing: 12) {
+            choice {
                 Image(systemName: "plus")
-                    .font(.caption.weight(.semibold))
+                    .font(OceanType.glyphDisclosure)
                     .foregroundStyle(OceanTheme.mist)
-                    .frame(width: 14)
+                    .frame(width: OceanSize.metaIcon)
                 Text("New current…")
-                    .font(.subheadline.weight(.medium))
+                    .font(OceanType.tileTitle)
                     .foregroundStyle(OceanTheme.foam)
                 Spacer()
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.white.opacity(0.07), lineWidth: 0.5))
         }
         .buttonStyle(.plain)
     }
@@ -128,35 +123,34 @@ struct MoveToCurrentSheet: View {
         Button {
             move(to: current.id)
         } label: {
-            HStack(spacing: 12) {
+            choice {
                 Circle()
                     .fill(OceanTheme.color(forHue: current.hue, brightness: 0.85).opacity(0.30))
-                    .overlay(Circle().strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5))
-                    .frame(width: 14, height: 14)
+                    .frame(width: OceanSize.metaIcon, height: OceanSize.metaIcon)
                 Text(current.label)
-                    .font(.subheadline.weight(.medium))
+                    .font(OceanType.tileTitle)
                     .foregroundStyle(OceanTheme.foam)
                     .lineLimit(1)
                 Spacer()
                 if current.id == homeKey {
                     Image(systemName: "checkmark")
-                        .font(.caption.weight(.semibold))
+                        .font(OceanType.glyphDisclosure)
                         .foregroundStyle(OceanTheme.mist)
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .background(
-                Color.white.opacity(0.055),
-                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.07), lineWidth: 0.5)
-            )
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(current.id == homeKey ? [.isSelected] : [])
+    }
+
+    /// One choice: a tile, like every row that opens or picks something.
+    private func choice<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        HStack(spacing: OceanSpacing.item) { content() }
+            .padding(.horizontal, OceanSpacing.inset)
+            .padding(.vertical, OceanSpacing.item)
+            .frame(minHeight: OceanControlSize.height)
+            .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous)))
+            .contentShape(RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous))
     }
 
     private func move(to key: String) {

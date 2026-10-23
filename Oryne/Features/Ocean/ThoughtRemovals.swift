@@ -103,8 +103,8 @@ extension View {
                         .transition(.opacity.combined(with: .offset(y: 8)))
                 }
             }
-            .padding(.bottom, 12)
-            .animation(.spring(response: 0.36, dampingFraction: 0.86), value: removals.pending?.id)
+            .padding(.bottom, OceanSpacing.item)
+            .animation(OceanMotion.lift, value: removals.pending?.id)
         }
     }
 

@@ -29,10 +29,10 @@ struct ArchivedThoughtsView: View {
                     .font(OceanType.subjectTitle)
                     .foregroundStyle(OceanTheme.foam)
                     .accessibilityAddTraits(.isHeader)
-                    .tileRow(top: 4, bottom: OceanSpacing.block - OceanSpacing.item / 2)
+                    .tileRow(top: OceanSpacing.tight, bottom: OceanSpacing.block - OceanSpacing.item / 2)
                 if shown.isEmpty {
                     Text("Nothing archived")
-                        .font(.subheadline)
+                        .font(OceanType.secondary)
                         .foregroundStyle(OceanTheme.mist)
                         .frame(maxWidth: .infinity)
                         .tileRow(top: OceanSpacing.block)
@@ -66,15 +66,10 @@ struct ArchivedThoughtsView: View {
             .navigationDestination(for: Node.self) { node in
                 NodeDetailContent(node: node)
             }
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { dismiss() } label: { Image(systemName: "xmark") }
-                        .accessibilityLabel("Close")
-                }
-            }
         }
         .settlesThoughtRemovals(removals)
         .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
         .presentationBackground(.clear)
         // A summary or a question opens in Ask: step out of the way.
         .onChange(of: appState.selectedTab) { _, tab in

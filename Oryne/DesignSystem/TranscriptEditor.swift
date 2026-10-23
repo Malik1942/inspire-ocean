@@ -29,16 +29,16 @@ struct TranscriptEditor: View {
     private var livePreview: some View {
         ScrollView {
             (text.isEmpty ? Text(placeholder) : Text(text))
-                .font(.callout)
+                .font(OceanType.body)
                 .foregroundStyle(text.isEmpty ? OceanTheme.hint : OceanTheme.mist)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
+                .padding(.horizontal, OceanSpacing.insetCompact)
+                .padding(.vertical, OceanSpacing.gap)
         }
         .defaultScrollAnchor(.bottom)
         .scrollIndicators(.hidden)
         .frame(minHeight: minHeight, maxHeight: maxHeight)
-        .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(OceanTheme.fill, in: RoundedRectangle(cornerRadius: OceanRadius.field, style: .continuous))
     }
 
     private var editor: some View {
@@ -50,22 +50,27 @@ struct TranscriptEditor: View {
             }
         }
         .frame(minHeight: minHeight, maxHeight: maxHeight)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        // A step less than the live preview: TextEditor keeps its own inner
+        // margins, so the words land on the same line as the preview's.
+        .padding(.horizontal, OceanSpacing.gap)
+        .padding(.vertical, OceanSpacing.snug)
+        .background(OceanTheme.fill, in: RoundedRectangle(cornerRadius: OceanRadius.field, style: .continuous))
     }
 
     private var baseEditor: some View {
         TextEditor(text: $text)
             .scrollContentBackground(.hidden)
+            .font(OceanType.body)
             .foregroundStyle(OceanTheme.foam)
             .overlay(alignment: .topLeading) {
                 if text.trimmed.isEmpty {
                     Text(placeholder)
-                        .font(.subheadline)
+                        .font(OceanType.body)
                         .foregroundStyle(OceanTheme.hint)
-                        .padding(.top, 8)
-                        .padding(.leading, 5)
+                        // TextEditor's own text inset, so the placeholder sits
+                        // exactly where the first typed word lands.
+                        .padding(.top, OceanSpacing.gap)
+                        .padding(.leading, OceanSpacing.tight + 1)
                         .allowsHitTesting(false)
                 }
             }

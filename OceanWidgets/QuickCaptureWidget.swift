@@ -60,7 +60,7 @@ struct QuickCaptureView: View {
         ZStack {
             AccessoryWidgetBackground()
             Image(systemName: "drop")
-                .font(.title2.weight(.light))
+                .font(OceanType.glyphLarge)
         }
         .widgetURL(URL(string: "oryne://capture"))
         .containerBackground(for: .widget) { Color.clear }
@@ -70,16 +70,16 @@ struct QuickCaptureView: View {
     private var small: some View {
         VStack(alignment: .leading, spacing: 0) {
             Image(systemName: "drop")
-                .font(.title3.weight(.light))
-                .foregroundStyle(OceanTheme.foam)
+                .font(OceanType.glyphLarge)
+                .foregroundStyle(OceanTheme.mist)
             Spacer()
             Text("Catch a\nthought")
-                .font(.headline.weight(.medium))
+                .font(OceanType.tileTitle)
                 .foregroundStyle(OceanTheme.foam)
-                .lineSpacing(2)
-            Spacer(minLength: 8)
+                .lineSpacing(OceanSpacing.hairline)
+            Spacer(minLength: OceanSpacing.gap)
             Text("Before it disappears")
-                .font(.caption2)
+                .font(OceanType.meta)
                 .foregroundStyle(OceanTheme.mist)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -91,21 +91,21 @@ struct QuickCaptureView: View {
     /// header whispers at the top, open water between, actions at the bottom.
     private var medium: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 8) {
+            // The widget names what it is the way a page does: New York.
+            HStack(alignment: .firstTextBaseline, spacing: OceanSpacing.gap) {
                 Image(systemName: "water.waves")
-                    .font(.system(size: 18, weight: .light))
+                    .font(OceanType.glyphLarge)
                     .foregroundStyle(OceanTheme.mist)
-                Text("Oryne: Fast Capture")
-                    .font(.system(size: 24, weight: .light))
-                    .tracking(0.3)
+                Text("Fast Capture")
+                    .font(OceanType.subjectTitle)
                     .foregroundStyle(OceanTheme.foam)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
 
-            Spacer(minLength: 14)
+            Spacer(minLength: OceanSpacing.inset)
 
-            HStack(spacing: 8) {
+            HStack(spacing: OceanSpacing.gap) {
                 captureLink(
                     url: "oryne://capture/thought",
                     symbol: "text.cursor",
@@ -122,41 +122,17 @@ struct QuickCaptureView: View {
         .containerBackground(for: .widget) { OceanWidgetStyle.water }
     }
 
-    /// One slim glass action — icon orb and title, centered. Depth comes from
-    /// the lifted body and a soft drop, the hairline stays a whisper.
-    private func captureLink(url: String, symbol: String, title: String) -> some View {
+    /// One action: the app's Secondary control, a raised matte capsule with
+    /// a glyph and a word, 44 pt. No gradient, no rim: the widget wears the
+    /// same surfaces as the app.
+    private func captureLink(url: String, symbol: String, title: LocalizedStringKey) -> some View {
         Link(destination: URL(string: url)!) {
-            HStack(spacing: 10) {
-                Image(systemName: symbol)
-                    .font(.footnote.weight(.regular))
-                    .foregroundStyle(OceanTheme.foam)
-                    .frame(width: 28, height: 28)
-                    .background(Circle().fill(Color.white.opacity(0.08)))
-                    .overlay(Circle().strokeBorder(Color.white.opacity(0.14), lineWidth: 0.5))
-                Text(title)
-                    .font(.system(size: 14, weight: .light))
-                    .tracking(0.3)
-                    .foregroundStyle(OceanTheme.foam)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 56)
-            .background(
-                // Top-lit glass: a faint sheen falling away toward the base,
-                // depth carried by the drop shadow — never by a heavier border.
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.white.opacity(0.09), Color.white.opacity(0.045)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .shadow(color: .black.opacity(0.22), radius: 7, y: 2.5)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.10), lineWidth: 0.5)
-            )
+            Label(title, systemImage: symbol)
+                .font(OceanType.control)
+                .foregroundStyle(OceanTheme.foam)
+                .frame(maxWidth: .infinity)
+                .frame(height: OceanControlSize.height)
+                .background(OceanSurface(shape: Capsule(), raised: true))
         }
     }
 }

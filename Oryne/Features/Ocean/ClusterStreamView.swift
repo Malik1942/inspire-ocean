@@ -55,15 +55,16 @@ struct ClusterStreamView: View {
         NavigationStack(path: $path) {
             List {
                 header
-                    .tileRow(top: 4, bottom: OceanSpacing.block - OceanSpacing.item / 2)
+                    .tileRow(top: OceanSpacing.tight, bottom: OceanSpacing.block - OceanSpacing.item / 2)
                 ForEach(members) { node in
                     if selecting {
                         // No swipes while picking.
                         Button {
                             if selected.contains(node.id) { selected.remove(node.id) } else { selected.insert(node.id) }
                         } label: {
-                            HStack(spacing: 12) {
+                            HStack(spacing: OceanSpacing.item) {
                                 Image(systemName: selected.contains(node.id) ? "checkmark.circle.fill" : "circle")
+                                    .font(OceanType.glyph)
                                     .foregroundStyle(selected.contains(node.id) ? OceanTheme.accent : OceanTheme.mist)
                                 NodeRow(node: node, showsCurrent: false)
                             }
@@ -105,10 +106,6 @@ struct ClusterStreamView: View {
                         }
                     }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { dismiss() } label: { Image(systemName: "xmark") }
-                        .accessibilityLabel("Close")
-                }
             }
             .safeAreaInset(edge: .bottom) {
                 if selecting, !selected.isEmpty {
@@ -118,7 +115,7 @@ struct ClusterStreamView: View {
                     }
                     .buttonStyle(.oceanSecondary)
                     .padding(.horizontal, OceanSpacing.gutter)
-                    .padding(.vertical, 12)
+                    .padding(.vertical, OceanSpacing.item)
                 }
             }
             .alert("Rename current", isPresented: $renaming) {
@@ -134,6 +131,7 @@ struct ClusterStreamView: View {
         }
         .settlesThoughtRemovals(removals)
         .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
         .presentationBackground(.clear)
         // A summary or a question opens in Ask: step out of the way.
         .onChange(of: appState.selectedTab) { _, tab in
@@ -160,14 +158,14 @@ struct ClusterStreamView: View {
     /// The current's name in New York, then its two verbs as Secondary
     /// buttons: read it all as one answer, or add a thought into it.
     private var header: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: OceanSpacing.inset) {
             Text(title)
                 .font(OceanType.subjectTitle)
                 .foregroundStyle(isAdrift ? OceanTheme.mist : OceanTheme.foam)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
             if members.count >= 2 || !isAdrift {
-                HStack(spacing: 8) {
+                HStack(spacing: OceanSpacing.gap) {
                     // Summarize is a verb, not a mode: the whole stream goes
                     // to Ask as one grounded answer (SPEC, Ask: one mode).
                     if members.count >= 2 {

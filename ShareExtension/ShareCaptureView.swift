@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// Minimal, self-contained capture sheet shown inside the share extension.
-/// Kept independent of the app's design system so the extension stays light.
+/// The capture sheet inside the share extension, on the app's own water
+/// and surfaces (the design system's shared layer is compiled in; nothing
+/// heavier). A preview of what arrived, then a field for a few words.
 struct ShareCaptureView: View {
     let payload: SharePayload
     let onSave: (String) -> Void
@@ -10,42 +11,44 @@ struct ShareCaptureView: View {
     @State private var note: String = ""
     @FocusState private var focused: Bool
 
-    private let deep = Color(red: 0.04, green: 0.10, blue: 0.22)
-    private let accent = Color(red: 0.45, green: 0.82, blue: 0.92)
-
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: OceanSpacing.block) {
                     preview
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: OceanSpacing.gap) {
                         Text("Add a note")
-                            .font(.subheadline).foregroundStyle(.white.opacity(0.7))
+                            .font(OceanType.eyebrow)
+                            .foregroundStyle(OceanTheme.mist)
                         TextField("Why does this matter?", text: $note, axis: .vertical)
+                            .textFieldStyle(.plain)
                             .focused($focused)
-                            .padding(12)
-                            .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
-                            .foregroundStyle(.white)
                             .lineLimit(2...6)
+                            .font(OceanType.body)
+                            .foregroundStyle(OceanTheme.foam)
+                            .tint(OceanTheme.accent)
+                            .padding(.vertical, OceanSpacing.gap)
+                            .padding(.horizontal, OceanSpacing.insetCompact)
+                            .frame(minHeight: OceanControlSize.height)
+                            .background(OceanTheme.fill, in: RoundedRectangle(cornerRadius: OceanRadius.field, style: .continuous))
                     }
                 }
-                .padding()
+                .padding(.horizontal, OceanSpacing.gutterCompact)
+                .padding(.vertical, OceanSpacing.inset)
             }
-            .background(
-                LinearGradient(colors: [Color(red: 0.02, green: 0.05, blue: 0.12), deep],
-                               startPoint: .top, endPoint: .bottom).ignoresSafeArea()
-            )
+            .background(OceanBackground())
             .navigationTitle("Drift into Ocean")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel", action: onCancel).tint(.white)
+                    Button("Cancel", action: onCancel)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { onSave(note) }.tint(accent).fontWeight(.semibold)
+                    Button("Save") { onSave(note) }.fontWeight(.semibold)
                 }
             }
         }
+        .tint(OceanTheme.accent)
         .preferredColorScheme(.dark)
     }
 
@@ -54,19 +57,23 @@ struct ShareCaptureView: View {
         if let data = payload.imageData, let ui = UIImage(data: data) {
             Image(uiImage: ui)
                 .resizable().scaledToFit()
-                .frame(maxHeight: 220)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .frame(maxHeight: OceanSize.hero + OceanSpacing.section)
+                .clipShape(RoundedRectangle(cornerRadius: OceanRadius.media, style: .continuous))
         }
         if let url = payload.urlString {
             Label(url, systemImage: "link")
-                .font(.callout).foregroundStyle(accent).lineLimit(2)
+                .font(OceanType.meta)
+                .foregroundStyle(OceanTheme.mist)
+                .lineLimit(2)
         }
         if let text = payload.text, !text.isEmpty {
             Text(text)
-                .foregroundStyle(.white)
+                .font(OceanType.body)
+                .lineSpacing(OceanType.bodyLeading)
+                .foregroundStyle(OceanTheme.foam)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(12)
-                .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
+                .padding(OceanSpacing.inset)
+                .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous)))
         }
     }
 }

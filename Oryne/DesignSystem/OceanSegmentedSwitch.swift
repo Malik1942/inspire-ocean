@@ -19,7 +19,7 @@ struct OceanSegmentedSwitch<Value: Hashable>: View {
                 part(options[index])
             }
         }
-        .padding(4)
+        .padding(OceanSpacing.tight)
         .frame(height: OceanControlSize.height)
         .background(OceanSurface(shape: Capsule()))
         .accessibilityElement(children: .contain)
@@ -33,16 +33,16 @@ struct OceanSegmentedSwitch<Value: Hashable>: View {
             }
         } label: {
             Text(option.title)
-                .font(.subheadline.weight(.medium))
+                .font(OceanType.control)
                 .foregroundStyle(selected ? OceanTheme.foam : OceanTheme.mist)
                 .lineLimit(1)
-                .padding(.horizontal, 16)
+                .padding(.horizontal, OceanSpacing.inset)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background {
                     if selected {
                         Capsule()
-                            .fill(Color.white.opacity(0.12))
-                            .shadow(color: .black.opacity(0.22), radius: 4, y: 2)
+                            .fill(OceanTheme.selected)
+                            .oceanShadow(OceanShadow.inset)
                             .matchedGeometryEffect(id: "thumb", in: thumb)
                     }
                 }

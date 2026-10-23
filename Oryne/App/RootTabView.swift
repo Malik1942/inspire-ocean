@@ -73,7 +73,7 @@ struct RootTabView: View {
                 FastCaptureSessionView(
                     request: request,
                     onFinish: {
-                        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
+                        withAnimation(OceanMotion.lift) {
                             appState.fastCaptureRequest = nil
                         }
                     }
@@ -220,33 +220,42 @@ struct RootTabView: View {
     }
 }
 
-/// Shared capture geometry: the bar is a 56 pt capsule, the disc 44 pt,
-/// inset 6 on every side so disc and capsule end are concentric, 12 pt
-/// above the tab bar. The overlay's disc is the same 44.
+/// Shared capture geometry, derived from the tokens: the bar is a 56 pt
+/// capsule, the disc 44 pt, inset 6 on every side so disc and capsule end
+/// are concentric, one item gap above the tab bar. The overlay's disc is
+/// the same 44.
 enum FastCaptureLayout {
-    static let barHeight: CGFloat = 56
-    static let buttonSize: CGFloat = 44
-    static let discInset: CGFloat = 6
+    static let barHeight: CGFloat = OceanControlSize.bar
+    static let buttonSize: CGFloat = OceanControlSize.height
+    static let discInset: CGFloat = OceanControlSize.discInset
+    /// Between the bar and the tab bar, the keyboard, or the + panel.
+    static let barGap: CGFloat = OceanSpacing.item
     /// Where the words start inside the capsule: the placeholder on the bar
-    /// and the field in the overlay sit on the same line.
-    static let fieldLeading: CGFloat = barHeight / 2 - 8
+    /// and the field in the overlay sit on the same line (the disc's edge,
+    /// less a gap, so the first letter clears the capsule's curve).
+    static let fieldLeading: CGFloat = endRadius - OceanSpacing.gap
+    /// The field's vertical inset inside a bar, so one line of body type
+    /// centres in the bar's height.
+    static let fieldVerticalInset: CGFloat = (barHeight - 22) / 2
     /// The capsule's end radius, kept when the container grows taller.
     static let endRadius: CGFloat = barHeight / 2
     /// The open composer's corners: fixed and continuous, so a tall card
     /// keeps its text room instead of growing a capsule's round ends.
-    static let cardRadius: CGFloat = 24
+    static let cardRadius: CGFloat = OceanRadius.composer
     /// The open composer's one inset: the words and the disc keep it from
     /// every edge, so the lines and the disc share both sides of the card.
-    static let cardInset: CGFloat = 12
-    /// The tab bar (49 pt) plus the 12 pt gap under the bar.
-    static let tabBarClearance: CGFloat = 49 + 12
+    static let cardInset: CGFloat = OceanSpacing.insetCompact
+    /// The system tab bar's height.
+    static let tabBarHeight: CGFloat = 49
+    /// The tab bar plus the gap under the bar.
+    static let tabBarClearance: CGFloat = tabBarHeight + barGap
     /// What scrolling content under the bar leaves clear: bar, gap, and a
     /// breath above it.
-    static let contentClearance: CGFloat = tabBarClearance + barHeight + 16
+    static let contentClearance: CGFloat = tabBarClearance + barHeight + OceanSpacing.inset
     /// The same for a page without the bar (the Library): the tab bar and
     /// the same breath above it.
-    static let pageClearance: CGFloat = tabBarClearance + 16
+    static let pageClearance: CGFloat = tabBarClearance + OceanSpacing.inset
     /// Ask's bar lives in its page's bottom safe-area inset, which already
     /// clears the tab bar; this lifts it to the capture bar's exact height.
-    static let insetBarLift: CGFloat = 12
+    static let insetBarLift: CGFloat = barGap
 }

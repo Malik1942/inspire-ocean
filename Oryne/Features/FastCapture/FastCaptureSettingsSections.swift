@@ -49,7 +49,7 @@ struct FastCaptureShortcutSection: View {
                     Text("Open Shortcuts")
                     Spacer()
                     Image(systemName: "arrow.up.forward")
-                        .font(.footnote.weight(.semibold))
+                        .font(OceanType.glyphDisclosure)
                         .foregroundStyle(OceanTheme.mist)
                 }
             }
@@ -83,7 +83,7 @@ struct FastCaptureWatchSection: View {
             Text("Apple Watch")
         } footer: {
             // The setup is a path to follow, not rows to tap.
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: OceanSpacing.tight) {
                 Text(verbatim: Self.actionButtonPath.joined(separator: " › "))
                 Text("No Action Button? Add the Oryne complication to a watch face.")
             }

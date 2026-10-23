@@ -27,7 +27,7 @@ struct MemoryRecordsView: View {
             if records.isEmpty {
                 Section {
                     Text("Nothing yet.")
-                        .font(.subheadline)
+                        .font(OceanType.secondary)
                         .foregroundStyle(OceanTheme.mist)
                 }
                 .listRowBackground(OceanTheme.fill)
@@ -39,7 +39,7 @@ struct MemoryRecordsView: View {
                             draft = record.text
                             editing = record
                         } label: {
-                            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                            HStack(alignment: .firstTextBaseline, spacing: OceanSpacing.gap) {
                                 Text(record.text)
                                     .foregroundStyle(OceanTheme.foam)
                                     .multilineTextAlignment(.leading)
@@ -47,7 +47,7 @@ struct MemoryRecordsView: View {
                                 Spacer(minLength: 0)
                                 if record.userEdited {
                                     Image(systemName: "pencil")
-                                        .font(.caption2)
+                                        .font(OceanType.glyphMeta)
                                         .foregroundStyle(OceanTheme.mist)
                                         .accessibilityLabel("Edited by you")
                                 }
@@ -91,7 +91,7 @@ struct MemoryRecordsView: View {
             .listRowBackground(OceanTheme.fill)
         }
         .tint(OceanTheme.accent)
-        .listRowSeparatorTint(Color.white.opacity(0.08))
+        .listRowSeparatorTint(OceanTheme.separator)
         .scrollContentBackground(.hidden)
         .background(OceanBackground(animated: false))
         .navigationTitle("What Oryne knows about you")

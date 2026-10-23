@@ -19,7 +19,7 @@ struct CaptureBar: View {
                 CaptureBarWords(draft: control.parked?.line)
                     .padding(.leading, FastCaptureLayout.fieldLeading)
                     // A draft's line stops short of the disc.
-                    .padding(.trailing, control.parked == nil ? 0 : FastCaptureLayout.buttonSize + FastCaptureLayout.discInset + 8)
+                    .padding(.trailing, control.parked == nil ? 0 : FastCaptureLayout.buttonSize + FastCaptureLayout.discInset + OceanSpacing.gap)
                     // minWidth 0: long words keep their width and overflow
                     // into the clip instead of widening the bar.
                     .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -59,13 +59,13 @@ struct CaptureBarWords: View {
     var body: some View {
         if let draft {
             Text(verbatim: draft)
-                .font(.body)
+                .font(OceanType.body)
                 .foregroundStyle(OceanTheme.foam)
                 .lineLimit(1)
                 .truncationMode(.tail)
         } else {
             Text("What are you noticing?")
-                .font(.body)
+                .font(OceanType.body)
                 .foregroundStyle(OceanTheme.hint)
                 .lineLimit(1)
                 .fixedSize()
@@ -108,7 +108,7 @@ struct CaptureBarPlacement: ViewModifier {
                 .ignoresSafeArea(.keyboard)
                 .opacity(show ? 1 : 0)
                 .allowsHitTesting(show || keepsTouch)
-                .animation(.easeOut(duration: 0.18), value: show)
+                .animation(OceanMotion.quick, value: show)
         }
     }
 }
@@ -143,7 +143,7 @@ struct OceanBarBackground: View {
             shape
                 .fill(.regularMaterial)
                 .overlay(shape.fill(OceanTheme.deep.opacity(0.55)))
-                .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
+                .oceanShadow(OceanShadow.bar)
         }
     }
 }

@@ -1,0 +1,301 @@
+{
+  "$schema": "https://www.w3.org/community/reports/design-tokens/CG-FINAL-format-20251028/",
+  "$description": "Oryne design tokens: the one source of truth for every shared visual decision in the app. Swift is generated from this file (Scripts/design-tokens/generate.py); never edit the generated Swift by hand. Dimensions are in points (DTCG only knows px; read px as pt). Every token is one of three facets: form (space, radius, size, type), material (color, shadow) or motion. Components compose one of each; a variant changes one facet and leaves the other two alone.",
+
+  "primitive": {
+    "$description": "Raw values. Nothing in the app reads these; the roles below alias them so a change here moves every sibling together.",
+    "space": {
+      "2": { "$type": "dimension", "$value": { "value": 2, "unit": "px" } },
+      "4": { "$type": "dimension", "$value": { "value": 4, "unit": "px" } },
+      "6": { "$type": "dimension", "$value": { "value": 6, "unit": "px" } },
+      "8": { "$type": "dimension", "$value": { "value": 8, "unit": "px" } },
+      "12": { "$type": "dimension", "$value": { "value": 12, "unit": "px" } },
+      "16": { "$type": "dimension", "$value": { "value": 16, "unit": "px" } },
+      "20": { "$type": "dimension", "$value": { "value": 20, "unit": "px" } },
+      "24": { "$type": "dimension", "$value": { "value": 24, "unit": "px" } },
+      "40": { "$type": "dimension", "$value": { "value": 40, "unit": "px" } }
+    },
+    "water": {
+      "$description": "The near-monochrome water, lit toward the upper centre.",
+      "abyss": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.02, 0.02, 0.03], "alpha": 1 } },
+      "deep": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.05, 0.055, 0.065], "alpha": 1 } },
+      "mid": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.09, 0.095, 0.11], "alpha": 1 } },
+      "current": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.15, 0.155, 0.175], "alpha": 1 } },
+      "surface": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.24, 0.245, 0.27], "alpha": 1 } }
+    },
+    "white": {
+      "$description": "White at the opacities the app draws with (names are percent, 55 = 5.5%). Ink and surfaces are white over the water; brightness carries hierarchy.",
+      "92": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.92 } },
+      "66": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.66 } },
+      "58": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.58 } },
+      "50": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.50 } },
+      "26": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.26 } },
+      "18": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.18 } },
+      "12": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.12 } },
+      "8": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.08 } },
+      "55": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.055 } },
+      "4": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.04 } },
+      "100": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 1 } }
+    },
+    "black": {
+      "60": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.60 } },
+      "50": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.50 } },
+      "35": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.35 } },
+      "28": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.28 } },
+      "24": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.24 } },
+      "22": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.22 } }
+    },
+    "duration": {
+      "150": { "$type": "duration", "$value": { "value": 150, "unit": "ms" } },
+      "180": { "$type": "duration", "$value": { "value": 180, "unit": "ms" } },
+      "350": { "$type": "duration", "$value": { "value": 350, "unit": "ms" } },
+      "800": { "$type": "duration", "$value": { "value": 800, "unit": "ms" } }
+    }
+  },
+
+  "form": {
+    "$description": "Facet one: where things sit and how big they are. Space, corners, sizes and type.",
+
+    "space": {
+      "$description": "One ladder on 4 pt, used by role. Things that belong together sit tight; groups sit far apart. The contrast between the two is the hierarchy.",
+      "hairline": { "$type": "dimension", "$value": "{primitive.space.2}", "$description": "An optical nudge: a section label's lead-in over the gutter, a badge's vertical breath." },
+      "tight": { "$type": "dimension", "$value": "{primitive.space.4}", "$description": "Inside a control: a segmented switch's padding around its parts, a tool group's end padding, a title's breath above its footer." },
+      "snug": { "$type": "dimension", "$value": "{primitive.space.6}", "$description": "A title and its meta line inside a tile; a glyph and the words beside it in a meta line." },
+      "gap": { "$type": "dimension", "$value": "{primitive.space.8}", "$description": "Buttons or chips in a row; a label above its field; a glyph beside a control's words." },
+      "item": { "$type": "dimension", "$value": "{primitive.space.12}", "$description": "Tiles apart in a list or a grid; things apart inside a row (a picture and its words)." },
+      "insetCompact": { "$type": "dimension", "$value": "{form.space.item}", "$description": "Inside a compact card or a field: the link card, a text field, the composer's card." },
+      "inset": { "$type": "dimension", "$value": "{primitive.space.16}", "$description": "Inside a tile, on every side; a floating capsule's end inset." },
+      "afterLabel": { "$type": "dimension", "$value": "{form.space.inset}", "$description": "From a section label down to its content." },
+      "controlInset": { "$type": "dimension", "$value": "{form.space.inset}", "$description": "A capsule button's horizontal inset, Primary and Secondary alike, the same as a tile's; a toast's leading inset." },
+      "block": { "$type": "dimension", "$value": "{primitive.space.24}", "$description": "Blocks inside one section: a title block, a summary, a transcript; media above the meta line." },
+      "section": { "$type": "dimension", "$value": "{primitive.space.40}", "$description": "Between sections, on every page." },
+      "gutterCompact": { "$type": "dimension", "$value": "{primitive.space.16}", "$description": "The page margin on standard iPhones: the system's own layout margin, where a navigation bar puts its back button." },
+      "gutterWide": { "$type": "dimension", "$value": "{primitive.space.20}", "$description": "The page margin on wide phones (414 pt and up) and iPad." },
+      "gutterBreakpoint": { "$type": "dimension", "$value": { "value": 414, "unit": "px" }, "$description": "Window width from which the wide gutter applies (measured 2026-10-22: 16 at 402 pt, 20 at 420 and 440)." }
+    },
+
+    "radius": {
+      "$description": "Anything up to a control's height is a full capsule. Corners are continuous (superellipse).",
+      "card": { "$type": "dimension", "$value": { "value": 20, "unit": "px" }, "$description": "Tiles: anything you open (a card, a row, a current, a choice in a picker)." },
+      "media": { "$type": "dimension", "$value": { "value": 14, "unit": "px" }, "$description": "A picture or a link card at the top of a page." },
+      "field": { "$type": "dimension", "$value": "{form.radius.media}", "$description": "A text field or editor you type into (a tile's quieter sibling)." },
+      "thumbnail": { "$type": "dimension", "$value": { "value": 10, "unit": "px" }, "$description": "A picture inside a tile or a strip." },
+      "composer": { "$type": "dimension", "$value": { "value": 24, "unit": "px" }, "$description": "The open composer's card and the + panel: fixed, so a tall card keeps its text room instead of growing a capsule's round ends." },
+      "icon": { "$type": "dimension", "$value": { "value": 4, "unit": "px" }, "$description": "A site's icon in a meta line." }
+    },
+
+    "size": {
+      "$description": "Fixed sizes of things that are not controls.",
+      "metaIcon": { "$type": "dimension", "$value": { "value": 14, "unit": "px" }, "$description": "The kind glyph's slot and a site icon in a meta line." },
+      "glyphSlot": { "$type": "dimension", "$value": { "value": 18, "unit": "px" }, "$description": "A glyph's fixed slot beside a line of text (a source line, a sample question), so the words start on one edge; also the dark disc under a remove badge's ✕." },
+      "grabberWidth": { "$type": "dimension", "$value": { "value": 36, "unit": "px" }, "$description": "A sheet's grabber, the system's own proportions, drawn by OceanSheetHeader." },
+      "grabberHeight": { "$type": "dimension", "$value": { "value": 5, "unit": "px" } },
+      "removeTarget": { "$type": "dimension", "$value": { "value": 32, "unit": "px" }, "$description": "The touch target of a remove badge in a picture's corner, and of the search field's clear." },
+      "thumbnail": { "$type": "dimension", "$value": { "value": 44, "unit": "px" }, "$description": "A row's trailing picture: a control's height, so it fits the row's two lines." },
+      "pictureTile": { "$type": "dimension", "$value": { "value": 64, "unit": "px" }, "$description": "A picture on a draft or in a strip: the composer's tiles, the edit sheet's pictures, a link card's thumbnail." },
+      "banner": { "$type": "dimension", "$value": { "value": 120, "unit": "px" }, "$description": "A card's full-bleed picture at the top." },
+      "hero": { "$type": "dimension", "$value": { "value": 160, "unit": "px" }, "$description": "The resurfacing thought's picture on Tide." }
+    },
+
+    "control": {
+      "$description": "Every control is 44 pt tall, the system's own. Floating bars are 56.",
+      "height": { "$type": "dimension", "$value": { "value": 44, "unit": "px" }, "$description": "A button, a field, a tool cell, the capture disc, a segmented switch." },
+      "toolCell": { "$type": "dimension", "$value": { "value": 50, "unit": "px" }, "$description": "One tool's cell in a group of several, as the system toolbar spaces them." },
+      "bar": { "$type": "dimension", "$value": { "value": 56, "unit": "px" }, "$description": "The capture bar and Ask's bar: a capsule whose end radius is half of this." },
+      "toast": { "$type": "dimension", "$value": { "value": 48, "unit": "px" }, "$description": "A toast: the bar's material, a step shorter than the bar." },
+      "discInset": { "$type": "dimension", "$value": "{form.space.snug}", "$description": "The disc's inset inside the bar on every side, so disc and capsule end are concentric." }
+    },
+
+    "type": {
+      "$description": "New York, Apple's serif, names what a page is about and wears the italic section labels. SF does everything else, on one scale. com.oryne.font.scale says how a role meets Dynamic Type: native (a system text style), metrics (a fixed size scaled by its text style's metrics), fixed (glyphs in controls).",
+      "pageTitle": {
+        "$type": "typography",
+        "$value": { "fontFamily": "New York", "fontSize": { "value": 40, "unit": "px" }, "fontWeight": 400 },
+        "$description": "A tab's name, and the navigation bar's large title: the one place a page is named.",
+        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "metrics", "textStyle": "largeTitle" } }
+      },
+      "resurfacingTitle": {
+        "$type": "typography",
+        "$value": { "fontFamily": "New York", "fontSize": { "value": 32, "unit": "px" }, "fontWeight": 400 },
+        "$description": "The one lit thing on Tide: today's resurfacing thought. Also an onboarding page's title.",
+        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "metrics", "textStyle": "title1" } }
+      },
+      "subjectTitle": {
+        "$type": "typography",
+        "$value": { "fontFamily": "New York", "fontSize": { "value": 28, "unit": "px" }, "fontWeight": 400 },
+        "$description": "A thought's title on its page, a current's name on its sheet, the question an answer replies to, a page's one-line empty state.",
+        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "native", "textStyle": "title1" } }
+      },
+      "sectionLabel": {
+        "$type": "typography",
+        "$value": { "fontFamily": "New York", "fontSize": { "value": 21, "unit": "px" }, "fontWeight": 400 },
+        "$description": "A section's label, italic: Resurfacing, Drifted in, Today, Nearby, a current's name in the Library's list.",
+        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "metrics", "textStyle": "title3", "italic": true } }
+      },
+      "statement": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 22, "unit": "px" }, "fontWeight": 500 },
+        "$description": "Live words laid on the water while a whisper is caught.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "title2" } }
+      },
+      "wordmark": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 17, "unit": "px" }, "fontWeight": 500, "letterSpacing": { "value": 2.5, "unit": "px" } },
+        "$description": "The name Oryne in a bar, tracked a little so a short name holds the bar.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "headline" } }
+      },
+      "tileTitle": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 16, "unit": "px" }, "fontWeight": 500 },
+        "$description": "A thought's title on a tile (card, row, current, link card, a choice in a picker): lighter than a heading so the tiles stay quiet.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "callout" } }
+      },
+      "body": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 17, "unit": "px" }, "fontWeight": 400, "lineHeight": { "value": 4, "unit": "px" } },
+        "$description": "Running text in foam: a thought's words, an answer, a field's words, a line that opens a thought. lineHeight here is the extra leading between lines.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "body" } }
+      },
+      "secondary": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 15, "unit": "px" }, "fontWeight": 400, "lineHeight": { "value": 3, "unit": "px" } },
+        "$description": "Reading text a step below the words: a snippet, a summary, what lies beyond the Ocean, a count beside a label.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "subheadline" } }
+      },
+      "meta": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 13, "unit": "px" }, "fontWeight": 400 },
+        "$description": "The meta line under a title, a domain, a provenance note, a status line.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "footnote" } }
+      },
+      "note": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 12, "unit": "px" }, "fontWeight": 400 },
+        "$description": "A quiet line under a field or a control: a notice, a hint, a caption in the composer.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "caption" } }
+      },
+      "eyebrow": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 13, "unit": "px" }, "fontWeight": 600 },
+        "$description": "A label right above what it names: Summary, Transcript, Drawn from, a field's name in the edit sheet.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "footnote" } }
+      },
+      "control": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 15, "unit": "px" }, "fontWeight": 500 },
+        "$description": "A quiet control's words: Secondary buttons, the segmented switch, a toast's message.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "subheadline" } }
+      },
+      "controlStrong": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 15, "unit": "px" }, "fontWeight": 600 },
+        "$description": "The main action's words: Primary buttons, Undo, a Link button.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "subheadline" } }
+      },
+      "badge": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 11, "unit": "px" }, "fontWeight": 700 },
+        "$description": "A count on a picture (+2).",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "fixed" } }
+      },
+      "glyph": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 17, "unit": "px" }, "fontWeight": 400 },
+        "$description": "A symbol in a control: outline variant, regular weight, in a 44 pt cell. Fixed, like the system's own toolbar glyphs.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "fixed" } }
+      },
+      "glyphStrong": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 17, "unit": "px" }, "fontWeight": 600 },
+        "$description": "The send arrow and the main action's glyph.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "fixed" } }
+      },
+      "glyphDisclosure": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 13, "unit": "px" }, "fontWeight": 600 },
+        "$description": "A chevron in content: bare, the meta line's size.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "footnote" } }
+      },
+      "glyphMeta": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 11, "unit": "px" }, "fontWeight": 400 },
+        "$description": "The kind glyph leading a meta line.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "caption2" } }
+      },
+      "glyphSmall": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 11, "unit": "px" }, "fontWeight": 600 },
+        "$description": "A small ✕ inside a chip or a badge; a menu's chevron.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "caption2" } }
+      },
+      "glyphLarge": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 20, "unit": "px" }, "fontWeight": 400 },
+        "$description": "A symbol standing in for a picture: an empty link thumbnail, a widget's drop.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "title3" } }
+      },
+      "glyphHero": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 48, "unit": "px" }, "fontWeight": 400 },
+        "$description": "The one glyph of an empty page.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "metrics", "textStyle": "largeTitle" } }
+      }
+    }
+  },
+
+  "material": {
+    "$description": "Facet two: what things are made of. Flat matte surfaces on near-black water, white ink at a few opacities, one soft shadow. Glass belongs to the floating layer only (bars, toast, page tools, sheet chrome, discs) and is the system's own Liquid Glass, not a token.",
+
+    "color": {
+      "water": {
+        "abyss": { "$type": "color", "$value": "{primitive.water.abyss}", "$description": "The deepest water; ink on an accent fill; the vignette." },
+        "deep": { "$type": "color", "$value": "{primitive.water.deep}" },
+        "mid": { "$type": "color", "$value": "{primitive.water.mid}" },
+        "current": { "$type": "color", "$value": "{primitive.water.current}", "$description": "The lit centre of the water; the watch's flat control disc." },
+        "surface": { "$type": "color", "$value": "{primitive.water.surface}", "$description": "The brightest water; an empty page's glyph." }
+      },
+      "ink": {
+        "foam": { "$type": "color", "$value": "{primitive.white.92}", "$description": "Titles, a control's words, the user's own words." },
+        "text": { "$type": "color", "$value": "{primitive.white.66}", "$description": "Running text a step below the words: snippets, summaries, the website's reading tone." },
+        "hint": { "$type": "color", "$value": "{primitive.white.58}", "$description": "Placeholder and helper text inside an input: quieter than mist, but it clears 4.5:1 over a field on the glass card (faint measured about 2.2:1)." },
+        "mist": { "$type": "color", "$value": "{primitive.white.50}", "$description": "Meta lines, section labels, a tool's glyph, a quiet control's glyph." },
+        "faint": { "$type": "color", "$value": "{primitive.white.26}", "$description": "The quietest ink: a chevron in content, an Example mark, a note under a field." },
+        "onAccent": { "$type": "color", "$value": "{primitive.water.abyss}", "$description": "Ink on the accent fill (a Primary button's label, a badge's count)." },
+        "onPhoto": { "$type": "color", "$value": "{primitive.white.100}", "$description": "Ink laid on a photograph: a remove badge's ✕." }
+      },
+      "surface": {
+        "fill": { "$type": "color", "$value": "{primitive.white.55}", "$description": "The one flat fill for tiles, fields and link cards. No border, no gradient." },
+        "raised": { "$type": "color", "$value": "{primitive.white.8}", "$description": "A control in the content layer: a Secondary button, an attachment tile, a settings row's separator. A step brighter than a tile so it reads as a control." },
+        "pressedLift": { "$type": "color", "$value": "{primitive.white.4}", "$description": "Added over a surface while it is pressed." },
+        "selected": { "$type": "color", "$value": "{primitive.white.12}", "$description": "The part of a control that is on: the segmented switch's thumb, a chosen chip." },
+        "glassTint": { "$type": "color", "$value": "{primitive.white.18}", "$description": "The faint tint a glass disc takes when it is ready or listening; never a solid light fill." },
+        "separator": { "$type": "color", "$value": "{material.color.surface.raised}", "$description": "A grouped form's row separator." },
+        "scrim": { "$type": "color", "$value": "{primitive.black.24}", "$description": "The dim over a page while the capture overlay is up." },
+        "photoScrim": { "$type": "color", "$value": "{primitive.black.60}", "$description": "A dark disc under a ✕ on a photograph, so it reads on any picture." }
+      },
+      "accent": {
+        "accent": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.82, 0.84, 0.88], "alpha": 1 }, "$description": "Soft near-white for interactive accents, kept monochrome: the tint, a Primary fill, the capture glyph, a Link button." },
+        "switchOn": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.027, 0.439, 0.910], "alpha": 1 }, "$description": "A switch's on state, #0770E8: a shade deeper and a touch more saturated than system blue, so on reads at a glance against the near-white knob." },
+        "glowWarm": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.95, 0.93, 0.88], "alpha": 1 }, "$description": "Whisper-warm white that sets the one lit thing apart by temperature rather than saturation: the Resurfacing label, the lamp, Beyond your Ocean." }
+      }
+    },
+
+    "shadow": {
+      "$description": "One soft drop shadow lifts a surface just above the water. The shadow belongs to the shape alone, so it stays cheap even under a picture.",
+      "tile": { "$type": "shadow", "$value": { "color": "{primitive.black.28}", "offsetX": { "value": 0, "unit": "px" }, "offsetY": { "value": 8, "unit": "px" }, "blur": { "value": 14, "unit": "px" }, "spread": { "value": 0, "unit": "px" } }, "$description": "Under a tile, a field, a link card." },
+      "control": { "$type": "shadow", "$value": { "color": "{primitive.black.28}", "offsetX": { "value": 0, "unit": "px" }, "offsetY": { "value": 4, "unit": "px" }, "blur": { "value": 8, "unit": "px" }, "spread": { "value": 0, "unit": "px" } }, "$description": "Under a raised control: tighter, since it sits closer to the page." },
+      "inset": { "$type": "shadow", "$value": { "color": "{primitive.black.22}", "offsetX": { "value": 0, "unit": "px" }, "offsetY": { "value": 2, "unit": "px" }, "blur": { "value": 4, "unit": "px" }, "spread": { "value": 0, "unit": "px" } }, "$description": "Under a thumb inside a control: the segmented switch's selected part." },
+      "bar": { "$type": "shadow", "$value": { "color": "{primitive.black.35}", "offsetX": { "value": 0, "unit": "px" }, "offsetY": { "value": 6, "unit": "px" }, "blur": { "value": 16, "unit": "px" }, "spread": { "value": 0, "unit": "px" } }, "$description": "Under a floating bar before iOS 26 (Liquid Glass draws its own)." },
+      "text": { "$type": "shadow", "$value": { "color": "{primitive.black.50}", "offsetX": { "value": 0, "unit": "px" }, "offsetY": { "value": 0, "unit": "px" }, "blur": { "value": 8, "unit": "px" }, "spread": { "value": 0, "unit": "px" } }, "$description": "Behind words laid straight on the water, so they read over anything beneath." }
+    }
+  },
+
+  "motion": {
+    "$description": "Facet three: how things change. Motion is atmosphere, never information; every fact it implies is reachable through a tap, a label, or the Library. Five motions cover every state change; the lamp's slow choreography on Tide, the microphone's level bars and the sinking words of a caught whisper are art-directed and stay in their views.",
+    "touch": { "$type": "transition", "$value": { "duration": "{primitive.duration.150}", "delay": { "value": 0, "unit": "ms" }, "timingFunction": [0, 0, 0.58, 1] }, "$description": "A control answering a finger: a press, a glyph swap, a tint change on the disc.", "$extensions": { "com.oryne.curve": "easeOut" } },
+    "quick": { "$type": "transition", "$value": { "duration": "{primitive.duration.180}", "delay": { "value": 0, "unit": "ms" }, "timingFunction": [0, 0, 0.58, 1] }, "$description": "A quick state change: a filter on or off, a bar showing or hiding, the Reduce Motion stand-in for anything slower.", "$extensions": { "com.oryne.curve": "easeOut" } },
+    "standard": { "$type": "transition", "$value": { "duration": "{primitive.duration.350}", "delay": { "value": 0, "unit": "ms" }, "timingFunction": [0.25, 0.1, 0.25, 1] }, "$description": "The standard settle: layout, folding, a section opening, a scroll to the top.", "$extensions": { "com.oryne.curve": "smooth" } },
+    "lift": { "$type": "transition", "$value": { "duration": { "value": 360, "unit": "ms" }, "delay": { "value": 0, "unit": "ms" }, "timingFunction": [0.25, 0.1, 0.25, 1] }, "$description": "Something floating in or out over the page: a toast, the capture overlay's phases, a reorder, a page turn.", "$extensions": { "com.oryne.curve": "spring", "com.oryne.spring": { "response": 0.36, "dampingFraction": 0.86 } } },
+    "gentle": { "$type": "transition", "$value": { "duration": "{primitive.duration.800}", "delay": { "value": 0, "unit": "ms" }, "timingFunction": [0.3, 0, 0.2, 1] }, "$description": "The gentle arrival of something new: a thought rising on Tide, a hint breathing in and out." }
+  }
+}

@@ -38,11 +38,11 @@ struct LinkCard: View {
     private var richCard: some View {
         HStack(spacing: 0) {
             Button(action: open) {
-                HStack(spacing: 14) {
+                HStack(spacing: OceanSpacing.item) {
                     thumbnail
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: OceanSpacing.tight) {
                         Text(node.linkTitle ?? node.linkURL?.absoluteString ?? String(localized: "Link"))
-                            .font(.body.weight(.semibold))
+                            .font(OceanType.tileTitle)
                             .foregroundStyle(OceanTheme.foam)
                             .multilineTextAlignment(.leading)
                             .lineLimit(2)
@@ -50,14 +50,14 @@ struct LinkCard: View {
                     }
                     Spacer(minLength: 0)
                 }
-                .padding(12)
+                .padding(OceanSpacing.insetCompact)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 
             if let onRemove {
                 removeButton(onRemove)
-                    .padding(.trailing, 8)
+                    .padding(.trailing, OceanSpacing.gap)
             }
         }
         // Flat, like every tile; media radius, since it stands where a
@@ -69,26 +69,26 @@ struct LinkCard: View {
     private var thumbnail: some View {
         ZStack {
             RoundedRectangle(cornerRadius: OceanRadius.thumbnail, style: .continuous)
-                .fill(Color.white.opacity(0.06))
+                .fill(OceanTheme.fill)
             if let data = node.linkImageData, let ui = UIImage(data: data) {
                 Image(uiImage: ui)
                     .resizable().scaledToFill()
             } else {
                 Image(systemName: "link")
-                    .font(.title3)
+                    .font(OceanType.glyphLarge)
                     .foregroundStyle(OceanTheme.mist)
             }
         }
-        .frame(width: 64, height: 64)
+        .frame(width: OceanSize.pictureTile, height: OceanSize.pictureTile)
         .clipShape(RoundedRectangle(cornerRadius: OceanRadius.thumbnail, style: .continuous))
     }
 
     /// The quiet, progressive line under the title: domain + where enrichment is.
     @ViewBuilder
     private var statusLine: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: OceanSpacing.snug) {
             if let domain = node.linkDomain {
-                Text(domain).font(.footnote).foregroundStyle(OceanTheme.mist).lineLimit(1)
+                Text(domain).font(OceanType.meta).foregroundStyle(OceanTheme.mist).lineLimit(1)
             }
             switch state {
             case .fetchingMeta, .fetchingContent:
@@ -102,10 +102,8 @@ struct LinkCard: View {
             case .failed(let reason):
                 Button(action: retry) {
                     Label("Retry", systemImage: "arrow.clockwise")
-                        .font(.footnote.weight(.medium))
-                        .foregroundStyle(OceanTheme.accent)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.oceanLink)
                 .accessibilityHint(reason)
             case .notStarted:
                 EmptyView()
@@ -114,9 +112,9 @@ struct LinkCard: View {
     }
 
     private func progressTag(_ text: LocalizedStringKey) -> some View {
-        HStack(spacing: 4) {
+        HStack(spacing: OceanSpacing.tight) {
             ProgressView().controlSize(.mini).tint(OceanTheme.mist)
-            Text(text).font(.footnote).foregroundStyle(OceanTheme.mist)
+            Text(text).font(OceanType.meta).foregroundStyle(OceanTheme.mist)
         }
     }
 
@@ -125,18 +123,18 @@ struct LinkCard: View {
     private var plainRow: some View {
         HStack(spacing: 0) {
             Button(action: open) {
-                HStack(spacing: 8) {
-                    Image(systemName: "link").font(.callout).foregroundStyle(OceanTheme.mist)
-                    VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: OceanSpacing.gap) {
+                    Image(systemName: "link").font(OceanType.glyph).foregroundStyle(OceanTheme.mist)
+                    VStack(alignment: .leading, spacing: OceanSpacing.hairline) {
                         Text(node.linkURL?.absoluteString ?? String(localized: "Link"))
-                            .font(.callout).foregroundStyle(OceanTheme.foam).lineLimit(1)
+                            .font(OceanType.tileTitle).foregroundStyle(OceanTheme.foam).lineLimit(1)
                         if case .failed(let reason) = state {
-                            Text(reason).font(.caption2).foregroundStyle(OceanTheme.faint).lineLimit(1)
+                            Text(reason).font(OceanType.note).foregroundStyle(OceanTheme.faint).lineLimit(1)
                         }
                     }
                     Spacer(minLength: 0)
                 }
-                .padding(.vertical, 10).padding(.horizontal, 12)
+                .padding(.vertical, OceanSpacing.gap).padding(.horizontal, OceanSpacing.insetCompact)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -144,13 +142,12 @@ struct LinkCard: View {
             if case .failed = state {
                 Button(action: retry) {
                     Image(systemName: "arrow.clockwise")
-                        .font(.caption.weight(.semibold)).foregroundStyle(OceanTheme.accent)
-                        .padding(8)
+                        .font(OceanType.glyphDisclosure)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.oceanLink)
                 .accessibilityLabel("Retry enrichment")
             }
-            if let onRemove { removeButton(onRemove).padding(.trailing, 6) }
+            if let onRemove { removeButton(onRemove).padding(.trailing, OceanSpacing.snug) }
         }
         .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.media, style: .continuous)))
     }
@@ -159,10 +156,9 @@ struct LinkCard: View {
         Button(action: action) {
             Image(systemName: "xmark.circle.fill")
                 .symbolRenderingMode(.hierarchical)
-                .font(.title3)
-                .foregroundStyle(OceanTheme.mist)
+                .font(OceanType.glyphLarge)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.oceanLink(.quiet))
         .accessibilityLabel("Remove link")
     }
 

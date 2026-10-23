@@ -33,20 +33,20 @@ struct AmbientHint: View {
         ZStack(alignment: .leading) {
             if visible {
                 Text(hint.message)
-                    .font(.caption2)
+                    .font(OceanType.note)
                     .foregroundStyle(OceanTheme.mist)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color.white.opacity(0.06), in: Capsule())
+                    .padding(.horizontal, OceanSpacing.insetCompact)
+                    .padding(.vertical, OceanSpacing.snug)
+                    .background(OceanTheme.fill, in: Capsule())
                     .transition(.opacity)
             }
         }
         .task {
             guard hint.shouldShow else { return }
             hint.markShown()
-            withAnimation(.easeIn(duration: 0.5)) { visible = true }
+            withAnimation(OceanMotion.gentle) { visible = true }
             try? await Task.sleep(for: .seconds(6))
-            withAnimation(.easeOut(duration: 1.0)) { visible = false }
+            withAnimation(OceanMotion.gentle) { visible = false }
         }
     }
 }

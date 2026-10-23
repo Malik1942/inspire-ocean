@@ -19,7 +19,7 @@ struct CaptureHoldButton: View {
     @Environment(\.calmAccessibility) private var calm
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    var size: CGFloat = 44
+    var size: CGFloat = OceanControlSize.height
     /// The disc in the open composer, where VoiceOver calls it Whisper.
     var inComposer = false
     /// The composer's release, once there is something to release: a tap
@@ -47,7 +47,7 @@ struct CaptureHoldButton: View {
             // and the send's own (OceanPrimaryIconButtonStyle) when ready.
             Color.clear
                 .frame(width: size, height: size)
-                .oceanGlass(in: Circle(), tint: listening || sends ? Color.white.opacity(0.18) : nil, interactive: false)
+                .oceanGlass(in: Circle(), tint: listening || sends ? OceanTheme.glassTint : nil, interactive: false)
                 .opacity(isPressed ? 0.75 : 1)
 
             glyph
@@ -57,10 +57,10 @@ struct CaptureHoldButton: View {
         // transition) jumps ahead of its glass while the card folds.
         .geometryGroup()
         .contentShape(Circle())
-        .animation(.easeOut(duration: 0.15), value: listening)
-        .animation(.easeOut(duration: 0.15), value: sends)
-        .animation(.easeOut(duration: 0.15), value: waits)
-        .animation(.easeOut(duration: 0.1), value: isPressed)
+        .animation(OceanMotion.touch, value: listening)
+        .animation(OceanMotion.touch, value: sends)
+        .animation(OceanMotion.touch, value: waits)
+        .animation(OceanMotion.touch, value: isPressed)
         .gesture(pressGesture)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityName)
@@ -99,9 +99,10 @@ struct CaptureHoldButton: View {
                 .transition(.opacity)
         } else {
             // One image for both, so the waveform is replaced by the
-            // arrow where it stands. The arrow is the send's: 17 semibold.
+            // arrow where it stands. The arrow is the send's strong glyph;
+            // the waveform and Stop scale with the disc (art-directed).
             Image(systemName: sends ? "arrow.up" : "waveform")
-                .font(.system(size: sends ? 17 : size * 0.4, weight: sends ? .semibold : .regular))
+                .font(sends ? OceanType.glyphStrong : .system(size: size * 0.4, weight: .regular))
                 .foregroundStyle(sends ? OceanTheme.foam : OceanTheme.accent)
                 .contentTransition(.symbolEffect(.replace))
                 .transition(.opacity)
@@ -187,6 +188,6 @@ private struct LevelBars: View {
                     .frame(width: size * 0.07, height: max(size * 0.12, h))
             }
         }
-        .animation(.easeOut(duration: 0.08), value: level)
+        .animation(.easeOut(duration: 0.08), value: level) // art-directed: follows the microphone
     }
 }

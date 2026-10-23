@@ -115,76 +115,81 @@ struct ResurfacingView: View {
     private func content(_ fragment: ResurfacingEntry.Fragment) -> some View {
         switch family {
         case .accessoryRectangular:
-            VStack(alignment: .leading, spacing: 1) {
-                HStack(spacing: 4) {
+            // The Lock Screen draws in its own tone; only the type is ours.
+            VStack(alignment: .leading, spacing: OceanSpacing.hairline / 2) {
+                HStack(spacing: OceanSpacing.tight) {
                     Image(systemName: "arrow.up.heart")
-                        .font(.caption2)
+                        .font(OceanType.glyphMeta)
                     Text("Resurfacing")
-                        .font(.caption2.weight(.semibold))
+                        .font(OceanType.glyphSmall)
                 }
                 Text(fragment.title)
-                    .font(.headline)
+                    .font(OceanType.tileTitle)
                     .lineLimit(2)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
         case .systemMedium:
-            VStack(alignment: .leading, spacing: 8) {
+            // A medium widget reads like Tide's resurfacing: the title in New
+            // York, its words under it, when it was caught.
+            VStack(alignment: .leading, spacing: OceanSpacing.gap) {
                 header
                 Text(fragment.title)
-                    .font(.headline.weight(.medium))
+                    .font(OceanType.subjectTitle)
                     .foregroundStyle(OceanTheme.foam)
                     .lineLimit(2)
+                    .minimumScaleFactor(0.8)
                 if !fragment.snippet.isEmpty {
                     Text(fragment.snippet)
-                        .font(.caption)
-                        .foregroundStyle(OceanTheme.mist)
+                        .font(OceanType.secondary)
+                        .foregroundStyle(OceanTheme.text)
                         .lineLimit(2)
                 }
                 Spacer(minLength: 0)
                 Text(fragment.ageDescription)
-                    .font(.caption2)
-                    .foregroundStyle(OceanTheme.faint)
+                    .font(OceanType.meta)
+                    .foregroundStyle(OceanTheme.mist)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
         default: // systemSmall
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: OceanSpacing.snug) {
                 header
                 Spacer(minLength: 0)
                 Text(fragment.title)
-                    .font(.subheadline.weight(.medium))
+                    .font(OceanType.tileTitle)
                     .foregroundStyle(OceanTheme.foam)
                     .lineLimit(3)
                 Text(fragment.ageDescription)
-                    .font(.caption2)
-                    .foregroundStyle(OceanTheme.faint)
+                    .font(OceanType.meta)
+                    .foregroundStyle(OceanTheme.mist)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
     }
 
     private var header: some View {
-        HStack(spacing: 5) {
+        // Tide's warm section label, at the widget's scale: an eyebrow.
+        HStack(spacing: OceanSpacing.tight) {
             Image(systemName: "arrow.up.heart")
-                .font(.caption2.weight(.light))
+                .font(OceanType.glyphMeta)
             Text("Resurfacing")
-                .font(.caption2.weight(.semibold))
+                .font(OceanType.eyebrow)
         }
         .foregroundStyle(OceanTheme.glowWarm)
     }
 
     private var empty: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: OceanSpacing.snug) {
             Image(systemName: "water.waves")
-                .font(.title3.weight(.light))
+                .font(OceanType.glyphLarge)
                 .foregroundStyle(OceanTheme.mist)
             Spacer(minLength: 0)
             Text("The Ocean is still")
-                .font(.subheadline.weight(.medium))
+                .font(OceanType.tileTitle)
                 .foregroundStyle(OceanTheme.foam)
             Text("Capture a few thoughts and one will drift back.")
-                .font(.caption2)
+                .font(OceanType.meta)
                 .foregroundStyle(OceanTheme.mist)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

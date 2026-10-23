@@ -92,6 +92,10 @@ struct FastCaptureSessionView: View {
 
     private var listening: Bool { phase == .listening }
 
+    /// The caught words sinking into the water: an ease-in, so they gather
+    /// speed as they go under. Art-directed (see design/tokens/README.md).
+    private static let sink = Animation.easeIn(duration: 0.3) // art-directed
+
     var body: some View {
         GeometryReader { geo in
         // With the keyboard up the bottom safe area is the keyboard itself,
@@ -123,7 +127,7 @@ struct FastCaptureSessionView: View {
                 .transition(stilled ? .opacity : .move(edge: .bottom).combined(with: .opacity))
             }
 
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: OceanSpacing.inset) {
                 switch phase {
                 case .composing:
                     composer
@@ -134,9 +138,10 @@ struct FastCaptureSessionView: View {
                         text: listening ? session.transcriber.partial : settlingWords,
                         showsPlaceholder: listening && !wordsDelayed
                     )
+                    // The words sink: capture's own choreography, not a token.
                     .opacity(phase == .settling && settled ? 0 : 1)
-                    .offset(y: phase == .settling && settled ? 24 : 0)
-                    .animation(.easeIn(duration: 0.3), value: settled)
+                    .offset(y: phase == .settling && settled ? OceanSpacing.block : 0)
+                    .animation(Self.sink, value: settled)
                     if listening {
                         listeningRow
                     }
@@ -146,14 +151,14 @@ struct FastCaptureSessionView: View {
                         CaptureToast(onUndo: undoCapture)
                         Spacer(minLength: 0)
                     }
-                    .transition(.opacity.combined(with: .offset(y: 8)))
+                    .transition(.opacity.combined(with: .offset(y: OceanSpacing.gap)))
                 }
             }
             .padding(.horizontal, OceanSpacing.gutter)
             .padding(.bottom, bottomPadding(keyboardUp: keyboardUp) + missed)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .animation(.spring(response: 0.36, dampingFraction: 0.86), value: phase)
-            .animation(.easeOut(duration: 0.25), value: missed)
+            .animation(OceanMotion.lift, value: phase)
+            .animation(OceanMotion.quick, value: missed)
         }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { note in
@@ -291,7 +296,7 @@ struct FastCaptureSessionView: View {
     // MARK: Pieces
 
     private var backdrop: some View {
-        Color.black.opacity(asSheet || phase == .linger ? 0 : 0.24)
+        OceanTheme.scrim.opacity(asSheet || phase == .linger ? 0 : 1)
             .ignoresSafeArea()
             .contentShape(Rectangle())
             .onTapGesture {
@@ -336,7 +341,7 @@ struct FastCaptureSessionView: View {
                 .transition(.opacity)
             }
             // Closed, the actions lie over the field's row, as on the bar.
-            VStack(alignment: .leading, spacing: cardShown ? 8 : -FastCaptureLayout.buttonSize) {
+            VStack(alignment: .leading, spacing: cardShown ? OceanSpacing.gap : -FastCaptureLayout.buttonSize) {
                 composerField
                 actionRow
             }
@@ -360,8 +365,8 @@ struct FastCaptureSessionView: View {
         // A new line grows the card upward at once, as in Messages: an
         // animated resize lets the field scroll its words up and back.
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
-            // The card and the 12 pt gap under it (bottomPadding).
-            if !asSheet { control.composerHeight = height + 12 }
+            // The card and the gap under it (bottomPadding).
+            if !asSheet { control.composerHeight = height + OceanSpacing.item }
         }
         .onAppear(perform: openCard)
         .onDisappear {
@@ -383,9 +388,9 @@ struct FastCaptureSessionView: View {
             axis: .vertical
         )
         .textFieldStyle(.plain)
-        .font(.body)
+        .font(OceanType.body)
         .lineLimit(cardShown ? 1...6 : 1...1)
-        .lineSpacing(2)
+        .lineSpacing(OceanSpacing.hairline)
         .focused($textFocused)
         .foregroundStyle(OceanTheme.foam)
         .tint(OceanTheme.accent)
@@ -401,9 +406,9 @@ struct FastCaptureSessionView: View {
         // Open, the first line keeps a fixed place under the top edge and
         // the lines span the card's inset. Closed, the field is the bar's
         // one line: where its placeholder sits, centered, clear of the disc.
-        .padding(.vertical, cardShown ? 2 : 10)
+        .padding(.vertical, cardShown ? OceanSpacing.hairline : OceanSpacing.gap)
         .padding(.leading, cardShown ? 0 : FastCaptureLayout.fieldLeading - FastCaptureLayout.discInset)
-        .padding(.trailing, cardShown ? 0 : FastCaptureLayout.buttonSize + 8)
+        .padding(.trailing, cardShown ? 0 : FastCaptureLayout.buttonSize + OceanSpacing.gap)
         .frame(maxWidth: .infinity, minHeight: cardShown ? nil : FastCaptureLayout.buttonSize, alignment: .leading)
         .accessibilityIdentifier("composer.field")
     }
@@ -417,7 +422,7 @@ struct FastCaptureSessionView: View {
     /// disc at the trailing end, and between them what the card has to
     /// say. Folded, only the disc shows, as on the bar.
     private var actionRow: some View {
-        HStack(alignment: .center, spacing: 8) {
+        HStack(alignment: .center, spacing: OceanSpacing.gap) {
             Group {
                 attachButton
                 composerCaptions
@@ -452,15 +457,15 @@ struct FastCaptureSessionView: View {
     /// A refusal, and the current a thought added from a stream flows
     /// into: in the action row before the disc, inside the card.
     private var composerCaptions: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: OceanSpacing.hairline) {
             if let message {
                 Text(message)
-                    .font(.caption)
+                    .font(OceanType.note)
                     .foregroundStyle(OceanTheme.mist)
             }
             if let anchor = request.anchorThemeKey {
                 Text(String(localized: "Flows into “\(OceanLayoutEngine.displayLabel(for: anchor))”"))
-                    .font(.caption2)
+                    .font(OceanType.note)
                     .foregroundStyle(OceanTheme.faint)
             }
         }
@@ -549,10 +554,10 @@ struct FastCaptureSessionView: View {
     /// and the one honest line when no live words come.
     private var listeningRow: some View {
         CaptureCapsule {
-            HStack(alignment: .center, spacing: 10) {
+            HStack(alignment: .center, spacing: OceanSpacing.gap) {
                 closeButton
                 listeningNotes
-                Spacer(minLength: 8)
+                Spacer(minLength: OceanSpacing.gap)
                 overlayDisc()
             }
         }
@@ -572,16 +577,16 @@ struct FastCaptureSessionView: View {
     }
 
     private var listeningNotes: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: OceanSpacing.hairline) {
             if !text.trimmed.isEmpty {
                 Text(text)
-                    .font(.footnote)
+                    .font(OceanType.meta)
                     .foregroundStyle(OceanTheme.mist)
                     .lineLimit(1)
             }
             if wordsDelayed {
                 Text("Words will follow.")
-                    .font(.footnote)
+                    .font(OceanType.meta)
                     .foregroundStyle(OceanTheme.hint)
             }
         }
@@ -612,13 +617,13 @@ struct FastCaptureSessionView: View {
     /// the toast sits above the capture bar, which stays usable under it.
     private func bottomPadding(keyboardUp: Bool) -> CGFloat {
         if phase == .linger {
-            if asSheet { return 24 }
+            if asSheet { return OceanSpacing.block }
             // Above the bar on Tide; in the bar's own spot where there is none.
             return FastCaptureLayout.tabBarClearance
-                + (control.barOnTab ? FastCaptureLayout.barHeight + 12 : 0)
+                + (control.barOnTab ? FastCaptureLayout.barHeight + FastCaptureLayout.barGap : 0)
         }
-        if attachPanelShown { return panelHeight + 12 }
-        return asSheet || keyboardUp ? 12 : FastCaptureLayout.tabBarClearance
+        if attachPanelShown { return panelHeight + FastCaptureLayout.barGap }
+        return asSheet || keyboardUp ? FastCaptureLayout.barGap : FastCaptureLayout.tabBarClearance
     }
 
     /// The panel stands where the keys stood, so the card stays put when +
@@ -709,7 +714,7 @@ struct FastCaptureSessionView: View {
         // The finger left while permission was being asked (or the take was
         // started without one): the take runs until Stop.
         if control.touch == .up { control.touch = .locked }
-        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .listening }
+        withAnimation(OceanMotion.lift) { phase = .listening }
     }
 
     /// Lift = catch. Saved before anything says so; the settle is the
@@ -735,7 +740,7 @@ struct FastCaptureSessionView: View {
                 finish()
                 return
             }
-            withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .composing }
+            withAnimation(OceanMotion.lift) { phase = .composing }
             textFocused = true
             return
         }
@@ -758,7 +763,7 @@ struct FastCaptureSessionView: View {
 
         settlingWords = words.isEmpty ? note : words
         settled = false
-        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .settling }
+        withAnimation(OceanMotion.lift) { phase = .settling }
 
         guard let nodeID = session.release(draft) else {
             // The store refused: the words come back to the field, the audio
@@ -766,14 +771,14 @@ struct FastCaptureSessionView: View {
             heldDraft = draft
             text = [note, words].filter { !$0.isEmpty }.joined(separator: " ")
             message = String(localized: "Couldn't save yet. Release tries again.")
-            withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .composing }
+            withAnimation(OceanMotion.lift) { phase = .composing }
             return
         }
 
         isSaving = true
         session.beginUnderstanding(nodeID: nodeID)
         CaptureFeedback.released()
-        withAnimation(.easeIn(duration: 0.3)) { settled = true }
+        withAnimation(Self.sink) { settled = true }
         try? await Task.sleep(for: .milliseconds(300))
         showToast(for: nodeID)
     }
@@ -823,7 +828,7 @@ struct FastCaptureSessionView: View {
     @MainActor
     private func showToast(for nodeID: UUID) {
         control.toastShowing = true
-        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .linger }
+        withAnimation(OceanMotion.lift) { phase = .linger }
         fadeTask?.cancel()
         fadeTask = Task {
             while !Task.isCancelled, session.undoAvailable(for: nodeID) {
@@ -851,7 +856,7 @@ struct FastCaptureSessionView: View {
         settled = false
         takeBackParked()
         control.toastShowing = false
-        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .composing }
+        withAnimation(OceanMotion.lift) { phase = .composing }
     }
 
     /// Take the released thought back: it returns to the field, words,
@@ -871,7 +876,7 @@ struct FastCaptureSessionView: View {
         links.dismissed = draft.dismissedLinks
         links.sense(text, now: true)
         control.toastShowing = false
-        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .composing }
+        withAnimation(OceanMotion.lift) { phase = .composing }
         textFocused = true
     }
 

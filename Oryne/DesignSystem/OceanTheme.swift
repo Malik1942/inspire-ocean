@@ -25,41 +25,14 @@ extension EnvironmentValues {
     @Entry var calmAccessibility: Bool = false
 }
 
-/// Color, type and gradient language for Oryne.
+/// Color for Oryne. The roles (the water, the inks, the surfaces, the
+/// accents) are generated into `OceanTokens.swift` from
+/// `design/tokens/oryne.tokens.json`; this file holds what a value cannot
+/// say: a fragment's hue, and the water itself.
 ///
-/// The Ocean should feel "atmospheric, calm, and alive" (§8) — deep and spatial,
-/// with color drawn from each fragment's `hue`.
+/// The Ocean should feel "atmospheric, calm, and alive" (§8) — deep and
+/// spatial, near-monochrome, with brightness carrying hierarchy.
 enum OceanTheme {
-
-    // MARK: Palette — near-monochrome, spatial
-
-    static let abyss   = Color(red: 0.02,  green: 0.02,  blue: 0.03)
-    static let deep    = Color(red: 0.05,  green: 0.055, blue: 0.065)
-    static let mid     = Color(red: 0.09,  green: 0.095, blue: 0.11)
-    static let current = Color(red: 0.15,  green: 0.155, blue: 0.175)
-    static let surface = Color(red: 0.24,  green: 0.245, blue: 0.27)
-
-    static let foam  = Color.white.opacity(0.92)
-    /// Running text: the website's reading tone.
-    static let text  = Color.white.opacity(0.66)
-    /// The one surface fill for cards; no border.
-    static let fill  = Color.white.opacity(0.055)
-    static let mist  = Color.white.opacity(0.50)
-    static let faint = Color.white.opacity(0.26)
-    /// Placeholder and helper text inside an input: quieter than `mist`, but it
-    /// still has to be read. `faint` measured about 2.2:1 over a field on the
-    /// glass card; this clears 4.5:1 (WCAG AA for text).
-    static let hint  = Color.white.opacity(0.58)
-
-    /// Soft near-white for interactive accents — kept monochrome.
-    static let accent   = Color(red: 0.82, green: 0.84, blue: 0.88)
-    /// A switch's on state, #0770E8: a shade deeper and a touch more saturated
-    /// than system blue, so on reads at a glance against the near-white knob.
-    static let switchOn = Color(red: 0.027, green: 0.439, blue: 0.910)
-    /// Whisper-warm white that sets a resurfacing fragment apart by temperature
-    /// rather than saturation.
-    static let glowWarm = Color(red: 0.95, green: 0.93, blue: 0.88)
-
     /// A subtle, near-monochrome color for a fragment given its stored hue.
     /// Brightness carries hierarchy; the hue only nudges temperature ±0.025 so
     /// the field stays essentially black-and-white and spatial.
@@ -119,6 +92,7 @@ struct OceanBackground: View {
                 .ignoresSafeArea()
                 .overlay {
                     // Depth vignette — darkens the edges, holds focus centrally.
+                    // Art-directed: the water's own light, not a token.
                     RadialGradient(
                         colors: [.clear, OceanTheme.abyss.opacity(0.55)],
                         center: .center,
@@ -147,21 +121,6 @@ struct OceanBackground: View {
         ]
     }
 }
-
-// MARK: - Reusable components
-
-/// A soft, glassy card used for content surfaces.
-struct GlassCard<Content: View>: View {
-    var padding: CGFloat = 16
-    @ViewBuilder var content: Content
-
-    var body: some View {
-        content
-            .padding(padding)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-    }
-}
-
 
 extension View {
     /// Standard screen treatment: ocean background behind content.
