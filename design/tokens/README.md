@@ -118,7 +118,7 @@ one soft shadow.
 | Link card | media radius, insetCompact, pictureTile thumbnail | fill surface | |
 | Picture strip `OceanPictureStrip` | pictureTile, thumbnail radius, gap | remove badge on photoScrim | standard |
 | Toast `OceanToast` | toast height, controlInset leading, control + Link | bar glass | lift |
-| Sheet header `OceanSheetHeader` | grabber, a 44 pt row only when the sheet has an action (Primary trailing; a quiet Cancel Link leading only where swipe-down is guarded), item gap, subjectTitle | glass action on the water | |
+| Sheet header `OceanSheetHeader` | grabber, then subjectTitle with the one action (Primary) on the same line ending on the gutter, as Tide's tools sit on its title; a quiet Cancel word beside it only where swipe-down is guarded | glass action on the water | |
 | Floating bar `OceanBarBackground` | bar height capsule, or composer radius | glass; bar shadow before iOS 26 | lift |
 | Section | sectionLabel, afterLabel to content, section between | mist (glowWarm for the one lit section) | |
 | Page | PageTitleRow, gutter, section between | PageBackground (water + lamp) | |

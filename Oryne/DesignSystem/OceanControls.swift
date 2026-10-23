@@ -496,11 +496,11 @@ struct OceanPictureStrip: View {
 
 /// How a sheet opens, in the page's own grammar (`PageTitleRow`): the
 /// grabber that says the sheet can be pulled away (every sheet's way out),
-/// then, only when the sheet has an action of its own, a 44 pt row with it
-/// at the trailing end as Primary, then the subject in New York. No close
-/// button: a sheet is pulled down. A sheet that guards unsaved edits
+/// then the subject in New York with the sheet's one action on the same
+/// line as Primary, ending on the gutter. No close button: a sheet is
+/// pulled down. A sheet that guards unsaved edits
 /// (`interactiveDismissDisabled`) names its way out as a quiet Cancel word
-/// at the row's leading end, since the pull is held back there.
+/// beside the action, since the pull is held back there.
 ///
 /// The grabber is drawn here, not asked of the system: a guarded sheet
 /// loses the system's, and every sheet should open the same way.
@@ -510,26 +510,23 @@ struct OceanSheetHeader<Action: View>: View {
     var onCancel: (() -> Void)? = nil
     @ViewBuilder var action: Action
 
-    private var hasRow: Bool { onCancel != nil || Action.self != EmptyView.self }
-
     var body: some View {
         VStack(alignment: .leading, spacing: OceanSpacing.item) {
             OceanSheetGrabber()
-            if hasRow {
-                HStack {
-                    if let onCancel {
-                        Button(cancelLabel, action: onCancel)
-                            .buttonStyle(.oceanLink(.quiet))
-                    }
-                    Spacer()
-                    action
+            HStack(alignment: .center, spacing: OceanSpacing.item) {
+                title
+                    .font(OceanType.subjectTitle)
+                    .foregroundStyle(OceanTheme.foam)
+                    .lineLimit(1)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer(minLength: 0)
+                if let onCancel {
+                    Button(cancelLabel, action: onCancel)
+                        .buttonStyle(.oceanLink(.quiet))
                 }
-                .frame(height: OceanControlSize.height)
+                action
             }
-            title
-                .font(OceanType.subjectTitle)
-                .foregroundStyle(OceanTheme.foam)
-                .accessibilityAddTraits(.isHeader)
+            .frame(minHeight: OceanControlSize.height)
         }
     }
 }
