@@ -38,6 +38,9 @@ enum AskAgent {
         var themes: [String]
         var themeKeys: [String]
         var entities: [String]
+        /// Pictures attached, with or without words (a thought with words
+        /// and a picture is a typed thought that carries a picture).
+        var hasPictures = false
 
         var retrievalTexts: [String] {
             [[title, body, themes.joined(separator: " "), entities.joined(separator: " ")].joined(separator: " "), gist ?? ""]
@@ -61,6 +64,11 @@ enum AskAgent {
         /// Thoughts read in full.
         var read: [UUID]
         var toolCalls: Int
+        /// The model answered without a tool and was asked again with
+        /// findThoughts results in the prompt.
+        var forcedRetry = false
+        /// The calls, in order, as the model made them.
+        var calls: [String] = []
     }
 
     // MARK: Budget
@@ -102,6 +110,13 @@ enum AskAgent {
         private(set) var surfaced: [UUID] = []
         private(set) var read: [UUID] = []
         private(set) var toolCalls = 0
+        /// Each call as the model made it, for the eval and the console.
+        private(set) var calls: [String] = []
+
+        func record(_ call: String) {
+            toolCalls += 1
+            calls.append(call)
+        }
 
         func reference(for id: UUID) -> String {
             if let ref = refs[id] { return ref }
@@ -132,10 +147,17 @@ enum AskAgent {
         let budget: Budget
         let ledger = Ledger()
 
-        init(thoughts: [Thought], budget: Budget) {
+        /// Whether the question names a time ("recent", "last week", 最近):
+        /// a `withinDays` the model invents for a timeless question is
+        /// dropped (measured 2026-10-22: "What pictures have I saved?"
+        /// became the last 7 days and lost a picture from 9 days ago).
+        let namesTime: Bool
+
+        init(thoughts: [Thought], budget: Budget, query: String = "") {
             self.thoughts = thoughts
             self.byID = Dictionary(thoughts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
             self.budget = budget
+            self.namesTime = AskAgent.namesTime(query)
         }
 
         /// Three nets, widest last, merged in that order: embedding similarity
@@ -145,7 +167,7 @@ enum AskAgent {
         /// the question names ("bugs", "想法"), since the model often reaches
         /// for findThoughts where listThoughts was meant.
         func find(_ query: String) async -> String {
-            await ledger.countCall()
+            await ledger.record("find \"\(query)\"")
             let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !q.isEmpty else { return "Give findThoughts something to look for." }
 
@@ -158,9 +180,21 @@ enum AskAgent {
             }
 
             // A kind the question names comes first: "what bugs did I note"
-            // is about the bugs, whatever else the words match.
+            // is about the bugs, whatever else the words match. So does a
+            // form: "what pictures did I save" (measured 2026-10-22: the
+            // model searched the word and found a postcard by meaning).
             if let category = AskAgent.categoryNamed(in: q) {
                 take(thoughts.filter { $0.category == category }.sorted { $0.createdAt > $1.createdAt })
+            }
+            if let form = AskAgent.formNamed(in: q) {
+                take(thoughts.filter { AskAgent.matches(form: form, $0) }.sorted { $0.createdAt > $1.createdAt })
+            }
+            // A named kind or form that found anything is the whole answer:
+            // word and similarity hits would only pad a list with thoughts
+            // that are not what was asked for (measured 2026-10-22: "what
+            // pictures" came back with eight thoughts, five without one).
+            if !hits.isEmpty {
+                return await lines(for: hits, heading: "\(hits.count) thoughts match \"\(q)\":")
             }
 
             // Then the question's own words found in a thought: an exact
@@ -197,15 +231,27 @@ enum AskAgent {
             return await lines(for: hits, heading: "\(hits.count) thoughts match \"\(q)\":")
         }
 
-        func list(category: ThoughtCategory?, topic: String?, withinDays: Int?, mentioning: String?) async -> String {
-            await ledger.countCall()
+        func list(category: ThoughtCategory?, kind: NodeKind? = nil, topic: String?, withinDays: Int?, mentioning: String?) async -> String {
+            await ledger.record("list category=\(category?.rawValue ?? "-") form=\(kind?.rawValue ?? "-") topic=\(topic ?? "-") days=\(withinDays.map(String.init) ?? "-") mentioning=\(mentioning ?? "-")")
+            // The model often puts the kind or the form in the topic or the
+            // name ("pictures", "bugs"); read it out rather than match the word.
+            var category = category, kind = kind, topic = topic, mentioning = mentioning
+            if let word = topic, category == nil, let named = AskAgent.categoryNamed(in: word) { category = named; topic = nil }
+            if let word = topic, kind == nil, let named = AskAgent.formNamed(in: word) { kind = named; topic = nil }
+            if let word = mentioning, category == nil, let named = AskAgent.categoryNamed(in: word) { category = named; mentioning = nil }
+            if let word = mentioning, kind == nil, let named = AskAgent.formNamed(in: word) { kind = named; mentioning = nil }
             let topicNeedle = topic?.lowercased().trimmingCharacters(in: .whitespaces)
             let topicKey = topic.map(ThoughtReading.slug)
             let nameNeedle = mentioning?.lowercased().trimmingCharacters(in: .whitespaces)
+            let withinDays = namesTime ? withinDays : nil
             let since = withinDays.map { Date.now.addingTimeInterval(-Double(max($0, 1)) * 86_400) }
 
-            let matched = thoughts.filter { thought in
+            // A guessed kind next to a named form ("list category=memory
+            // form=image", measured 2026-10-22) finds nothing; the form is
+            // what the person named, so it stands alone when the pair fails.
+            func select(category: ThoughtCategory?) -> [Thought] { thoughts.filter { thought in
                 if let category, thought.category != category { return false }
+                if let kind, !AskAgent.matches(form: kind, thought) { return false }
                 if let since, thought.createdAt < since { return false }
                 if let topicNeedle, !topicNeedle.isEmpty {
                     let inThemes = thought.themes.contains { $0.lowercased().contains(topicNeedle) }
@@ -219,10 +265,16 @@ enum AskAgent {
                     if !inEntities && !inWords { return false }
                 }
                 return true
-            }.sorted { $0.createdAt > $1.createdAt }
+            }.sorted { $0.createdAt > $1.createdAt } }
+            var matched = select(category: category)
+            if matched.isEmpty, kind != nil, category != nil {
+                matched = select(category: nil)
+                if !matched.isEmpty { category = nil }
+            }
 
             var filters: [String] = []
             if let category { filters.append("kind \(category.rawValue)") }
+            if let kind { filters.append(kind == .image ? "pictures" : kind == .voice ? "whispers" : kind == .link ? "links" : "typed thoughts") }
             if let topic, !topic.isEmpty { filters.append("topic \"\(topic)\"") }
             if let withinDays { filters.append("last \(withinDays) days") }
             if let mentioning, !mentioning.isEmpty { filters.append("mentioning \"\(mentioning)\"") }
@@ -237,7 +289,7 @@ enum AskAgent {
         }
 
         func read(_ reference: String) async -> String {
-            await ledger.countCall()
+            await ledger.record("read \(reference)")
             guard let id = await ledger.id(for: reference), let thought = byID[id] else {
                 return "No thought has the reference \(reference). Call findThoughts or listThoughts first and use a reference it returned."
             }
@@ -263,7 +315,7 @@ enum AskAgent {
         /// own: the agent's session, busy with tools and rules, tends to echo
         /// the original instead. Measured 2026-10-22 on the bakery note.
         func translate(_ reference: String, into language: ThoughtLanguage) async -> String {
-            await ledger.countCall()
+            await ledger.record("translate \(reference) into \(language.rawValue)")
             guard let id = await ledger.id(for: reference), let thought = byID[id] else {
                 return "No thought has the reference \(reference). Call findThoughts or listThoughts first and use a reference it returned."
             }
@@ -295,7 +347,7 @@ enum AskAgent {
         }
 
         static func snippet(_ thought: Thought, length: Int) -> String {
-            let source = thought.body.isEmpty ? (thought.gist ?? "") : thought.body
+            let source = thought.body.isEmpty ? (thought.gist ?? (thought.hasPictures || thought.kind == .image ? "(a picture, no words)" : "")) : thought.body
             let oneLine = source.split(whereSeparator: \.isNewline).joined(separator: " ")
             return oneLine.count > length ? String(oneLine.prefix(length)) + "…" : oneLine
         }
@@ -320,12 +372,19 @@ enum AskAgent {
 
     struct ListThoughts: Tool {
         let name = "listThoughts"
-        let description = "List thoughts by kind (idea, task, bug, note, quote, question, link, memory), by topic, by how recent, or by a name they mention. Use this for questions like what bugs did I note, my tasks, ideas from last week, everything about a person."
+        let description = "List thoughts by kind (idea, task, bug, note, quote, question, link, memory), by form (pictures, whispers, links, typed), by topic, by how recent, or by a name they mention. Use this for questions like what bugs did I note, my tasks, what pictures did I save, ideas from last week, everything about a person."
+
+        @Generable
+        enum Form: String {
+            case pictures, whispers, links, typed
+        }
 
         @Generable
         struct Arguments {
             @Guide(description: "The kind of thought, or omit for any kind")
             var category: FoundationThoughtReader.Category?
+            @Guide(description: "The form: pictures, whispers (voice), links, or typed words; omit for any")
+            var form: Form?
             @Guide(description: "A topic word or theme to match, or omit")
             var topic: String?
             @Guide(description: "Only thoughts from the last this many days, or omit for all time")
@@ -336,8 +395,16 @@ enum AskAgent {
 
         let ocean: Ocean
         func call(arguments: Arguments) async throws -> String {
-            await ocean.list(
+            let kind: NodeKind? = switch arguments.form {
+            case .pictures?: .image
+            case .whispers?: .voice
+            case .links?: .link
+            case .typed?: .text
+            case nil: nil
+            }
+            return await ocean.list(
                 category: arguments.category.flatMap { ThoughtCategory(rawValue: $0.rawValue) },
+                kind: kind,
                 topic: arguments.topic,
                 withinDays: arguments.withinDays,
                 mentioning: arguments.mentioning
@@ -479,10 +546,15 @@ enum AskAgent {
     static let findFloor = 0.55
     static let findMargin = 0.06
 
-    /// DEBUG-only trace of why the agent stood down, on the console.
+    /// Why the agent last stood down, for the eval harness; DEBUG builds
+    /// also print it.
+    nonisolated(unsafe) static var lastFailure: String?
+
     static func log(_ message: @autoclosure () -> String) {
+        let text = message()
+        lastFailure = text
         #if DEBUG
-        print("🜁 AskAgent: \(message())")
+        print("🜁 AskAgent: \(text)")
         #endif
     }
 
@@ -543,6 +615,40 @@ enum AskAgent {
         "memory": .memory, "memories": .memory, "回忆": .memory, "记忆": .memory
     ]
 
+    /// Words that name a form of thought, in either language.
+    static let formWords: [String: NodeKind] = [
+        "picture": .image, "pictures": .image, "photo": .image, "photos": .image, "image": .image, "images": .image,
+        "screenshot": .image, "screenshots": .image, "图片": .image, "照片": .image, "截图": .image, "图": .image,
+        "whisper": .voice, "whispers": .voice, "recording": .voice, "recordings": .voice, "voice": .voice, "语音": .voice, "录音": .voice,
+        "link": .link, "links": .link, "url": .link, "urls": .link, "网页": .link, "链接": .link
+    ]
+
+    /// The form a question names, if any ("what pictures did I save").
+    static func formNamed(in query: String) -> NodeKind? {
+        for word in SemanticThemes.contentWords(in: query) {
+            if let kind = formWords[word] { return kind }
+        }
+        return nil
+    }
+
+    /// Time words, in both languages, that make a "last N days" filter the
+    /// person's own.
+    static let timeWords: [String] = [
+        "recent", "recently", "lately", "latest", "today", "yesterday", "week", "weeks", "month", "months",
+        "day", "days", "year", "ago", "since", "last", "past", "this morning", "tonight",
+        "最近", "近期", "今天", "昨天", "前天", "本周", "这周", "上周", "这个月", "上个月", "今年", "去年", "几天", "以来", "之内", "最新"
+    ]
+
+    static func namesTime(_ query: String) -> Bool {
+        let lowered = query.lowercased()
+        return timeWords.contains { lowered.contains($0) }
+    }
+
+    /// Pictures ride on any kind of thought; the other forms are the kind.
+    static func matches(form: NodeKind, _ thought: Thought) -> Bool {
+        form == .image ? (thought.hasPictures || thought.kind == .image) : thought.kind == form
+    }
+
     /// The kind a question names, if any ("what bugs did I note", "我记过哪些 bug").
     static func categoryNamed(in query: String) -> ThoughtCategory? {
         for word in SemanticThemes.contentWords(in: query) {
@@ -553,11 +659,14 @@ enum AskAgent {
 
     // MARK: Run
 
-    /// Answers with the on-device model and the three tools. Nil when the
-    /// model never used a tool (an answer from nowhere is not grounded), or
-    /// failed outright; a context overflow is retried once on the tight
-    /// budget before giving up.
+    /// Answers with the on-device model and its tools. Nil when the model
+    /// failed outright. A context overflow goes straight to the tight
+    /// budget; any other generation error (measured 2026-10-22: an opaque
+    /// GenerationError with several underlying errors, once in about
+    /// fourteen questions) gets one fresh session on the same budget first,
+    /// since the next attempt usually succeeds.
     static func answer(query: String, history: [Turn], thoughts: [Thought], aboutPerson: String? = nil) async -> Answer? {
+        lastFailure = nil
         #if canImport(FoundationModels)
         // A translation is an intent the question states outright, and the
         // small model, having read the thought, tends to echo it instead of
@@ -580,26 +689,46 @@ enum AskAgent {
                     cited: [id],
                     surfaced: await ocean.ledger.surfaced,
                     read: [id],
-                    toolCalls: await ocean.ledger.toolCalls
+                    toolCalls: await ocean.ledger.toolCalls,
+                    calls: await ocean.ledger.calls
                 )
             }
         }
 
-        for budget in [Budget.forDevice, Budget.tight] {
-            let ocean = Ocean(thoughts: thoughts, budget: budget)
+        let attempts: [(budget: Budget, retryOnError: Bool)] = [(Budget.forDevice, true), (Budget.forDevice, false), (Budget.tight, false)]
+        var index = 0
+        while index < attempts.count {
+            let (budget, retryOnError) = attempts[index]
+            index += 1
+            let ocean = Ocean(thoughts: thoughts, budget: budget, query: query)
             do {
                 let session = LanguageModelSession(
                     tools: [FindThoughts(ocean: ocean), ListThoughts(ocean: ocean), ReadThought(ocean: ocean), TranslateThought(ocean: ocean)]
                 ) { Self.instructions(aboutPerson: aboutPerson) }
                 var response = try await session.respond(to: prompt(query: query, history: history, budget: budget))
-                if await ocean.ledger.toolCalls == 0 {
-                    // The model answered from nowhere. Run the find for it and
-                    // ask again with the results in hand, so the answer is
-                    // grounded or honestly empty.
-                    log("no tool was called; retrying with findThoughts results in the prompt")
-                    let results = await ocean.find(query)
+                var forced = false
+                // The model answered from nowhere, or looked in the wrong
+                // place for a form or a kind the question names outright
+                // (measured 2026-10-22: "what pictures" listed memories of
+                // the last week). Run the right call for it and ask again
+                // with the results in hand, so the answer is grounded or
+                // honestly empty.
+                let namedForm = AskAgent.formNamed(in: query)
+                let namedKind = AskAgent.categoryNamed(in: query)
+                let lookedWrong = await ocean.ledger.surfaced.isEmpty && (namedForm != nil || namedKind != nil)
+                if await ocean.ledger.toolCalls == 0 || lookedWrong {
+                    forced = true
+                    log("retrying with results in the prompt (\(lookedWrong ? "named form or kind found nothing" : "no tool was called"))")
+                    let results: String
+                    if let namedForm {
+                        results = await ocean.list(category: nil, kind: namedForm, topic: nil, withinDays: nil, mentioning: nil)
+                    } else if let namedKind {
+                        results = await ocean.list(category: namedKind, topic: nil, withinDays: nil, mentioning: nil)
+                    } else {
+                        results = await ocean.find(query)
+                    }
                     response = try await session.respond(to: """
-                        Results of findThoughts for their question:
+                        Results for their question:
                         \(results)
 
                         Answer their question from these results only, citing each thought you use like [t2]; \
@@ -607,16 +736,23 @@ enum AskAgent {
                         Write in \(ThoughtReading.mostlyChineseByWords(query) ? "Chinese" : "English").
                         """)
                 }
-                return await compose(response.content, ocean: ocean, question: query)
+                var answer = await compose(response.content, ocean: ocean, question: query)
+                answer?.forcedRetry = forced
+                return answer
             } catch let error as LanguageModelSession.GenerationError {
                 if case .exceededContextWindowSize = error {
                     log("context overflowed on \(budget.findLimit)-result budget; retrying tight")
+                    index = attempts.count - 1   // straight to the tight budget
                     continue
                 }
-                log("generation error: \(error)")
+                let underlying = ((error as NSError).userInfo[NSMultipleUnderlyingErrorsKey] as? [Error])?
+                    .map { String(describing: $0) }.joined(separator: " | ") ?? ""
+                log("generation error: \(error) \(underlying)")
+                if retryOnError { continue }
                 return nil
             } catch {
                 log("error: \(error)")
+                if retryOnError { continue }
                 return nil
             }
         }
@@ -656,7 +792,8 @@ enum AskAgent {
             cited: cited,
             surfaced: await ocean.ledger.surfaced,
             read: await ocean.ledger.read,
-            toolCalls: calls
+            toolCalls: calls,
+            calls: await ocean.ledger.calls
         )
     }
 }

@@ -157,6 +157,22 @@ struct LibraryView: View {
         let migrate = !UserDefaults.standard.bool(forKey: Self.semanticThemesMigrationKey)
         let modelReady = OnDeviceModel.isReadyCached
 
+        // Pictures that the current reader has not read yet (share-sheet
+        // captures, thoughts from before pictures were read, a bumped reader):
+        // read first, newest first, so many per open, so the understanding
+        // below sees the words in them. A thought already understood is
+        // re-derived with its picture once it has one to add.
+        var pictureRead = Set<UUID>()
+        let unreadPictures = allNodes
+            .filter { $0.needsPictureReading && !$0.isExample }
+            .sorted { $0.createdAt > $1.createdAt }
+            .prefix(UnderstandingBackfill.picturesPerOpen)
+        for node in unreadPictures {
+            if await PictureEnrichmentService.shared.read(nodeID: node.id, context: context) {
+                pictureRead.insert(node.id)
+            }
+        }
+
         let all = allNodes.compactMap { node -> (node: Node, work: UnderstandingBackfill.Work)? in
             let work = UnderstandingBackfill.work(
                 isExample: node.isExample,
@@ -209,6 +225,13 @@ struct LibraryView: View {
                 preserveThemes: work == .enrich
             )
             try? context.save()
+        }
+
+        // A titled, understood thought whose picture was just read: its
+        // record learns the picture now (the loop above left it alone).
+        let understood = Set(pending.map(\.node.id))
+        for id in pictureRead where !understood.contains(id) {
+            await PictureEnrichmentService.rederive(nodeID: id, context: context, ai: ai)
         }
 
         if migrate {

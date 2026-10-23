@@ -90,7 +90,7 @@ final class LocalOceanAIService: OceanAIService {
             // The current it joins: the model's constrained pick; failing
             // that, its own English theme key when a current already has
             // it (the bridge across languages); failing that, it founds one.
-            let joined = CurrentSnap.joinKey(pick: await pick, candidates: currents)
+            let joined = CurrentSnap.joinKey(pick: await pick, candidates: currents, entry: cleaned)
             let ownKey = understanding.themeKeys.first
             let existing = Set(currents.map(\.key))
             understanding.currentKey = joined
@@ -815,7 +815,7 @@ extension AskAgent.Thought {
         self.init(
             id: node.id,
             title: node.displayTitle,
-            body: [node.text, node.transcription ?? "", node.linkContext]
+            body: [node.text, node.transcription ?? "", node.linkContext, node.pictureContext]
                 .filter { !$0.isEmpty }
                 .joined(separator: "\n"),
             gist: node.gistOther,
@@ -825,7 +825,8 @@ extension AskAgent.Thought {
             kind: node.kind,
             themes: node.themes,
             themeKeys: node.themeKeys,
-            entities: node.entities
+            entities: node.entities,
+            hasPictures: node.hasImages
         )
     }
 }

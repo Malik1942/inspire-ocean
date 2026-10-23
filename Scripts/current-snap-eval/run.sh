@@ -19,5 +19,10 @@ trap 'rm -rf "$(dirname "$bin")"' EXIT
 xcrun swiftc -O -parse-as-library -o "$bin" \
   "$here/eval.swift" \
   "$repo/Shared/Services/CurrentSnap.swift" \
+  "$repo/Shared/Services/EmbeddingService.swift" \
+  "$here/../eval/Fixture.swift" \
+  "$here/../../Shared/Services/PictureReading.swift" \
+  "$repo/Shared/Models/Enums.swift" \
+  "$repo/Shared/Services/ThoughtReading.swift" \
   "$repo/Oryne/Services/FoundationCurrentPicker.swift"
 "$bin" "${1:-3}"

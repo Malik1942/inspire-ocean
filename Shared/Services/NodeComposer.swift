@@ -105,7 +105,13 @@ enum NodeComposer {
         // The understanding record: system fields, filled whenever the pass
         // has them. Theme keys follow the user's themes once they own them,
         // so the record never contradicts what they wrote.
-        if let category = understanding.category { node.categoryRaw = category.rawValue }
+        // A thought that is a link (no words of its own) is a link, whatever
+        // the model reads into its page.
+        if node.kind == .link {
+            node.categoryRaw = ThoughtCategory.link.rawValue
+        } else if let category = understanding.category {
+            node.categoryRaw = category.rawValue
+        }
         if let language = understanding.language { node.languageRaw = language.rawValue }
         if let gist = understanding.gistOther { node.gistOther = gist }
         if !understanding.entities.isEmpty { node.entities = understanding.entities }

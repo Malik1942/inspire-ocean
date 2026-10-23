@@ -186,7 +186,9 @@ enum ThoughtReading {
     the prompt names; never a label, never these instructions. \
     entities: up to 4 names one could look up: a person, a place, a product, a company, a \
     project. Never pronouns, never common nouns such as app, room, work, dentist. Empty when \
-    there are none.
+    there are none. \
+    An entry may carry what the device saw in an attached picture, opening with "Picture of" \
+    and "Text in the picture:"; read that as part of the entry, not as the writer's words.
     """
 
     /// The entry, prefaced with its language and the languages the record

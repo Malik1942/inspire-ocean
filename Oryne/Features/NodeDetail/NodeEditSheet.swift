@@ -547,6 +547,8 @@ struct NodeEditSheet: View {
             node.orderedImages.forEach { context.delete($0) }
             node.images = imageDrafts.enumerated().map { NodeImage(data: $1, sortIndex: $0) }
             node.imageData = nil
+            // A changed set is read afresh; a stale reading never lingers.
+            node.clearPictureReading()
         }
         // An edited thought keeps its place: corrections change meaning
         // fields, never the spot in the Ocean the user knows it by.
@@ -556,6 +558,9 @@ struct NodeEditSheet: View {
         // Enrich the committed node (never the draft), now that the link is saved.
         if linkChanged, node.linkURLString != nil {
             LinkEnrichmentService.shared.enrich(nodeID: node.id, context: context, ai: ai)
+        }
+        if imageChanged, node.hasImages {
+            PictureEnrichmentService.shared.enrich(nodeID: node.id, context: context, ai: ai)
         }
         dismiss()
     }

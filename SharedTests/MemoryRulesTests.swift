@@ -64,4 +64,37 @@ final class MemoryRulesTests: XCTestCase {
         XCTAssertTrue(MemoryRules.isSame("You frequently notice the light at the end of the day.", "You keep noticing the light at the end of the day."))
         XCTAssertFalse(MemoryRules.isSame("You frequently mention Mara.", "You keep noticing the light at the end of the day."))
     }
+
+    func test_softened_dropsClaimsOfRepetition_onFewerThanThreeThoughts() {
+        XCTAssertEqual(MemoryRules.softened("You frequently mention Oryne.", grounded: 2), "You mention Oryne.")
+        XCTAssertEqual(MemoryRules.softened("你经常提到 Oryne。", grounded: 2), "你提到 Oryne。")
+        XCTAssertEqual(MemoryRules.softened("You frequently mention Oryne.", grounded: 3), "You frequently mention Oryne.")
+    }
+
+    func test_summaryProblem_catchesPreamble_firstPerson_echo_andMissingYou() {
+        let members = ["- “Grandma's handwriting”: Grandma's handwriting on the recipe card; the kitchen smelled of star anise."]
+        XCTAssertNotNil(MemoryRules.summaryProblem("Here is a description of the thoughts that run through your mind:", memberTexts: members))
+        XCTAssertNotNil(MemoryRules.summaryProblem("I am thinking about a quiet morning walk.", memberTexts: members))
+        XCTAssertNotNil(MemoryRules.summaryProblem("“Grandma's handwriting”: Grandma's handwriting on the recipe card; the kitchen smelled of star anise.", memberTexts: members))
+        XCTAssertNotNil(MemoryRules.summaryProblem("Digital minimalism is a philosophy of reducing distraction.", memberTexts: members))
+        XCTAssertNil(MemoryRules.summaryProblem("You keep returning to the kitchen you grew up in and the hands that cooked there.", memberTexts: members))
+        XCTAssertNil(MemoryRules.summaryProblem("你一直在回想外婆的厨房和她的字迹。", memberTexts: members))
+    }
+
+    func test_cleanedPageSummary_dropsPreamble_rejectsRefusals() {
+        XCTAssertEqual(
+            MemoryRules.cleanedPageSummary("Sure, here is a summary of the Are.na Editorial page:\n\nThe page shares essays and interviews on attention."),
+            "The page shares essays and interviews on attention."
+        )
+        XCTAssertNil(MemoryRules.cleanedPageSummary("I can't summarize the content of the page, as it is filled with repetitive text."))
+        XCTAssertNil(MemoryRules.cleanedPageSummary("Sure! Here is the summary."))
+        XCTAssertEqual(MemoryRules.cleanedPageSummary("Essays on slow software and attention."), "Essays on slow software and attention.")
+    }
+
+    func test_cleanedPageSummary_dropsMarkdownHeadings() {
+        XCTAssertEqual(
+            MemoryRules.cleanedPageSummary("## What's new in the Foundation Models framework\nA video presentation announcing the new features."),
+            "A video presentation announcing the new features."
+        )
+    }
 }

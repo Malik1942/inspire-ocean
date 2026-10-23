@@ -194,6 +194,9 @@ struct BranchComposer: View {
         if link != nil {
             LinkEnrichmentService.shared.enrich(nodeID: child.id, context: context, ai: ai)
         }
+        if !imageDatas.isEmpty {
+            PictureEnrichmentService.shared.enrich(nodeID: child.id, context: context, ai: ai)
+        }
         dismiss()
     }
 
