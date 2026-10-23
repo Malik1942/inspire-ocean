@@ -497,17 +497,13 @@ struct OceanPictureStrip: View {
 /// How a sheet opens, in the page's own grammar (`PageTitleRow`): the
 /// grabber that says the sheet can be pulled away (every sheet's way out),
 /// then the subject in New York with the sheet's one action on the same
-/// line as Primary, ending on the gutter. No close button: a sheet is
-/// pulled down. A sheet that guards unsaved edits
-/// (`interactiveDismissDisabled`) names its way out as a quiet Cancel word
-/// beside the action, since the pull is held back there.
+/// line as Primary, ending on the gutter. No close and no cancel: a sheet
+/// is pulled down, and what it held unsaved goes with it.
 ///
-/// The grabber is drawn here, not asked of the system: a guarded sheet
-/// loses the system's, and every sheet should open the same way.
+/// The grabber is drawn here, not asked of the system, so every sheet
+/// opens the same way.
 struct OceanSheetHeader<Action: View>: View {
     let title: Text
-    var cancelLabel: LocalizedStringKey = "Cancel"
-    var onCancel: (() -> Void)? = nil
     @ViewBuilder var action: Action
 
     var body: some View {
@@ -520,10 +516,6 @@ struct OceanSheetHeader<Action: View>: View {
                     .lineLimit(1)
                     .accessibilityAddTraits(.isHeader)
                 Spacer(minLength: 0)
-                if let onCancel {
-                    Button(cancelLabel, action: onCancel)
-                        .buttonStyle(.oceanLink(.quiet))
-                }
                 action
             }
             .frame(minHeight: OceanControlSize.height)

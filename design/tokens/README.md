@@ -118,7 +118,8 @@ one soft shadow.
 | Link card | media radius, insetCompact, pictureTile thumbnail | fill surface | |
 | Picture strip `OceanPictureStrip` | pictureTile, thumbnail radius, gap | remove badge on photoScrim | standard |
 | Toast `OceanToast` | toast height, controlInset leading, control + Link | bar glass | lift |
-| Sheet header `OceanSheetHeader` | grabber, then subjectTitle with the one action (Primary) on the same line ending on the gutter, as Tide's tools sit on its title; a quiet Cancel word beside it only where swipe-down is guarded | glass action on the water | |
+| Sheet header `OceanSheetHeader` | grabber, then subjectTitle with the one action (Primary) on the same line ending on the gutter, as Tide's tools sit on its title; no close, no cancel | glass action on the water | |
+| Segmented switch `OceanSegmentedSwitch` | glyph cells in the page's tool group (Weather's layer switch), past an `OceanToolDivider` from the other tools | glass group; selected fill under the cell in use | standard |
 | Floating bar `OceanBarBackground` | bar height capsule, or composer radius | glass; bar shadow before iOS 26 | lift |
 | Section | sectionLabel, afterLabel to content, section between | mist (glowWarm for the one lit section) | |
 | Page | PageTitleRow, gutter, section between | PageBackground (water + lamp) | |
@@ -162,9 +163,8 @@ closed the gaps; each is one line in the JSON to change.
 - Sheets open like pages (`OceanSheetHeader`): a grabber, the one action
   as Primary, the subject in New York. No close button on any sheet: the
   pull down is the way out, and the grabber says so (the thought page, a
-  current, Archived and Settings show the system's). The edit sheet keeps a
-  quiet Cancel word because it holds the pull back while there are unsaved
-  edits.
+  current, Archived and Settings show the system's). The edit sheet has no
+  Cancel either: pulling it down discards the draft (decided 2026-10-23).
 - Field names in the edit sheet and the branch composer are eyebrows (were
   headline bold); the question in Ask, a current's name, an empty page's
   line and the onboarding setup title share `subjectTitle`.

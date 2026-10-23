@@ -46,7 +46,6 @@ struct NodeEditSheet: View {
     @State private var retranscribeFailed = false
     @State private var bodyBeforeRetranscribe: String?
     @State private var showReplaceConfirm = false
-    @State private var showDiscardConfirm = false
     @State private var isRederiving = false
 
     @State private var loaded = false
@@ -85,7 +84,7 @@ struct NodeEditSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: OceanSpacing.block) {
-                    OceanSheetHeader(title: Text("Edit"), onCancel: cancel) {
+                    OceanSheetHeader(title: Text("Edit")) {
                         Button("Save", action: save)
                             .buttonStyle(.oceanPrimary)
                     }
@@ -109,16 +108,7 @@ struct NodeEditSheet: View {
             }
             .background(OceanBackground())
             .toolbar(.hidden, for: .navigationBar)
-            .alert(
-                "Discard changes?",
-                isPresented: $showDiscardConfirm
-            ) {
-                Button("Discard", role: .destructive) { dismiss() }
-                Button("Keep editing", role: .cancel) {}
-            }
         }
-        // The swipe-down reflex must not silently throw away edits.
-        .interactiveDismissDisabled(hasChanges)
         .onAppear(perform: loadDrafts)
     }
 
@@ -358,15 +348,6 @@ struct NodeEditSheet: View {
     }
 
     // MARK: Actions
-
-    /// The close: a true no-op, after asking when there is something to lose.
-    private func cancel() {
-        if hasChanges {
-            showDiscardConfirm = true
-        } else {
-            dismiss()
-        }
-    }
 
     private func loadDrafts() {
         guard !loaded else { return }

@@ -13,7 +13,6 @@
       "16": { "$type": "dimension", "$value": { "value": 16, "unit": "px" } },
       "20": { "$type": "dimension", "$value": { "value": 20, "unit": "px" } },
       "24": { "$type": "dimension", "$value": { "value": 24, "unit": "px" } },
-      "28": { "$type": "dimension", "$value": { "value": 28, "unit": "px" } },
       "40": { "$type": "dimension", "$value": { "value": 40, "unit": "px" } }
     },
     "water": {
@@ -70,7 +69,7 @@
       "controlInset": { "$type": "dimension", "$value": "{form.space.inset}", "$description": "A capsule button's horizontal inset, Primary and Secondary alike, the same as a tile's; a toast's leading inset." },
       "block": { "$type": "dimension", "$value": "{primitive.space.24}", "$description": "Blocks inside one section: a title block, a summary, a transcript; media above the meta line." },
       "section": { "$type": "dimension", "$value": "{primitive.space.40}", "$description": "Between sections, on every page." },
-      "sheetTop": { "$type": "dimension", "$value": "{primitive.space.28}", "$description": "A pull-up sheet's title under the sheet's edge, past the grabber: the same rhythm as from the title to its buttons." },
+      "sheetTop": { "$type": "dimension", "$value": "{form.space.section}", "$description": "A pull-up sheet's title under the sheet's edge: a section's air past the grabber." },
       "gutterCompact": { "$type": "dimension", "$value": "{primitive.space.16}", "$description": "The page margin on standard iPhones: the system's own layout margin, where a navigation bar puts its back button." },
       "gutterWide": { "$type": "dimension", "$value": "{primitive.space.20}", "$description": "The page margin on wide phones (414 pt and up) and iPad." },
       "gutterBreakpoint": { "$type": "dimension", "$value": { "value": 414, "unit": "px" }, "$description": "Window width from which the wide gutter applies (measured 2026-10-22: 16 at 402 pt, 20 at 420 and 440)." }

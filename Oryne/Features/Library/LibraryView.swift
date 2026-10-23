@@ -519,9 +519,15 @@ struct LibraryView: View {
     /// on, the filter as a chip that clears it.
     private var header: some View {
         VStack(alignment: .leading, spacing: OceanSpacing.inset) {
-            // One tool: what kind of thought the Library shows. Settings
-            // live on Tide.
+            // The page's tools on its title line, one glass group: how the
+            // page is arranged (Recent, Currents), then what kind of
+            // thought it shows. Settings live on Tide.
             PageTitleRow(title: "Library") {
+                OceanSegmentedSwitch(selection: $segment, options: [
+                    (value: .recent, title: "Recent", systemImage: "square.grid.2x2"),
+                    (value: .currents, title: "Currents", systemImage: "water.waves")
+                ])
+                OceanToolDivider()
                 Menu {
                     Picker("Kind", selection: $kind.animation(OceanMotion.quick)) {
                         ForEach(LibraryKind.allCases) { option in
@@ -537,18 +543,9 @@ struct LibraryView: View {
             // The serif's descender space, as on Tide.
             .padding(.bottom, -OceanSpacing.tight)
 
-            VStack(alignment: .leading, spacing: OceanSpacing.item) {
-                OceanSearchField(text: $search, prompt: "Search the Ocean", focused: $searchFocused)
-                HStack(spacing: OceanSpacing.item) {
-                    OceanSegmentedSwitch(selection: $segment, options: [
-                        (value: .recent, title: "Recent"),
-                        (value: .currents, title: "Currents")
-                    ])
-                    Spacer(minLength: 0)
-                    if kind != .all {
-                        filterChip
-                    }
-                }
+            OceanSearchField(text: $search, prompt: "Search the Ocean", focused: $searchFocused)
+            if kind != .all {
+                filterChip
             }
         }
         .padding(.bottom, OceanSpacing.gap)

@@ -44,9 +44,9 @@ enum OceanSpacing {
     static let block: CGFloat = 24
     /// Between sections, on every page.
     static let section: CGFloat = 40
-    /// A pull-up sheet's title under the sheet's edge, past the grabber: the same
-    /// rhythm as from the title to its buttons.
-    static let sheetTop: CGFloat = 28
+    /// A pull-up sheet's title under the sheet's edge: a section's air past the
+    /// grabber.
+    static let sheetTop: CGFloat = 40
     /// The page margin on standard iPhones: the system's own layout margin, where a
     /// navigation bar puts its back button.
     static let gutterCompact: CGFloat = 16

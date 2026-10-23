@@ -1,74 +1,62 @@
 import SwiftUI
 
-/// Two ways of looking at one page (the Library's Recent and Currents): the
-/// search field's matte capsule, with the one in use a step brighter inside
-/// it. A Secondary control in two parts: it scrolls with the page, so no
-/// glass, and it is 44 pt tall like every control. It hugs its labels, each
-/// part as wide as the widest, so it never reads as a second field under
-/// the search.
+/// Two ways of looking at one page (the Library's Recent and Currents),
+/// as Weather switches its layers: glyph cells in the page's tool group,
+/// the one in use on a selected fill. The words stay for VoiceOver. It
+/// lives inside an `OceanToolGroup` (a `PageTitleRow`'s tools), beside the
+/// page's other tools past an `OceanToolDivider`.
 struct OceanSegmentedSwitch<Value: Hashable>: View {
     @Binding var selection: Value
-    let options: [(value: Value, title: LocalizedStringKey)]
+    let options: [(value: Value, title: LocalizedStringKey, systemImage: String)]
 
     @Namespace private var thumb
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.oceanToolCellWidth) private var cellWidth
 
     var body: some View {
-        EqualWidthRow {
+        HStack(spacing: 0) {
             ForEach(options.indices, id: \.self) { index in
-                part(options[index])
+                cell(options[index])
             }
         }
-        .padding(OceanSpacing.tight)
-        .frame(height: OceanControlSize.height)
-        .background(OceanSurface(shape: Capsule()))
         .accessibilityElement(children: .contain)
     }
 
-    private func part(_ option: (value: Value, title: LocalizedStringKey)) -> some View {
+    private func cell(_ option: (value: Value, title: LocalizedStringKey, systemImage: String)) -> some View {
         let selected = option.value == selection
         return Button {
             withAnimation(reduceMotion ? OceanMotion.quick : OceanMotion.standard) {
                 selection = option.value
             }
         } label: {
-            Text(option.title)
-                .font(OceanType.control)
+            Image(systemName: option.systemImage)
+                .font(OceanType.glyph)
                 .foregroundStyle(selected ? OceanTheme.foam : OceanTheme.mist)
-                .lineLimit(1)
-                .padding(.horizontal, OceanSpacing.inset)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(width: cellWidth, height: OceanControlSize.height)
                 .background {
                     if selected {
                         Capsule()
                             .fill(OceanTheme.selected)
-                            .oceanShadow(OceanShadow.inset)
+                            .padding(OceanSpacing.tight)
                             .matchedGeometryEffect(id: "thumb", in: thumb)
                     }
                 }
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(option.title)
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
 
-/// Its children in a row, each as wide as the widest of them.
-private struct EqualWidthRow: Layout {
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) -> CGSize {
-        guard !subviews.isEmpty else { return .zero }
-        let ideals = subviews.map { $0.sizeThatFits(.unspecified) }
-        let widest = ideals.map(\.width).max() ?? 0
-        let height = proposal.height ?? ideals.map(\.height).max() ?? 0
-        return CGSize(width: widest * CGFloat(subviews.count), height: height)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) {
-        guard !subviews.isEmpty else { return }
-        let width = bounds.width / CGFloat(subviews.count)
-        for (index, subview) in subviews.enumerated() {
-            subview.place(at: CGPoint(x: bounds.minX + CGFloat(index) * width, y: bounds.minY),
-                          proposal: ProposedViewSize(width: width, height: bounds.height))
-        }
+/// A hairline between two kinds of tool in one group, as Weather draws
+/// between its layers and its wind.
+struct OceanToolDivider: View {
+    var body: some View {
+        Rectangle()
+            .fill(OceanTheme.faint)
+            .frame(width: 1, height: OceanControlSize.height / 2)
+            .padding(.horizontal, OceanSpacing.tight)
+            .accessibilityHidden(true)
     }
 }

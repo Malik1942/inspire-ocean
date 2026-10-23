@@ -152,22 +152,35 @@ struct ClusterStreamView: View {
     /// From the sheet's top edge to the current's name, clear of the grabber.
     private static let titleTop: CGFloat = OceanSpacing.sheetTop
 
-    /// The current's name in New York, then its two verbs as Secondary
-    /// buttons: read it all as one answer, or add a thought into it. The
-    /// name renames the current (Adrift has no name of its own to change).
-    /// While picking thoughts, Done takes the verbs' place.
+    /// The current's name in New York with its + on the same line, a tool
+    /// like a page's (the capture opens into this current); under it,
+    /// Summarize as the one quiet verb: the whole stream goes to Ask as
+    /// one grounded answer (SPEC, Ask: one mode). The name renames the
+    /// current (Adrift has no name of its own to change, and nothing is
+    /// added into it: its membership is having no current). While picking
+    /// thoughts, Done takes the verb's place.
     private var header: some View {
         VStack(alignment: .leading, spacing: OceanSpacing.inset) {
-            if isAdrift {
-                titleText
-            } else {
-                Button {
-                    newName = title
-                    renaming = true
-                } label: { titleText }
-                .buttonStyle(.plain)
-                .accessibilityHint("Renames this current.")
+            HStack(alignment: .center, spacing: OceanSpacing.item) {
+                if isAdrift {
+                    titleText
+                } else {
+                    Button {
+                        newName = title
+                        renaming = true
+                    } label: { titleText }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("Renames this current.")
+                }
+                if !isAdrift, !selecting {
+                    Button { showCapture = true } label: {
+                        Image(systemName: "plus")
+                    }
+                    .buttonStyle(.oceanIcon)
+                    .accessibilityLabel("Add a thought")
+                }
             }
+            .frame(minHeight: OceanControlSize.height)
             if selecting {
                 Button("Done") {
                     withAnimation(OceanMotion.quick) {
@@ -176,29 +189,15 @@ struct ClusterStreamView: View {
                     }
                 }
                 .buttonStyle(.oceanSecondary)
-            } else if members.count >= 2 || !isAdrift {
-                HStack(spacing: OceanSpacing.gap) {
-                    // Summarize is a verb, not a mode: the whole stream goes
-                    // to Ask as one grounded answer (SPEC, Ask: one mode).
-                    if members.count >= 2 {
-                        Button {
-                            let ids = members.map(\.id)
-                            dismiss()
-                            appState.summarize(ids, title: title)
-                        } label: {
-                            Label("Summarize", systemImage: "text.line.first.and.arrowtriangle.forward")
-                        }
-                        .buttonStyle(.oceanSecondary)
-                    }
-                    // No adding into Adrift: its membership is having no
-                    // current, so adding into it would be a contradiction.
-                    if !isAdrift {
-                        Button { showCapture = true } label: {
-                            Label("Add a thought", systemImage: "plus")
-                        }
-                        .buttonStyle(.oceanSecondary)
-                    }
+            } else if members.count >= 2 {
+                Button {
+                    let ids = members.map(\.id)
+                    dismiss()
+                    appState.summarize(ids, title: title)
+                } label: {
+                    Label("Summarize", systemImage: "text.line.first.and.arrowtriangle.forward")
                 }
+                .buttonStyle(.oceanSecondary)
             }
         }
     }
