@@ -29,7 +29,7 @@ struct ArchivedThoughtsView: View {
                     .font(OceanType.subjectTitle)
                     .foregroundStyle(OceanTheme.foam)
                     .accessibilityAddTraits(.isHeader)
-                    .tileRow(top: OceanSpacing.tight, bottom: OceanSpacing.block - OceanSpacing.item / 2)
+                    .tileRow(top: OceanSpacing.sheetTop, bottom: OceanSpacing.block - OceanSpacing.item / 2)
                 if shown.isEmpty {
                     Text("Nothing archived")
                         .font(OceanType.secondary)
@@ -44,11 +44,13 @@ struct ArchivedThoughtsView: View {
                             Button(role: .destructive) { removals.delete(node) } label: {
                                 Label("Delete", systemImage: "trash")
                             }
-                            .tint(.red)
+                            .labelStyle(.iconOnly)
+                            .tint(SwipeTint.delete)
                             Button { restore(node) } label: {
                                 Label("Restore", systemImage: "arrow.up.bin")
                             }
-                            .tint(.gray)
+                            .labelStyle(.iconOnly)
+                            .tint(SwipeTint.archive)
                         }
                         // Read last first, as with the discs: Restore, then Delete.
                         .accessibilityActions {
@@ -62,7 +64,9 @@ struct ArchivedThoughtsView: View {
             .contentMargins(.bottom, OceanSpacing.section, for: .scrollContent)
             .thoughtRemovalToast(removals)
             .background(OceanBackground())
-            .navigationBarTitleDisplayMode(.inline)
+            // A pull-up sheet: no bar and no close, the grabber is its top
+            // edge and it swipes away. A pushed thought brings its own bar.
+            .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: Node.self) { node in
                 NodeDetailContent(node: node)
             }

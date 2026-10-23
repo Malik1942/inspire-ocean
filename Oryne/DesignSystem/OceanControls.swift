@@ -232,30 +232,28 @@ struct OceanSendDiscStyle: ButtonStyle {
     }
 }
 
-/// How every tab opens, laid out like a native large-title page: the
-/// tools on a 44 pt row where the navigation bar's buttons sit (on the
-/// gutter, which is the system's own margin, the same size as a pushed
-/// page's toolbar, so they stay put when a thought opens), and the tab's
-/// name in New York below, where a system large title would be. It scrolls
-/// with the page.
+/// How every tab opens, laid out like a native large-title page: the tab's
+/// name in New York where a system large title would be, under the empty
+/// band the navigation bar would take, and the page's tools on the same
+/// line, centred on the title and ending on the gutter. It scrolls with
+/// the page.
 struct PageTitleRow<Tools: View>: View {
     let title: LocalizedStringKey
     @ViewBuilder var tools: Tools
 
     var body: some View {
-        VStack(alignment: .leading, spacing: OceanSpacing.snug) {
-            HStack {
-                Spacer()
-                if Tools.self != EmptyView.self {
-                    OceanToolGroup { tools }
-                }
-            }
-            .frame(height: OceanControlSize.height)
+        HStack(alignment: .center, spacing: OceanSpacing.item) {
             Text(title)
                 .font(OceanType.pageTitle)
                 .foregroundStyle(OceanTheme.foam)
+                .lineLimit(1)
                 .accessibilityAddTraits(.isHeader)
+            Spacer(minLength: 0)
+            if Tools.self != EmptyView.self {
+                OceanToolGroup { tools }
+            }
         }
+        .padding(.top, OceanControlSize.height + OceanSpacing.snug)
     }
 }
 

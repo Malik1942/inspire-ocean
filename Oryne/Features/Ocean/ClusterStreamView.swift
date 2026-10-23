@@ -4,7 +4,9 @@ import SwiftData
 /// The inside of one current: its name, what can be done with all of it
 /// (labelled, not bare glyphs), then every thought that expresses the
 /// concept, newest first. Each tile opens the familiar thought page;
-/// swiping it left archives or deletes it.
+/// swiping it left archives or deletes it, a long press selects it. The
+/// name renames the current. A pull-up sheet: no bar, no close; it swipes
+/// away.
 ///
 /// Membership is by *meaning*, not by storage: any thought whose themes
 /// include the concept appears here, so a thought can surface in more than
@@ -55,7 +57,7 @@ struct ClusterStreamView: View {
         NavigationStack(path: $path) {
             List {
                 header
-                    .tileRow(top: OceanSpacing.tight, bottom: OceanSpacing.block - OceanSpacing.item / 2)
+                    .tileRow(top: Self.titleTop, bottom: OceanSpacing.block - OceanSpacing.item / 2)
                 ForEach(members) { node in
                     if selecting {
                         // No swipes while picking.
@@ -75,6 +77,16 @@ struct ClusterStreamView: View {
                         Button { path.append(node) } label: { NodeRow(node: node, showsCurrent: false) }
                             .buttonStyle(.plain)
                             .thoughtSwipeActions(node, removals: removals)
+                            // The split starts from a thought: a long press
+                            // picks it, then others join with a tap.
+                            .contextMenu {
+                                if !isAdrift {
+                                    Button {
+                                        selected = [node.id]
+                                        withAnimation(OceanMotion.quick) { selecting = true }
+                                    } label: { Label("Select", systemImage: "checkmark.circle") }
+                                }
+                            }
                             .tileRow()
                     }
                 }
@@ -83,29 +95,11 @@ struct ClusterStreamView: View {
             .contentMargins(.bottom, OceanSpacing.section, for: .scrollContent)
             .thoughtRemovalToast(removals)
             .background(OceanBackground())
-            .navigationBarTitleDisplayMode(.inline)
+            // Nothing in the bar: the sheet's grabber is its top edge, and a
+            // pushed thought brings its own bar with the back button.
+            .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: Node.self) { node in
                 NodeDetailContent(node: node)
-            }
-            .toolbar {
-                if !isAdrift {
-                    ToolbarItem(placement: .topBarLeading) {
-                        if selecting {
-                            Button("Done") { selecting = false; selected = [] }
-                        } else {
-                            Menu {
-                                Button {
-                                    newName = title
-                                    renaming = true
-                                } label: { Label("Rename", systemImage: "pencil") }
-                                Button {
-                                    selecting = true
-                                } label: { Label("Select thoughts", systemImage: "checklist") }
-                            } label: { Image(systemName: "ellipsis.circle") }
-                            .accessibilityLabel("Current actions")
-                        }
-                    }
-                }
             }
             .safeAreaInset(edge: .bottom) {
                 if selecting, !selected.isEmpty {
@@ -155,16 +149,34 @@ struct ClusterStreamView: View {
         }
     }
 
+    /// From the sheet's top edge to the current's name, clear of the grabber.
+    private static let titleTop: CGFloat = OceanSpacing.sheetTop
+
     /// The current's name in New York, then its two verbs as Secondary
-    /// buttons: read it all as one answer, or add a thought into it.
+    /// buttons: read it all as one answer, or add a thought into it. The
+    /// name renames the current (Adrift has no name of its own to change).
+    /// While picking thoughts, Done takes the verbs' place.
     private var header: some View {
         VStack(alignment: .leading, spacing: OceanSpacing.inset) {
-            Text(title)
-                .font(OceanType.subjectTitle)
-                .foregroundStyle(isAdrift ? OceanTheme.mist : OceanTheme.foam)
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityAddTraits(.isHeader)
-            if members.count >= 2 || !isAdrift {
+            if isAdrift {
+                titleText
+            } else {
+                Button {
+                    newName = title
+                    renaming = true
+                } label: { titleText }
+                .buttonStyle(.plain)
+                .accessibilityHint("Renames this current.")
+            }
+            if selecting {
+                Button("Done") {
+                    withAnimation(OceanMotion.quick) {
+                        selecting = false
+                        selected = []
+                    }
+                }
+                .buttonStyle(.oceanSecondary)
+            } else if members.count >= 2 || !isAdrift {
                 HStack(spacing: OceanSpacing.gap) {
                     // Summarize is a verb, not a mode: the whole stream goes
                     // to Ask as one grounded answer (SPEC, Ask: one mode).
@@ -189,5 +201,15 @@ struct ClusterStreamView: View {
                 }
             }
         }
+    }
+
+    private var titleText: some View {
+        Text(title)
+            .font(OceanType.subjectTitle)
+            .foregroundStyle(isAdrift ? OceanTheme.mist : OceanTheme.foam)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .accessibilityAddTraits(.isHeader)
     }
 }

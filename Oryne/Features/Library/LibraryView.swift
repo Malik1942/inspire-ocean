@@ -532,6 +532,7 @@ struct LibraryView: View {
                     OceanToolGlyph(systemName: "line.3.horizontal.decrease")
                 }
                 .accessibilityLabel("Filter")
+                .accessibilityIdentifier("library.filter")
             }
             // The serif's descender space, as on Tide.
             .padding(.bottom, -OceanSpacing.tight)
