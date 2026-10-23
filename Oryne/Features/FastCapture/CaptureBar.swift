@@ -27,7 +27,8 @@ struct CaptureBar: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Capture a thought")
-            .accessibilityValue(Text(verbatim: control.parked?.text ?? ""))
+            // A draft of only pictures reads its line ("3 images").
+            .accessibilityValue(Text(verbatim: control.parked.map { $0.text.trimmed.isEmpty ? $0.line : $0.text } ?? ""))
             .accessibilityHint(control.parked == nil
                 ? Text("Opens the keyboard. The button beside it whispers.")
                 : Text("Opens the keyboard. The button beside it releases the draft."))

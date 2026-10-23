@@ -60,6 +60,9 @@ final class CaptureControl {
     /// The overlay is only its toast now: the bar comes back, and a tap or a
     /// hold on it starts the next capture in the same overlay.
     var toastShowing = false
+    /// The composer's + panel stands in the keyboard's place: the tab bar
+    /// steps away under it, as it does under the keys.
+    var attachPanelOpen = false
     /// The bar has a place on the tab on screen (Tide). The toast sits just
     /// above it there, and in its spot on a tab without one.
     var barOnTab = true
@@ -78,12 +81,14 @@ final class CaptureControl {
     }
 }
 
-/// A draft put away unsent: the words, and a screenshot or a take's audio
+/// A draft put away unsent: the words, and the pictures or a take's audio
 /// riding along with them. It lives as long as the app does.
 struct ParkedCapture {
     var text: String
-    var imageData: Data?
+    var images: [CaptureImage] = []
     var heldDraft: CaptureDraft?
+    /// Links taken off the card: they are still words when it comes back.
+    var dismissedLinks: Set<String> = []
 
     /// The bar's line: the words' first line, or what rides along when
     /// nothing was typed.
@@ -91,6 +96,7 @@ struct ParkedCapture {
         if let first = text.split(whereSeparator: \.isNewline).map({ $0.trimmingCharacters(in: .whitespaces) }).first(where: { !$0.isEmpty }) {
             return first
         }
-        return heldDraft?.audioData != nil ? String(localized: "Whisper") : String(localized: "Screenshot")
+        if heldDraft?.audioData != nil { return String(localized: "Whisper") }
+        return images.count > 1 ? String(localized: "\(images.count) images") : String(localized: "Image")
     }
 }

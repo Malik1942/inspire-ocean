@@ -30,6 +30,10 @@ struct RootTabView: View {
 
     private var control: CaptureControl { appState.captureControl }
 
+    /// Under the composer's + panel the tab bar steps away, as it does under
+    /// the keys it stands in for.
+    private var tabBarVisibility: Visibility { control.attachPanelOpen ? .hidden : .automatic }
+
     /// A quiet moment: Tide or the Library (never Ask, so never over an
     /// answer), no capture overlay, toast, hold, keyboard, onboarding or
     /// Tide sheet, and the app active for at least 10 s. The review ask only
@@ -48,14 +52,17 @@ struct RootTabView: View {
     var body: some View {
         TabView(selection: $appState.selectedTab) {
             OceanFieldView()
+                .toolbar(tabBarVisibility, for: .tabBar)
                 .tabItem { tabLabel(OceanTab.homeTitle, systemImage: "water.waves") }
                 .tag(OceanTab.ocean)
 
             AskView()
+                .toolbar(tabBarVisibility, for: .tabBar)
                 .tabItem { tabLabel("Ask", systemImage: "bubble.left") }
                 .tag(OceanTab.ask)
 
             LibraryView()
+                .toolbar(tabBarVisibility, for: .tabBar)
                 .tabItem { tabLabel("Library", systemImage: "rectangle.stack") }
                 .tag(OceanTab.library)
         }

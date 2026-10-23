@@ -2409,16 +2409,6 @@
         }
       }
     },
-    "Remove screenshot" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "移除截图"
-          }
-        }
-      }
-    },
     "Remove theme %@" : {
       "localizations" : {
         "zh-Hans" : {
@@ -4663,6 +4653,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "打开已归档的灵感。"
+          }
+        }
+      }
+    },
+    "%lld images" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 张图片"
+          }
+        }
+      }
+    },
+    "Camera" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "相机"
+          }
+        }
+      }
+    },
+    "All Photos" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所有照片"
+          }
+        }
+      }
+    },
+    "Show keyboard" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示键盘"
           }
         }
       }

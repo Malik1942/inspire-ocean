@@ -195,3 +195,16 @@ enum UnderstandingSource: String, Codable, Sendable {
     /// The concept-space fallback: embeddings and heuristics, no model.
     case concepts
 }
+
+extension NodeKind {
+    /// What a captured thought is, from what it holds: a recording makes a
+    /// whisper and words a thought; with neither, its pictures name it, then
+    /// its link. The kind follows what happened, never a choice.
+    static func captured(voice: Bool, words: String, images: Int, link: Bool) -> NodeKind {
+        if voice { return .voice }
+        if !words.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return .text }
+        if images > 0 { return .image }
+        if link { return .link }
+        return .text
+    }
+}
