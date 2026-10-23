@@ -32,12 +32,13 @@ struct AskView: View {
     @State private var searchPhase: SearchPhase?
     @FocusState private var inputFocused: Bool
 
-    @State private var openedNode: Node?
+    /// A source opened from an answer: a thought's page, pushed.
+    @State private var path = NavigationPath()
 
     private var messages: [ChatMessage] { conversation?.orderedMessages ?? [] }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ZStack {
                 PageBackground()
                 transcript
@@ -50,7 +51,8 @@ struct AskView: View {
             .navigationTitle("Ask")
             .toolbar(.hidden, for: .navigationBar)
             .safeAreaInset(edge: .bottom) { inputBar }
-            .sheet(item: $openedNode) { ExpandedNodeView(node: $0) }
+            .oceanDestinations(path: $path)
+            .onChange(of: path.count, initial: true) { _, depth in appState.pushedDepth[.ask] = depth }
             .onAppear {
                 consumePendingPrompt()
                 consumePendingSummary()
@@ -166,7 +168,7 @@ struct AskView: View {
                 .foregroundStyle(OceanTheme.mist)
                 .padding(.bottom, OceanSpacing.tight)
             ForEach(sourceNodes(message), id: \.id) { node in
-                Button { openedNode = node } label: {
+                Button { path.append(OceanDestination.thought(node)) } label: {
                     ThoughtLine(node: node, showsChevron: true)
                 }
                 .buttonStyle(.plain)

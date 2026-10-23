@@ -43,6 +43,10 @@ final class AppState {
     /// appear over a sheet, such as the App Store review ask.
     var isPresentingOceanSheet = false
 
+    /// How deep each tab's stack is pushed. A pushed page (a thought, a
+    /// current, Archived) is read in full: the tab bar steps away under it.
+    var pushedDepth: [OceanTab: Int] = [:]
+
     init() {
         // Testing seam: launch straight into a tab via the OCEAN_START_TAB env var
         // (e.g. `SIMCTL_CHILD_OCEAN_START_TAB=ask`). No effect in normal use.

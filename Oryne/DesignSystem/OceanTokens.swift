@@ -44,9 +44,6 @@ enum OceanSpacing {
     static let block: CGFloat = 24
     /// Between sections, on every page.
     static let section: CGFloat = 40
-    /// A pull-up sheet's title under the sheet's edge: a section's air past the
-    /// grabber.
-    static let sheetTop: CGFloat = 40
     /// The page margin on standard iPhones: the system's own layout margin, where a
     /// navigation bar puts its back button.
     static let gutterCompact: CGFloat = 16
@@ -111,6 +108,9 @@ enum OceanSize {
 enum OceanControlSize {
     /// A button, a field, a tool cell, the capture disc, a segmented switch.
     static let height: CGFloat = 44
+    /// A disc inside a field (the composer's + and its disc), as Messages sizes its
+    /// own: smaller than a page tool, inside a 44 pt target.
+    static let compact: CGFloat = 36
     /// One tool's cell in a group of several, as the system toolbar spaces them.
     static let toolCell: CGFloat = 50
     /// The capture bar and Ask's bar: a capsule whose end radius is half of this.
@@ -247,6 +247,9 @@ extension OceanTheme {
     static let separator = Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0.08)
     /// The dim over a page while the capture overlay is up.
     static let scrim = Color(.sRGB, red: 0, green: 0, blue: 0, opacity: 0.24)
+    /// The deep water as a tint on a toast's glass, so a message floating over a
+    /// page reads at once while the material stays glass.
+    static let toastTint = Color(.sRGB, red: 0.05, green: 0.055, blue: 0.065, opacity: 0.85)
     /// A dark disc under a ✕ on a photograph, so it reads on any picture.
     static let photoScrim = Color(.sRGB, red: 0, green: 0, blue: 0, opacity: 0.6)
     /// Soft near-white for interactive accents, kept monochrome: the tint, a

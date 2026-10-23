@@ -20,6 +20,8 @@ struct CaptureHoldButton: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var size: CGFloat = OceanControlSize.height
+    /// The touch target, never below the system's 44 pt, whatever the disc.
+    var target: CGFloat = OceanControlSize.height
     /// The disc in the open composer, where VoiceOver calls it Whisper.
     var inComposer = false
     /// The composer's release, once there is something to release: a tap
@@ -53,6 +55,7 @@ struct CaptureHoldButton: View {
             glyph
         }
         .frame(width: size, height: size)
+        .frame(width: max(size, target), height: max(size, target))
         // One body: without it the glyph (a symbol with a content
         // transition) jumps ahead of its glass while the card folds.
         .geometryGroup()
@@ -121,7 +124,8 @@ struct CaptureHoldButton: View {
             .onEnded { value in
                 // The send, like a button, lets go without firing when the
                 // finger slides well off the disc first.
-                let reach = CGRect(x: 0, y: 0, width: size, height: size).insetBy(dx: -16, dy: -16)
+                let side = max(size, target)
+                let reach = CGRect(x: 0, y: 0, width: side, height: side).insetBy(dx: -OceanSpacing.inset, dy: -OceanSpacing.inset)
                 end(inside: reach.contains(value.location))
             }
     }

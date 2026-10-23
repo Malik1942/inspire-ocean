@@ -2,29 +2,12 @@ import SwiftUI
 import Translation
 import SwiftData
 
-/// Expanded Node View (§9): a lightweight contextual layer around a single
-/// fragment — "zooming into the atmosphere around an idea."
-struct ExpandedNodeView: View {
-    let node: Node
-
-    var body: some View {
-        NavigationStack {
-            // Presented as a sheet root: it owns a leading "Close" to dismiss,
-            // so the trailing slot is free for the destructive action.
-            NodeDetailContent(node: node, isSheetRoot: true)
-        }
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
-        .presentationBackground(.clear)
-    }
-}
-
+/// A thought's page (§9): "zooming into the atmosphere around an idea". A
+/// place, so it is always pushed (`OceanDestination.thought`), from Tide,
+/// Ask, the Library, a current, or another thought; its tasks (edit, grow
+/// a branch, move) rise as sheets over it.
 struct NodeDetailContent: View {
     let node: Node
-    /// True only when this is the root of a presented sheet (so it shows its
-    /// own leading "Close"). When pushed onto a navigation stack the system
-    /// supplies a back button, so the leading slot is left to it.
-    var isSheetRoot: Bool = false
 
     @Environment(\.modelContext) private var context
     @Environment(\.oceanAI) private var ai
@@ -43,8 +26,6 @@ struct NodeDetailContent: View {
     @State private var viewerIndex = 0
     @State private var retranscribing = false
     @State private var transcriptOpen = false
-    /// A theme tapped on this page: its current opens in a sheet.
-    @State private var themeStream: StreamSelection?
     @State private var showTranslation = false
     @State private var showReplaceConfirm = false
     @State private var pendingRetranscribe: (data: Data, locale: Locale)?
@@ -89,10 +70,8 @@ struct NodeDetailContent: View {
         .background(OceanBackground())
         // A thought is a page to read: pushed, it hides the tab bar (the
         // capture bar steps away with it); the back gesture returns.
-        .toolbar(isSheetRoot ? .automatic : .hidden, for: .tabBar)
+        .toolbar(.hidden, for: .tabBar)
         .navigationBarTitleDisplayMode(.inline)
-        // A sheet root has no close of its own: the grabber and the pull
-        // down are the way out. A pushed view has the system back button.
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 // The quiet escape hatch: move this one thought to a chosen
@@ -153,11 +132,6 @@ struct NodeDetailContent: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text("Speech recognition couldn't produce words for this recording.")
-        }
-        // A summary or a question opens in Ask: a thought shown as a sheet
-        // steps out of the way so the answer is what you see.
-        .onChange(of: appState.selectedTab) { _, tab in
-            if isSheetRoot, tab == .ask { dismiss() }
         }
         .fullScreenCover(isPresented: $showImageViewer) {
             ImageViewer(datas: node.imageDatas, index: $viewerIndex)
@@ -570,7 +544,7 @@ struct NodeDetailContent: View {
             sectionTitle("Themes")
             FlowLayout(spacing: OceanSpacing.gap) {
                 ForEach(node.themes, id: \.self) { theme in
-                    Button { themeStream = StreamSelection(theme: ThoughtReading.slug(theme)) } label: {
+                    NavigationLink(value: OceanDestination.current(ThoughtReading.slug(theme))) {
                         Text(CurrentKey.humanized(theme))
                     }
                     .buttonStyle(.oceanSecondary)
@@ -578,16 +552,13 @@ struct NodeDetailContent: View {
                 }
             }
         }
-        .sheet(item: $themeStream) { selection in
-            ClusterStreamView(theme: selection.theme)
-        }
     }
 
     private var branchesSection: some View {
         VStack(alignment: .leading, spacing: OceanSpacing.item) {
             sectionTitle("Branches")
             ForEach(children) { child in
-                NavigationLink { NodeDetailContent(node: child) } label: {
+                NavigationLink(value: OceanDestination.thought(child)) {
                     NodeRow(node: child)
                 }
                 .buttonStyle(.plain)
@@ -616,7 +587,7 @@ struct NodeDetailContent: View {
                     .font(OceanType.secondary).foregroundStyle(OceanTheme.mist)
             } else {
                 ForEach(related) { other in
-                    NavigationLink { NodeDetailContent(node: other) } label: {
+                    NavigationLink(value: OceanDestination.thought(other)) {
                         NodeRow(node: other)
                     }
                     .buttonStyle(.plain)
