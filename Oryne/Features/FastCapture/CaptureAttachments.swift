@@ -26,18 +26,18 @@ struct CaptureImage: Identifiable {
     }
 }
 
-/// What rides on the composer's card above the words: its pictures, a
-/// quiet tile for each one still loading, and the link sensed in the
-/// words. Tiles 64 pt high whose corners sit concentric with the card's,
-/// each with its own ✕. The row scrolls sideways once it is wider than
-/// the card.
+/// What rides on the composer's card above the words: its pictures in the
+/// order picked, a quiet tile in the place of each one still loading, and
+/// the link sensed in the words. Tiles 64 pt high whose corners sit
+/// concentric with the card's, each with its own ✕ (to VoiceOver, one
+/// element with a named action). The row scrolls sideways once it is
+/// wider than the card.
 struct CaptureAttachments: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.calmAccessibility) private var calm
 
-    let images: [CaptureImage]
-    /// Pictures picked but not yet loaded.
-    var pending = 0
+    /// The pictures in pick order, loading or landed.
+    let slots: [CapturePictureSlots<CaptureImage>.Slot]
     /// The link a release would attach.
     var link: LinkSensing.Sensed? = nil
     var onRemoveImage: (CaptureImage.ID) -> Void
@@ -62,13 +62,15 @@ struct CaptureAttachments: View {
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                ForEach(images) { image in
-                    thumbnail(image)
-                        .transition(arrival)
-                }
-                ForEach(0..<pending, id: \.self) { _ in
-                    loadingTile
-                        .transition(.opacity)
+                ForEach(Array(slots.enumerated()), id: \.element.id) { index, slot in
+                    switch slot {
+                    case .picture(let image):
+                        thumbnail(image, number: index + 1)
+                            .transition(arrival)
+                    case .loading:
+                        loadingTile(number: index + 1)
+                            .transition(.opacity)
+                    }
                 }
                 if let link {
                     linkTile(link)
@@ -79,30 +81,44 @@ struct CaptureAttachments: View {
         .frame(height: Self.tileSize)
     }
 
-    private func thumbnail(_ image: CaptureImage) -> some View {
+    /// Which picture this is, "Image 2 of 3", counting the ones still
+    /// loading: they hold their places.
+    private func position(_ number: Int) -> Text {
+        Text("Image \(number) of \(slots.count)")
+    }
+
+    private func thumbnail(_ image: CaptureImage, number: Int) -> some View {
         Image(uiImage: image.thumbnail)
             .resizable()
             .scaledToFill()
             .frame(width: Self.tileSize, height: Self.tileSize)
             .clipShape(tileShape)
             .overlay(alignment: .topTrailing) {
-                RemoveBadge(label: Text("Remove image")) { onRemoveImage(image.id) }
+                RemoveBadge { onRemoveImage(image.id) }
             }
-            .accessibilityElement(children: .contain)
-            .accessibilityLabel(Text(NodeKind.image.label))
+            // VoiceOver's ring is the tile, not the filled picture spilling
+            // past it.
+            .contentShape(.accessibility, tileShape)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(position(number))
+            .accessibilityAction(named: Text("Remove image")) { onRemoveImage(image.id) }
     }
 
     /// A picture still on its way. Its ✕ lets go of the loads, so one that
     /// stalls (an iCloud original while offline) never holds the card.
-    private var loadingTile: some View {
+    private func loadingTile(number: Int) -> some View {
         tileShape
             .fill(Color.white.opacity(0.08))
             .frame(width: Self.tileSize, height: Self.tileSize)
             .overlay { ProgressView().tint(OceanTheme.mist) }
             .overlay(alignment: .topTrailing) {
-                RemoveBadge(label: Text("Cancel"), action: onCancelLoading)
+                RemoveBadge(action: onCancelLoading)
             }
-            .accessibilityElement(children: .contain)
+            .contentShape(.accessibility, tileShape)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(position(number))
+            .accessibilityValue(Text("Loading"))
+            .accessibilityAction(named: Text("Cancel"), onCancelLoading)
     }
 
     /// The sensed link: its site's name under the link glyph, on the quiet
@@ -123,6 +139,10 @@ struct CaptureAttachments: View {
                 .accessibilityHidden(true)
         }
         .padding(10)
+        // The glyph and the site's name grow up to the largest standard
+        // size, the largest at which both lines still fit the 64 pt tile.
+        // Past it a long press shows the name large; VoiceOver reads it.
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         .frame(
             minWidth: Self.tileSize, maxWidth: 168,
             minHeight: Self.tileSize, maxHeight: Self.tileSize,
@@ -130,18 +150,27 @@ struct CaptureAttachments: View {
         )
         .background(Color.white.opacity(0.08), in: tileShape)
         .overlay(alignment: .topTrailing) {
-            RemoveBadge(label: Text("Remove link")) { onRemoveLink(link.urlString) }
+            RemoveBadge { onRemoveLink(link.urlString) }
         }
-        .accessibilityElement(children: .contain)
+        .contentShape(.accessibility, tileShape)
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(NodeKind.link.label))
         .accessibilityValue(Text(verbatim: link.host))
+        .accessibilityAction(named: Text("Remove link")) { onRemoveLink(link.urlString) }
+        .accessibilityShowsLargeContentViewer {
+            Label {
+                Text(verbatim: link.host)
+            } icon: {
+                Image(systemName: "link")
+            }
+        }
     }
 }
 
 /// The small ✕ in a tile's corner: a white glyph on a dark disc, so it
-/// reads on any photo, inside a 32 pt target.
+/// reads on any photo, inside a 32 pt target. VoiceOver reaches it as its
+/// tile's named action.
 private struct RemoveBadge: View {
-    let label: Text
     let action: () -> Void
 
     var body: some View {
@@ -156,6 +185,5 @@ private struct RemoveBadge: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(label)
     }
 }
