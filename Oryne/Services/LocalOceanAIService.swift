@@ -85,33 +85,74 @@ final class LocalOceanAIService: OceanAIService {
         }
 
         if #available(iOS 26, *), Self.foundationModelAvailable {
-            let modelTitle = await foundationModelTitle(for: cleaned)
-                .map(TitleDistiller.tidy)
-                .flatMap { TitleDistiller.speaksLike($0, entry: cleaned) ? $0 : nil }
-            let essence = modelTitle ?? TitleDistiller.essence(from: cleaned)
             async let pick = FoundationCurrentPicker.pick(entry: cleaned, candidates: currents)
-            let modelThemes = await foundationModelThemes(for: cleaned)
-            let themes = modelThemes.isEmpty
-                ? SemanticThemes.themes(for: cleaned, essence: essence)
-                : modelThemes
-            return ThoughtUnderstanding(
-                essence: essence,
-                themes: CurrentSnap.resolve(themes: themes, pick: await pick, candidates: currents),
-                mood: ThemeDetector.mood(from: cleaned)
-            )
+            var understanding = await foundationModelUnderstanding(for: cleaned)
+            // The current it joins: the model's constrained pick; failing
+            // that, its own English theme key when a current already has
+            // it (the bridge across languages); failing that, it founds one.
+            let joined = CurrentSnap.joinKey(pick: await pick, candidates: currents)
+            let ownKey = understanding.themeKeys.first
+            let existing = Set(currents.map(\.key))
+            understanding.currentKey = joined
+                ?? (ownKey.map { existing.contains($0) } == true ? ownKey : nil)
+                ?? ownKey
+                ?? understanding.themes.first.map(ThoughtReading.slug)
+            return understanding
         }
         return SemanticThemes.understand(cleaned)
+    }
+
+    /// The full understanding record from one guided call
+    /// (`FoundationThoughtReader`), cleaned by `ThoughtReading`. When the
+    /// guided call declines (a guardrail, the context), the two older
+    /// free-text calls still give a title and themes, and the record stays
+    /// partial so a later pass can complete it.
+    @available(iOS 26, *)
+    private func foundationModelUnderstanding(for text: String) async -> ThoughtUnderstanding {
+        let language = ThoughtReading.language(of: text)
+        let mood = ThemeDetector.mood(from: text)
+
+        if let reading = await FoundationThoughtReader.read(entry: text) {
+            let title = TitleDistiller.tidy(reading.title)
+            let essence = (!title.isEmpty && TitleDistiller.speaksLike(title, entry: text))
+                ? title
+                : TitleDistiller.essence(from: text)
+            let modelThemes = SemanticThemes.tidyThemeList(reading.themes.joined(separator: ", "))
+            let themes = modelThemes.isEmpty ? SemanticThemes.themes(for: text, essence: essence) : modelThemes
+            return ThoughtUnderstanding(
+                essence: essence,
+                themes: themes,
+                mood: mood,
+                // Form decides quote, question and link; the model the rest.
+                category: ThoughtReading.formalCategory(for: text) ?? reading.category,
+                language: language,
+                gistOther: ThoughtReading.tidyGist(reading.gistInOtherLanguage, entryLanguage: language),
+                entities: ThoughtReading.tidyEntities(reading.entities),
+                themeKeys: ThoughtReading.keys(fromEnglish: reading.themesInEnglish, fallbackLabels: themes),
+                source: .model
+            )
+        }
+
+        let modelTitle = await foundationModelTitle(for: text)
+            .map(TitleDistiller.tidy)
+            .flatMap { TitleDistiller.speaksLike($0, entry: text) ? $0 : nil }
+        let essence = modelTitle ?? TitleDistiller.essence(from: text)
+        let modelThemes = await foundationModelThemes(for: text)
+        let themes = modelThemes.isEmpty ? SemanticThemes.themes(for: text, essence: essence) : modelThemes
+        return ThoughtUnderstanding(
+            essence: essence,
+            themes: themes,
+            mood: mood,
+            language: language,
+            themeKeys: ThoughtReading.keys(fromEnglish: [], fallbackLabels: themes),
+            source: .model
+        )
     }
 
     /// Cached once per process: the availability query itself is slow on
     /// ineligible hardware, and the answer doesn't change mid-session.
     @available(iOS 26, *)
-    private static let foundationModelAvailable: Bool = {
-        #if canImport(FoundationModels)
-        if case .available = SystemLanguageModel.default.availability { return true }
-        #endif
-        return false
-    }()
+    private static let foundationModelAvailable: Bool = OnDeviceModel.isReadyCached
 
     /// Apple's on-device foundation model (Apple Intelligence). Returns nil when
     /// the model isn't available on the device, so the caller can fall back.
@@ -212,13 +253,49 @@ final class LocalOceanAIService: OceanAIService {
         // the reply never presents itself as a full read of the question.
         let (query, degraded) = Self.boundedQuery(rawQuery)
 
+        // 0. On the phone's one lens, the model works as an agent: it finds,
+        //    lists and reads the thoughts itself (`AskAgent`). Nil means it
+        //    never used a tool or failed, and the grounded path below stands.
+        if mode == .synthesis, #available(iOS 26, *), Self.foundationModelAvailable,
+           let answer = await AskAgent.answer(
+               query: query,
+               history: history.map { AskAgent.Turn(isUser: $0.isUser, text: $0.text) },
+               thoughts: active.map(AskAgent.Thought.init(node:)),
+               aboutPerson: await MainActor.run { Consolidation.preamble(context: Persistence.shared.mainContext) }
+           ) {
+            let byID = Dictionary(uniqueKeysWithValues: active.map { ($0.id, $0) })
+            // What the answer cited; failing that, what it read and what the
+            // tools surfaced, so the sources are never empty while the tools
+            // found something.
+            let sourceIDs = answer.cited.isEmpty
+                ? Array((answer.read + answer.surfaced.filter { !answer.read.contains($0) }).prefix(12))
+                : answer.cited
+            let sources = sourceIDs.compactMap { byID[$0] }
+            // Open sea only when the Ocean had nothing: a list of two bugs
+            // is a complete answer, and a note "beyond" it reads as a lecture
+            // (observed 2026-10-22: "what bugs have I noted" drew three
+            // paragraphs on malware).
+            var outward: String?
+            if sources.isEmpty {
+                outward = await foundationModelOutward(query: query, sources: [])
+            }
+            return OceanResponse(
+                reflection: answer.text,
+                sourceNodeIDs: sources.map(\.id),
+                patternSummary: nil,
+                suggestedBranches: [],
+                outwardNote: outward,
+                provenance: sources.isEmpty ? .noSources : (degraded ? .degraded : .onDevice)
+            )
+        }
+
         // 1. Retrieve only the fragments that clear the relevance floor.
         //    Follow-ups that merely point back ("tell me more") borrow the
         //    previous user turn; a fresh question retrieves on its own words.
         let retrievalQuery = expandedRetrievalQuery(query, history: history)
         let ranked = embeddings.rank(
             query: retrievalQuery,
-            candidates: active.map { (id: $0.id, text: $0.searchableText) },
+            candidates: active.map { (id: $0.id, texts: $0.retrievalTexts) },
             limit: retrievalLimit(for: mode),
             floor: EmbeddingService.dialogueRetrievalFloor
         )
@@ -289,10 +366,17 @@ final class LocalOceanAIService: OceanAIService {
             patternSummary: patternSummary,
             suggestedBranches: branches,
             outwardNote: outwardNote,
-            // A shortened question means the reply is a partial read; otherwise
-            // this is an ordinary grounded on-device answer.
-            provenance: degraded ? .degraded : .onDevice
+            provenance: Self.provenance(composed: reflection != nil, mode: mode, degraded: degraded)
         )
+    }
+
+    /// Where a reply's words came from. A template stands in only when no
+    /// model could compose, and the reply says so: a canned reading marked
+    /// as on-device would hide that nothing read the question (§3). Search
+    /// is a pure find, so its fixed line is the honest answer, not a stand-in.
+    static func provenance(composed: Bool, mode: DialogueMode, degraded: Bool) -> ResponseProvenance {
+        if !composed && mode != .search { return .template }
+        return degraded ? .degraded : .onDevice
     }
 
     /// When an answer steps beyond the user's notes. Research always does;
@@ -309,7 +393,9 @@ final class LocalOceanAIService: OceanAIService {
 
     /// The fixed question behind Summarize: the set is already chosen, so the
     /// model is asked only to read across it.
-    static let summaryQuery = "What runs through these thoughts? Say what they share, where they pull apart, and what sits underneath. Speak to me directly, as you, never as the user."
+    static var summaryQuery: String {
+        String(localized: "What runs through these thoughts? Say what they share, where they pull apart, and what sits underneath. Speak to me directly, as you, never as the user.")
+    }
 
     func summarize(_ nodes: [Node]) async -> OceanResponse {
         let sources = Array(nodes.filter { !$0.isArchived }.prefix(12))
@@ -339,7 +425,7 @@ final class LocalOceanAIService: OceanAIService {
             patternSummary: topThemes.isEmpty ? nil : "Recurring threads: " + topThemes.joined(separator: " · "),
             suggestedBranches: [],
             outwardNote: nil,
-            provenance: .onDevice
+            provenance: reflection == nil ? .template : .onDevice
         )
     }
 
@@ -497,7 +583,8 @@ final class LocalOceanAIService: OceanAIService {
     static let secondPersonReminder = """
     Reply to the person who captured these fragments in at most three short \
     sentences, saying only what the fragments say. Call them "you", as in \
-    "You keep returning to…"; never write "the user", "they" or "the person".
+    "You keep returning to…"; never write "the user", "they" or "the person". \
+    Answer in the language the question is written in.
     """
 
     static let reflectionVoice = """
@@ -515,7 +602,9 @@ final class LocalOceanAIService: OceanAIService {
     of the current one. The user's question is not a fragment and is not \
     evidence of anything they have captured; cite only the fragments above, \
     and if the question mentions something no fragment supports, never repeat \
-    that content as if it were their thought.
+    that content as if it were their thought. Write in the language the \
+    question is written in; if it mixes languages, use the one most of the \
+    fragments are in.
     """
 
     /// The empty-state voice: a fenced-off call whose only job is to say,
@@ -527,7 +616,7 @@ final class LocalOceanAIService: OceanAIService {
     question. Say so plainly and gently in one or two calm sentences: there \
     is nothing in their Ocean about this yet. Do NOT answer the question from \
     general knowledge. Do NOT invent, quote, or imply any fragment. No lists, \
-    no exclamation marks.
+    no exclamation marks. Reply in the language of their question.
     """
 
     /// The growth-direction language for Expansion's model-suggested branches,
@@ -539,7 +628,25 @@ final class LocalOceanAIService: OceanAIService {
     project, research. Each title is at most nine words, concrete and \
     speculative, and each line should be a different kind of leap — a bridge \
     to another domain, a metaphorical reframing, or a physical form it could \
-    take. Never restate their fragments.
+    take. Never restate their fragments. Write the titles in the language of \
+    the question.
+    """
+
+    /// Research's outward voice, shared with the cloud seam. Open sea is the
+    /// one place the answer is not grounded in the user's words, so the
+    /// prompt trades reach for honesty: a direction without a name over a
+    /// name the model is not sure of.
+    static let outwardVoice = """
+    You are the outward-looking voice of a personal inspiration space called \
+    the Ocean. The user's own notes are answered separately; you bring what \
+    lies beyond them. From general knowledge, name two or three specific \
+    directions worth exploring: thinkers, works, fields, or open questions \
+    that genuinely extend their interest. Write 2 to 4 calm sentences in \
+    plain prose, no lists, no exclamation marks. Name only people, works and \
+    fields you are certain exist; when you are not certain, describe the \
+    direction without a name. Never invent a name, a title or a quotation, \
+    and never pretend to quote their notes. Write in the language of the \
+    question.
     """
 
     /// Parse `kind: title` lines into branches; nil when nothing usable came
@@ -593,18 +700,7 @@ final class LocalOceanAIService: OceanAIService {
 
         let titles = sources.prefix(6).map { "“\($0.displayTitle)”" }.joined(separator: ", ")
         do {
-            let session = LanguageModelSession {
-                """
-                You are the outward-looking voice of a personal inspiration \
-                space called the Ocean. The user's own notes are answered \
-                separately — you bring what lies beyond them. From general \
-                knowledge, name two or three specific directions worth \
-                exploring: thinkers, works, fields, or open questions that \
-                genuinely extend their interest. Write 2 to 4 calm sentences \
-                in plain prose — no lists, no exclamation marks. Be concrete \
-                with names. Never pretend to quote their notes.
-                """
-            }
+            let session = LanguageModelSession { Self.outwardVoice }
             let prompt = titles.isEmpty
                 ? "They are exploring: \(query)"
                 : "They are exploring: \(query)\nTheir related notes touch on: \(titles)"
@@ -633,25 +729,48 @@ final class LocalOceanAIService: OceanAIService {
         }
 
         let titles = sources.prefix(3).map { "“\($0.displayTitle)”" }
-        let themePhrase = themes.isEmpty ? "" : " They keep circling \(joinNaturally(themes))."
+        let first = titles.first ?? ""
+        let joinedTitles = joinNaturally(titles)
+        let themePhrase: String? = themes.isEmpty
+            ? nil
+            : String(localized: "They keep circling \(joinNaturally(themes)).")
 
+        // Fixed copy, so it is UI copy: localized, and no dashes (the model's
+        // own prose is exempt, this is not the model's).
+        let sentences: [String?]
         switch mode {
         case .search:
             // A pure find: no interpretation, just where the water carried it.
             if sources.count == 1 {
-                return "One fragment drifts near this — \(titles.first ?? ""). Tap it below to revisit."
+                sentences = [String(localized: "One fragment drifts near this: \(first). Tap it below to revisit.")]
+            } else {
+                sentences = [String(localized: "\(sources.count) fragments drift near this. The closest is \(first). Tap a source below to revisit.")]
             }
-            return "\(sources.count) fragments drift near this — closest is \(titles.first ?? ""). Tap a source below to revisit."
 
         case .synthesis:
-            return "Reading across \(joinNaturally(titles)), a shared current emerges.\(themePhrase) These aren't separate notes — they're the same idea, returning in different forms. The thread underneath seems to be about how these pieces want to connect."
+            sentences = [
+                String(localized: "Reading across \(joinedTitles), a shared current emerges."),
+                themePhrase,
+                String(localized: "These are not separate notes. They are the same idea, returning in different forms. The thread underneath seems to be about how these pieces want to connect.")
+            ]
 
         case .expansion:
-            return "Starting from \(titles.first ?? "this fragment"), there's room to grow.\(themePhrase) You could push it further, question its assumption, or pull it toward something concrete. The suggested branches below are places it could go without losing the original."
+            sentences = [
+                String(localized: "Starting from \(first), there is room to grow."),
+                themePhrase,
+                String(localized: "You could push it further, question its assumption, or pull it toward something concrete. The suggested branches below are places it could go without losing the original.")
+            ]
 
         case .research:
-            return "If you want to go deeper, \(joinNaturally(titles)) point toward a few open directions.\(themePhrase) The branches below frame what would be worth exploring next."
+            sentences = [
+                String(localized: "If you want to go deeper, \(joinedTitles) point toward a few open directions."),
+                themePhrase,
+                String(localized: "The branches below frame what would be worth exploring next.")
+            ]
         }
+        // Chinese sentences close with their own full stop and take no space.
+        let kept = sentences.compactMap { $0 }
+        return kept.joined(separator: CurrentSnap.isChinese(kept.first ?? "") ? "" : " ")
     }
 
     private func suggestBranches(
@@ -680,14 +799,33 @@ final class LocalOceanAIService: OceanAIService {
         return out
     }
 
+    /// "A, B, and C" in English, "A、B和C" in Chinese: the list follows the
+    /// app's language the way the sentence around it does.
     private func joinNaturally(_ items: [String]) -> String {
-        switch items.count {
-        case 0: return ""
-        case 1: return items[0]
-        case 2: return "\(items[0]) and \(items[1])"
-        default:
-            let head = items.dropLast().joined(separator: ", ")
-            return "\(head), and \(items.last!)"
-        }
+        ListFormatter.localizedString(byJoining: items)
+    }
+}
+
+// MARK: - Node → agent snapshot
+
+@available(iOS 26, *)
+extension AskAgent.Thought {
+    /// A value snapshot of a thought for the agent's tools.
+    init(node: Node) {
+        self.init(
+            id: node.id,
+            title: node.displayTitle,
+            body: [node.text, node.transcription ?? "", node.linkContext]
+                .filter { !$0.isEmpty }
+                .joined(separator: "\n"),
+            gist: node.gistOther,
+            summary: node.summary,
+            createdAt: node.createdAt,
+            category: node.category,
+            kind: node.kind,
+            themes: node.themes,
+            themeKeys: node.themeKeys,
+            entities: node.entities
+        )
     }
 }

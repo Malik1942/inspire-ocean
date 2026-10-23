@@ -115,10 +115,5 @@ enum LibraryPerf {
         log.notice("coldOpen \(ms, format: .fixed(precision: 1))ms firstContent cells=\(cells) budget=500")
         coldOpenDone = true
     }
-
-    static func arrangeSwitch(snapshotMs: Double, offMainMs: Double, applyMs: Double, cells: Int) {
-        let mainMs = snapshotMs + applyMs
-        log.notice("arrange.mainThread \(mainMs, format: .fixed(precision: 1))ms (snapshot \(snapshotMs, format: .fixed(precision: 1)) + apply \(applyMs, format: .fixed(precision: 1))), offMain \(offMainMs, format: .fixed(precision: 1))ms cells=\(cells) budget=100")
-    }
 }
 #endif

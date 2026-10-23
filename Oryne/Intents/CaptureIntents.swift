@@ -41,6 +41,7 @@ struct AddInspirationIntent: AppIntent {
         let understanding = await LocalOceanAIService().understand(trimmed, currents: currents)
         NodeComposer.applyUnderstanding(understanding, to: node)
         try? context.save()
+        CurrentRegistry.reconcile(context: context)
 
         return .result(dialog: "Drifted into your Ocean.")
     }
@@ -88,6 +89,7 @@ struct SaveToOceanIntent: AppIntent {
             NodeComposer.applyUnderstanding(understanding, to: node)
         }
         try? context.save()
+        CurrentRegistry.reconcile(context: context)
 
         return .result(dialog: "Saved to your Ocean.")
     }

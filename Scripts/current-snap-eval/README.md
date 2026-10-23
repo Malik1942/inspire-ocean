@@ -39,3 +39,12 @@ or `FoundationCurrentPicker`, and after macOS updates the model.
 
 Joined 27/27, false merges 0/27, no answer 0, mean pick latency 0.58s. Before
 the pick, 0 of 21 related thoughts led with their current's exact label.
+
+## Baseline (2026-10-22, macOS 26.6, one Ocean across languages)
+
+Every current is now offered whatever the entry's language (phase 3 of
+docs/plans/memory-layer/SPEC.md), and a pick is a key the thought joins.
+Joined 18/18, false merges 0/18, no answer 0, mean pick latency 0.51s over
+two runs. The Chinese light thought joined "light and color" and the Chinese
+braising thought "烹饪": either side is a right home, and the examples kept
+every near-miss out.

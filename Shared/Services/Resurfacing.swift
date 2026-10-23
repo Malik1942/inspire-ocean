@@ -3,9 +3,9 @@ import SwiftData
 
 /// Ambient rediscovery (PRD §12): one forgotten fragment resurfaces per day.
 ///
-/// The pick is deterministic for a given day, so the Ocean Field, the Home
-/// Screen widget, and any other surface all agree on which fragment is
-/// resurfacing today.
+/// The pick is made once a day and held (`Hold`, in the App Group defaults),
+/// so the Ocean Field, the Home Screen widget, and any other surface all
+/// agree on which fragment is resurfacing today, all day.
 ///
 /// The rhythm (v2) keeps rediscovery feeling like memory, not rotation:
 /// - **Forgottenness carries most of the weight.** How long since the thought
@@ -14,6 +14,7 @@ import SwiftData
 /// - **Echoes.** A thought that shares a current with what the user captured
 ///   most recently gets a gentle lift — the Ocean brings back what feels
 ///   connected to what they're exploring now (the promise onboarding makes).
+///   Its own themes never count: a thought does not echo itself.
 /// - **Rest.** A fragment that actually got met (opened) rests for a couple
 ///   of weeks before it can rise again, so one loud memory can't loop.
 /// - **Daily shimmer.** A small deterministic per-day variation keeps the
@@ -33,8 +34,7 @@ enum Resurfacing {
         static let idKey = "resurfacing.restedID"
         static let dayKey = "resurfacing.restedDay"
 
-        static func restedID(now: Date = .now) -> UUID? {
-            let defaults = FastCapturePreferences.defaults
+        static func restedID(now: Date = .now, defaults: UserDefaults = FastCapturePreferences.defaults) -> UUID? {
             guard let raw = defaults.string(forKey: idKey), let id = UUID(uuidString: raw),
                   let day = defaults.object(forKey: dayKey) as? Date,
                   Calendar.current.isDate(day, inSameDayAs: now)
@@ -44,20 +44,48 @@ enum Resurfacing {
 
         static var restedToday: Bool { restedID() != nil }
 
-        static func rest(_ id: UUID, now: Date = .now) {
-            let defaults = FastCapturePreferences.defaults
+        static func rest(_ id: UUID, now: Date = .now, defaults: UserDefaults = FastCapturePreferences.defaults) {
             defaults.set(id.uuidString, forKey: idKey)
             defaults.set(now, forKey: dayKey)
         }
     }
 
+    /// Today's pick holds all day. The scoring reads what moves during a day
+    /// (the five newest thoughts, their themes, the clock), so a capture,
+    /// archive or delete elsewhere would otherwise re-pick. Each thought that
+    /// rises today is kept in order, and the first one still live is today's;
+    /// only when none is does the scoring choose again. An undo that brings
+    /// an earlier one back brings it back here too.
+    private enum Hold {
+        static let idsKey = "resurfacing.heldIDs"
+        static let dayKey = "resurfacing.heldDay"
+
+        static func heldIDs(now: Date, defaults: UserDefaults) -> [UUID] {
+            guard let day = defaults.object(forKey: dayKey) as? Date,
+                  Calendar.current.isDate(day, inSameDayAs: now)
+            else { return [] }
+            return (defaults.stringArray(forKey: idsKey) ?? []).compactMap(UUID.init(uuidString:))
+        }
+
+        static func hold(_ id: UUID, now: Date, defaults: UserDefaults) {
+            defaults.set((heldIDs(now: now, defaults: defaults) + [id]).map(\.uuidString), forKey: idsKey)
+            defaults.set(now, forKey: dayKey)
+        }
+    }
+
     /// Today's resurfacing fragment, or nil when the Ocean is too young.
-    static func pick(from nodes: [Node], now: Date = .now) -> Node? {
+    static func pick(from nodes: [Node], now: Date = .now,
+                     defaults: UserDefaults = FastCapturePreferences.defaults) -> Node? {
         // Seeded starter content never resurfaces as if it were a rediscovered
         // thought: the moment only means something when it is the user's own.
-        let restedToday = Rest.restedID(now: now)
+        let restedToday = Rest.restedID(now: now, defaults: defaults)
         let live = nodes.filter { !$0.isArchived && !$0.isExample && $0.id != restedToday }
         guard live.count > 3 else { return nil }
+
+        // A thought already chosen today holds while it is live (`Hold`).
+        for id in Hold.heldIDs(now: now, defaults: defaults) {
+            if let held = live.first(where: { $0.id == id }) { return held }
+        }
 
         let calendar = Calendar.current
         let day = calendar.ordinality(of: .day, in: .era, for: now) ?? 0
@@ -74,13 +102,15 @@ enum Resurfacing {
         }
         let pool = rested.isEmpty ? aged : rested
 
-        // The themes of the five newest captures — what the user is
-        // exploring now. Sharing one is an echo worth surfacing.
-        let recentThemes = Set(
-            live.sorted { $0.createdAt > $1.createdAt }
-                .prefix(5)
-                .flatMap(\.themes)
-        )
+        // The five newest captures: what the user is exploring now. Sharing
+        // a theme with one of them is an echo worth surfacing, but never with
+        // itself: a thought among the five would always match its own
+        // themes, and a week-old note would beat a forgotten one.
+        let newest = live.sorted { $0.createdAt > $1.createdAt }.prefix(5)
+
+        func echoes(_ node: Node) -> Bool {
+            newest.contains { $0.id != node.id && !Set($0.themes).isDisjoint(with: node.themes) }
+        }
 
         func score(_ node: Node) -> Double {
             // Idle time ignores a same-day meeting, so opening today's pick
@@ -92,16 +122,18 @@ enum Resurfacing {
             let idleDays = min(now.timeIntervalSince(lastTouch) / 86_400, 120)
 
             var s = (idleDays / 120) * 0.55
-            if !recentThemes.isEmpty, !recentThemes.isDisjoint(with: node.themes) {
+            if echoes(node) {
                 s += 0.25
             }
-            // Deterministic per-day shimmer: same inputs, same pick — in the
-            // field, in the widget, all day.
+            // Deterministic per-day shimmer: same inputs, same pick, in the
+            // field and in the widget.
             s += Double(NodeComposer.stableHash("\(day)·\(node.id.uuidString)") % 1000) / 1000 * 0.20
             return s
         }
 
-        return pool.max { score($0) < score($1) }
+        guard let picked = pool.max(by: { score($0) < score($1) }) else { return nil }
+        Hold.hold(picked.id, now: now, defaults: defaults)
+        return picked
     }
 
     /// The resurfaced fragment was actually met — rest it for a while so the

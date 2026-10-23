@@ -20,65 +20,30 @@ final class CurrentSnapTests: XCTestCase {
         CurrentCandidate(key: key, examples: [])
     }
 
-    // MARK: - resolve
+    // MARK: - joinKey
 
     /// The observed bug (2026-09-22): "The room feels slower when the light
     /// turns warm." got ["light", "warmth"] and never joined "light and color".
-    func test_resolve_validPick_leadsThemes_soTheThoughtJoinsThatCurrent() {
-        let themes = CurrentSnap.resolve(
-            themes: ["light", "warmth"],
-            pick: "light and color",
-            candidates: [candidate("light and color"), candidate("cooking")]
+    /// A valid pick is the key the thought joins.
+    func test_joinKey_validPick_isTheKey() {
+        XCTAssertEqual(
+            CurrentSnap.joinKey(pick: "light-and-color", candidates: [candidate("light-and-color"), candidate("cooking")]),
+            "light-and-color"
         )
-        XCTAssertEqual(themes, ["light and color", "light", "warmth"])
     }
 
-    func test_resolve_nilPick_keepsThemes() {
-        let themes = CurrentSnap.resolve(themes: ["light", "warmth"], pick: nil, candidates: [candidate("light and color")])
-        XCTAssertEqual(themes, ["light", "warmth"])
+    func test_joinKey_nilOrNonePick_isNoSnap() {
+        XCTAssertNil(CurrentSnap.joinKey(pick: nil, candidates: [candidate("light-and-color")]))
+        XCTAssertNil(CurrentSnap.joinKey(pick: CurrentSnap.noneChoice, candidates: [candidate("light-and-color")]))
     }
 
-    func test_resolve_nonePick_keepsThemes() {
-        let themes = CurrentSnap.resolve(
-            themes: ["career uncertainty"],
-            pick: CurrentSnap.noneChoice,
-            candidates: [candidate("light and color")]
-        )
-        XCTAssertEqual(themes, ["career uncertainty"])
+    func test_joinKey_pickNotAmongCandidates_isNoSnap() {
+        XCTAssertNil(CurrentSnap.joinKey(pick: "sunsets", candidates: [candidate("light-and-color")]))
     }
 
-    func test_resolve_pickNotAmongCandidates_keepsThemes() {
-        let themes = CurrentSnap.resolve(themes: ["light"], pick: "sunsets", candidates: [candidate("light and color")])
-        XCTAssertEqual(themes, ["light"])
-    }
-
-    /// Currents match exact strings, so a near-miss spelling must not count.
-    func test_resolve_pickDifferingOnlyInCase_keepsThemes() {
-        let themes = CurrentSnap.resolve(themes: ["light"], pick: "Light and Color", candidates: [candidate("light and color")])
-        XCTAssertEqual(themes, ["light"])
-    }
-
-    func test_resolve_pickAlreadyAmongThemes_movesToFrontWithoutDuplicate() {
-        let themes = CurrentSnap.resolve(
-            themes: ["warmth", "cooking", "comfort"],
-            pick: "cooking",
-            candidates: [candidate("cooking")]
-        )
-        XCTAssertEqual(themes, ["cooking", "warmth", "comfort"])
-    }
-
-    func test_resolve_capsAtThreeThemes() {
-        let themes = CurrentSnap.resolve(
-            themes: ["salt", "braising", "miso"],
-            pick: "cooking",
-            candidates: [candidate("cooking")]
-        )
-        XCTAssertEqual(themes, ["cooking", "salt", "braising"])
-    }
-
-    func test_resolve_noThemes_validPick_yieldsJustThePick() {
-        let themes = CurrentSnap.resolve(themes: [], pick: "cooking", candidates: [candidate("cooking")])
-        XCTAssertEqual(themes, ["cooking"])
+    /// Keys match exactly, so a near-miss spelling must not count.
+    func test_joinKey_pickDifferingOnlyInCase_isNoSnap() {
+        XCTAssertNil(CurrentSnap.joinKey(pick: "Light-And-Color", candidates: [candidate("light-and-color")]))
     }
 
     // MARK: - candidates
@@ -122,20 +87,20 @@ final class CurrentSnapTests: XCTestCase {
         XCTAssertEqual(CurrentSnap.candidates(from: members, forEntry: "Braised ribs").map(\.key), ["cooking"])
     }
 
-    // MARK: - candidates: per-language currents
+    // MARK: - candidates: one Ocean across languages
 
-    func test_candidates_englishEntry_seesOnlyEnglishCurrents() {
-        let members = [member("光与色彩", "傍晚的光"), member("light and color", "Golden hour")]
-        let keys = CurrentSnap.candidates(from: members, forEntry: "The room feels slower when the light turns warm.").map(\.key)
-        XCTAssertEqual(keys, ["light and color"])
-    }
-
-    /// Measured 2026-09-22: offered English currents, the on-device model put
-    /// a Chinese thought into "light and color". The filter is structural.
-    func test_candidates_chineseEntry_seesOnlyChineseCurrents() {
-        let members = [member("光与色彩", "傍晚的光"), member("light and color", "Golden hour")]
-        let keys = CurrentSnap.candidates(from: members, forEntry: "光线变暖的时候房间好像变慢了。").map(\.key)
-        XCTAssertEqual(keys, ["光与色彩"])
+    /// SPEC decision 3: every current is offered whatever the entry's
+    /// language, and the label the entry's language reads rides along.
+    func test_candidates_offerEveryCurrent_withLabels() {
+        let members = [
+            CurrentSnap.Member(key: "光与色彩", title: "傍晚的光", createdAt: base),
+            CurrentSnap.Member(key: "light-and-color", title: "Golden hour", createdAt: base, label: "Light and Color"),
+        ]
+        let english = CurrentSnap.candidates(from: members, forEntry: "The room feels slower when the light turns warm.")
+        XCTAssertEqual(Set(english.map(\.key)), ["光与色彩", "light-and-color"])
+        XCTAssertEqual(english.first { $0.key == "light-and-color" }?.label, "Light and Color")
+        let chinese = CurrentSnap.candidates(from: members, forEntry: "光线变暖的时候房间好像变慢了。")
+        XCTAssertEqual(Set(chinese.map(\.key)), ["光与色彩", "light-and-color"])
     }
 
     func test_isChinese_mixedEntryFollowsDominantScript() {
@@ -149,9 +114,10 @@ final class CurrentSnapTests: XCTestCase {
 
     func test_nodeCurrentKey_anchorWinsOverFirstTheme() {
         let anchored = Node(title: "Desk at 6pm", themes: ["interior", "light and color"])
-        anchored.anchorThemeKey = "light and color"
-        XCTAssertEqual(anchored.currentKey, "light and color")
+        anchored.anchorThemeKey = "light-and-color"
+        XCTAssertEqual(anchored.currentKey, "light-and-color")
         XCTAssertEqual(Node(themes: ["cooking", "salt"]).currentKey, "cooking")
+        XCTAssertEqual(Node(themes: ["light & color"]).currentKey, "light-and-color")
         XCTAssertNil(Node(themes: []).currentKey)
     }
 
@@ -166,14 +132,14 @@ final class CurrentSnapTests: XCTestCase {
         let themeless = Node(title: "Loose", themes: [])
         let member = Node(title: "Golden hour on the walk home", themes: ["light and color", "visual study"])
         let anchored = Node(title: "Desk at 6pm", themes: ["interior"])
-        anchored.anchorThemeKey = "light and color"
+        anchored.anchorThemeKey = "light-and-color"
 
         let candidates = CurrentSnap.candidates(
             in: [fresh, archived, example, themeless, member, anchored],
             excluding: fresh.id,
             forEntry: "The room feels slower when the light turns warm."
         )
-        XCTAssertEqual(candidates.map(\.key), ["light and color"])
+        XCTAssertEqual(candidates.map(\.key), ["light-and-color"])
         XCTAssertEqual(Set(candidates.first?.examples ?? []), ["Golden hour on the walk home", "Desk at 6pm"])
     }
 
@@ -183,13 +149,13 @@ final class CurrentSnapTests: XCTestCase {
         let prompt = CurrentSnap.prompt(
             entry: "The room feels slower when the light turns warm.",
             candidates: [
-                CurrentCandidate(key: "light and color", examples: ["Golden hour on the walk home", "Desk at 6pm"]),
+                CurrentCandidate(key: "light-and-color", examples: ["Golden hour on the walk home", "Desk at 6pm"], label: "Light and Color"),
                 CurrentCandidate(key: "cooking", examples: []),
             ]
         )
         XCTAssertEqual(prompt, """
         Topics:
-        - light and color: "Golden hour on the walk home", "Desk at 6pm"
+        - light-and-color (Light and Color): "Golden hour on the walk home", "Desk at 6pm"
         - cooking
 
         New entry:

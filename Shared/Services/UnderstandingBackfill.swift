@@ -22,6 +22,10 @@ enum UnderstandingBackfill {
         case understand
         /// A keyword-era thought: new themes, its title kept.
         case retheme
+        /// A thought whose understanding record predates the current reader:
+        /// category, language, gist, entities and keys filled in; its title
+        /// and themes kept (docs/plans/memory-layer/SPEC.md, decision 6).
+        case enrich
     }
 
     /// What the pass does for one thought, or nil to leave it alone.
@@ -31,9 +35,27 @@ enum UnderstandingBackfill {
     /// re-localized wholesale on language change. Understanding must never
     /// retitle or re-theme them, and they carry no user-edit flags, so they
     /// are skipped here rather than protected per field.
-    static func work(isExample: Bool, hasTitle: Bool, createdAt: Date, migrating: Bool) -> Work? {
+    ///
+    /// `understandingVersion` is the thought's `Node.understandingVersion`;
+    /// enrichment needs a model (`modelAvailable`), because the concept
+    /// fallback cannot fill the record and would only be rerun on every open.
+    static func work(
+        isExample: Bool,
+        hasTitle: Bool,
+        createdAt: Date,
+        migrating: Bool,
+        understandingVersion: Int = ThoughtReading.version,
+        modelAvailable: Bool = false
+    ) -> Work? {
         guard !isExample else { return nil }
         if !hasTitle { return .understand }
-        return migrating && createdAt < semanticLayerLanded ? .retheme : nil
+        if migrating && createdAt < semanticLayerLanded { return .retheme }
+        if modelAvailable && understandingVersion < ThoughtReading.version { return .enrich }
+        return nil
     }
+
+    /// How many thoughts one Library open enriches, newest first. The rest
+    /// wait for the next open (and, in phase 4, the charging-time pass), so
+    /// a large Ocean never pins the model for minutes at once.
+    static let enrichmentPerOpen = 50
 }

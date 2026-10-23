@@ -30,8 +30,9 @@ let cases: [(entry: String, accept: Set<String>)] = [
     ("Tried braising the short ribs in miso, far too salty.", ["cooking"]),
     ("That bassline in the café stuck with me all afternoon.", ["sound & music"]),
     ("An app where the whole screen is a single sentence.", ["product ideas"]),
-    ("傍晚的光把整个房间染成了橘色。", ["光与色彩"]),
-    ("红烧肉还是要小火慢炖。", ["烹饪"]),
+    // One Ocean across languages: either side's current is a right home.
+    ("傍晚的光把整个房间染成了橘色。", ["光与色彩", "light and color"]),
+    ("红烧肉还是要小火慢炖。", ["烹饪", "cooking"]),
     // Near misses: a shared word or mood, a different subject.
     ("Need to lighten my schedule this week.", []),
     ("The interior of the argument is where it falls apart.", []),
@@ -69,7 +70,7 @@ struct Eval {
                 let start = Date()
                 let pick = await FoundationCurrentPicker.pick(entry: entry, candidates: candidates)
                 seconds.append(Date().timeIntervalSince(start))
-                let resolved = CurrentSnap.resolve(themes: [], pick: pick, candidates: candidates).first
+                let resolved = CurrentSnap.joinKey(pick: pick, candidates: candidates)
                 picks.append(pick ?? "(no answer)")
                 if pick == nil { noAnswer += 1 }
                 switch (accept.isEmpty, resolved) {

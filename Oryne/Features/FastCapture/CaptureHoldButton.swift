@@ -12,6 +12,8 @@ import SwiftUI
 /// In the open composer the disc is the card's one trailing action: it
 /// whispers while the field is empty, and once there are words it is the
 /// send, in place. Only the glyph (replaced, not moved) and the tint change.
+/// A send that waits for pictures still loading shows the loading tiles'
+/// spinner in the arrow's place until they are in.
 struct CaptureHoldButton: View {
     @Environment(CaptureControl.self) private var control
     @Environment(\.calmAccessibility) private var calm
@@ -23,6 +25,9 @@ struct CaptureHoldButton: View {
     /// The composer's release, once there is something to release: a tap
     /// sends, and the disc wears the send's tint and arrow. No hold then.
     var send: (() -> Void)? = nil
+    /// The send was tapped while pictures are still loading: it goes once
+    /// they are in.
+    var waiting = false
 
     @State private var pressBegan: Date?
     @State private var holdTask: Task<Void, Never>?
@@ -34,6 +39,7 @@ struct CaptureHoldButton: View {
     private var locked: Bool { control.touch == .locked }
     private var stilled: Bool { reduceMotion || calm }
     private var sends: Bool { send != nil && !listening }
+    private var waits: Bool { sends && waiting }
 
     var body: some View {
         ZStack {
@@ -53,14 +59,20 @@ struct CaptureHoldButton: View {
         .contentShape(Circle())
         .animation(.easeOut(duration: 0.15), value: listening)
         .animation(.easeOut(duration: 0.15), value: sends)
+        .animation(.easeOut(duration: 0.15), value: waits)
         .animation(.easeOut(duration: 0.1), value: isPressed)
         .gesture(pressGesture)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityName)
+        .accessibilityValue(waits ? Text("Waiting for images") : Text(verbatim: ""))
         .accessibilityHint(sends ? Text(verbatim: "") : tapToToggle ? Text("Tap to start or stop a whisper.") : Text("Tap to start or stop a whisper. Or hold, and let go to end it."))
         .accessibilityAddTraits(.isButton)
         .accessibilityAction {
             if let send, !listening { send() } else if listening { control.stop() } else { control.touch = .locked }
+        }
+        // VoiceOver hears the wait as it begins, as the eye sees the spinner.
+        .onChange(of: waits) { _, waits in
+            if waits { AccessibilityNotification.Announcement(String(localized: "Waiting for images")).post() }
         }
     }
 
@@ -79,6 +91,11 @@ struct CaptureHoldButton: View {
                 .transition(.opacity)
         } else if listening {
             LevelBars(level: stilled ? 0.5 : control.level, size: size)
+                .transition(.opacity)
+        } else if waits {
+            // The loading tiles' own spinner: the send waits on them.
+            ProgressView()
+                .tint(OceanTheme.foam)
                 .transition(.opacity)
         } else {
             // One image for both, so the waveform is replaced by the

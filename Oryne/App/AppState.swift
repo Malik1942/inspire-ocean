@@ -34,6 +34,10 @@ final class AppState {
     /// consumed when the Ocean Field appears: it focuses and opens the node.
     var pendingFocusNodeID: UUID?
 
+    /// Tide's "All currents": the Library opens on Currents with nothing
+    /// searched or filtered. Consumed when the Library appears.
+    var pendingAllCurrents = false
+
     /// True while the Ocean Field has a sheet up (an opened thought, a stream,
     /// or Settings). Lets the root view hold back anything that must never
     /// appear over a sheet, such as the App Store review ask.
@@ -60,6 +64,12 @@ final class AppState {
     func summarize(_ nodeIDs: [UUID], title: String) {
         pendingSummary = (title, nodeIDs)
         selectedTab = .ask
+    }
+
+    /// Every current lives in the Library: Tide's "All currents" goes there.
+    func showAllCurrents() {
+        pendingAllCurrents = true
+        selectedTab = .library
     }
 
     func startFastCapture(

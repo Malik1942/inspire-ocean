@@ -36,6 +36,8 @@ struct OceanFieldView: View {
     /// The thought being let go stays on screen until it has gone under;
     /// resting it re-picks today's thought at once.
     @State private var goingUnder: Node?
+    /// A thought a card's menu asked to delete, waiting on the alert.
+    @State private var pendingDelete: Node?
 
     private var stilled: Bool { calm || reduceMotion }
 
@@ -45,13 +47,11 @@ struct OceanFieldView: View {
     private enum OceanSheet: Identifiable {
         case thought(Node)
         case stream(theme: String)
-        case currents
 
         var id: String {
             switch self {
             case .thought(let node): return node.id.uuidString
             case .stream(let theme): return "stream·\(theme)"
-            case .currents: return "currents"
             }
         }
     }
@@ -117,10 +117,25 @@ struct OceanFieldView: View {
                 switch item {
                 case .thought(let node): ExpandedNodeView(node: node)
                 case .stream(let theme): ClusterStreamView(theme: theme)
-                case .currents: CurrentsPage()
                 }
             }
             .sheet(isPresented: $showSettings) { OceanSettingsView() }
+            // The system alert, as on a thought's page and in the Library.
+            .alert(
+                "Delete this thought?",
+                isPresented: Binding(
+                    get: { pendingDelete != nil },
+                    set: { if !$0 { pendingDelete = nil } }
+                )
+            ) {
+                Button("Delete", role: .destructive) {
+                    if let node = pendingDelete { context.deleteNodeSafely(node) }
+                    pendingDelete = nil
+                }
+                Button("Cancel", role: .cancel) { pendingDelete = nil }
+            } message: {
+                Text("This drifts out of the Ocean for good.")
+            }
             .onChange(of: sheet?.id) { _, _ in updateOceanSheetPresence() }
             .onChange(of: showSettings) { _, _ in updateOceanSheetPresence() }
         }
@@ -224,6 +239,20 @@ struct OceanFieldView: View {
                            estimatedHeight: estimatedCardHeight) { node in
                 Button { open(node) } label: { GlanceCard(node: node) }
                     .buttonStyle(.plain)
+                    // The Library's long-press menu: a card half the page
+                    // wide has no room for a swipe.
+                    .contextMenu {
+                        Button { archive(node) } label: {
+                            Label("Archive", systemImage: "archivebox")
+                        }
+                        Button(role: .destructive) { pendingDelete = node } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
+                    .accessibilityActions {
+                        Button("Delete") { pendingDelete = node }
+                        Button("Archive") { archive(node) }
+                    }
             }
         }
     }
@@ -240,8 +269,9 @@ struct OceanFieldView: View {
             HStack(alignment: .firstTextBaseline) {
                 sectionLabel("Currents")
                 Spacer()
+                // Every current is in the Library, under Currents.
                 Button {
-                    sheet = .currents
+                    appState.showAllCurrents()
                 } label: {
                     // A quiet accessory to the section label, never louder
                     // than it: the label's mist, regular weight.
@@ -304,6 +334,13 @@ struct OceanFieldView: View {
     }
 
     // MARK: Interaction
+
+    /// The Library's archive: out of Tide and every current, kept in the
+    /// Library under Show archived.
+    private func archive(_ node: Node) {
+        ThoughtRemoval.archive(node)
+        try? context.save()
+    }
 
     private func toggleNearby(_ node: Node) {
         if !nearbyOpen {

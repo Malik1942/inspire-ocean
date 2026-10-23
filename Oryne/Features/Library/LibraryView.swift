@@ -2,8 +2,13 @@ import SwiftUI
 import SwiftData
 
 /// Library (§13): a structured, legible fallback over the whole Ocean — search,
-/// filter, and browse by time. "Library exists as a structured fallback for
-/// accessibility and trust."
+/// filter, and browse by time or by current. "Library exists as a structured
+/// fallback for accessibility and trust."
+///
+/// One header for both ways of looking: the title with its one tool (the
+/// Kind filter), the search field, then the switch between Recent (time
+/// sections, a waterfall of cards) and Currents (each current with its
+/// newest rows), and the filter as a chip while one is on.
 struct LibraryView: View {
     @Environment(\.modelContext) private var context
     @Environment(AppState.self) private var appState
@@ -11,21 +16,15 @@ struct LibraryView: View {
     @Query(sort: \Node.createdAt, order: .reverse) private var allNodes: [Node]
 
     @State private var search = ""
-    @State private var kindFilter: NodeKind?
-    @State private var showArchived = false
+    @State private var kind: LibraryKind = .all
     @State private var backfilling = false
     @State private var pendingDelete: Node?
 
-    /// Recent (time sections) or Related (one semantic ribbon). Persisted so the
-    /// choice survives launches. `columns` is the single density source Handoffs
-    /// 2 and 3 read (pinch density, related-focus reorder).
-    @AppStorage("library.arrangement") private var arrangement: Arrangement = .recent
+    /// Recent or Currents, kept across launches. `columns` is the single
+    /// density source Handoffs 2 and 3 read (pinch density, related-focus
+    /// reorder).
+    @AppStorage("library.segment") private var segment: Segment = .recent
     @AppStorage("library.columns") private var columns: Int = 2
-
-    /// The Related ribbon's node order, computed off-main by SemanticOrder and
-    /// cached here. Empty until the first arrangement lands, and Recent order
-    /// shows as the placeholder meanwhile.
-    @State private var relatedOrder: [UUID] = []
 
     /// Handoff 2 "Show related" focus. Stored as a UUID, never a `Node?`: a
     /// deleted anchor detaches, and reading any attribute off a detached `@Model`
@@ -35,10 +34,13 @@ struct LibraryView: View {
     @State private var focusedAnchorID: UUID?
     @State private var focusRelatedRank: [UUID: Int] = [:]
 
-    @State private var showCurrents = false
     @FocusState private var searchFocused: Bool
     /// The Library's navigation.
     @State private var path = NavigationPath()
+    /// The way back from a row swiped away in Currents.
+    @State private var removals = ThoughtRemovals()
+    /// Bumped to bring the page back to its top (Tide's "All currents").
+    @State private var topRequest = 0
 
     #if DEBUG
     /// One-shot for `OCEAN_SHOW_RELATED_TITLE` (marketing recapture).
@@ -58,26 +60,31 @@ struct LibraryView: View {
     /// Scroll target at the top of the grid, so engage/clear can steer there.
     private static let gridTopID = "library.grid.top"
 
-    enum Arrangement: String { case recent, related }
+    enum Segment: String { case recent, currents }
 
+    /// What the page can show: thoughts not archived, of the filter's kind,
+    /// matching the search. Archived ones wait under Currents › Archived.
     private var filtered: [Node] {
-        allNodes.filter { node in
-            (showArchived || !node.isArchived)
-            && (kindFilter == nil || node.kind == kindFilter)
-            && (search.trimmed.isEmpty || node.searchableText.localizedCaseInsensitiveContains(search.trimmed))
+        let query = search.trimmed
+        return allNodes.filter { node in
+            !node.isArchived
+            && kind.admits(node)
+            && (query.isEmpty || node.searchableText.localizedCaseInsensitiveContains(query))
         }
     }
 
-    private var groups: [(title: String, nodes: [Node])] {
+    /// Today, the seven days before it, and everything earlier. A rolling
+    /// week, not a calendar one, so it is named the way Notes names it.
+    private func timeSections(_ nodes: [Node]) -> [(title: String, nodes: [Node])] {
         let cal = Calendar.current
         var today: [Node] = [], week: [Node] = [], earlier: [Node] = []
-        for node in filtered {
+        for node in nodes {
             if cal.isDateInToday(node.createdAt) { today.append(node) }
             else if let days = cal.dateComponents([.day], from: node.createdAt, to: .now).day, days < 7 { week.append(node) }
             else { earlier.append(node) }
         }
         return [(String(localized: "Today"), today),
-                (String(localized: "This week"), week),
+                (String(localized: "Previous 7 Days"), week),
                 (String(localized: "Earlier"), earlier)].filter { !$0.nodes.isEmpty }
     }
 
@@ -85,7 +92,10 @@ struct LibraryView: View {
         NavigationStack(path: $path) {
             ZStack {
                 PageBackground()
-                grid
+                switch segment {
+                case .recent: grid
+                case .currents: currents
+                }
                 ShoreGradient()
             }
             // A tap in open space folds the search keyboard, as open water
@@ -94,7 +104,6 @@ struct LibraryView: View {
             .onTapGesture { searchFocused = false }
             .navigationTitle("Library")
             .toolbar(.hidden, for: .navigationBar)
-            .sheet(isPresented: $showCurrents) { CurrentsPage() }
             .navigationDestination(for: Node.self) { node in
                 NodeDetailContent(node: node)
             }
@@ -116,17 +125,37 @@ struct LibraryView: View {
             }
             .task { await backfillUnderstanding() }
             .task { await prewarmEmbedding() }
-            .task(id: relatedTaskKey) { await refreshRelatedOrder() }
             .onChange(of: filtered.map(\.id)) { _, ids in
                 // The anchor left the visible set (deleted, archived, filtered, or
                 // searched away): drop focus and restore the base order.
                 if let anchor = focusedAnchorID, !ids.contains(anchor) { clearFocus() }
             }
+            // "Show related" belongs to Recent's grid.
+            .onChange(of: segment) { _, _ in
+                focusedAnchorID = nil
+                focusRelatedRank = [:]
+            }
+            .onAppear(perform: consumeAllCurrents)
+            .onChange(of: appState.pendingAllCurrents) { _, _ in consumeAllCurrents() }
             #if DEBUG
             .onAppear { LibraryPerf.beginColdOpen() }
             .task { await engageScreenshotRelatedIfNeeded() }
             #endif
         }
+        .settlesThoughtRemovals(removals)
+    }
+
+    /// Tide's "All currents": Currents, from the top, with nothing searched
+    /// or filtered and no thought left open over it.
+    private func consumeAllCurrents() {
+        guard appState.pendingAllCurrents else { return }
+        appState.pendingAllCurrents = false
+        search = ""
+        kind = .all
+        searchFocused = false
+        path = NavigationPath()
+        segment = .currents
+        topRequest += 1
     }
 
     /// Set once this install's one-time semantic re-theme has run. It only
@@ -145,16 +174,25 @@ struct LibraryView: View {
         defer { backfilling = false }
 
         let migrate = !UserDefaults.standard.bool(forKey: Self.semanticThemesMigrationKey)
+        let modelReady = OnDeviceModel.isReadyCached
 
-        let pending = allNodes.compactMap { node -> (node: Node, work: UnderstandingBackfill.Work)? in
+        let all = allNodes.compactMap { node -> (node: Node, work: UnderstandingBackfill.Work)? in
             let work = UnderstandingBackfill.work(
                 isExample: node.isExample,
                 hasTitle: !node.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                 createdAt: node.createdAt,
-                migrating: migrate
+                migrating: migrate,
+                understandingVersion: node.understandingVersion,
+                modelAvailable: modelReady
             )
             return work.map { (node, $0) }
         }
+        // Naming and re-theming come first; enrichment of the understanding
+        // record runs newest first and only so many per open.
+        let enrichment = all.filter { $0.work == .enrich }
+            .sorted { $0.node.createdAt > $1.node.createdAt }
+            .prefix(UnderstandingBackfill.enrichmentPerOpen)
+        let pending = all.filter { $0.work != .enrich } + enrichment
         // A keyword-era thought still waiting for its new themes is no
         // current to join; it becomes one once re-themed.
         var keywordEra = Set(pending.filter { $0.work == .retheme }.map(\.node.id))
@@ -176,19 +214,26 @@ struct LibraryView: View {
                 continue
             }
 
-            let currents = CurrentSnap.candidates(
+            // An enriched thought already has its place: no current to join.
+            let currents = work == .enrich ? [] : CurrentSnap.candidates(
                 in: allNodes.filter { !keywordEra.contains($0.id) },
                 excluding: node.id,
-                forEntry: raw
+                forEntry: raw,
+                names: CurrentDirectory.shared.names
             )
             let understanding = await ai.understand(raw, currents: currents)
-            NodeComposer.applyUnderstanding(understanding, to: node, preserveTitle: work == .retheme)
+            NodeComposer.applyUnderstanding(
+                understanding, to: node,
+                preserveTitle: work != .understand,
+                preserveThemes: work == .enrich
+            )
             try? context.save()
         }
 
         if migrate {
             UserDefaults.standard.set(true, forKey: Self.semanticThemesMigrationKey)
         }
+        if !pending.isEmpty { CurrentRegistry.reconcile(context: context) }
 
         // Long whispers from before summaries existed get their reading now,
         // one at a time, in the background.
@@ -201,69 +246,7 @@ struct LibraryView: View {
         }
     }
 
-    /// Recomputes the Related order only when it matters: the arrangement is
-    /// Related and the visible set (or any node's content) changed. Recent mode
-    /// contributes a stable key, so the off-main arrange never runs for it.
-    private var relatedTaskKey: Int {
-        var hasher = Hasher()
-        hasher.combine(arrangement)
-        if arrangement == .related {
-            for node in filtered {
-                hasher.combine(node.id)
-                hasher.combine(node.updatedAt)
-            }
-        }
-        return hasher.finalize()
-    }
-
-    /// The Related ribbon as nodes: the cached order re-mapped to the current
-    /// set, with any not-yet-placed node appended in Recent order. Falls back to
-    /// Recent order as the placeholder until the first arrange lands.
-    private var orderedRelated: [Node] {
-        guard !relatedOrder.isEmpty else { return filtered }
-        let byID = Dictionary(filtered.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        var seen = Set<UUID>()
-        var result: [Node] = []
-        result.reserveCapacity(filtered.count)
-        for id in relatedOrder where !seen.contains(id) {
-            if let node = byID[id] {
-                seen.insert(id)
-                result.append(node)
-            }
-        }
-        for node in filtered where !seen.contains(node.id) { result.append(node) }
-        return result
-    }
-
-    /// Snapshots the filtered nodes on the main actor, arranges them off-main
-    /// (SemanticOrder is Sendable-safe and self-caching), then applies the order
-    /// back on the main actor. Keeps the arrangement switch off the main thread.
-    private func refreshRelatedOrder() async {
-        guard arrangement == .related else { return }
-        #if DEBUG
-        let t0 = CFAbsoluteTimeGetCurrent()
-        #endif
-        let items = filtered.map {
-            SemanticOrder.Item(id: $0.id, text: $0.meaningText, createdAt: $0.createdAt, updatedAt: $0.updatedAt)
-        }
-        #if DEBUG
-        let t1 = CFAbsoluteTimeGetCurrent()
-        #endif
-        let ordered = await Task.detached(priority: .userInitiated) {
-            SemanticOrder.arrange(items)
-        }.value
-        #if DEBUG
-        let t2 = CFAbsoluteTimeGetCurrent()
-        #endif
-        relatedOrder = ordered
-        #if DEBUG
-        let t3 = CFAbsoluteTimeGetCurrent()
-        LibraryPerf.arrangeSwitch(snapshotMs: (t1 - t0) * 1000,
-                                  offMainMs: (t2 - t1) * 1000,
-                                  applyMs: (t3 - t2) * 1000,
-                                  cells: items.count)
-        #endif
-    }
+    // MARK: Recent
 
     private var grid: some View {
         ScrollViewReader { proxy in
@@ -271,30 +254,29 @@ struct LibraryView: View {
                 LazyVStack(alignment: .leading, spacing: 16) {
                     header
                         .id(Self.gridTopID)
-                    if filtered.isEmpty {
+                    let shown = filtered
+                    if shown.isEmpty {
                         emptyState
                     }
-                    if !search.trimmed.isEmpty, filtered.count >= 2 {
-                        summarizeChip
+                    if !search.trimmed.isEmpty, shown.count >= 2 {
+                        summarizeChip(shown)
                     }
-                    if arrangement == .recent, focusedAnchorID == nil {
-                        // Recent, unfocused: keep the Today / This week / Earlier
+                    if focusedAnchorID == nil {
+                        // Unfocused: the Today / Previous 7 Days / Earlier
                         // sections, one masonry each.
-                        ForEach(groups, id: \.title) { group in
-                            sectionHeader(group.title)
-                            MasonryColumns(items: group.nodes, columns: columns, spacing: 12,
+                        ForEach(timeSections(shown), id: \.title) { section in
+                            sectionHeader(section.title)
+                            MasonryColumns(items: section.nodes, columns: columns, spacing: 12,
                                            estimatedHeight: estimatedCardHeight,
                                            frontRank: focusFrontRank) { node in
                                 cell(node)
                             }
                         }
                     } else {
-                        // Related (always) and Recent-while-focused (sections
-                        // dropped): one masonry over the base order. `focusFrontRank`
-                        // is nil for every node when unfocused, so this is the plain
-                        // ribbon; while focused it pulls the anchor and related cards
-                        // to the top of their columns.
-                        MasonryColumns(items: focusBase, columns: columns, spacing: 12,
+                        // Focused (sections dropped): one masonry over the
+                        // newest-first order, pulling the anchor and related
+                        // cards to the top of their columns.
+                        MasonryColumns(items: shown, columns: columns, spacing: 12,
                                        estimatedHeight: estimatedCardHeight,
                                        frontRank: focusFrontRank) { node in
                             cell(node)
@@ -305,21 +287,18 @@ struct LibraryView: View {
                 .padding(.bottom, 8)
                 .padding(.bottom, FastCaptureLayout.pageClearance)
             }
-            // Fresh scroll view per arrangement. Lazy columns realize cells
-            // incrementally from the top; carrying a deep scroll offset across an
-            // arrangement swap strands the viewport past everything realized and
-            // the grid renders blank. A reordered ribbon starts at its newest
-            // node anyway, so returning to the top is also the honest UX.
-            .id(arrangement)
             .opacity(gridOpacity)
             .scrollDismissesKeyboard(.immediately)
             .modifier(CaptureComposerEdge())
-            // Engage and clear put the front at offset 0. Focus is not an
-            // arrangement change, so `.id` does not reset scroll; steer explicitly
-            // or the viewport strands past realized content (the spike's mid-reorder
-            // gap). Same transaction as the reorder so they move together.
+            // Engage and clear put the front at offset 0. Focus does not reset
+            // scroll; steer explicitly or the viewport strands past realized
+            // content (the spike's mid-reorder gap). Same transaction as the
+            // reorder so they move together.
             .onChange(of: focusedAnchorID) { _, _ in
                 withAnimation(.snappy) { proxy.scrollTo(Self.gridTopID, anchor: .top) }
+            }
+            .onChange(of: topRequest) { _, _ in
+                withAnimation(OceanMotion.standard) { proxy.scrollTo(Self.gridTopID, anchor: .top) }
             }
         }
         // The pinned "Related to ..." chip rides above the scroll while focused.
@@ -328,26 +307,35 @@ struct LibraryView: View {
         }
     }
 
+    // MARK: Currents
+
+    private var currents: some View {
+        LibraryCurrents(nodes: allNodes, search: search, kind: kind, path: $path,
+                        removals: removals, topRequest: topRequest) {
+            header
+        } empty: {
+            emptyState
+        } lead: {
+            let shown = filtered
+            if !search.trimmed.isEmpty, shown.count >= 2 {
+                summarizeChip(shown)
+                    .padding(.top, 16)
+            }
+        }
+        .modifier(CaptureComposerEdge())
+        .thoughtRemovalToast(removals)
+    }
+
     /// A search that found more than one thought can be read across in one
     /// tap: the result set goes to Ask as a summary (SPEC, Ask: one mode).
-    private var summarizeChip: some View {
+    private func summarizeChip(_ shown: [Node]) -> some View {
         Button {
-            appState.summarize(filtered.map(\.id), title: search.trimmed)
+            appState.summarize(shown.map(\.id), title: search.trimmed)
         } label: {
-            Label(summarizeLabel, systemImage: "text.line.first.and.arrowtriangle.forward")
+            Label(String(localized: "Summarize these \(shown.count)"),
+                  systemImage: "text.line.first.and.arrowtriangle.forward")
         }
         .buttonStyle(.oceanSecondary)
-    }
-
-    private var summarizeLabel: String {
-        String(localized: "Summarize these \(filtered.count)")
-    }
-
-    /// The base order the focused masonry reorders over: the Related ribbon keeps
-    /// its ribbon order; Recent uses the flat filtered order (sections drop while
-    /// focused). Column assignment comes from this order, so cards keep columns.
-    private var focusBase: [Node] {
-        arrangement == .related ? orderedRelated : filtered
     }
 
     /// The focused anchor resolved to a live node, or nil once it leaves the set.
@@ -415,6 +403,7 @@ struct LibraryView: View {
         for _ in 0..<40 {
             if let node = filtered.first(where: { $0.displayTitle == title }) {
                 didEngageScreenshotRelated = true
+                segment = .recent
                 try? await Task.sleep(for: .milliseconds(500))
                 showRelated(to: node)
                 return
@@ -426,7 +415,7 @@ struct LibraryView: View {
 
     /// Engage "Show related": pin the anchor and chip instantly (and scroll to
     /// the top via the grid's onChange), then rank off-main and let the related
-    /// cards surface a beat later. Mirrors refreshRelatedOrder's snapshot pattern.
+    /// cards surface a beat later.
     private func showRelated(to node: Node) {
         let anchorID = node.id
         reordering = true
@@ -500,48 +489,64 @@ struct LibraryView: View {
         return height
     }
 
-    /// Tide's page header, with Library's three tools in the same frosted
-    /// group, then the page's own search field.
+    // MARK: Header
+
+    /// Tide's page header with the Library's one tool, then the page's own
+    /// search field, then how the page is arranged and, while a filter is
+    /// on, the filter as a chip that clears it.
     private var header: some View {
         VStack(alignment: .leading, spacing: 20) {
-            // One tool: how the Library is arranged and what it shows, in
-            // one menu. Settings live on Tide.
+            // One tool: what kind of thought the Library shows. Settings
+            // live on Tide.
             PageTitleRow(title: "Library") {
                 Menu {
-                    Section("Sort") {
-                        Picker("Arrangement", selection: $arrangement) {
-                            Label("Recent", systemImage: "clock").tag(Arrangement.recent)
-                            Label("Related", systemImage: "point.3.connected.trianglepath.dotted")
-                                .tag(Arrangement.related)
+                    Picker("Kind", selection: $kind.animation(OceanMotion.quick)) {
+                        ForEach(LibraryKind.allCases) { option in
+                            Label(option.label, systemImage: option.symbol).tag(option)
                         }
-                    }
-                    Section("Show") {
-                        Picker("Kind", selection: $kindFilter) {
-                            Label("All kinds", systemImage: "square.grid.2x2").tag(NodeKind?.none)
-                            ForEach(NodeKind.allCases) { k in
-                                Label(k.label, systemImage: k.symbol).tag(NodeKind?.some(k))
-                            }
-                        }
-                        Toggle(isOn: $showArchived) {
-                            Label("Show archived", systemImage: "archivebox")
-                        }
-                    }
-                    Divider()
-                    Button {
-                        showCurrents = true
-                    } label: {
-                        Label("Currents", systemImage: "water.waves")
                     }
                 } label: {
                     OceanToolGlyph(systemName: "line.3.horizontal.decrease")
                 }
-                .accessibilityLabel("Sort and filter")
+                .accessibilityLabel("Filter")
             }
             .padding(.bottom, -4)
 
-            OceanSearchField(text: $search, prompt: "Search the Ocean", focused: $searchFocused)
+            VStack(alignment: .leading, spacing: 12) {
+                OceanSearchField(text: $search, prompt: "Search the Ocean", focused: $searchFocused)
+                HStack(spacing: 12) {
+                    OceanSegmentedSwitch(selection: $segment, options: [
+                        (value: .recent, title: "Recent"),
+                        (value: .currents, title: "Currents")
+                    ])
+                    Spacer(minLength: 0)
+                    if kind != .all {
+                        filterChip
+                    }
+                }
+            }
         }
         .padding(.bottom, 8)
+    }
+
+    /// The filter that is on, under the search where the eye already is;
+    /// tapping it takes it off.
+    private var filterChip: some View {
+        Button {
+            withAnimation(OceanMotion.quick) { kind = .all }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: kind.symbol)
+                Text(kind.label)
+                Image(systemName: "xmark")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(OceanTheme.mist)
+            }
+        }
+        .buttonStyle(.oceanSecondary)
+        .accessibilityLabel(Text("Clear filter"))
+        .accessibilityValue(Text(kind.label))
+        .transition(.opacity)
     }
 
     /// Time sections wear Tide's labels: New York italic, mist.
@@ -555,9 +560,9 @@ struct LibraryView: View {
     }
 
     /// A grid cell: the card, a value-based NavigationLink for tap (no List
-    /// chevron to hide here), and the Archive/Delete actions that used to live
-    /// in swipe actions, re-homed to a context menu. Delete still routes through
-    /// `pendingDelete` and the confirmation dialog.
+    /// chevron to hide here), and Show related, Archive and Delete in a
+    /// context menu. Delete still routes through `pendingDelete` and the
+    /// confirmation dialog.
     private func cell(_ node: Node) -> some View {
         NavigationLink(value: node) {
             NodeCard(node: node,
@@ -580,25 +585,57 @@ struct LibraryView: View {
                 }
             }
             Button { archive(node) } label: {
-                Label((node.isArchived ? "Restore" : "Archive") as LocalizedStringKey,
-                      systemImage: node.isArchived ? "arrow.up.bin" : "archivebox")
+                Label("Archive", systemImage: "archivebox")
             }
             Button(role: .destructive) { pendingDelete = node } label: {
                 Label("Delete", systemImage: "trash")
             }
         }
+        // VoiceOver: the menu's removals as actions on the card.
+        .accessibilityActions {
+            Button("Delete") { pendingDelete = node }
+            Button("Archive") { archive(node) }
+        }
     }
 
+    // MARK: Empty
+
+    /// Nothing to show. With a filter on, it says what the filter left out
+    /// and offers to take it off; otherwise the Ocean is empty, or the search
+    /// found nothing.
+    @ViewBuilder
     private var emptyState: some View {
-        Text((search.isEmpty ? "Nothing here yet" : "No fragments match") as LocalizedStringKey)
-            .font(.subheadline)
-            .foregroundStyle(OceanTheme.mist)
-            .frame(maxWidth: .infinity)
-            .padding(.top, OceanSpacing.block)
+        let searching = !search.trimmed.isEmpty
+        VStack(spacing: 16) {
+            Text(emptyMessage(searching: searching))
+                .font(.subheadline)
+                .foregroundStyle(OceanTheme.mist)
+                .multilineTextAlignment(.center)
+            if kind != .all {
+                Button("Clear filter") {
+                    withAnimation(OceanMotion.quick) { kind = .all }
+                }
+                .buttonStyle(.oceanSecondary)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, OceanSpacing.block)
     }
+
+    private func emptyMessage(searching: Bool) -> LocalizedStringKey {
+        switch kind {
+        case .all: searching ? "No fragments match" : "Nothing here yet"
+        case .text: searching ? "No text matches" : "No text yet"
+        case .voice: searching ? "No whispers match" : "No whispers yet"
+        case .image: searching ? "No images match" : "No images yet"
+        case .link: searching ? "No links match" : "No links yet"
+        }
+    }
+
+    // MARK: Removing
 
     private func archive(_ node: Node) {
-        node.isArchived.toggle()
+        node.isArchived = true
         node.updatedAt = .now
         try? context.save()
     }
@@ -659,4 +696,3 @@ private func rankRelated(anchorID: UUID, among inputs: [FocusInput]) -> [UUID] {
     }
     return scored.sorted { $0.score > $1.score }.map(\.id)
 }
-

@@ -1,10 +1,13 @@
 import SwiftUI
+import SwiftData
 import StoreKit
 
 /// Primary navigation: Ocean · Ask · Library, with the capture bar above the
 /// tab bar. Capture is a gesture, not a tab: tap the field to type, tap or
 /// hold the disc to whisper (docs/plans/phone-refocus/SPEC.md).
 struct RootTabView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query private var currentRows: [Current]
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.requestReview) private var requestReview
     @AppStorage(
@@ -27,6 +30,10 @@ struct RootTabView: View {
 
     private var control: CaptureControl { appState.captureControl }
 
+    /// Under the composer's + panel the tab bar steps away, as it does under
+    /// the keys it stands in for.
+    private var tabBarVisibility: Visibility { control.attachPanelOpen ? .hidden : .automatic }
+
     /// A quiet moment: Tide or the Library (never Ask, so never over an
     /// answer), no capture overlay, toast, hold, keyboard, onboarding or
     /// Tide sheet, and the app active for at least 10 s. The review ask only
@@ -45,14 +52,17 @@ struct RootTabView: View {
     var body: some View {
         TabView(selection: $appState.selectedTab) {
             OceanFieldView()
+                .toolbar(tabBarVisibility, for: .tabBar)
                 .tabItem { tabLabel(OceanTab.homeTitle, systemImage: "water.waves") }
                 .tag(OceanTab.ocean)
 
             AskView()
+                .toolbar(tabBarVisibility, for: .tabBar)
                 .tabItem { tabLabel("Ask", systemImage: "bubble.left") }
                 .tag(OceanTab.ask)
 
             LibraryView()
+                .toolbar(tabBarVisibility, for: .tabBar)
                 .tabItem { tabLabel("Library", systemImage: "rectangle.stack") }
                 .tag(OceanTab.library)
         }
@@ -105,6 +115,16 @@ struct RootTabView: View {
                     appState.startFastCapture(source: .onboarding)
                 }
             )
+        }
+        .task {
+            // Currents as entities: keys once, then rows kept true to the
+            // thoughts (docs/plans/memory-layer/SPEC.md, phase 3).
+            CurrentRegistry.migrateIfNeeded(context: modelContext)
+            CurrentRegistry.reconcile(context: modelContext)
+            CurrentDirectory.shared.update(currentRows)
+        }
+        .onChange(of: currentRows.map { "\($0.key)|\($0.pinnedName ?? "")|\($0.labelEN ?? "")|\($0.labelZH ?? "")" }) { _, _ in
+            CurrentDirectory.shared.update(currentRows)
         }
         .task {
             control.tapToToggle = CaptureControl.assistiveTechnologyRunning

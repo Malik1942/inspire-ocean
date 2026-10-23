@@ -38,6 +38,10 @@ struct OceanSettingsView: View {
 
     @State private var pendingClearExamples = false
 
+    /// Read once per open, off the main thread: the availability query can
+    /// take over a second on ineligible hardware.
+    @State private var modelStatus: OnDeviceModel.Status?
+
     @State private var includeVoice = false
     @State private var exportState: ExportState = .idle
     @State private var zipURL: URL?
@@ -53,25 +57,31 @@ struct OceanSettingsView: View {
                     Toggle("Haptics", isOn: $captureHaptics)
                 } header: {
                     Text("Capture")
-                } footer: {
-                    Text("From the Action Button, Control Center and the widget. The bar itself always offers both.")
                 }
                 .listRowBackground(OceanTheme.fill)
 
+                // Rows and controls only: no footers, no explanatory lines
+                // (Malik, 2026-10-22: a settings page is clean or it is noise).
                 FastCaptureShortcutSection()
                     .listRowBackground(OceanTheme.fill)
 
-                if FastCaptureWatchSection.isAvailable {
-                    FastCaptureWatchSection()
-                        .listRowBackground(OceanTheme.fill)
-                }
-
                 Section {
                     Toggle("Calm Accessibility", isOn: $calmMode)
-                } footer: {
-                    Text("Stills the water and its light, and makes the capture button tap to start and tap to stop instead of holding. The system Reduce Motion setting stills the water too.")
                 }
                 .listRowBackground(OceanTheme.fill)
+
+                Section {
+                    LabeledContent("Apple Intelligence", value: modelStatusValue)
+                    NavigationLink {
+                        MemoryRecordsView()
+                    } label: {
+                        Text("What Oryne knows about you")
+                    }
+                }
+                .listRowBackground(OceanTheme.fill)
+                .task {
+                    modelStatus = await Task.detached(priority: .utility) { OnDeviceModel.status }.value
+                }
 
                 Section {
                     Toggle("Include voice recordings", isOn: $includeVoice)
@@ -83,8 +93,6 @@ struct OceanSettingsView: View {
                     }
                 } header: {
                     Text("Your Ocean")
-                } footer: {
-                    Text("One zip: a Markdown file per current, a full JSON backup, and your images. Examples stay behind.")
                 }
                 .listRowBackground(OceanTheme.fill)
             }
@@ -120,6 +128,15 @@ struct OceanSettingsView: View {
             } message: {
                 Text("The starter thoughts drift out for good.")
             }
+        }
+    }
+
+    /// "Ready" or "Unavailable"; blank for the beat before the check returns.
+    private var modelStatusValue: String {
+        switch modelStatus {
+        case .ready: String(localized: "Ready")
+        case .unavailable: String(localized: "Unavailable")
+        case nil: ""
         }
     }
 

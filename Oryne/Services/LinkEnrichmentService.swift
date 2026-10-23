@@ -61,42 +61,13 @@ final class LinkEnrichmentService {
     /// Whether the device can summarize on-device right now, and if not, why —
     /// the reason is persisted so it's visible why a link lacks a summary.
     static var summarization: Summarization {
-        #if DEBUG
-        // Test hook: force either fork regardless of what the device reports, so
-        // both paths can be exercised on a single simulator. Never compiled into
-        // a release build. Set via `simctl launch ... ORYNE_FORCE_SUMMARIZATION=1|0`.
-        if let forced = ProcessInfo.processInfo.environment["ORYNE_FORCE_SUMMARIZATION"] {
-            return forced == "1" ? .available : .unavailable(reason: "forced off for testing")
-        }
-        #endif
-        #if canImport(FoundationModels)
-        if #available(iOS 26, *) {
-            switch SystemLanguageModel.default.availability {
-            case .available:
-                return .available
-            case .unavailable(let reason):
-                return .unavailable(reason: describe(reason))
-            @unknown default:
-                return .unavailable(reason: String(localized: "the on-device model is unavailable"))
-            }
-        }
-        return .unavailable(reason: String(localized: "this device runs an earlier iOS"))
-        #else
-        return .unavailable(reason: String(localized: "Foundation Models isn't in this build"))
-        #endif
-    }
-
-    #if canImport(FoundationModels)
-    @available(iOS 26, *)
-    private static func describe(_ reason: SystemLanguageModel.Availability.UnavailableReason) -> String {
-        switch reason {
-        case .deviceNotEligible:           return String(localized: "this device isn't eligible for Apple Intelligence")
-        case .appleIntelligenceNotEnabled: return String(localized: "Apple Intelligence is turned off")
-        case .modelNotReady:               return String(localized: "the on-device model is still downloading")
-        @unknown default:                  return String(localized: "Apple Intelligence is unavailable")
+        // One answer for the whole app (`OnDeviceModel`), including the DEBUG
+        // force hook, so a link's note and Settings never disagree.
+        switch OnDeviceModel.status {
+        case .ready: return .available
+        case .unavailable(let reason): return .unavailable(reason: reason)
         }
     }
-    #endif
 
     // MARK: Entry point
 
@@ -106,11 +77,9 @@ final class LinkEnrichmentService {
     func enrich(nodeID: UUID, context: ModelContext, ai: any OceanAIService, force: Bool = false) {
         guard !inFlight.contains(nodeID) else { return }
         guard let node = Self.fetch(nodeID, in: context), let url = node.linkURL else { return }
-        switch node.linkEnrichmentState {
-        case .enriched where !force:                            return
-        case .fetchingMeta, .fetchingContent, .summarizing:     return
-        default:                                                break
-        }
+        // Nothing runs for it in this process (checked above), so a state
+        // still in progress was cut off when the app last quit: run again.
+        if node.linkEnrichmentState == .enriched, !force { return }
         inFlight.insert(nodeID)
         Task { await run(nodeID: nodeID, url: url, context: context, ai: ai) }
     }
@@ -127,9 +96,12 @@ final class LinkEnrichmentService {
         // ---- Stage A: metadata ----
         setState(.fetchingMeta, nodeID: nodeID, context: context)
 
-        let lp = await Self.fetchLinkMetadata(url)          // title + image (LinkPresentation)
+        let lp = await Self.fetchLinkMetadata(url)          // title + image + site icon (LinkPresentation)
         let html = await PageContent.fetchHTML(url)          // one fetch: description now, content later
-        Self.log("Stage A — lpTitle:\(lp.title != nil) lpImage:\(lp.imageData != nil) html:\(html?.count ?? 0)b")
+        Self.log("Stage A — lpTitle:\(lp.title != nil) lpImage:\(lp.imageData != nil) icon:\(lp.iconData != nil) html:\(html?.count ?? 0)b")
+        if let icon = lp.iconData, let site = SiteIcons.site(of: url) {
+            SiteIcons.shared.store(icon, for: site)
+        }
 
         var thumbnail = lp.imageData.flatMap { Self.thumbnail(from: $0) }
         if thumbnail == nil, let html, let imageURL = PageContent.ogImageURL(from: html, relativeTo: url),
@@ -231,6 +203,7 @@ final class LinkEnrichmentService {
         guard let fresh = Self.fetch(nodeID, in: context) else { return }
         NodeComposer.applyUnderstanding(understanding, to: fresh)
         try? context.save()
+        CurrentRegistry.reconcile(context: context)
     }
 
     // MARK: State helpers
@@ -262,9 +235,10 @@ final class LinkEnrichmentService {
         let value: Value
     }
 
-    /// Title + a preview image via `LPMetadataProvider` (the system's blessed
-    /// rich-link path). Best-effort: returns nils on any failure.
-    private static func fetchLinkMetadata(_ url: URL) async -> (title: String?, imageData: Data?) {
+    /// Title, a preview image and the site's icon via `LPMetadataProvider`
+    /// (the system's blessed rich-link path). Best-effort: returns nils on
+    /// any failure.
+    private static func fetchLinkMetadata(_ url: URL) async -> (title: String?, imageData: Data?, iconData: Data?) {
         await withCheckedContinuation { continuation in
             let provider = LPMetadataProvider()
             provider.timeout = 10
@@ -272,20 +246,26 @@ final class LinkEnrichmentService {
             provider.startFetchingMetadata(for: url) { [providerBox] metadata, error in
                 _ = providerBox   // keep the provider alive until completion
                 guard let metadata, error == nil else {
-                    continuation.resume(returning: (nil, nil))
+                    continuation.resume(returning: (nil, nil, nil))
                     return
                 }
                 let title = metadata.title
-                guard let imageProvider = metadata.imageProvider,
-                      imageProvider.canLoadObject(ofClass: UIImage.self) else {
-                    continuation.resume(returning: (title, nil))
-                    return
-                }
-                imageProvider.loadObject(ofClass: UIImage.self) { object, _ in
-                    let data = (object as? UIImage)?.pngData()   // downsampled by the caller
-                    continuation.resume(returning: (title, data))
+                let preview = metadata.imageProvider
+                loadPNG(metadata.iconProvider) { icon in
+                    // The preview is downsampled by the caller.
+                    loadPNG(preview) { image in
+                        continuation.resume(returning: (title, image, icon))
+                    }
                 }
             }
+        }
+    }
+
+    /// An item provider's picture as PNG bytes, or nil when it has none.
+    nonisolated private static func loadPNG(_ provider: NSItemProvider?, _ done: @escaping @Sendable (Data?) -> Void) {
+        guard let provider, provider.canLoadObject(ofClass: UIImage.self) else { return done(nil) }
+        provider.loadObject(ofClass: UIImage.self) { object, _ in
+            done((object as? UIImage)?.pngData())
         }
     }
 

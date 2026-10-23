@@ -170,11 +170,16 @@ struct NodeDetailContent: View {
         .task(id: node.id) {
             relatedIDs = ai.relatedNodeIDs(to: node, among: allNodes, limit: 4)
             // Safety net for links that never got a first pass — legacy nodes and
-            // share-extension captures (the extension doesn't enrich). Only the
-            // never-attempted case auto-runs; a prior failure waits for the
-            // card's explicit retry, so opening detail doesn't re-hammer it.
-            if node.linkURL != nil, node.linkEnrichmentState == .notStarted {
-                LinkEnrichmentService.shared.enrich(nodeID: node.id, context: context, ai: ai)
+            // share-extension captures (the extension doesn't enrich) — or whose
+            // pass a quit cut off (left in progress). A prior failure waits for
+            // the card's explicit retry, so opening detail doesn't re-hammer it.
+            switch node.linkEnrichmentState {
+            case .notStarted, .fetchingMeta, .fetchingContent, .summarizing:
+                if node.linkURL != nil {
+                    LinkEnrichmentService.shared.enrich(nodeID: node.id, context: context, ai: ai)
+                }
+            case .enriched, .failed:
+                break
             }
         }
     }
@@ -409,6 +414,7 @@ struct NodeDetailContent: View {
     /// whisper's length, a branch's kind.
     private var metaDetail: String {
         var parts = [node.kind.label]
+        if let category = node.category { parts.append(category.label) }
         if node.kind == .voice, let data = node.audioData,
            let seconds = AudioDurations.seconds(for: data, id: node.id) {
             parts.append(AudioDurations.format(seconds))
@@ -569,8 +575,8 @@ struct NodeDetailContent: View {
             sectionTitle("Themes")
             FlowLayout(spacing: 8) {
                 ForEach(node.themes, id: \.self) { theme in
-                    Button { themeStream = StreamSelection(theme: theme) } label: {
-                        Text(OceanLayoutEngine.displayLabel(for: theme))
+                    Button { themeStream = StreamSelection(theme: ThoughtReading.slug(theme)) } label: {
+                        Text(CurrentKey.humanized(theme))
                     }
                     .buttonStyle(.oceanSecondary)
                     .accessibilityHint("Shows every thought with this theme.")

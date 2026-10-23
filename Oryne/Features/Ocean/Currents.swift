@@ -7,11 +7,10 @@ enum OceanLayoutEngine {
     /// Stream key for thoughts without themes.
     static let adriftKey = "adrift"
 
-    /// Concept keys are stored lowercase; currents wear them in Title Case.
+    /// A current's name for its key: the user's, else a label in their
+    /// language, else the key made readable (`CurrentDirectory`).
     static func displayLabel(for key: String) -> String {
-        key.split(separator: " ")
-            .map { $0 == "&" ? "&" : $0.prefix(1).uppercased() + $0.dropFirst() }
-            .joined(separator: " ")
+        CurrentDirectory.shared.name(for: key)
     }
 
     /// The current a node belongs to. The user's manual move lock

@@ -1,5 +1,6 @@
 import Foundation
 import NaturalLanguage
+import CryptoKit
 
 /// A sentence-level vector for a piece of text, or nil when the backing
 /// model has no signal (assets not present, model unavailable for the
@@ -62,12 +63,18 @@ final class EmbeddingService {
 
     private let primary: EmbeddingBackend
     private let fallback: EmbeddingBackend
+    private let disk: EmbeddingDiskCache?
     private var cache: [String: [Double]] = [:]
     private let lock = NSLock()
 
-    init(primary: EmbeddingBackend = ContextualEmbeddingBackend(), fallback: EmbeddingBackend = DualLanguageEmbeddingBackend()) {
+    init(
+        primary: EmbeddingBackend = ContextualEmbeddingBackend(),
+        fallback: EmbeddingBackend = DualLanguageEmbeddingBackend(),
+        disk: EmbeddingDiskCache? = .shared
+    ) {
         self.primary = primary
         self.fallback = fallback
+        self.disk = disk
     }
 
     /// Sentence-level vector for a piece of text, tried against the primary
@@ -82,11 +89,27 @@ final class EmbeddingService {
         }
         lock.unlock()
 
-        let result = primary.vector(for: text) ?? fallback.vector(for: text) ?? []
+        let result = cachedVector(from: primary, text: key)
+            ?? cachedVector(from: fallback, text: key)
+            ?? []
         lock.lock()
         cache[key] = result
         lock.unlock()
         return result.isEmpty ? nil : result
+    }
+
+    /// One backend's vector, through the on-disk cache so a thought is
+    /// embedded once per device rather than once per launch (docs/plans/
+    /// memory-layer/SPEC.md, decision 5). Cached per backend: the two live
+    /// in different vector spaces, and a backend that has no answer today
+    /// (assets not downloaded) is simply asked again next time.
+    private func cachedVector(from backend: EmbeddingBackend, text: String) -> [Double]? {
+        guard let disk else { return backend.vector(for: text) }
+        let diskKey = String(describing: type(of: backend)) + ":" + EmbeddingDiskCache.digest(text)
+        if let hit = disk.vector(forKey: diskKey) { return hit }
+        guard let computed = backend.vector(for: text) else { return nil }
+        disk.store(computed, forKey: diskKey)
+        return computed
     }
 
     /// Cosine similarity in [-1, 1]; returns a keyword-overlap fallback when
@@ -122,13 +145,33 @@ final class EmbeddingService {
     /// order. `floor` drops candidates that score below it, so a caller can
     /// require genuine relevance rather than padding the result to `limit`.
     func rank<ID>(query: String, candidates: [(id: ID, text: String)], limit: Int, floor: Double = 0) -> [ID] {
+        rank(query: query, candidates: candidates.map { (id: $0.id, texts: [$0.text]) }, limit: limit, floor: floor)
+    }
+
+    /// Rank candidates that can be reached through more than one text: a
+    /// thought's own words and its gist in the other language
+    /// (`Node.retrievalTexts`). A candidate scores by its best text, so a
+    /// question meets every thought in the question's own language; the
+    /// cross-script comparison scores near zero and simply loses.
+    func rank<ID>(query: String, candidates: [(id: ID, texts: [String])], limit: Int, floor: Double = 0) -> [ID] {
+        rankScored(query: query, candidates: candidates, limit: limit, floor: floor).map(\.id)
+    }
+
+    /// `rank`, with each candidate's best score, for callers that gate on
+    /// the distribution rather than one fixed floor.
+    func rankScored<ID>(query: String, candidates: [(id: ID, texts: [String])], limit: Int, floor: Double = 0) -> [(id: ID, score: Double)] {
         let cutoff = Swift.max(floor, 0.0001)
-        let scored = candidates.map { (id: $0.id, score: similarity(query, $0.text)) }
-        return scored
-            .filter { $0.score >= cutoff }
+        let scored = candidates.compactMap { candidate -> (id: ID, score: Double)? in
+            let best = candidate.texts
+                .filter { !$0.isEmpty }
+                .map { similarity(query, $0) }
+                .max()
+            guard let best, best >= cutoff else { return nil }
+            return (candidate.id, best)
+        }
+        return Array(scored
             .sorted { $0.score > $1.score }
-            .prefix(limit)
-            .map { $0.id }
+            .prefix(limit))
     }
 
     // MARK: - Math
@@ -180,6 +223,94 @@ final class EmbeddingService {
             return true
         }
         return tokens
+    }
+}
+
+// MARK: - Disk cache
+
+/// Vectors on disk, per device, keyed by backend and text digest. A cache,
+/// not a store: it lives in Caches, is rebuilt from the synced text when
+/// missing, and is dropped whole when it outgrows its cap. Writes are
+/// coalesced a few seconds behind the last store.
+final class EmbeddingDiskCache {
+    static let shared = EmbeddingDiskCache()
+    static let maxEntries = 6_000
+    static let fileName = "embeddings-v1.plist"
+
+    private let url: URL
+    private let lock = NSLock()
+    private var entries: [String: [Float]]?
+    private var saveScheduled = false
+    private let queue = DispatchQueue(label: "com.inspireocean.embedding-cache", qos: .utility)
+
+    init(url: URL? = nil) {
+        if let url {
+            self.url = url
+        } else {
+            let base = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
+                ?? FileManager.default.temporaryDirectory
+            self.url = base.appendingPathComponent(Self.fileName)
+        }
+    }
+
+    static func digest(_ text: String) -> String {
+        SHA256.hash(data: Data(text.utf8)).map { String(format: "%02x", $0) }.joined()
+    }
+
+    func vector(forKey key: String) -> [Double]? {
+        lock.lock()
+        defer { lock.unlock() }
+        loadIfNeeded()
+        return entries?[key].map { $0.map(Double.init) }
+    }
+
+    func store(_ vector: [Double], forKey key: String) {
+        lock.lock()
+        loadIfNeeded()
+        if (entries?.count ?? 0) >= Self.maxEntries { entries = [:] }
+        entries?[key] = vector.map(Float.init)
+        let schedule = !saveScheduled
+        saveScheduled = true
+        lock.unlock()
+        if schedule {
+            queue.asyncAfter(deadline: .now() + 3) { [weak self] in self?.flush() }
+        }
+    }
+
+    var count: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        loadIfNeeded()
+        return entries?.count ?? 0
+    }
+
+    /// Writes the cache now. Called by the coalescing timer; callable from
+    /// tests.
+    func flush() {
+        lock.lock()
+        saveScheduled = false
+        let snapshot = entries ?? [:]
+        lock.unlock()
+        guard let data = try? PropertyListEncoder.binary.encode(snapshot) else { return }
+        try? data.write(to: url, options: .atomic)
+    }
+
+    private func loadIfNeeded() {
+        guard entries == nil else { return }
+        if let data = try? Data(contentsOf: url),
+           let decoded = try? PropertyListDecoder().decode([String: [Float]].self, from: data) {
+            entries = decoded
+        } else {
+            entries = [:]
+        }
+    }
+}
+
+private extension PropertyListEncoder {
+    static var binary: PropertyListEncoder {
+        let encoder = PropertyListEncoder()
+        encoder.outputFormat = .binary
+        return encoder
     }
 }
 

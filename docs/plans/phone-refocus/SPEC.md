@@ -27,6 +27,8 @@ Refined 2026-10-18 (Malik: "delicate and well designed ... built by spacing, fon
 
 Materials by layer (Malik, 2026-10-18, after a side-by-side): Liquid Glass only on the layer that floats over content, meaning the tab bar, the capture bar and Ask's bar, the capture toast, page tool groups, sheet chrome and the discs. Buttons that scroll with the cards (Nearby, Let it rest, theme chips, Summarize, Grow a branch, Ask Ocean, Add a thought) are matte capsules from the tiles' family, a touch brighter, no rim. Every control is 44 pt tall.
 
+The Library (Malik, 2026-10-22, after a mock): under the search field a switch, Recent or Currents, replaces the old Sort menu and its Related ribbon. Recent keeps the waterfall in Today, Previous 7 Days (a rolling week, as Notes names it) and Earlier. Currents is the old All currents sheet: each current's name in New York italic with how many thoughts it holds and a ›, its two newest thoughts as rows, Adrift last, then Archived, the way Recently Deleted closes Notes' folders. Rows keep what tells a kind apart: a thought's picture small at the trailing edge, a link's site icon and domain, a whisper's length. The one tool filters by kind (All, Text, Whispers, Images, Links; a typed thought is Text, since Thought names every kind), shows as a chip under the search while on, and an empty result offers Clear filter. The Category picker and Show archived left the Library; Tide's All currents opens the Library's Currents.
+
 Margins and cards (Malik, 2026-10-22, after a side-by-side with RedNote's 5 pt waterfall): the gutter is the system's own margin on each phone, 16 pt on standard iPhones and 20 on wide ones (Air, Plus, Pro Max; iPad keeps 20, not measured), which is where a navigation bar puts its back button and a sheet its close (measured: 16 at 402 pt, 20 at 420 and 440). Page tools, the search field, tiles, the bars and the words share that edge with the system's buttons on every phone. A fixed 20 had left the page tools pinned at 16, 4 pt outside the content; a fixed 16 was built and left the system's buttons 4 pt inside the content on wide phones. Library cards stop the title and the words at two lines each, so the title leads and more whole cards fit on a screen; Tide's cards already show only a title. RedNote's tight edges and small corners were weighed and declined: its grid is photos in a feed, Oryne is mostly words that keep a reading margin, and a separate edge for surfaces would split every screen in two. What made RedNote quick to read was its short captions, and that is the part kept.
 
 
@@ -36,7 +38,7 @@ Three tabs and one button.
 | --- | --- | --- |
 | Tide (was Ocean) | What the tide brought to the surface: Resurfacing, Drifted in, Currents. The Ocean stays the name of the whole water; the Library is its depth | Three seconds: what came back, what I just caught |
 | Ask | One question in, one grounded answer out | One question, one scroll |
-| Library | Find it: search, time, Related, current filter | Type two words, tap the card |
+| Library | Find it: search, then Recent (time sections, a waterfall of cards) or Currents (each current and its newest rows), and one Kind filter | Type two words, tap the card or the row |
 | Capture bar | Above the tab bar on Ocean and Library (the iOS 26 tab bar accessory; a floating bar before 26): a field to tap and the disc to hold. Hidden on Ask, which has its own input | One gesture |
 
 Deep links and intents keep working: `oryne://capture/thought` opens the overlay typing-first, `oryne://capture/whisper` opens it listening. `OCEAN_START_TAB=capture` is retired; the screenshot and film seeds move to `ocean`.
@@ -99,7 +101,7 @@ This spec needs `PHILOSOPHY.md` amended before the code lands, not after:
 
 - **§3 AI behavior**: "reflective partner" stays, but the four dialogue modes are no longer named as the product. Ask is one grounded answer; growing ideas is out of scope on the phone.
 - **§4 Motion**: unchanged for now. The surface Ocean (decision 5) will need motion to carry "new since last time", and that amendment is made in that spec.
-- **§7 Retrieval**: "cluster streams" stop being a retrieval path on the phone once the map goes; the Library's current filter takes that sentence.
+- **§7 Retrieval**: "cluster streams" stop being a retrieval path on the phone once the map goes; the Library's Currents takes that sentence.
 - **§8 Calm computing**: add the glance test: "would this need more than a glance or one gesture on a phone? Then it belongs on the desk."
 
 ## Phases
@@ -116,7 +118,7 @@ Each phase ships on its own branch and is used on-device for a few days before t
 
 ## Out of scope
 
-iPad and Mac Oryne, direct manipulation of currents, bring-your-own-key chat, any digest or feed surface, streaks or counts of any kind.
+iPad and Mac Oryne, direct manipulation of currents, bring-your-own-key chat, any digest or feed surface, streaks or counts of activity (a current showing how many thoughts it holds is not one: Malik, 2026-10-22).
 
 ## Open questions
 
