@@ -6,6 +6,14 @@ import Foundation
 struct CurrentCandidate: Equatable, Sendable {
     let key: String
     let examples: [String]
+    /// How the current reads to the model; the key when no label is known.
+    var label: String = ""
+
+    init(key: String, examples: [String], label: String = "") {
+        self.key = key
+        self.examples = examples
+        self.label = label
+    }
 }
 
 /// Lets a new thought join an existing current instead of founding its own.
@@ -41,20 +49,25 @@ enum CurrentSnap {
         let key: String
         let title: String
         let createdAt: Date
+        /// The current's name as the entry's language reads it, if known.
+        var label: String = ""
+
+        init(key: String, title: String, createdAt: Date, label: String = "") {
+            self.key = key
+            self.title = title
+            self.createdAt = createdAt
+            self.label = label
+        }
     }
 
-    /// The currents offered to a new thought: only those in the entry's own
-    /// language, largest first, each with its most recent member titles.
-    ///
-    /// Per-language currents are structural, not prompted: offered English
-    /// currents, the model put a Chinese thought into "light and color", so a
-    /// Chinese entry is only ever offered Chinese currents (and vice versa).
+    /// The currents offered to a new thought: every current in the Ocean,
+    /// largest first, each with its most recent member titles. One Ocean
+    /// across languages (SPEC decision 3): a Chinese thought about light
+    /// belongs with "light and color", and the examples, not the label, are
+    /// what keep a shared word from passing as a shared subject.
     static func candidates(from members: [Member], forEntry entry: String) -> [CurrentCandidate] {
-        let entryIsChinese = isChinese(entry)
         let grouped = Dictionary(grouping: members.filter {
-            !$0.key.isEmpty
-                && $0.key.lowercased() != noneChoice
-                && isChinese($0.key) == entryIsChinese
+            !$0.key.isEmpty && $0.key.lowercased() != noneChoice
         }, by: \.key)
 
         return grouped
@@ -66,19 +79,17 @@ enum CurrentSnap {
                     .map { $0.title.trimmingCharacters(in: .whitespacesAndNewlines) }
                     .filter { !$0.isEmpty }
                     .prefix(examplesPerCurrent)
-                return CurrentCandidate(key: key, examples: Array(examples))
+                let label = members.first(where: { !$0.label.isEmpty })?.label ?? ""
+                return CurrentCandidate(key: key, examples: Array(examples), label: label)
             }
     }
 
-    /// Folds the model's pick into the thought's themes. A valid pick leads,
-    /// so the thought joins that current (layout, hue and field anchor all
-    /// follow the first theme); the model's own themes stay as chips. Any
-    /// pick that isn't exactly one of the offered keys changes nothing.
-    static func resolve(themes: [String], pick: String?, candidates: [CurrentCandidate]) -> [String] {
-        guard let pick, pick != noneChoice, candidates.contains(where: { $0.key == pick }) else {
-            return themes
-        }
-        return Array(([pick] + themes.filter { $0 != pick }).prefix(3))
+    /// The key the thought joins: the model's pick when it is exactly one of
+    /// the offered keys, else nil. Any other answer, including "none", is no
+    /// snap, and the thought founds its own current.
+    static func joinKey(pick: String?, candidates: [CurrentCandidate]) -> String? {
+        guard let pick, pick != noneChoice, candidates.contains(where: { $0.key == pick }) else { return nil }
+        return pick
     }
 
     /// Script split, not language detection: the app is zh-Hans + English,
@@ -108,9 +119,13 @@ enum CurrentSnap {
 
     static func prompt(entry: String, candidates: [CurrentCandidate]) -> String {
         let topics = candidates.map { candidate in
-            candidate.examples.isEmpty
-                ? "- \(candidate.key)"
-                : "- \(candidate.key): " + candidate.examples.map { "\"\($0)\"" }.joined(separator: ", ")
+            // The key is the answer; a label, when it differs, is how it reads.
+            let head = candidate.label.isEmpty || candidate.label == candidate.key
+                ? candidate.key
+                : "\(candidate.key) (\(candidate.label))"
+            return candidate.examples.isEmpty
+                ? "- \(head)"
+                : "- \(head): " + candidate.examples.map { "\"\($0)\"" }.joined(separator: ", ")
         }
         return "Topics:\n" + topics.joined(separator: "\n") + "\n\nNew entry:\n" + entry
     }

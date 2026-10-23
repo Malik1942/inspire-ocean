@@ -1,10 +1,13 @@
 import SwiftUI
+import SwiftData
 import StoreKit
 
 /// Primary navigation: Ocean · Ask · Library, with the capture bar above the
 /// tab bar. Capture is a gesture, not a tab: tap the field to type, tap or
 /// hold the disc to whisper (docs/plans/phone-refocus/SPEC.md).
 struct RootTabView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query private var currentRows: [Current]
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.requestReview) private var requestReview
     @AppStorage(
@@ -112,6 +115,16 @@ struct RootTabView: View {
                     appState.startFastCapture(source: .onboarding)
                 }
             )
+        }
+        .task {
+            // Currents as entities: keys once, then rows kept true to the
+            // thoughts (docs/plans/memory-layer/SPEC.md, phase 3).
+            CurrentRegistry.migrateIfNeeded(context: modelContext)
+            CurrentRegistry.reconcile(context: modelContext)
+            CurrentDirectory.shared.update(currentRows)
+        }
+        .onChange(of: currentRows.map { "\($0.key)|\($0.pinnedName ?? "")|\($0.labelEN ?? "")|\($0.labelZH ?? "")" }) { _, _ in
+            CurrentDirectory.shared.update(currentRows)
         }
         .task {
             control.tapToToggle = CaptureControl.assistiveTechnologyRunning

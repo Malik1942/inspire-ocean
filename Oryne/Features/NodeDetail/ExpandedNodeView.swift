@@ -414,6 +414,7 @@ struct NodeDetailContent: View {
     /// whisper's length, a branch's kind.
     private var metaDetail: String {
         var parts = [node.kind.label]
+        if let category = node.category { parts.append(category.label) }
         if node.kind == .voice, let data = node.audioData,
            let seconds = AudioDurations.seconds(for: data, id: node.id) {
             parts.append(AudioDurations.format(seconds))
@@ -574,8 +575,8 @@ struct NodeDetailContent: View {
             sectionTitle("Themes")
             FlowLayout(spacing: 8) {
                 ForEach(node.themes, id: \.self) { theme in
-                    Button { themeStream = StreamSelection(theme: theme) } label: {
-                        Text(OceanLayoutEngine.displayLabel(for: theme))
+                    Button { themeStream = StreamSelection(theme: ThoughtReading.slug(theme)) } label: {
+                        Text(CurrentKey.humanized(theme))
                     }
                     .buttonStyle(.oceanSecondary)
                     .accessibilityHint("Shows every thought with this theme.")

@@ -34,7 +34,7 @@ enum CloudKitSchema {
         description.shouldAddStoreAsynchronously = false
 
         guard let model = NSManagedObjectModel.makeManagedObjectModel(
-            for: [Node.self, NodeImage.self, Conversation.self, ChatMessage.self]
+            for: [Node.self, NodeImage.self, Conversation.self, ChatMessage.self, Current.self, MemoryRecord.self]
         ) else {
             throw CocoaError(.coreData)
         }

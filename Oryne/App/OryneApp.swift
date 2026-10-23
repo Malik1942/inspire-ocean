@@ -59,8 +59,17 @@ struct OryneApp: App {
                     if #available(iOS 26, *) { await Self.prefetchSpeechAssets() }
                 }
                 .onChange(of: scenePhase) { _, phase in
+                    if phase == .background { Consolidation.schedule() }
                     guard phase == .active else { return }
                     Task { await WatchBridge.shared.refresh() }
+                }
+                .task {
+                    #if DEBUG
+                    // Testing seam: the daily pass at launch, on a simulator.
+                    if ProcessInfo.processInfo.environment["OCEAN_CONSOLIDATE_ON_LAUNCH"] == "1" {
+                        await Consolidation.run(context: container.mainContext, ai: ai, reason: .launch)
+                    }
+                    #endif
                 }
         }
         .modelContainer(container)

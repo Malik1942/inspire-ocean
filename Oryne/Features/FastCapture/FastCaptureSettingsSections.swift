@@ -55,14 +55,6 @@ struct FastCaptureShortcutSection: View {
             }
         } header: {
             Text("Shortcut")
-        } footer: {
-            // The setup is a path to follow, not rows to tap.
-            VStack(alignment: .leading, spacing: 4) {
-                Text(trigger == .actionButton
-                     ? LocalizedStringKey("Assign the Fast Capture shortcut.")
-                     : LocalizedStringKey("Use a screenshot handoff shortcut."))
-                Text(verbatim: trigger.setupSteps.joined(separator: " › "))
-            }
         }
     }
 }

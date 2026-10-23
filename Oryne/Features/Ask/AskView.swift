@@ -139,6 +139,7 @@ struct AskView: View {
         case .offlineFallback: String(localized: "Composed offline")
         case .noSources: String(localized: "Nothing in your Ocean matches this yet")
         case .degraded: String(localized: "Your note was long, so I worked from a shortened version")
+        case .template: String(localized: "Apple Intelligence isn't available on this device, so this is a fixed reading. The thoughts below are the real find.")
         case .cloud, .onDevice, nil: nil
         }
     }
@@ -253,8 +254,8 @@ struct AskView: View {
 
     private var samplePrompts: [String] {
         [String(localized: "That idea I had about water"),
-         String(localized: "What patterns keep resurfacing?"),
-         String(localized: "What tension am I circling?")]
+         String(localized: "What bugs have I noted?"),
+         String(localized: "What patterns keep resurfacing?")]
     }
 
     // MARK: Input

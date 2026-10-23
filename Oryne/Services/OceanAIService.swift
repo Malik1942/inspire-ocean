@@ -24,6 +24,9 @@ enum ResponseProvenance: String {
     /// The question was too long to read in full; the reply worked from a
     /// shortened version, so it must not present itself as complete.
     case degraded
+    /// No model could compose, so a fixed template stands in. It read
+    /// nothing, so the reply must say so; the found thoughts are the answer.
+    case template
 }
 
 /// A grounded Ocean Dialogue response (§11): a reflection, the source nodes it
