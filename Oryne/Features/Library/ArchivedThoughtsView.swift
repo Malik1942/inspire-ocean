@@ -14,59 +14,71 @@ struct ArchivedThoughtsView: View {
     @Query(filter: #Predicate<Node> { $0.isArchived }, sort: \Node.updatedAt, order: .reverse)
     private var archived: [Node]
 
-    /// The tab's path, so a thought opens as a pushed page.
-    @Binding var path: NavigationPath
+    /// Thoughts opened from here. A path, not `NavigationLink`s: a link in a
+    /// `List` draws a chevron the tiles don't wear.
+    @State private var path: [Node] = []
     /// The way back from a delete. A delete only archives until the window
     /// closes, so the row it took is left out meanwhile.
     @State private var removals = ThoughtRemovals()
 
     var body: some View {
         let shown = archived.filter { !(removals.pending?.deletes($0) ?? false) }
-        List {
-            Text("Archived")
-                .font(OceanType.subjectTitle)
-                .foregroundStyle(OceanTheme.foam)
-                .accessibilityAddTraits(.isHeader)
-                .tileRow(top: OceanSpacing.gap, bottom: OceanSpacing.block - OceanSpacing.item / 2)
-            if shown.isEmpty {
-                Text("Nothing archived")
-                    .font(OceanType.secondary)
-                    .foregroundStyle(OceanTheme.mist)
-                    .frame(maxWidth: .infinity)
-                    .tileRow(top: OceanSpacing.block)
+        NavigationStack(path: $path) {
+            List {
+                Text("Archived")
+                    .font(OceanType.subjectTitle)
+                    .foregroundStyle(OceanTheme.foam)
+                    .accessibilityAddTraits(.isHeader)
+                    .tileRow(top: OceanSpacing.sheetTop, bottom: OceanSpacing.block - OceanSpacing.item / 2)
+                if shown.isEmpty {
+                    Text("Nothing archived")
+                        .font(OceanType.secondary)
+                        .foregroundStyle(OceanTheme.mist)
+                        .frame(maxWidth: .infinity)
+                        .tileRow(top: OceanSpacing.block)
+                }
+                ForEach(shown) { node in
+                    Button { path.append(node) } label: { NodeRow(node: node) }
+                        .buttonStyle(.plain)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) { removals.delete(node) } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                            .labelStyle(.iconOnly)
+                            .tint(SwipeTint.delete)
+                            Button { restore(node) } label: {
+                                Label("Restore", systemImage: "arrow.up.bin")
+                            }
+                            .labelStyle(.iconOnly)
+                            .tint(SwipeTint.archive)
+                        }
+                        // Read last first, as with the discs: Restore, then Delete.
+                        .accessibilityActions {
+                            Button("Delete") { removals.delete(node) }
+                            Button("Restore") { restore(node) }
+                        }
+                        .tileRow()
+                }
             }
-            ForEach(shown) { node in
-                Button { path.append(OceanDestination.thought(node)) } label: { NodeRow(node: node) }
-                    .buttonStyle(.plain)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button(role: .destructive) { removals.delete(node) } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                        .labelStyle(.iconOnly)
-                        .tint(SwipeTint.delete)
-                        Button { restore(node) } label: {
-                            Label("Restore", systemImage: "arrow.up.bin")
-                        }
-                        .labelStyle(.iconOnly)
-                        .tint(SwipeTint.archive)
-                    }
-                    // Read last first, as with the discs: Restore, then Delete.
-                    .accessibilityActions {
-                        Button("Delete") { removals.delete(node) }
-                        Button("Restore") { restore(node) }
-                    }
-                    .tileRow()
+            .tileList()
+            .contentMargins(.bottom, OceanSpacing.section, for: .scrollContent)
+            .thoughtRemovalToast(removals)
+            .background(OceanBackground())
+            // A pull-up sheet: no bar and no close, the grabber is its top
+            // edge and it swipes away. A pushed thought brings its own bar.
+            .toolbar(.hidden, for: .navigationBar)
+            .navigationDestination(for: Node.self) { node in
+                NodeDetailContent(node: node)
             }
         }
-        .tileList()
-        .contentMargins(.bottom, OceanSpacing.section, for: .scrollContent)
-        .thoughtRemovalToast(removals)
-        .background(OceanBackground())
-        // A place: pushed, with the system's back button and the tab
-        // bar stepped away, as a current.
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar(.hidden, for: .tabBar)
         .settlesThoughtRemovals(removals)
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+        .presentationBackground(.clear)
+        // A summary or a question opens in Ask: step out of the way.
+        .onChange(of: appState.selectedTab) { _, tab in
+            if tab == .ask { dismiss() }
+        }
     }
 
     /// Back among the live thoughts, where it was. Its branches never left.

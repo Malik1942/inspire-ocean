@@ -104,8 +104,9 @@ struct LibraryView: View {
             .onTapGesture { searchFocused = false }
             .navigationTitle("Library")
             .toolbar(.hidden, for: .navigationBar)
-            .oceanDestinations(path: $path)
-            .onChange(of: path.count, initial: true) { _, depth in appState.pushedDepth[.library] = depth }
+            .navigationDestination(for: Node.self) { node in
+                NodeDetailContent(node: node)
+            }
             // The system alert, as on a thought's page.
             .alert(
                 "Delete this thought?",
@@ -585,7 +586,7 @@ struct LibraryView: View {
     /// context menu. Delete still routes through `pendingDelete` and the
     /// confirmation dialog.
     private func cell(_ node: Node) -> some View {
-        NavigationLink(value: OceanDestination.thought(node)) {
+        NavigationLink(value: node) {
             NodeCard(node: node,
                      glow: focusGlow(node),
                      isAnchor: node.id == focusedAnchorID,

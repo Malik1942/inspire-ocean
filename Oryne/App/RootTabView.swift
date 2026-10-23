@@ -31,12 +31,8 @@ struct RootTabView: View {
     private var control: CaptureControl { appState.captureControl }
 
     /// Under the composer's + panel the tab bar steps away, as it does under
-    /// the keys it stands in for; and under a pushed page, which is read in
-    /// full. Set here, outside each tab's stack, since a visibility set
-    /// outside the stack wins over one a pushed view asks for.
-    private var tabBarVisibility: Visibility {
-        control.attachPanelOpen || (appState.pushedDepth[appState.selectedTab] ?? 0) > 0 ? .hidden : .automatic
-    }
+    /// the keys it stands in for.
+    private var tabBarVisibility: Visibility { control.attachPanelOpen ? .hidden : .automatic }
 
     /// A quiet moment: Tide or the Library (never Ask, so never over an
     /// answer), no capture overlay, toast, hold, keyboard, onboarding or
@@ -100,7 +96,6 @@ struct RootTabView: View {
         .modifier(CaptureBarPlacement(
             show: appState.selectedTab == .ocean
                 && !keyboardUp
-                && !appState.isPresentingOceanSheet
                 && (appState.fastCaptureRequest == nil || control.toastShowing),
             keepsTouch: control.isHeld,
             control: control

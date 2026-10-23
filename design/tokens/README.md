@@ -129,19 +129,6 @@ button. A chevron in content is a bare `glyphDisclosure`, never an Icon
 button. A label above a field or a block is an `eyebrow`; a label above a
 section is a `sectionLabel`.
 
-## Navigation: places push, tasks rise
-
-Two grammars, assigned by role, never by where you came from
-(`Oryne/App/OceanNavigation.swift`):
-
-- **Places push.** A thought's page, a current, Archived are
-  `OceanDestination`s; every tab's stack resolves them with
-  `oceanDestinations(path:)`. The system slide and back swipe, the tab bar
-  and the capture bar stepping away (`AppState.pushedDepth`).
-- **Tasks rise.** Edit, grow a branch, move, merge, settings, the capture
-  composer are sheets, always one level over a pushed page, never over
-  another sheet; a grabber, no close, pulled down to leave.
-
 ## What stays expressive
 
 Marked `// art-directed` in code; the lint skips those lines.
@@ -173,10 +160,6 @@ closed the gaps; each is one line in the JSON to change.
   Clear, All currents, Try again, a remove ✕ in a card.
 - Primary is glass with the faint white tint and foam words, the ready
   disc's own material, never the solid accent fill (Malik, 2026-10-18).
-- A toast's glass takes the deep water as a tint (`toastTint`), so it reads
-  at once; the composer's + and disc are the compact 36 pt inside the card
-  (Messages' own size), in a 44 pt target; page tools stay 44 like the
-  system's.
 - Sheets open like pages (`OceanSheetHeader`): a grabber, the one action
   as Primary, the subject in New York. No close button on any sheet: the
   pull down is the way out, and the grabber says so (the thought page, a

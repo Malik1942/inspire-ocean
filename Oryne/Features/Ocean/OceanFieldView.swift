@@ -21,8 +21,7 @@ struct OceanFieldView: View {
     @Query(filter: #Predicate<Node> { !$0.isArchived }, sort: \Node.createdAt, order: .reverse)
     private var nodes: [Node]
 
-    /// Where the tab has gone: a thought's page, a current.
-    @State private var path = NavigationPath()
+    @State private var sheet: OceanSheet?
     @State private var showSettings = false
     /// "Nearby" is open under the resurfacing thought.
     @State private var nearbyOpen = false
@@ -49,6 +48,18 @@ struct OceanFieldView: View {
     private static let currentLimit = 4
     private static let currentTileHeight: CGFloat = 72
 
+    private enum OceanSheet: Identifiable {
+        case thought(Node)
+        case stream(theme: String)
+
+        var id: String {
+            switch self {
+            case .thought(let node): return node.id.uuidString
+            case .stream(let theme): return "stream·\(theme)"
+            }
+        }
+    }
+
     // MARK: Derived
 
     private var resurfacing: Node? {
@@ -71,7 +82,7 @@ struct OceanFieldView: View {
     // MARK: Body
 
     var body: some View {
-        NavigationStack(path: $path) {
+        NavigationStack {
             ZStack {
                 PageBackground(lampLift: lampLift, lampDim: lampDim)
                 if nodes.isEmpty {
@@ -115,7 +126,12 @@ struct OceanFieldView: View {
                 widgetReloaded = true
                 WidgetCenter.shared.reloadTimelines(ofKind: Resurfacing.widgetKind)
             }
-            .oceanDestinations(path: $path)
+            .sheet(item: $sheet) { item in
+                switch item {
+                case .thought(let node): ExpandedNodeView(node: node)
+                case .stream(let theme): ClusterStreamView(theme: theme)
+                }
+            }
             .sheet(isPresented: $showSettings) { OceanSettingsView() }
             // The system alert, as on a thought's page and in the Library.
             .alert(
@@ -133,10 +149,7 @@ struct OceanFieldView: View {
             } message: {
                 Text("This drifts out of the Ocean for good.")
             }
-            .onChange(of: path.count, initial: true) { _, depth in
-                appState.pushedDepth[.ocean] = depth
-                updateOceanSheetPresence()
-            }
+            .onChange(of: sheet?.id) { _, _ in updateOceanSheetPresence() }
             .onChange(of: showSettings) { _, _ in updateOceanSheetPresence() }
         }
     }
@@ -286,7 +299,7 @@ struct OceanFieldView: View {
             }
             LazyVGrid(columns: [GridItem(.flexible(), spacing: OceanSpacing.item), GridItem(.flexible(), spacing: OceanSpacing.item)], spacing: OceanSpacing.item) {
                 ForEach(currents.prefix(Self.currentLimit)) { group in
-                    NavigationLink(value: OceanDestination.current(group.key)) {
+                    Button { sheet = .stream(theme: group.key) } label: {
                         VStack(alignment: .leading, spacing: OceanSpacing.snug) {
                             Text(group.label)
                                 .font(OceanType.tileTitle)
@@ -399,13 +412,11 @@ struct OceanFieldView: View {
                 }
             }
         }
-        path.append(OceanDestination.thought(node))
+        sheet = .thought(node)
     }
 
-    /// A page pushed over Tide, or its settings up: the capture bar steps
-    /// away and the review ask waits.
     private func updateOceanSheetPresence() {
-        appState.isPresentingOceanSheet = !path.isEmpty || showSettings
+        appState.isPresentingOceanSheet = sheet != nil || showSettings
     }
 
     /// A deep link (the Resurfacing widget) queued a node: open it.

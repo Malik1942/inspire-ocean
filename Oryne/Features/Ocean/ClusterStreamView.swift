@@ -18,9 +18,9 @@ struct ClusterStreamView: View {
     @Environment(\.modelContext) private var context
     @Environment(AppState.self) private var appState
     @State private var showCapture = false
-    /// The tab's path, so a thought opens as a pushed page (a link in a
-    /// `List` would draw a chevron the tiles don't wear).
-    @Binding var path: NavigationPath
+    /// Thoughts opened from this stream. A path, not `NavigationLink`s: a
+    /// link in a `List` draws a chevron the tiles don't wear.
+    @State private var path: [Node] = []
     /// The way back from a swiped delete or archive.
     @State private var removals = ThoughtRemovals()
     @Query(filter: #Predicate<Node> { !$0.isArchived }, sort: \Node.createdAt, order: .reverse)
@@ -54,75 +54,86 @@ struct ClusterStreamView: View {
     private var selectedNodes: [Node] { members.filter { selected.contains($0.id) } }
 
     var body: some View {
-        List {
-            header
-                .tileRow(top: OceanSpacing.gap, bottom: OceanSpacing.block - OceanSpacing.item / 2)
-            ForEach(members) { node in
-                if selecting {
-                    // No swipes while picking.
-                    Button {
-                        if selected.contains(node.id) { selected.remove(node.id) } else { selected.insert(node.id) }
-                    } label: {
-                        HStack(spacing: OceanSpacing.item) {
-                            Image(systemName: selected.contains(node.id) ? "checkmark.circle.fill" : "circle")
-                                .font(OceanType.glyph)
-                                .foregroundStyle(selected.contains(node.id) ? OceanTheme.accent : OceanTheme.mist)
-                            NodeRow(node: node, showsCurrent: false)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .tileRow()
-                } else {
-                    Button { path.append(OceanDestination.thought(node)) } label: { NodeRow(node: node, showsCurrent: false) }
-                        .buttonStyle(.plain)
-                        .thoughtSwipeActions(node, removals: removals)
-                        // The split starts from a thought: a long press
-                        // picks it, then others join with a tap.
-                        .contextMenu {
-                            if !isAdrift {
-                                Button {
-                                    selected = [node.id]
-                                    withAnimation(OceanMotion.quick) { selecting = true }
-                                } label: { Label("Select", systemImage: "checkmark.circle") }
+        NavigationStack(path: $path) {
+            List {
+                header
+                    .tileRow(top: Self.titleTop, bottom: OceanSpacing.block - OceanSpacing.item / 2)
+                ForEach(members) { node in
+                    if selecting {
+                        // No swipes while picking.
+                        Button {
+                            if selected.contains(node.id) { selected.remove(node.id) } else { selected.insert(node.id) }
+                        } label: {
+                            HStack(spacing: OceanSpacing.item) {
+                                Image(systemName: selected.contains(node.id) ? "checkmark.circle.fill" : "circle")
+                                    .font(OceanType.glyph)
+                                    .foregroundStyle(selected.contains(node.id) ? OceanTheme.accent : OceanTheme.mist)
+                                NodeRow(node: node, showsCurrent: false)
                             }
                         }
+                        .buttonStyle(.plain)
                         .tileRow()
+                    } else {
+                        Button { path.append(node) } label: { NodeRow(node: node, showsCurrent: false) }
+                            .buttonStyle(.plain)
+                            .thoughtSwipeActions(node, removals: removals)
+                            // The split starts from a thought: a long press
+                            // picks it, then others join with a tap.
+                            .contextMenu {
+                                if !isAdrift {
+                                    Button {
+                                        selected = [node.id]
+                                        withAnimation(OceanMotion.quick) { selecting = true }
+                                    } label: { Label("Select", systemImage: "checkmark.circle") }
+                                }
+                            }
+                            .tileRow()
+                    }
                 }
             }
-        }
-        .tileList()
-        .contentMargins(.bottom, OceanSpacing.section, for: .scrollContent)
-        .thoughtRemovalToast(removals)
-        .background(OceanBackground())
-        // A place: pushed, with the system's back button and the tab
-        // bar stepped away, as a thought's page.
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar(.hidden, for: .tabBar)
-        .safeAreaInset(edge: .bottom) {
-            if selecting, !selected.isEmpty {
-                Button { moving = true } label: {
-                    Text("Move \(selected.count) to a current")
-                        .frame(maxWidth: .infinity)
+            .tileList()
+            .contentMargins(.bottom, OceanSpacing.section, for: .scrollContent)
+            .thoughtRemovalToast(removals)
+            .background(OceanBackground())
+            // Nothing in the bar: the sheet's grabber is its top edge, and a
+            // pushed thought brings its own bar with the back button.
+            .toolbar(.hidden, for: .navigationBar)
+            .navigationDestination(for: Node.self) { node in
+                NodeDetailContent(node: node)
+            }
+            .safeAreaInset(edge: .bottom) {
+                if selecting, !selected.isEmpty {
+                    Button { moving = true } label: {
+                        Text("Move \(selected.count) to a current")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.oceanSecondary)
+                    .padding(.horizontal, OceanSpacing.gutter)
+                    .padding(.vertical, OceanSpacing.item)
                 }
-                .buttonStyle(.oceanSecondary)
-                .padding(.horizontal, OceanSpacing.gutter)
-                .padding(.vertical, OceanSpacing.item)
             }
-        }
-        .alert("Rename current", isPresented: $renaming) {
-            TextField("Name", text: $newName)
-            Button("Cancel", role: .cancel) {}
-            Button("Rename") {
-                if let currentRow { CurrentRegistry.rename(currentRow, to: newName, context: context) }
+            .alert("Rename current", isPresented: $renaming) {
+                TextField("Name", text: $newName)
+                Button("Cancel", role: .cancel) {}
+                Button("Rename") {
+                    if let currentRow { CurrentRegistry.rename(currentRow, to: newName, context: context) }
+                }
             }
-        }
-        .sheet(isPresented: $moving, onDismiss: { selecting = false; selected = [] }) {
-            MoveToCurrentSheet(nodes: selectedNodes)
+            .sheet(isPresented: $moving, onDismiss: { selecting = false; selected = [] }) {
+                MoveToCurrentSheet(nodes: selectedNodes)
+            }
         }
         .settlesThoughtRemovals(removals)
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+        .presentationBackground(.clear)
+        // A summary or a question opens in Ask: step out of the way.
+        .onChange(of: appState.selectedTab) { _, tab in
+            if tab == .ask { dismiss() }
+        }
         // The one capture surface, opened into this current: the saved node
         // is anchored here (CaptureSession.release), so the live @Query drops
-        // it at the top of this stream on save.
+        // it at the top of this stream on save. Sheet-over-sheet, fine on 17+.
         .sheet(isPresented: $showCapture) {
             FastCaptureSessionView(
                 request: FastCaptureRequest(
@@ -137,6 +148,9 @@ struct ClusterStreamView: View {
             .presentationBackground(.clear)
         }
     }
+
+    /// From the sheet's top edge to the current's name, clear of the grabber.
+    private static let titleTop: CGFloat = OceanSpacing.sheetTop
 
     /// The current's name in New York with its + on the same line, a tool
     /// like a page's (the capture opens into this current); under it,

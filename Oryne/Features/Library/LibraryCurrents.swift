@@ -65,6 +65,9 @@ struct LibraryCurrents<Header: View, Empty: View, Lead: View>: View {
     @Environment(\.modelContext) private var context
     @Query private var currentRows: [Current]
 
+    @State private var stream: StreamSelection?
+    @State private var showsArchived = false
+
     /// Rename and merge, from a current's context menu.
     @State private var renaming: CurrentGroup?
     @State private var newName = ""
@@ -130,6 +133,12 @@ struct LibraryCurrents<Header: View, Empty: View, Lead: View>: View {
                 withAnimation(OceanMotion.standard) { proxy.scrollTo(Self.topID, anchor: .top) }
             }
         }
+        .sheet(item: $stream) { selection in
+            ClusterStreamView(theme: selection.theme)
+        }
+        .sheet(isPresented: $showsArchived) {
+            ArchivedThoughtsView()
+        }
         .sheet(item: $merging) { group in
             MergeCurrentSheet(from: group, groups: groups.filter { $0.key != group.key && !$0.isAdrift }) { into in
                 if let fromRow = row(forKey: group.key), let intoRow = row(forKey: into.key) {
@@ -178,7 +187,7 @@ struct LibraryCurrents<Header: View, Empty: View, Lead: View>: View {
     private func current(_ entry: Entry, isFirst: Bool) -> some View {
         let group = entry.group
         let shown = entry.isPreview ? Array(entry.rows.prefix(Self.previewCount)) : entry.rows
-        Button { path.append(OceanDestination.current(group.key)) } label: {
+        Button { stream = StreamSelection(theme: group.key) } label: {
             HStack(alignment: .firstTextBaseline, spacing: OceanSpacing.gap) {
                 Text(group.label)
                     .font(OceanType.sectionLabel)
@@ -218,7 +227,7 @@ struct LibraryCurrents<Header: View, Empty: View, Lead: View>: View {
         .tileRow(top: isFirst ? Self.firstGap : Self.currentGap - OceanSpacing.item / 2)
 
         ForEach(shown) { node in
-            Button { path.append(OceanDestination.thought(node)) } label: { NodeRow(node: node, showsCurrent: false) }
+            Button { path.append(node) } label: { NodeRow(node: node, showsCurrent: false) }
                 .buttonStyle(.plain)
                 .opacity(group.isAdrift ? 0.75 : 1)
                 .thoughtSwipeActions(node, removals: removals)
@@ -229,7 +238,7 @@ struct LibraryCurrents<Header: View, Empty: View, Lead: View>: View {
     /// The archive's way in, closing the list: a name like a current's, in
     /// the quiet tone, with the archive's glyph so it never reads as one.
     private func archivedLine(count: Int) -> some View {
-        Button { path.append(OceanDestination.archived) } label: {
+        Button { showsArchived = true } label: {
             HStack(alignment: .firstTextBaseline, spacing: OceanSpacing.gap) {
                 Image(systemName: "archivebox")
                     .font(OceanType.glyph)
@@ -360,4 +369,10 @@ struct MergeCurrentSheet: View {
         }
         .presentationDetents([.medium, .large])
     }
+}
+
+/// A current chosen for its stream sheet.
+struct StreamSelection: Identifiable {
+    let theme: String
+    var id: String { theme }
 }
