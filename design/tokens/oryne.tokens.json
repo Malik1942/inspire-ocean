@@ -101,6 +101,7 @@
     "control": {
       "$description": "Every control is 44 pt tall, the system's own. Floating bars are 56.",
       "height": { "$type": "dimension", "$value": { "value": 44, "unit": "px" }, "$description": "A button, a field, a tool cell, the capture disc, a segmented switch." },
+      "compact": { "$type": "dimension", "$value": { "value": 36, "unit": "px" }, "$description": "A disc inside a field (the composer's + and its disc), as Messages sizes its own: smaller than a page tool, inside a 44 pt target." },
       "toolCell": { "$type": "dimension", "$value": { "value": 50, "unit": "px" }, "$description": "One tool's cell in a group of several, as the system toolbar spaces them." },
       "bar": { "$type": "dimension", "$value": { "value": 56, "unit": "px" }, "$description": "The capture bar and Ask's bar: a capsule whose end radius is half of this." },
       "toast": { "$type": "dimension", "$value": { "value": 48, "unit": "px" }, "$description": "A toast: the bar's material, a step shorter than the bar." },
@@ -272,6 +273,7 @@
         "glassTint": { "$type": "color", "$value": "{primitive.white.18}", "$description": "The faint tint a glass disc takes when it is ready or listening; never a solid light fill." },
         "separator": { "$type": "color", "$value": "{material.color.surface.raised}", "$description": "A grouped form's row separator." },
         "scrim": { "$type": "color", "$value": "{primitive.black.24}", "$description": "The dim over a page while the capture overlay is up." },
+        "toastTint": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.05, 0.055, 0.065], "alpha": 0.85 }, "$description": "The deep water as a tint on a toast's glass, so a message floating over a page reads at once while the material stays glass." },
         "photoScrim": { "$type": "color", "$value": "{primitive.black.60}", "$description": "A dark disc under a ✕ on a photograph, so it reads on any picture." }
       },
       "accent": {

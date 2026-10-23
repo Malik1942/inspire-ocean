@@ -113,14 +113,19 @@ struct OceanSecondaryButtonStyle: ButtonStyle {
 }
 
 /// A tool: a 44 pt glass circle with a foam glyph, the same cell as a tool
-/// group and the navigation bar's own buttons.
+/// group and the navigation bar's own buttons. Inside a field it is the
+/// compact disc (`OceanControlSize.compact`), as Messages sizes its +,
+/// still inside a 44 pt target.
 struct OceanIconButtonStyle: ButtonStyle {
+    var size: CGFloat = OceanControlSize.height
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(OceanType.glyph)
             .foregroundStyle(OceanTheme.foam)
-            .frame(width: OceanControlSize.height, height: OceanControlSize.height)
+            .frame(width: size, height: size)
             .oceanGlass(in: Circle())
+            .frame(width: OceanControlSize.height, height: OceanControlSize.height)
             .contentShape(Circle())
             .opacity(configuration.isPressed ? 0.85 : 1)
     }
@@ -177,6 +182,7 @@ extension ButtonStyle where Self == OceanSecondaryButtonStyle {
 }
 extension ButtonStyle where Self == OceanIconButtonStyle {
     static var oceanIcon: OceanIconButtonStyle { OceanIconButtonStyle() }
+    static func oceanIcon(size: CGFloat) -> OceanIconButtonStyle { OceanIconButtonStyle(size: size) }
 }
 extension ButtonStyle where Self == OceanLinkButtonStyle {
     static var oceanLink: OceanLinkButtonStyle { OceanLinkButtonStyle() }
@@ -440,7 +446,7 @@ struct OceanToast: View {
         .padding(.leading, OceanSpacing.controlInset)
         .padding(.trailing, OceanSpacing.gap)
         .frame(height: OceanControlSize.toast)
-        .background(OceanBarBackground())
+        .background(OceanBarBackground(dense: true))
         .accessibilityElement(children: .contain)
     }
 }

@@ -447,7 +447,7 @@ struct FastCaptureSessionView: View {
         } label: {
             Image(systemName: "plus")
         }
-        .buttonStyle(.oceanIcon)
+        .buttonStyle(.oceanIcon(size: cardShown ? OceanControlSize.compact : FastCaptureLayout.buttonSize))
         .disabled(pictures.room == 0)
         .opacity(pictures.room == 0 ? 0.4 : 1)
         .accessibilityLabel(attachPanelShown ? Text("Show keyboard") : Text("Add image"))
@@ -571,7 +571,10 @@ struct FastCaptureSessionView: View {
     /// composer it is the send once there are words, and shows the wait
     /// while a send waits for pictures still loading.
     private func overlayDisc(inComposer: Bool = false, send: (() -> Void)? = nil, waiting: Bool = false) -> some View {
-        CaptureHoldButton(size: FastCaptureLayout.buttonSize, inComposer: inComposer, send: send, waiting: waiting)
+        // Open, the card's discs are the compact size a field's own are;
+        // folded, the bar's 44, so the fold lands on the bar's disc.
+        CaptureHoldButton(size: inComposer && cardShown ? OceanControlSize.compact : FastCaptureLayout.buttonSize,
+                          inComposer: inComposer, send: send, waiting: waiting)
             .allowsHitTesting(asSheet || !control.isHeld)
             .accessibilityIdentifier(inComposer ? "composer.action" : "capture.overlayDisc")
     }

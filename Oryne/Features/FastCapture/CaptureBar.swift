@@ -120,6 +120,9 @@ struct CaptureBarPlacement: ViewModifier {
 struct OceanBarBackground: View {
     /// nil draws a capsule.
     var cornerRadius: CGFloat? = nil
+    /// A toast: the deep water as a tint on the glass, so its words read
+    /// at once over any page.
+    var dense = false
     /// Circular by default: at half the height that is exactly the
     /// capsule, so a bar growing past one line keeps its ends. The open
     /// composer's card is continuous.
@@ -138,7 +141,7 @@ struct OceanBarBackground: View {
     @ViewBuilder
     private func surface<S: Shape>(_ shape: S) -> some View {
         if #available(iOS 26.0, *) {
-            Color.clear.glassEffect(.regular, in: shape)
+            Color.clear.glassEffect(dense ? Glass.regular.tint(OceanTheme.toastTint) : .regular, in: shape)
         } else {
             shape
                 .fill(.regularMaterial)
