@@ -129,6 +129,17 @@ button. A chevron in content is a bare `glyphDisclosure`, never an Icon
 button. A label above a field or a block is an `eyebrow`; a label above a
 section is a `sectionLabel`.
 
+## Navigation: pages rise, nothing slides
+
+One way to open anything (`Oryne/App/OceanNavigation.swift`): a thought,
+a current, Archived and every task (edit, grow a branch, move, merge,
+settings, capture) rise as sheets with a grabber and pull down to leave.
+There is no left-to-right push anywhere. Inside a sheet, a thought's
+branches and neighbours open in place: `OceanFadeStack` crossfades the
+page to the next thought (the standard motion) and puts a back tool where
+the system's would be. The swipe-back gesture does not exist on a
+crossfade; the back tool and the sheet's pull-down are the ways out.
+
 ## What stays expressive
 
 Marked `// art-directed` in code; the lint skips those lines.

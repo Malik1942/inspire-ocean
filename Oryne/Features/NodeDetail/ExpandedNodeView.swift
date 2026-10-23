@@ -6,12 +6,14 @@ import SwiftData
 /// fragment — "zooming into the atmosphere around an idea."
 struct ExpandedNodeView: View {
     let node: Node
+    /// Branches and neighbours opened from this thought, crossfaded in place.
+    @State private var opened: [Node] = []
 
     var body: some View {
         NavigationStack {
-            // Presented as a sheet root: it owns a leading "Close" to dismiss,
-            // so the trailing slot is free for the destructive action.
-            NodeDetailContent(node: node, isSheetRoot: true)
+            OceanFadeStack(path: $opened) {
+                NodeDetailContent(node: node, isSheetRoot: true)
+            }
         }
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
@@ -30,6 +32,8 @@ struct NodeDetailContent: View {
     @Environment(\.oceanAI) private var ai
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openThought) private var openThought
+    @Environment(\.popThought) private var popThought
 
     @Query(filter: #Predicate<Node> { !$0.isArchived }) private var allNodes: [Node]
 
@@ -94,6 +98,14 @@ struct NodeDetailContent: View {
         // A sheet root has no close of its own: the grabber and the pull
         // down are the way out. A pushed view has the system back button.
         .toolbar {
+            // Back to the thought beneath, where the system's back would be,
+            // after a crossfade instead of a slide.
+            if let popThought {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(action: popThought) { Image(systemName: "chevron.left") }
+                        .accessibilityLabel("Back")
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 // The quiet escape hatch: move this one thought to a chosen
                 // current when the Ocean filed it wrong. Never surfaced
@@ -587,7 +599,7 @@ struct NodeDetailContent: View {
         VStack(alignment: .leading, spacing: OceanSpacing.item) {
             sectionTitle("Branches")
             ForEach(children) { child in
-                NavigationLink { NodeDetailContent(node: child) } label: {
+                Button { openThought(child) } label: {
                     NodeRow(node: child)
                 }
                 .buttonStyle(.plain)
@@ -616,7 +628,7 @@ struct NodeDetailContent: View {
                     .font(OceanType.secondary).foregroundStyle(OceanTheme.mist)
             } else {
                 ForEach(related) { other in
-                    NavigationLink { NodeDetailContent(node: other) } label: {
+                    Button { openThought(other) } label: {
                         NodeRow(node: other)
                     }
                     .buttonStyle(.plain)

@@ -37,6 +37,8 @@ struct LibraryView: View {
     @FocusState private var searchFocused: Bool
     /// The Library's navigation.
     @State private var path = NavigationPath()
+    /// A thought opened from the Library: it rises, as from Tide.
+    @State private var openedNode: Node?
     /// The way back from a row swiped away in Currents.
     @State private var removals = ThoughtRemovals()
     /// Bumped to bring the page back to its top (Tide's "All currents").
@@ -104,9 +106,7 @@ struct LibraryView: View {
             .onTapGesture { searchFocused = false }
             .navigationTitle("Library")
             .toolbar(.hidden, for: .navigationBar)
-            .navigationDestination(for: Node.self) { node in
-                NodeDetailContent(node: node)
-            }
+            .sheet(item: $openedNode) { ExpandedNodeView(node: $0) }
             // The system alert, as on a thought's page.
             .alert(
                 "Delete this thought?",
@@ -333,7 +333,7 @@ struct LibraryView: View {
     // MARK: Currents
 
     private var currents: some View {
-        LibraryCurrents(nodes: allNodes, search: search, kind: kind, path: $path,
+        LibraryCurrents(nodes: allNodes, search: search, kind: kind, open: { openedNode = $0 },
                         removals: removals, topRequest: topRequest) {
             header
         } empty: {
@@ -581,12 +581,11 @@ struct LibraryView: View {
             .padding(.top, OceanSpacing.item)
     }
 
-    /// A grid cell: the card, a value-based NavigationLink for tap (no List
-    /// chevron to hide here), and Show related, Archive and Delete in a
-    /// context menu. Delete still routes through `pendingDelete` and the
+    /// A grid cell: the card, a tap that opens the thought as a sheet, and
+    /// Show related, Archive and Delete in a context menu. Delete still routes through `pendingDelete` and the
     /// confirmation dialog.
     private func cell(_ node: Node) -> some View {
-        NavigationLink(value: node) {
+        Button { openedNode = node } label: {
             NodeCard(node: node,
                      glow: focusGlow(node),
                      isAnchor: node.id == focusedAnchorID,

@@ -18,8 +18,7 @@ struct ClusterStreamView: View {
     @Environment(\.modelContext) private var context
     @Environment(AppState.self) private var appState
     @State private var showCapture = false
-    /// Thoughts opened from this stream. A path, not `NavigationLink`s: a
-    /// link in a `List` draws a chevron the tiles don't wear.
+    /// Thoughts opened from this stream, crossfaded in place on the sheet.
     @State private var path: [Node] = []
     /// The way back from a swiped delete or archive.
     @State private var removals = ThoughtRemovals()
@@ -54,7 +53,8 @@ struct ClusterStreamView: View {
     private var selectedNodes: [Node] { members.filter { selected.contains($0.id) } }
 
     var body: some View {
-        NavigationStack(path: $path) {
+        NavigationStack {
+            OceanFadeStack(path: $path) {
             List {
                 header
                     .tileRow(top: Self.titleTop, bottom: OceanSpacing.block - OceanSpacing.item / 2)
@@ -98,9 +98,6 @@ struct ClusterStreamView: View {
             // Nothing in the bar: the sheet's grabber is its top edge, and a
             // pushed thought brings its own bar with the back button.
             .toolbar(.hidden, for: .navigationBar)
-            .navigationDestination(for: Node.self) { node in
-                NodeDetailContent(node: node)
-            }
             .safeAreaInset(edge: .bottom) {
                 if selecting, !selected.isEmpty {
                     Button { moving = true } label: {
@@ -121,6 +118,7 @@ struct ClusterStreamView: View {
             }
             .sheet(isPresented: $moving, onDismiss: { selecting = false; selected = [] }) {
                 MoveToCurrentSheet(nodes: selectedNodes)
+            }
             }
         }
         .settlesThoughtRemovals(removals)

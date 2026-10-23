@@ -51,7 +51,8 @@ struct LibraryCurrents<Header: View, Empty: View, Lead: View>: View {
     let nodes: [Node]
     let search: String
     let kind: LibraryKind
-    @Binding var path: NavigationPath
+    /// Opens a thought (as a sheet over the Library).
+    let open: (Node) -> Void
     /// The way back from a swiped delete or archive, the page's own.
     let removals: ThoughtRemovals
     /// Changes when the list should go back to its top.
@@ -227,7 +228,7 @@ struct LibraryCurrents<Header: View, Empty: View, Lead: View>: View {
         .tileRow(top: isFirst ? Self.firstGap : Self.currentGap - OceanSpacing.item / 2)
 
         ForEach(shown) { node in
-            Button { path.append(node) } label: { NodeRow(node: node, showsCurrent: false) }
+            Button { open(node) } label: { NodeRow(node: node, showsCurrent: false) }
                 .buttonStyle(.plain)
                 .opacity(group.isAdrift ? 0.75 : 1)
                 .thoughtSwipeActions(node, removals: removals)

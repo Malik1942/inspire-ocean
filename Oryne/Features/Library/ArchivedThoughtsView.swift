@@ -14,8 +14,7 @@ struct ArchivedThoughtsView: View {
     @Query(filter: #Predicate<Node> { $0.isArchived }, sort: \Node.updatedAt, order: .reverse)
     private var archived: [Node]
 
-    /// Thoughts opened from here. A path, not `NavigationLink`s: a link in a
-    /// `List` draws a chevron the tiles don't wear.
+    /// Thoughts opened from here, crossfaded in place on the sheet.
     @State private var path: [Node] = []
     /// The way back from a delete. A delete only archives until the window
     /// closes, so the row it took is left out meanwhile.
@@ -23,7 +22,8 @@ struct ArchivedThoughtsView: View {
 
     var body: some View {
         let shown = archived.filter { !(removals.pending?.deletes($0) ?? false) }
-        NavigationStack(path: $path) {
+        NavigationStack {
+            OceanFadeStack(path: $path) {
             List {
                 Text("Archived")
                     .font(OceanType.subjectTitle)
@@ -67,8 +67,6 @@ struct ArchivedThoughtsView: View {
             // A pull-up sheet: no bar and no close, the grabber is its top
             // edge and it swipes away. A pushed thought brings its own bar.
             .toolbar(.hidden, for: .navigationBar)
-            .navigationDestination(for: Node.self) { node in
-                NodeDetailContent(node: node)
             }
         }
         .settlesThoughtRemovals(removals)
