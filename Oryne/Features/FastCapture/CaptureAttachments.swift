@@ -46,7 +46,7 @@ struct CaptureAttachments: View {
     /// A loading tile's ✕: lets go of the pictures still on their way.
     var onCancelLoading: () -> Void = {}
 
-    static let tileSize: CGFloat = 64
+    static let tileSize: CGFloat = OceanSize.pictureTile
     /// The card's corner less its inset, so the tiles sit concentric.
     static let tileRadius: CGFloat = FastCaptureLayout.cardRadius - FastCaptureLayout.cardInset
 
@@ -61,7 +61,7 @@ struct CaptureAttachments: View {
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
+            HStack(spacing: OceanSpacing.gap) {
                 ForEach(Array(slots.enumerated()), id: \.element.id) { index, slot in
                     switch slot {
                     case .picture(let image):
@@ -94,7 +94,7 @@ struct CaptureAttachments: View {
             .frame(width: Self.tileSize, height: Self.tileSize)
             .clipShape(tileShape)
             .overlay(alignment: .topTrailing) {
-                RemoveBadge { onRemoveImage(image.id) }
+                OceanRemoveBadge { onRemoveImage(image.id) }
             }
             // VoiceOver's ring is the tile, not the filled picture spilling
             // past it.
@@ -108,11 +108,11 @@ struct CaptureAttachments: View {
     /// stalls (an iCloud original while offline) never holds the card.
     private func loadingTile(number: Int) -> some View {
         tileShape
-            .fill(Color.white.opacity(0.08))
+            .fill(OceanTheme.raised)
             .frame(width: Self.tileSize, height: Self.tileSize)
             .overlay { ProgressView().tint(OceanTheme.mist) }
             .overlay(alignment: .topTrailing) {
-                RemoveBadge(action: onCancelLoading)
+                OceanRemoveBadge(action: onCancelLoading)
             }
             .contentShape(.accessibility, tileShape)
             .accessibilityElement(children: .ignore)
@@ -127,18 +127,18 @@ struct CaptureAttachments: View {
     private func linkTile(_ link: LinkSensing.Sensed) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             Image(systemName: "link")
-                .font(.footnote.weight(.medium))
+                .font(OceanType.glyphDisclosure)
                 .foregroundStyle(OceanTheme.mist)
                 .accessibilityHidden(true)
             Spacer(minLength: 0)
             // Read once, as the tile's value.
             Text(verbatim: link.host)
-                .font(.footnote)
+                .font(OceanType.meta)
                 .foregroundStyle(OceanTheme.foam)
                 .lineLimit(1)
                 .accessibilityHidden(true)
         }
-        .padding(10)
+        .padding(OceanSpacing.gap)
         // The glyph and the site's name grow up to the largest standard
         // size, the largest at which both lines still fit the 64 pt tile.
         // Past it a long press shows the name large; VoiceOver reads it.
@@ -148,9 +148,9 @@ struct CaptureAttachments: View {
             minHeight: Self.tileSize, maxHeight: Self.tileSize,
             alignment: .leading
         )
-        .background(Color.white.opacity(0.08), in: tileShape)
+        .background(OceanTheme.raised, in: tileShape)
         .overlay(alignment: .topTrailing) {
-            RemoveBadge { onRemoveLink(link.urlString) }
+            OceanRemoveBadge { onRemoveLink(link.urlString) }
         }
         .contentShape(.accessibility, tileShape)
         .accessibilityElement(children: .ignore)
@@ -164,26 +164,5 @@ struct CaptureAttachments: View {
                 Image(systemName: "link")
             }
         }
-    }
-}
-
-/// The small ✕ in a tile's corner: a white glyph on a dark disc, so it
-/// reads on any photo, inside a 32 pt target. VoiceOver reaches it as its
-/// tile's named action.
-private struct RemoveBadge: View {
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: "xmark")
-                .font(.system(size: 9, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: 18, height: 18)
-                .background(Color.black.opacity(0.6), in: Circle())
-                .padding(4)
-                .frame(width: 32, height: 32, alignment: .topTrailing)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
     }
 }

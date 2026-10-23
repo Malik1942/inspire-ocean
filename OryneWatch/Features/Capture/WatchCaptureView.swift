@@ -21,7 +21,7 @@ struct WatchCaptureView: View {
             case .nothingCaught: nothingCaught
             }
         }
-        .animation(.snappy, value: model.stage)
+        .animation(OceanMotion.lift, value: model.stage)
         .onChange(of: scenePhase, initial: true) { _, phase in
             if phase == .active {
                 Task { await model.sceneBecameActive() }
@@ -34,13 +34,14 @@ struct WatchCaptureView: View {
     // MARK: Idle
 
     private var idle: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: OceanSpacing.gap) {
             Button { Task { await model.begin() } } label: { disc(symbol: "waveform") }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Catch a whisper"))
             statusLine
             if let title = model.lastTitle {
-                // A thought's title is New York on the phone.
+                // A thought's title is New York on the phone: the meta
+                // line's size in the serif, the wrist's own role.
                 Text("Last: \(title)")
                     .font(.system(.footnote, design: .serif))
                     .foregroundStyle(OceanTheme.foam)
@@ -63,10 +64,10 @@ struct WatchCaptureView: View {
     // MARK: Recording
 
     private var recording: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: OceanSpacing.gap) {
             if !luminanceReduced {
                 Text("Listening…")
-                    .font(.caption2)
+                    .font(OceanType.note)
                     .foregroundStyle(OceanTheme.mist)
                 WatchWaveform(level: model.recorder.level)
                     .frame(height: 22)
@@ -85,21 +86,21 @@ struct WatchCaptureView: View {
     // MARK: Caught
 
     private var caught: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: OceanSpacing.gap) {
             Image(systemName: "checkmark")
-                .font(.title2.weight(.semibold))
+                .font(OceanType.glyphLarge)
                 .foregroundStyle(OceanTheme.accent)
             Text("Caught")
-                .font(.headline)
+                .font(OceanType.tileTitle)
                 .foregroundStyle(OceanTheme.foam)
             Button { model.undo() } label: {
                 Text("Undo")
-                    .font(.footnote.weight(.medium))
+                    .font(OceanType.control)
                     .foregroundStyle(OceanTheme.foam)
-                    .padding(.horizontal, 18)
-                    .frame(minHeight: 44)
-                    // The phone's raised surface fill (OceanSurface, raised).
-                    .background(Capsule().fill(Color.white.opacity(0.08)))
+                    .padding(.horizontal, OceanSpacing.controlInset)
+                    .frame(minHeight: OceanControlSize.height)
+                    // The phone's Secondary control: the raised surface, no rim.
+                    .background(OceanSurface(shape: Capsule(), raised: true))
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Text("Undo this take"))
@@ -109,12 +110,12 @@ struct WatchCaptureView: View {
     // MARK: Failure states
 
     private var denied: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: OceanSpacing.gap) {
             Image(systemName: "mic.slash")
-                .font(.title3)
+                .font(OceanType.glyphLarge)
                 .foregroundStyle(OceanTheme.mist)
             Text("Allow the microphone for Oryne in Settings on your watch.")
-                .font(.footnote)
+                .font(OceanType.meta)
                 .foregroundStyle(OceanTheme.text)
                 .multilineTextAlignment(.center)
         }
@@ -123,12 +124,12 @@ struct WatchCaptureView: View {
 
     private var failed: some View {
         Button { Task { await model.begin() } } label: {
-            VStack(spacing: 8) {
+            VStack(spacing: OceanSpacing.gap) {
                 Image(systemName: "exclamationmark.triangle")
-                    .font(.title3)
+                    .font(OceanType.glyphLarge)
                     .foregroundStyle(OceanTheme.mist)
                 Text("Couldn't start. Tap to try again.")
-                    .font(.footnote)
+                    .font(OceanType.meta)
                     .foregroundStyle(OceanTheme.foam)
                     .multilineTextAlignment(.center)
             }
@@ -142,7 +143,7 @@ struct WatchCaptureView: View {
     private var nothingCaught: some View {
         Button { model.dismissNotice() } label: {
             Text("Nothing was caught")
-                .font(.footnote)
+                .font(OceanType.meta)
                 .foregroundStyle(OceanTheme.foam)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
@@ -156,7 +157,7 @@ struct WatchCaptureView: View {
 
     private func caption(_ text: Text) -> some View {
         text
-            .font(.caption2)
+            .font(OceanType.note)
             .foregroundStyle(OceanTheme.mist)
             .multilineTextAlignment(.center)
     }
@@ -166,11 +167,15 @@ struct WatchCaptureView: View {
         ZStack {
             Circle().fill(OceanTheme.current)
             Image(systemName: symbol)
-                .font(.system(size: 22, weight: .semibold))
+                // Scales with the disc, as the phone's does (art-directed).
+                .font(.system(size: Self.discSize * 0.34, weight: .semibold))
                 .foregroundStyle(OceanTheme.foam)
         }
-        .frame(width: 64, height: 64)
+        .frame(width: Self.discSize, height: Self.discSize)
     }
+
+    /// The wrist's one control disc: the phone's picture tile size.
+    private static let discSize: CGFloat = OceanSize.pictureTile
 
     private static func timeString(_ t: TimeInterval) -> String {
         String(format: "%d:%02d", Int(t) / 60, Int(t) % 60)
@@ -187,7 +192,7 @@ private struct WatchWaveform: View {
     var body: some View {
         TimelineView(.animation(paused: reduceMotion)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
-            HStack(spacing: 3) {
+            HStack(spacing: OceanSpacing.hairline + 1) { // art-directed: the waveform's bars
                 ForEach(0..<13, id: \.self) { i in
                     let swing = reduceMotion ? 0.6 : 0.3 + 0.7 * abs(sin(t * 4 + Double(i) * 0.5))
                     Capsule()

@@ -46,7 +46,6 @@ struct NodeEditSheet: View {
     @State private var retranscribeFailed = false
     @State private var bodyBeforeRetranscribe: String?
     @State private var showReplaceConfirm = false
-    @State private var showDiscardConfirm = false
     @State private var isRederiving = false
 
     @State private var loaded = false
@@ -84,7 +83,11 @@ struct NodeEditSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 22) {
+                VStack(alignment: .leading, spacing: OceanSpacing.block) {
+                    OceanSheetHeader(title: Text("Edit")) {
+                        Button("Save", action: save)
+                            .buttonStyle(.oceanPrimary)
+                    }
                     titleSection
                     bodySection
                     if hasNote { noteSection }
@@ -99,55 +102,29 @@ struct NodeEditSheet: View {
                     linkSection
                     AmbientHint(hint: .ownership)
                 }
-                .padding()
-                .padding(.bottom, 30)
+                .padding(.horizontal, OceanSpacing.gutter)
+                .padding(.top, OceanSpacing.gap)
+                .padding(.bottom, OceanSpacing.section)
             }
             .background(OceanBackground())
-            .navigationTitle("Edit")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        if hasChanges {
-                            showDiscardConfirm = true
-                        } else {
-                            dismiss()
-                        }
-                    }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", action: save)
-                        .fontWeight(.semibold)
-                }
-            }
-            .alert(
-                "Discard changes?",
-                isPresented: $showDiscardConfirm
-            ) {
-                Button("Discard", role: .destructive) { dismiss() }
-                Button("Keep editing", role: .cancel) {}
-            }
+            .toolbar(.hidden, for: .navigationBar)
         }
-        // The swipe-down reflex must not silently throw away edits.
-        .interactiveDismissDisabled(hasChanges)
         .onAppear(perform: loadDrafts)
     }
 
     // MARK: Sections
 
     private var titleSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: OceanSpacing.gap) {
             sectionTitle("Title")
             TextField("A few words it goes by", text: $titleDraft)
                 .textFieldStyle(.plain)
-                .foregroundStyle(OceanTheme.foam)
-                .padding(.vertical, 10).padding(.horizontal, 12)
-                .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .oceanField()
         }
     }
 
     private var bodySection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: OceanSpacing.gap) {
             sectionTitle(isVoice ? "Transcript" : "Thought")
             TranscriptEditor(
                 text: $bodyDraft,
@@ -159,13 +136,13 @@ struct NodeEditSheet: View {
             )
             if transcriptDiverged {
                 Label("Edited transcript: the original words stay yours.", systemImage: "waveform")
-                    .font(.caption2).foregroundStyle(OceanTheme.faint)
+                    .font(OceanType.note).foregroundStyle(OceanTheme.faint)
             }
         }
     }
 
     private var noteSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: OceanSpacing.gap) {
             sectionTitle("Note")
             TranscriptEditor(
                 text: $noteDraft,
@@ -179,14 +156,14 @@ struct NodeEditSheet: View {
     /// Quiet, not a player row: the recording is provenance, the transcript
     /// is the thought.
     private func audioSection(_ data: Data) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 10) {
+        VStack(alignment: .leading, spacing: OceanSpacing.gap) {
+            HStack(spacing: OceanSpacing.gap) {
                 ListenChip(data: data)
 
                 Button {
                     retranscribeTapped(data)
                 } label: {
-                    HStack(spacing: 6) {
+                    HStack(spacing: OceanSpacing.snug) {
                         if isTranscribing {
                             ProgressView().controlSize(.small)
                             Text("Listening again…")
@@ -194,11 +171,8 @@ struct NodeEditSheet: View {
                             Label("Re-transcribe", systemImage: "arrow.triangle.2.circlepath")
                         }
                     }
-                    .font(.caption2.weight(.medium))
-                    .padding(.horizontal, 10).padding(.vertical, 5)
-                    .background(Color.white.opacity(0.08), in: Capsule())
-                    .foregroundStyle(OceanTheme.mist)
                 }
+                .buttonStyle(.oceanSecondary)
                 .disabled(isTranscribing)
 
                 if let previous = bodyBeforeRetranscribe {
@@ -207,21 +181,18 @@ struct NodeEditSheet: View {
                         bodyBeforeRetranscribe = nil
                     } label: {
                         Label("Restore", systemImage: "arrow.uturn.backward")
-                            .font(.caption2.weight(.medium))
-                            .padding(.horizontal, 10).padding(.vertical, 5)
-                            .background(Color.white.opacity(0.08), in: Capsule())
-                            .foregroundStyle(OceanTheme.mist)
                     }
+                    .buttonStyle(.oceanSecondary)
                 }
             }
 
             if retranscribeFailed {
                 Text("Couldn't hear it again. Your words stay as they are.")
-                    .font(.caption2).foregroundStyle(OceanTheme.faint)
+                    .font(OceanType.note).foregroundStyle(OceanTheme.faint)
             }
 
             Text("Original audio is temporarily preserved to improve understanding.")
-                .font(.caption2).foregroundStyle(OceanTheme.faint)
+                .font(OceanType.note).foregroundStyle(OceanTheme.faint)
         }
         .alert(
             "Replace your edited words?",
@@ -240,36 +211,15 @@ struct NodeEditSheet: View {
     /// like capture), so Cancel is a true no-op. Pre-populated from the node's
     /// existing image.
     private var imageSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: OceanSpacing.gap) {
             sectionTitle("Images")
             if !imageDrafts.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 10) {
-                        ForEach(Array(imageDrafts.enumerated()), id: \.offset) { index, data in
-                            if let ui = UIImage(data: data) {
-                                ZStack(alignment: .topTrailing) {
-                                    Image(uiImage: ui)
-                                        .resizable().scaledToFill()
-                                        .frame(width: 84, height: 84)
-                                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                    Button {
-                                        withAnimation {
-                                            guard imageDrafts.indices.contains(index) else { return }
-                                            imageDrafts.remove(at: index)
-                                            imageChanged = true
-                                            imageNotice = nil
-                                        }
-                                    } label: {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .symbolRenderingMode(.hierarchical)
-                                            .font(.title3)
-                                            .foregroundStyle(.white)
-                                            .padding(3)
-                                    }
-                                    .accessibilityLabel("Remove image")
-                                }
-                            }
-                        }
+                OceanPictureStrip(datas: imageDrafts) { index in
+                    withAnimation(OceanMotion.standard) {
+                        guard imageDrafts.indices.contains(index) else { return }
+                        imageDrafts.remove(at: index)
+                        imageChanged = true
+                        imageNotice = nil
                     }
                 }
             }
@@ -280,14 +230,11 @@ struct NodeEditSheet: View {
                     matching: .images
                 ) {
                     Label("Add image", systemImage: "photo")
-                        .font(.caption.weight(.medium))
-                        .padding(.horizontal, 12).padding(.vertical, 8)
-                        .background(Color.white.opacity(0.08), in: Capsule())
-                        .foregroundStyle(OceanTheme.foam)
                 }
+                .buttonStyle(.oceanSecondary)
             }
             if let imageNotice {
-                Text(imageNotice).font(.caption2).foregroundStyle(OceanTheme.faint)
+                Text(imageNotice).font(OceanType.note).foregroundStyle(OceanTheme.faint)
             }
         }
         .onChange(of: photoItems) { _, newItems in
@@ -313,7 +260,7 @@ struct NodeEditSheet: View {
     /// Enrichment only fires on Save (against the committed node) — never from
     /// inside the draft.
     private var linkSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: OceanSpacing.gap) {
             sectionTitle("Link")
             if node.linkURLString != nil, normalizedLinkDraft == originalLink, !originalLink.isEmpty {
                 // The committed link, untouched — show it as the rich card it is,
@@ -325,46 +272,30 @@ struct NodeEditSheet: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .keyboardType(.URL)
-                    .foregroundStyle(OceanTheme.foam)
-                    .padding(.vertical, 10).padding(.horizontal, 12)
-                    .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .oceanField()
                 if !normalizedLinkDraft.isEmpty, normalizedLinkDraft != originalLink {
                     Text("Saved links are read and summarized on-device for context.")
-                        .font(.caption2).foregroundStyle(OceanTheme.faint)
+                        .font(OceanType.note).foregroundStyle(OceanTheme.faint)
                 }
             }
         }
     }
 
     private var themesSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: OceanSpacing.gap) {
             sectionTitle("Themes")
             if !themesDraft.isEmpty {
-                FlowLayout(spacing: 8) {
+                FlowLayout(spacing: OceanSpacing.gap) {
                     ForEach(themesDraft, id: \.self) { theme in
                         editableThemeChip(theme)
                     }
                 }
             }
-            HStack(spacing: 8) {
-                TextField("Add a theme", text: $newTheme)
-                    .textFieldStyle(.plain)
-                    .textInputAutocapitalization(.never)
-                    .foregroundStyle(OceanTheme.foam)
-                    .onSubmit(addTheme)
-                Button(action: addTheme) {
-                    Image(systemName: "plus.circle.fill")
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(OceanTheme.accent)
-                }
-                .disabled(newTheme.trimmed.isEmpty)
-            }
-            .padding(.vertical, 8).padding(.horizontal, 12)
-            .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            OceanAddField(text: $newTheme, prompt: "Add a theme", onAdd: addTheme)
 
             if let themeInputNotice {
                 Text(themeInputNotice)
-                    .font(.caption2).foregroundStyle(OceanTheme.faint)
+                    .font(OceanType.note).foregroundStyle(OceanTheme.faint)
             }
 
             if themesDraft != originalThemes {
@@ -379,7 +310,7 @@ struct NodeEditSheet: View {
         Button {
             Task { await rederive() }
         } label: {
-            HStack(spacing: 6) {
+            HStack(spacing: OceanSpacing.snug) {
                 if isRederiving {
                     ProgressView().controlSize(.small)
                     Text("Re-reading…")
@@ -387,36 +318,33 @@ struct NodeEditSheet: View {
                     Label("Re-derive title & themes from the words", systemImage: "sparkles")
                 }
             }
-            .font(.caption.weight(.medium))
-            .padding(.horizontal, 12).padding(.vertical, 8)
-            .background(Color.white.opacity(0.08), in: Capsule())
-            .foregroundStyle(OceanTheme.foam)
         }
+        .buttonStyle(.oceanSecondary)
         .disabled(isRederiving || bodyDraft.trimmed.isEmpty)
     }
 
+    /// A theme on the draft, the same Secondary chip as on the thought's
+    /// page, with its ✕: tapping it takes the theme off.
     private func editableThemeChip(_ theme: String) -> some View {
-        HStack(spacing: 5) {
-            Text(theme)
-            Button {
-                themesDraft.removeAll { $0 == theme }
-            } label: {
+        Button {
+            themesDraft.removeAll { $0 == theme }
+        } label: {
+            HStack(spacing: OceanSpacing.snug) {
+                Text(theme)
                 Image(systemName: "xmark")
-                    .font(.system(size: 8, weight: .bold))
+                    .font(OceanType.glyphSmall)
+                    .foregroundStyle(OceanTheme.mist)
             }
-            .accessibilityLabel("Remove theme \(theme)")
         }
-        .font(.caption2.weight(.medium))
-        .foregroundStyle(OceanTheme.foam)
-        .padding(.horizontal, 9)
-        .padding(.vertical, 4)
-        .background(Capsule().fill(OceanTheme.color(forHue: node.hue).opacity(0.20)))
-        .overlay(Capsule().strokeBorder(OceanTheme.color(forHue: node.hue).opacity(0.30), lineWidth: 0.5))
+        .buttonStyle(.oceanSecondary)
+        .accessibilityLabel("Remove theme \(theme)")
     }
 
+    /// A field's name: an eyebrow right above what it names, as on a
+    /// thought's page.
     private func sectionTitle(_ text: LocalizedStringKey) -> some View {
         Text(text)
-            .font(.headline).foregroundStyle(OceanTheme.foam)
+            .font(OceanType.eyebrow).foregroundStyle(OceanTheme.mist)
     }
 
     // MARK: Actions

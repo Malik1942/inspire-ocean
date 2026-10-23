@@ -51,7 +51,8 @@ struct LibraryCurrents<Header: View, Empty: View, Lead: View>: View {
     let nodes: [Node]
     let search: String
     let kind: LibraryKind
-    @Binding var path: NavigationPath
+    /// Opens a thought (as a sheet over the Library).
+    let open: (Node) -> Void
     /// The way back from a swiped delete or archive, the page's own.
     let removals: ThoughtRemovals
     /// Changes when the list should go back to its top.
@@ -80,10 +81,12 @@ struct LibraryCurrents<Header: View, Empty: View, Lead: View>: View {
     /// Newest thoughts previewed under each current's name.
     private static var previewCount: Int { 2 }
     /// From one current's last row to the next current's name.
-    private static var currentGap: CGFloat { OceanSpacing.section - 8 }
+    private static var currentGap: CGFloat { OceanSpacing.section - OceanSpacing.gap }
     /// From the header to the first current's name: the first name sits
-    /// where Recent's first time section does.
-    private static var firstGap: CGFloat { 19 }
+    /// where Recent's first time section does (the grid's spacing, its
+    /// header's bottom padding, and the section header's top, less the
+    /// label's own leading).
+    private static var firstGap: CGFloat { OceanSpacing.inset + OceanSpacing.gap + OceanSpacing.item - OceanSpacing.inset - 1 }
     private static var topID: String { "library.currents.top" }
 
     /// One current as the list shows it: a preview (its newest two and its
@@ -109,7 +112,7 @@ struct LibraryCurrents<Header: View, Empty: View, Lead: View>: View {
                     .id(Self.topID)
                     .tileRow(top: 0, bottom: 0)
                 if entries.isEmpty {
-                    empty.tileRow(top: 16, bottom: 0)
+                    empty.tileRow(top: OceanSpacing.inset, bottom: 0)
                 }
                 lead.tileRow(top: 0, bottom: 0)
                 if !suggestions.isEmpty {
@@ -125,7 +128,7 @@ struct LibraryCurrents<Header: View, Empty: View, Lead: View>: View {
                 }
             }
             .tileList()
-            .contentMargins(.bottom, FastCaptureLayout.pageClearance + 8, for: .scrollContent)
+            .contentMargins(.bottom, FastCaptureLayout.pageClearance + OceanSpacing.gap, for: .scrollContent)
             .scrollDismissesKeyboard(.immediately)
             .onChange(of: topRequest) { _, _ in
                 withAnimation(OceanMotion.standard) { proxy.scrollTo(Self.topID, anchor: .top) }
@@ -186,21 +189,21 @@ struct LibraryCurrents<Header: View, Empty: View, Lead: View>: View {
         let group = entry.group
         let shown = entry.isPreview ? Array(entry.rows.prefix(Self.previewCount)) : entry.rows
         Button { stream = StreamSelection(theme: group.key) } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: OceanSpacing.gap) {
                 Text(group.label)
                     .font(OceanType.sectionLabel)
                     .foregroundStyle(group.isAdrift ? OceanTheme.mist : OceanTheme.foam)
                     .lineLimit(1)
-                    .padding(.leading, 2)
-                Spacer(minLength: 8)
+                    .padding(.leading, OceanSpacing.hairline)
+                Spacer(minLength: OceanSpacing.gap)
                 if entry.isPreview {
                     Text(group.members.count, format: .number)
-                        .font(.subheadline)
+                        .font(OceanType.secondary)
                         .monospacedDigit()
                         .foregroundStyle(OceanTheme.mist)
                 }
                 Image(systemName: "chevron.right")
-                    .font(.footnote.weight(.semibold))
+                    .font(OceanType.glyphDisclosure)
                     .foregroundStyle(OceanTheme.mist)
             }
             .frame(minHeight: OceanControlSize.height)
@@ -225,7 +228,7 @@ struct LibraryCurrents<Header: View, Empty: View, Lead: View>: View {
         .tileRow(top: isFirst ? Self.firstGap : Self.currentGap - OceanSpacing.item / 2)
 
         ForEach(shown) { node in
-            Button { path.append(node) } label: { NodeRow(node: node, showsCurrent: false) }
+            Button { open(node) } label: { NodeRow(node: node, showsCurrent: false) }
                 .buttonStyle(.plain)
                 .opacity(group.isAdrift ? 0.75 : 1)
                 .thoughtSwipeActions(node, removals: removals)
@@ -237,21 +240,21 @@ struct LibraryCurrents<Header: View, Empty: View, Lead: View>: View {
     /// the quiet tone, with the archive's glyph so it never reads as one.
     private func archivedLine(count: Int) -> some View {
         Button { showsArchived = true } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: OceanSpacing.gap) {
                 Image(systemName: "archivebox")
-                    .font(.body)
+                    .font(OceanType.glyph)
                     .foregroundStyle(OceanTheme.mist)
                 Text("Archived")
                     .font(OceanType.sectionLabel)
                     .foregroundStyle(OceanTheme.mist)
                     .lineLimit(1)
-                Spacer(minLength: 8)
+                Spacer(minLength: OceanSpacing.gap)
                 Text(count, format: .number)
-                    .font(.subheadline)
+                    .font(OceanType.secondary)
                     .monospacedDigit()
                     .foregroundStyle(OceanTheme.mist)
                 Image(systemName: "chevron.right")
-                    .font(.footnote.weight(.semibold))
+                    .font(OceanType.glyphDisclosure)
                     .foregroundStyle(OceanTheme.mist)
             }
             .frame(minHeight: OceanControlSize.height)
@@ -283,16 +286,16 @@ struct LibraryCurrents<Header: View, Empty: View, Lead: View>: View {
             Text("Suggested merges")
                 .font(OceanType.sectionLabel)
                 .foregroundStyle(OceanTheme.mist)
-                .padding(.leading, 2)
+                .padding(.leading, OceanSpacing.hairline)
             ForEach(suggestions) { suggestion in
                 let fromName = OceanLayoutEngine.displayLabel(for: suggestion.fromKey)
                 let intoName = OceanLayoutEngine.displayLabel(for: suggestion.intoKey)
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: OceanSpacing.gap) {
                     Text("“\(fromName)” and “\(intoName)” look like one current.")
-                        .font(.subheadline)
+                        .font(OceanType.secondary)
                         .foregroundStyle(OceanTheme.text)
                         .fixedSize(horizontal: false, vertical: true)
-                    HStack(spacing: 8) {
+                    HStack(spacing: OceanSpacing.gap) {
                         Button {
                             if let from = row(forKey: suggestion.fromKey), let into = row(forKey: suggestion.intoKey) {
                                 CurrentRegistry.merge(from, into: into, context: context)
@@ -306,7 +309,7 @@ struct LibraryCurrents<Header: View, Empty: View, Lead: View>: View {
                         .buttonStyle(.oceanSecondary)
                     }
                 }
-                .padding(16)
+                .padding(OceanSpacing.inset)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous)))
             }
@@ -326,43 +329,44 @@ struct MergeCurrentSheet: View {
             ZStack {
                 OceanBackground(animated: false)
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: OceanSpacing.item) {
+                        OceanSheetHeader(title: Text("Merge “\(from.label)” into"))
+                            .padding(.bottom, OceanSpacing.block - OceanSpacing.item)
                         Text("Its thoughts move over, and “\(from.label)” goes.")
-                            .font(.footnote)
+                            .font(OceanType.meta)
                             .foregroundStyle(OceanTheme.mist)
-                            .padding(.bottom, 2)
+                            .padding(.bottom, OceanSpacing.hairline)
                         ForEach(groups) { group in
                             Button {
                                 onMerge(group)
                                 dismiss()
                             } label: {
-                                HStack {
+                                // A choice is a tile, as in Move to a current.
+                                HStack(spacing: OceanSpacing.item) {
                                     Text(group.label)
-                                        .font(.subheadline.weight(.medium))
+                                        .font(OceanType.tileTitle)
                                         .foregroundStyle(OceanTheme.foam)
                                         .lineLimit(1)
                                     Spacer()
                                     Text("\(group.members.count)")
-                                        .font(.footnote)
+                                        .font(OceanType.meta)
                                         .foregroundStyle(OceanTheme.mist)
                                 }
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 12)
-                                .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.white.opacity(0.07), lineWidth: 0.5))
+                                .padding(.horizontal, OceanSpacing.inset)
+                                .padding(.vertical, OceanSpacing.item)
+                                .frame(minHeight: OceanControlSize.height)
+                                .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous)))
+                                .contentShape(RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous))
                             }
                             .buttonStyle(.plain)
                         }
                     }
-                    .padding()
-                    .padding(.bottom, 32)
+                    .padding(.horizontal, OceanSpacing.gutter)
+                    .padding(.top, OceanSpacing.gap)
+                    .padding(.bottom, OceanSpacing.section)
                 }
             }
-            .navigationTitle(Text("Merge “\(from.label)” into"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) { Button("Cancel") { dismiss() } }
-            }
+            .toolbar(.hidden, for: .navigationBar)
         }
         .presentationDetents([.medium, .large])
     }

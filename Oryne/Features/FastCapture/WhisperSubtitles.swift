@@ -20,16 +20,16 @@ struct WhisperSubtitles: View {
             if tail.isEmpty {
                 if showsPlaceholder {
                     Text("Listening")
-                        .font(.title2)
+                        .font(OceanType.statement)
                         .foregroundStyle(OceanTheme.hint)
                 }
             } else {
                 Text(tail)
-                    .font(.title2.weight(.medium))
+                    .font(OceanType.statement)
                     .foregroundStyle(OceanTheme.foam)
-                    .lineSpacing(3)
+                    .lineSpacing(OceanType.secondaryLeading)
                     .multilineTextAlignment(.leading)
-                    .animation(.easeOut(duration: 0.15), value: tail)
+                    .animation(OceanMotion.touch, value: tail)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: 220, alignment: .bottomLeading)
@@ -39,7 +39,7 @@ struct WhisperSubtitles: View {
                 startPoint: .top, endPoint: .bottom
             )
         )
-        .shadow(color: .black.opacity(0.5), radius: 8)
+        .oceanShadow(OceanShadow.text)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(text.isEmpty ? Text("Listening") : Text(text))
     }

@@ -22,23 +22,23 @@ struct NodeMeta: View {
     }
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: OceanSpacing.snug) {
             if let siteIcon {
                 Image(uiImage: siteIcon)
                     .resizable()
                     .interpolation(.high)
-                    .frame(width: 14, height: 14)
-                    .clipShape(RoundedRectangle(cornerRadius: 3.5, style: .continuous))
+                    .frame(width: OceanSize.metaIcon, height: OceanSize.metaIcon)
+                    .clipShape(RoundedRectangle(cornerRadius: OceanRadius.icon, style: .continuous))
                     .accessibilityHidden(true)
             } else {
                 // Any thought that carries a link reads as one, even a
                 // typed thought a link was pasted into.
                 Image(systemName: node.linkURL != nil ? NodeKind.link.symbol : node.kind.symbol)
-                    .font(.caption2)
-                    .frame(width: 14)
+                    .font(OceanType.glyphMeta)
+                    .frame(width: OceanSize.metaIcon)
             }
             if node.isBranch, let bt = node.branchType {
-                Image(systemName: bt.symbol).font(.caption2)
+                Image(systemName: bt.symbol).font(OceanType.glyphMeta)
             }
             Text(line)
                 .truncationMode(.tail)
@@ -48,7 +48,7 @@ struct NodeMeta: View {
                     .layoutPriority(1)
             }
         }
-        .font(.footnote)
+        .font(OceanType.meta)
         .foregroundStyle(OceanTheme.mist)
         .lineLimit(1)
     }

@@ -25,77 +25,56 @@ struct BranchComposer: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    GlassCard {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Branching from").font(.caption).foregroundStyle(OceanTheme.mist)
-                            Text(parent.displayTitle)
-                                .font(.subheadline.weight(.medium)).foregroundStyle(OceanTheme.foam)
-                                .lineLimit(2)
-                        }.frame(maxWidth: .infinity, alignment: .leading)
+                VStack(alignment: .leading, spacing: OceanSpacing.block) {
+                    OceanSheetHeader(title: Text("Grow a branch")) {
+                        Button("Grow") { grow() }
+                            .buttonStyle(.oceanPrimary)
+                            .disabled(text.trimmed.isEmpty && linkText.trimmed.isEmpty && imageDatas.isEmpty)
                     }
+                    // Where the branch grows from: a tile, as the thought is
+                    // shown everywhere else.
+                    VStack(alignment: .leading, spacing: OceanSpacing.snug) {
+                        Text("Branching from").font(OceanType.eyebrow).foregroundStyle(OceanTheme.mist)
+                        Text(parent.displayTitle)
+                            .font(OceanType.tileTitle).foregroundStyle(OceanTheme.foam)
+                            .lineLimit(2)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(OceanSpacing.inset)
+                    .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous)))
 
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Branch type").font(.headline).foregroundStyle(OceanTheme.foam)
-                        FlowLayout(spacing: 10) {
+                    VStack(alignment: .leading, spacing: OceanSpacing.gap) {
+                        sectionTitle(Text("Branch type"))
+                        FlowLayout(spacing: OceanSpacing.gap) {
                             ForEach(BranchType.allCases) { bt in
                                 branchChip(bt)
                             }
                         }
                     }
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(type.prompt).font(.subheadline).foregroundStyle(OceanTheme.mist)
-                        GlassCard {
-                            TextEditor(text: $text)
-                                .scrollContentBackground(.hidden)
-                                .frame(minHeight: 140)
-                                .foregroundStyle(OceanTheme.foam)
-                                .focused($focused)
-                        }
+                    VStack(alignment: .leading, spacing: OceanSpacing.gap) {
+                        sectionTitle(Text(type.prompt))
+                        TranscriptEditor(text: $text, isEditable: true, minHeight: 140, maxHeight: 240, focus: $focused)
                     }
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Link (optional)").font(.subheadline).foregroundStyle(OceanTheme.mist)
+                    VStack(alignment: .leading, spacing: OceanSpacing.gap) {
+                        sectionTitle(Text("Link"))
                         TextField("https://…", text: $linkText)
                             .textFieldStyle(.plain)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .keyboardType(.URL)
-                            .foregroundStyle(OceanTheme.foam)
-                            .padding(.vertical, 10).padding(.horizontal, 12)
-                            .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
+                            .oceanField()
                     }
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Image (optional)").font(.subheadline).foregroundStyle(OceanTheme.mist)
+                    VStack(alignment: .leading, spacing: OceanSpacing.gap) {
+                        sectionTitle(Text("Image"))
                         if !imageDatas.isEmpty {
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 10) {
-                                    ForEach(Array(imageDatas.enumerated()), id: \.offset) { index, data in
-                                        if let ui = UIImage(data: data) {
-                                            ZStack(alignment: .topTrailing) {
-                                                Image(uiImage: ui)
-                                                    .resizable().scaledToFill()
-                                                    .frame(width: 84, height: 84)
-                                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                                Button {
-                                                    withAnimation {
-                                                        guard imageDatas.indices.contains(index) else { return }
-                                                        imageDatas.remove(at: index)
-                                                        imageNotice = nil
-                                                    }
-                                                } label: {
-                                                    Image(systemName: "xmark.circle.fill")
-                                                        .symbolRenderingMode(.hierarchical)
-                                                        .font(.title3)
-                                                        .foregroundStyle(.white)
-                                                        .padding(3)
-                                                }
-                                                .accessibilityLabel("Remove image")
-                                            }
-                                        }
-                                    }
+                            OceanPictureStrip(datas: imageDatas) { index in
+                                withAnimation(OceanMotion.standard) {
+                                    guard imageDatas.indices.contains(index) else { return }
+                                    imageDatas.remove(at: index)
+                                    imageNotice = nil
                                 }
                             }
                         }
@@ -106,35 +85,24 @@ struct BranchComposer: View {
                                 matching: .images
                             ) {
                                 Label("Add image", systemImage: "photo")
-                                    .font(.caption.weight(.medium))
-                                    .padding(.horizontal, 12).padding(.vertical, 8)
-                                    .background(Color.white.opacity(0.08), in: Capsule())
-                                    .foregroundStyle(OceanTheme.foam)
                             }
+                            .buttonStyle(.oceanSecondary)
                         }
                         if let imageNotice {
-                            Text(imageNotice).font(.caption2).foregroundStyle(OceanTheme.faint)
+                            Text(imageNotice).font(OceanType.note).foregroundStyle(OceanTheme.faint)
                         }
                     }
                 }
-                .padding()
+                .padding(.horizontal, OceanSpacing.gutter)
+                .padding(.top, OceanSpacing.gap)
+                .padding(.bottom, OceanSpacing.section)
             }
             .background(OceanBackground())
             .contentShape(Rectangle())
             // Tapping outside the editor folds the keyboard; the editor and
             // the chips have their own gestures, so their taps still win.
             .onTapGesture { focused = false }
-            .navigationTitle("Grow a branch")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Grow") { grow() }
-                        .disabled(text.trimmed.isEmpty && linkText.trimmed.isEmpty && imageDatas.isEmpty)
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
             .onAppear {
                 if !prefill.isEmpty { text = prefill; type = prefillType }
                 focused = true
@@ -158,17 +126,21 @@ struct BranchComposer: View {
         }
     }
 
+    /// A field's name: an eyebrow right above what it names, as in the
+    /// edit sheet.
+    private func sectionTitle(_ text: Text) -> some View {
+        text
+            .font(OceanType.eyebrow).foregroundStyle(OceanTheme.mist)
+    }
+
+    /// One branch type among several: a Secondary chip, selected when it
+    /// is the one.
     private func branchChip(_ bt: BranchType) -> some View {
         Button { type = bt } label: {
             Label(bt.label, systemImage: bt.symbol)
-                .font(.subheadline.weight(.medium))
-                .padding(.horizontal, 14).padding(.vertical, 9)
-                .background(
-                    Capsule().fill(type == bt ? OceanTheme.accent.opacity(0.9) : Color.white.opacity(0.08))
-                )
-                .foregroundStyle(type == bt ? OceanTheme.abyss : OceanTheme.foam)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.oceanSecondary(selected: type == bt))
+        .accessibilityAddTraits(type == bt ? .isSelected : [])
     }
 
     private func grow() {

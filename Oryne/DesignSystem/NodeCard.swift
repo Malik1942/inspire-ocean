@@ -69,7 +69,7 @@ struct NodeCard: View {
         VStack(alignment: .leading, spacing: 0) {
             if showBanner { banner }
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: OceanSpacing.snug) {
                 Text(node.displayTitle)
                     .font(OceanType.tileTitle)
                     .foregroundStyle(OceanTheme.foam)
@@ -78,16 +78,16 @@ struct NodeCard: View {
 
                 if !node.snippet.isEmpty, node.snippet != node.displayTitle {
                     Text(node.snippet)
-                        .font(.subheadline)
+                        .font(OceanType.secondary)
                         .foregroundStyle(OceanTheme.text)
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
                 footer
-                    .padding(.top, 4)
+                    .padding(.top, OceanSpacing.tight)
             }
-            .padding(16)
+            .padding(OceanSpacing.inset)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         // Clip the content so the banner's top corners round with the card;
@@ -122,7 +122,7 @@ struct NodeCard: View {
     /// size and ratio" failure this layout avoids.
     private var banner: some View {
         OceanTheme.color(forHue: node.hue).opacity(0.25)
-            .frame(height: 120)
+            .frame(height: OceanSize.banner)
             .frame(maxWidth: .infinity)
             .overlay {
                 if let bannerImage {
@@ -137,11 +137,11 @@ struct NodeCard: View {
                 // "+N" when the fragment carries more than the one shown.
                 if extraImages > 0 {
                     Text(verbatim: "+\(extraImages)")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 5).padding(.vertical, 2)
+                        .font(OceanType.badge)
+                        .foregroundStyle(OceanTheme.onAccent)
+                        .padding(.horizontal, OceanSpacing.snug).padding(.vertical, OceanSpacing.hairline)
                         .background(OceanTheme.accent, in: Capsule())
-                        .padding(6)
+                        .padding(OceanSpacing.snug)
                 }
             }
     }

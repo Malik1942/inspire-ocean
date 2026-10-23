@@ -44,22 +44,23 @@ struct CatchComplicationView: View {
     @ViewBuilder private var content: some View {
         switch family {
         case .accessoryRectangular:
-            HStack(spacing: 6) {
+            HStack(spacing: OceanSpacing.snug) {
                 Image(systemName: "waveform")
+                    .font(OceanType.glyph)
                 Text("Catch a whisper")
-                    .font(.headline)
+                    .font(OceanType.tileTitle)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         case .accessoryCorner:
             Image(systemName: "waveform")
-                .font(.title3)
+                .font(OceanType.glyphLarge)
                 .accessibilityLabel(Text("Catch a whisper"))
                 .widgetLabel { Text(verbatim: "Oryne") }
         default:
             ZStack {
                 AccessoryWidgetBackground()
                 Image(systemName: "waveform")
-                    .font(.title3)
+                    .font(OceanType.glyphLarge)
                     .accessibilityLabel(Text("Catch a whisper"))
             }
         }

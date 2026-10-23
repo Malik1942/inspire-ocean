@@ -98,18 +98,12 @@ struct OceanSettingsView: View {
             }
             .tint(OceanTheme.accent)
             .toggleStyle(.oceanSwitch)
-            .listRowSeparatorTint(Color.white.opacity(0.08))
+            .listRowSeparatorTint(OceanTheme.separator)
             .scrollContentBackground(.hidden)
             .background(OceanBackground(animated: false))
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { dismiss() } label: { Image(systemName: "xmark") }
-                        .accessibilityLabel("Close")
-                }
-            }
             // A built archive reflects the toggle at build time; changing it
             // invalidates the archive so the user rebuilds with the new choice.
             .onChange(of: includeVoice) { _, _ in
@@ -129,6 +123,7 @@ struct OceanSettingsView: View {
                 Text("The starter thoughts drift out for good.")
             }
         }
+        .presentationDragIndicator(.visible)
     }
 
     /// "Ready" or "Unavailable"; blank for the beat before the check returns.
@@ -165,7 +160,7 @@ struct OceanSettingsView: View {
             Button("Export the Ocean") { buildExport() }
                 .disabled(realNodes.isEmpty)
         case .building:
-            HStack(spacing: 10) {
+            HStack(spacing: OceanSpacing.gap) {
                 ProgressView().controlSize(.small)
                 Text("Packing your Ocean…")
                     .foregroundStyle(OceanTheme.mist)
@@ -177,7 +172,7 @@ struct OceanSettingsView: View {
                         Text("Share archive")
                         Spacer()
                         Image(systemName: "square.and.arrow.up")
-                            .font(.footnote.weight(.semibold))
+                            .font(OceanType.glyphDisclosure)
                             .foregroundStyle(OceanTheme.mist)
                     }
                 }
@@ -188,7 +183,7 @@ struct OceanSettingsView: View {
                     .foregroundStyle(OceanTheme.mist)
                 Spacer()
                 Button("Try again") { buildExport() }
-                    .buttonStyle(.borderless)
+                    .buttonStyle(.oceanLink)
             }
         }
     }

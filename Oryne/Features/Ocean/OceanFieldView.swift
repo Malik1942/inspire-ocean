@@ -46,6 +46,7 @@ struct OceanFieldView: View {
 
     private static let newestLimit = 5
     private static let currentLimit = 4
+    private static let currentTileHeight: CGFloat = 72
 
     private enum OceanSheet: Identifiable {
         case thought(Node)
@@ -88,14 +89,14 @@ struct OceanFieldView: View {
                     emptyState
                 } else {
                     ScrollView {
-                        VStack(alignment: .leading, spacing: 32) {
+                        VStack(alignment: .leading, spacing: OceanSpacing.section) {
                             pageTitle
                             if let shown = goingUnder ?? resurfacing {
                                 // One thought goes under, then the next comes
                                 // up: never both on screen at once.
                                 resurfacingSection(shown)
                                     .opacity(lettingGo ? 0 : 1)
-                                    .offset(y: stilled || !lettingGo ? 0 : 4)
+                                    .offset(y: stilled || !lettingGo ? 0 : OceanSpacing.tight)
                             }
                             newestSection
                             if !currents.isEmpty { currentsSection }
@@ -157,7 +158,9 @@ struct OceanFieldView: View {
     /// (the system bar is hidden here so the title can wear the serif).
     private var pageTitle: some View {
         PageTitleRow(title: OceanTab.homeTitle, showSettings: $showSettings)
-            .padding(.bottom, -4)
+            // The serif's descender space: the first label sits one tight
+            // step closer than the section gap, as under a system large title.
+            .padding(.bottom, -OceanSpacing.tight)
     }
 
     // MARK: Resurfacing
@@ -165,10 +168,10 @@ struct OceanFieldView: View {
     private func resurfacingSection(_ node: Node) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             sectionLabel("Resurfacing", warm: true)
-                .padding(.bottom, 8)
+                .padding(.bottom, OceanSpacing.gap)
 
             Button { open(node) } label: {
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: OceanSpacing.gap) {
                     Text(node.displayTitle)
                         .font(OceanType.resurfacingTitle)
                         .foregroundStyle(OceanTheme.foam)
@@ -176,14 +179,14 @@ struct OceanFieldView: View {
                         .multilineTextAlignment(.leading)
                     if !node.snippet.isEmpty, node.snippet != node.displayTitle {
                         Text(node.snippet)
-                            .font(.subheadline)
+                            .font(OceanType.secondary)
                             .foregroundStyle(OceanTheme.text)
-                            .lineSpacing(3)
+                            .lineSpacing(OceanType.secondaryLeading)
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
                     }
                     NodeMeta(node: node, detail: whisperLength(node), showsCurrent: false)
-                        .padding(.top, 2)
+                        .padding(.top, OceanSpacing.hairline)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
@@ -196,13 +199,13 @@ struct OceanFieldView: View {
                     .resizable()
                     .scaledToFill()
                     .frame(maxWidth: .infinity)
-                    .frame(height: 160)
+                    .frame(height: OceanSize.hero)
                     .clipShape(RoundedRectangle(cornerRadius: OceanRadius.media, style: .continuous))
-                    .padding(.top, 14)
+                    .padding(.top, OceanSpacing.inset)
                     .onTapGesture { open(node) }
             }
 
-            HStack(spacing: 8) {
+            HStack(spacing: OceanSpacing.gap) {
                 Button(nearbyOpen ? "Nearby" : "Nearby") { toggleNearby(node) }
                     .buttonStyle(.oceanSecondary)
                     .opacity(nearbyOpen ? 1 : 0.9)
@@ -214,15 +217,15 @@ struct OceanFieldView: View {
                     PlayWhisperButton(data: data)
                 }
             }
-            .padding(.top, 18)
+            .padding(.top, OceanSpacing.inset)
 
             if nearbyOpen {
                 VStack(alignment: .leading, spacing: 0) {
                     if nearby.isEmpty {
                         Text("Nothing drifts nearby yet.")
-                            .font(.subheadline)
+                            .font(OceanType.secondary)
                             .foregroundStyle(OceanTheme.mist)
-                            .padding(.vertical, 10)
+                            .padding(.vertical, OceanSpacing.gap)
                     } else {
                         ForEach(nearby) { near in
                             Button { open(near) } label: { ThoughtLine(node: near) }
@@ -230,7 +233,7 @@ struct OceanFieldView: View {
                         }
                     }
                 }
-                .padding(.top, 8)
+                .padding(.top, OceanSpacing.gap)
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
@@ -245,9 +248,9 @@ struct OceanFieldView: View {
     // MARK: Drifted in
 
     private var newestSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: OceanSpacing.afterLabel) {
             sectionLabel("Drifted in")
-            MasonryColumns(items: newest, columns: 2, spacing: 12,
+            MasonryColumns(items: newest, columns: 2, spacing: OceanSpacing.item,
                            estimatedHeight: estimatedCardHeight) { node in
                 Button { open(node) } label: { GlanceCard(node: node) }
                     .buttonStyle(.plain)
@@ -270,14 +273,14 @@ struct OceanFieldView: View {
     }
 
     private func estimatedCardHeight(_ node: Node) -> CGFloat {
-        let banner: CGFloat = node.hasImages || node.linkImageData != nil ? 120 : 0
+        let banner: CGFloat = node.hasImages || node.linkImageData != nil ? OceanSize.banner : 0
         return 92 + banner + (node.displayTitle.count > 22 ? 22 : 0)
     }
 
     // MARK: Currents
 
     private var currentsSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: OceanSpacing.afterLabel) {
             HStack(alignment: .firstTextBaseline) {
                 sectionLabel("Currents")
                 Spacer()
@@ -286,34 +289,31 @@ struct OceanFieldView: View {
                     appState.showAllCurrents()
                 } label: {
                     // A quiet accessory to the section label, never louder
-                    // than it: the label's mist, regular weight.
-                    HStack(spacing: 3) {
+                    // than it: a Link in the label's mist.
+                    HStack(spacing: OceanSpacing.tight) {
                         Text("All currents")
-                        Image(systemName: "chevron.right").font(.caption2)
+                        Image(systemName: "chevron.right").font(OceanType.glyphSmall)
                     }
-                    .font(.subheadline)
-                    .foregroundStyle(OceanTheme.mist)
-                    .frame(minHeight: OceanControlSize.height)
-                    .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.oceanLink(.quiet))
             }
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: OceanSpacing.item), GridItem(.flexible(), spacing: OceanSpacing.item)], spacing: OceanSpacing.item) {
                 ForEach(currents.prefix(Self.currentLimit)) { group in
                     Button { sheet = .stream(theme: group.key) } label: {
-                        VStack(alignment: .leading, spacing: 6) {
+                        VStack(alignment: .leading, spacing: OceanSpacing.snug) {
                             Text(group.label)
                                 .font(OceanType.tileTitle)
                                 .foregroundStyle(OceanTheme.foam)
                                 .lineLimit(1)
                             Text(group.newest?.displayTitle ?? "")
-                                .font(.footnote)
+                                .font(OceanType.meta)
                                 .foregroundStyle(OceanTheme.mist)
                                 .lineLimit(1)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(16)
-                        .frame(height: 72)
+                        .padding(OceanSpacing.inset)
+                        // Two lines and the inset: every current tile the same height.
+                        .frame(height: Self.currentTileHeight)
                         .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous)))
                     }
                     .buttonStyle(.plain)
@@ -326,21 +326,21 @@ struct OceanFieldView: View {
         Text(key)
             .font(OceanType.sectionLabel)
             .foregroundStyle(warm ? OceanTheme.glowWarm : OceanTheme.mist)
-            .padding(.leading, 2)
+            .padding(.leading, OceanSpacing.hairline)
     }
 
     // MARK: Empty state
 
     private var emptyState: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: OceanSpacing.item) {
             Image(systemName: "water.waves")
-                .font(.system(size: 48))
+                .font(OceanType.glyphHero)
                 .foregroundStyle(OceanTheme.surface)
             Text("The Ocean is still")
-                .font(.title3.weight(.semibold))
+                .font(OceanType.subjectTitle)
                 .foregroundStyle(OceanTheme.foam)
             Text("Capture a thought and watch it drift in.")
-                .font(.subheadline)
+                .font(OceanType.secondary)
                 .foregroundStyle(OceanTheme.mist)
         }
     }
@@ -375,7 +375,7 @@ struct OceanFieldView: View {
         goingUnder = node
         let stilled = self.stilled
         Task { @MainActor in
-            withAnimation(stilled ? OceanMotion.quick : .easeInOut(duration: 0.45)) {
+            withAnimation(stilled ? OceanMotion.quick : .easeInOut(duration: 0.45)) { // art-directed: the lamp
                 nearbyOpen = false
                 lettingGo = true
                 if !stilled { lampDim = 0.6 }
@@ -395,7 +395,7 @@ struct OceanFieldView: View {
             }
             guard !stilled else { return }
             try? await Task.sleep(for: .milliseconds(800))
-            withAnimation(.easeInOut(duration: 1.4)) { lampLift = 0 }
+            withAnimation(.easeInOut(duration: 1.4)) { lampLift = 0 } // art-directed: the lamp
         }
     }
 
@@ -444,12 +444,12 @@ private struct GlanceCard: View {
                 // rounds the picture.
                 if let data = node.imageDatas.first ?? node.linkImageData, let ui = UIImage(data: data) {
                     Color.clear
-                        .frame(height: 120)
+                        .frame(height: OceanSize.banner)
                         .frame(maxWidth: .infinity)
                         .overlay { Image(uiImage: ui).resizable().scaledToFill() }
                         .clipped()
                 }
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: OceanSpacing.snug) {
                     Text(node.displayTitle)
                         .font(OceanType.tileTitle)
                         .foregroundStyle(OceanTheme.foam)
@@ -459,7 +459,7 @@ private struct GlanceCard: View {
                     NodeMeta(node: node, detail: duration ?? node.linkDomain, showsCurrent: false)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(16)
+                .padding(OceanSpacing.inset)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .clipShape(RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous))

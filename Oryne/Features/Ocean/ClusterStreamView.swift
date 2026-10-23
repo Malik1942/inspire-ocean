@@ -18,8 +18,7 @@ struct ClusterStreamView: View {
     @Environment(\.modelContext) private var context
     @Environment(AppState.self) private var appState
     @State private var showCapture = false
-    /// Thoughts opened from this stream. A path, not `NavigationLink`s: a
-    /// link in a `List` draws a chevron the tiles don't wear.
+    /// Thoughts opened from this stream, crossfaded in place on the sheet.
     @State private var path: [Node] = []
     /// The way back from a swiped delete or archive.
     @State private var removals = ThoughtRemovals()
@@ -54,7 +53,8 @@ struct ClusterStreamView: View {
     private var selectedNodes: [Node] { members.filter { selected.contains($0.id) } }
 
     var body: some View {
-        NavigationStack(path: $path) {
+        NavigationStack {
+            OceanFadeStack(path: $path) {
             List {
                 header
                     .tileRow(top: Self.titleTop, bottom: OceanSpacing.block - OceanSpacing.item / 2)
@@ -64,8 +64,9 @@ struct ClusterStreamView: View {
                         Button {
                             if selected.contains(node.id) { selected.remove(node.id) } else { selected.insert(node.id) }
                         } label: {
-                            HStack(spacing: 12) {
+                            HStack(spacing: OceanSpacing.item) {
                                 Image(systemName: selected.contains(node.id) ? "checkmark.circle.fill" : "circle")
+                                    .font(OceanType.glyph)
                                     .foregroundStyle(selected.contains(node.id) ? OceanTheme.accent : OceanTheme.mist)
                                 NodeRow(node: node, showsCurrent: false)
                             }
@@ -97,9 +98,6 @@ struct ClusterStreamView: View {
             // Nothing in the bar: the sheet's grabber is its top edge, and a
             // pushed thought brings its own bar with the back button.
             .toolbar(.hidden, for: .navigationBar)
-            .navigationDestination(for: Node.self) { node in
-                NodeDetailContent(node: node)
-            }
             .safeAreaInset(edge: .bottom) {
                 if selecting, !selected.isEmpty {
                     Button { moving = true } label: {
@@ -108,7 +106,7 @@ struct ClusterStreamView: View {
                     }
                     .buttonStyle(.oceanSecondary)
                     .padding(.horizontal, OceanSpacing.gutter)
-                    .padding(.vertical, 12)
+                    .padding(.vertical, OceanSpacing.item)
                 }
             }
             .alert("Rename current", isPresented: $renaming) {
@@ -121,9 +119,11 @@ struct ClusterStreamView: View {
             .sheet(isPresented: $moving, onDismiss: { selecting = false; selected = [] }) {
                 MoveToCurrentSheet(nodes: selectedNodes)
             }
+            }
         }
         .settlesThoughtRemovals(removals)
         .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
         .presentationBackground(.clear)
         // A summary or a question opens in Ask: step out of the way.
         .onChange(of: appState.selectedTab) { _, tab in
@@ -148,24 +148,37 @@ struct ClusterStreamView: View {
     }
 
     /// From the sheet's top edge to the current's name, clear of the grabber.
-    private static let titleTop: CGFloat = 28
+    private static let titleTop: CGFloat = OceanSpacing.sheetTop
 
-    /// The current's name in New York, then its two verbs as Secondary
-    /// buttons: read it all as one answer, or add a thought into it. The
-    /// name renames the current (Adrift has no name of its own to change).
-    /// While picking thoughts, Done takes the verbs' place.
+    /// The current's name in New York with its + on the same line, a tool
+    /// like a page's (the capture opens into this current); under it,
+    /// Summarize as the one quiet verb: the whole stream goes to Ask as
+    /// one grounded answer (SPEC, Ask: one mode). The name renames the
+    /// current (Adrift has no name of its own to change, and nothing is
+    /// added into it: its membership is having no current). While picking
+    /// thoughts, Done takes the verb's place.
     private var header: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            if isAdrift {
-                titleText
-            } else {
-                Button {
-                    newName = title
-                    renaming = true
-                } label: { titleText }
-                .buttonStyle(.plain)
-                .accessibilityHint("Renames this current.")
+        VStack(alignment: .leading, spacing: OceanSpacing.inset) {
+            HStack(alignment: .center, spacing: OceanSpacing.item) {
+                if isAdrift {
+                    titleText
+                } else {
+                    Button {
+                        newName = title
+                        renaming = true
+                    } label: { titleText }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("Renames this current.")
+                }
+                if !isAdrift, !selecting {
+                    Button { showCapture = true } label: {
+                        Image(systemName: "plus")
+                    }
+                    .buttonStyle(.oceanIcon)
+                    .accessibilityLabel("Add a thought")
+                }
             }
+            .frame(minHeight: OceanControlSize.height)
             if selecting {
                 Button("Done") {
                     withAnimation(OceanMotion.quick) {
@@ -174,29 +187,15 @@ struct ClusterStreamView: View {
                     }
                 }
                 .buttonStyle(.oceanSecondary)
-            } else if members.count >= 2 || !isAdrift {
-                HStack(spacing: 8) {
-                    // Summarize is a verb, not a mode: the whole stream goes
-                    // to Ask as one grounded answer (SPEC, Ask: one mode).
-                    if members.count >= 2 {
-                        Button {
-                            let ids = members.map(\.id)
-                            dismiss()
-                            appState.summarize(ids, title: title)
-                        } label: {
-                            Label("Summarize", systemImage: "text.line.first.and.arrowtriangle.forward")
-                        }
-                        .buttonStyle(.oceanSecondary)
-                    }
-                    // No adding into Adrift: its membership is having no
-                    // current, so adding into it would be a contradiction.
-                    if !isAdrift {
-                        Button { showCapture = true } label: {
-                            Label("Add a thought", systemImage: "plus")
-                        }
-                        .buttonStyle(.oceanSecondary)
-                    }
+            } else if members.count >= 2 {
+                Button {
+                    let ids = members.map(\.id)
+                    dismiss()
+                    appState.summarize(ids, title: title)
+                } label: {
+                    Label("Summarize", systemImage: "text.line.first.and.arrowtriangle.forward")
                 }
+                .buttonStyle(.oceanSecondary)
             }
         }
     }

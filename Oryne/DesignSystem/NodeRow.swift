@@ -17,7 +17,7 @@ struct NodeRow: View {
 
     /// The picture's side: a control's height, so it sits inside the row's
     /// two lines without growing it.
-    private static let pictureSide: CGFloat = 44
+    private static let pictureSide: CGFloat = OceanSize.thumbnail
 
     var body: some View {
         // A just-deleted node can linger for one render pass before its @Query
@@ -40,8 +40,8 @@ struct NodeRow: View {
     /// line with its site's icon and domain, a whisper with its length.
     /// A fill, no border, no chevron.
     private var row: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 6) {
+        HStack(spacing: OceanSpacing.item) {
+            VStack(alignment: .leading, spacing: OceanSpacing.snug) {
                 Text(node.displayTitle)
                     .font(OceanType.tileTitle)
                     .foregroundStyle(OceanTheme.foam)
@@ -54,7 +54,7 @@ struct NodeRow: View {
                 picture
             }
         }
-        .padding(16)
+        .padding(OceanSpacing.inset)
         .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous)))
         .contentShape(RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous))
         .task(id: node.id) { await resolveCues() }
@@ -106,7 +106,7 @@ struct NodeRow: View {
 
 /// A minimal flow layout that wraps its subviews onto multiple lines.
 struct FlowLayout: Layout {
-    var spacing: CGFloat = 8
+    var spacing: CGFloat = OceanSpacing.gap
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) -> CGSize {
         let maxWidth = proposal.width ?? .infinity

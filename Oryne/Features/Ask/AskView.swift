@@ -100,21 +100,21 @@ struct AskView: View {
                 .foregroundStyle(OceanTheme.foam)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, message.id == messages.first?.id ? 32 : OceanSpacing.section + 8)
+                .padding(.top, message.id == messages.first?.id ? OceanSpacing.block : OceanSpacing.section)
         } else {
             VStack(alignment: .leading, spacing: 0) {
                 Text(AnswerMarkdown.attributed(message.text))
-                    .font(.body)
-                    .lineSpacing(5)
+                    .font(OceanType.body)
+                    .lineSpacing(OceanType.bodyLeading)
                     .foregroundStyle(OceanTheme.foam)
                     .fixedSize(horizontal: false, vertical: true)
                     .textSelection(.enabled)
 
                 if let note = provenanceNote(message) {
                     Text(note)
-                        .font(.footnote)
+                        .font(OceanType.meta)
                         .foregroundStyle(OceanTheme.mist)
-                        .padding(.top, 10)
+                        .padding(.top, OceanSpacing.gap)
                 }
                 // Found: the thoughts the answer drew from, each a line that
                 // opens the real thing.
@@ -128,7 +128,7 @@ struct AskView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 14)
+            .padding(.top, OceanSpacing.inset)
         }
     }
 
@@ -147,13 +147,13 @@ struct AskView: View {
     /// Knowledge from beyond the user's notes, set apart by its warm label
     /// alone: lit from the open sea, not their water.
     private func outwardView(_ text: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: OceanSpacing.gap) {
             Label("Beyond your Ocean", systemImage: "sparkles")
                 .font(OceanType.eyebrow)
                 .foregroundStyle(OceanTheme.glowWarm)
             Text(AnswerMarkdown.attributed(text))
-                .font(.subheadline)
-                .lineSpacing(4)
+                .font(OceanType.secondary)
+                .lineSpacing(OceanType.secondaryLeading)
                 .foregroundStyle(OceanTheme.text)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -164,7 +164,7 @@ struct AskView: View {
             Text("Drawn from")
                 .font(OceanType.eyebrow)
                 .foregroundStyle(OceanTheme.mist)
-                .padding(.bottom, 4)
+                .padding(.bottom, OceanSpacing.tight)
             ForEach(sourceNodes(message), id: \.id) { node in
                 Button { openedNode = node } label: {
                     ThoughtLine(node: node, showsChevron: true)
@@ -177,26 +177,26 @@ struct AskView: View {
     /// The finding, made visible where the answer will land: the Ocean read
     /// under a breathing lamp, then the find named for a beat.
     private func searchLine(_ phase: SearchPhase) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: OceanSpacing.gap) {
             switch phase {
             case .reading:
                 ThinkingText(text: String(localized: "Reading your Ocean…"))
 
             case .found(let count):
                 Image(systemName: "water.waves")
-                    .font(.footnote)
+                    .font(OceanType.meta)
                     .foregroundStyle(OceanTheme.mist)
                 Text(foundLabel(count))
-                    .font(.subheadline)
+                    .font(OceanType.secondary)
                     .foregroundStyle(OceanTheme.mist)
             }
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, OceanSpacing.gap)
         .background(alignment: .leading) {
             if case .reading = phase { ThinkingLamp().offset(x: -60) }
         }
-        .padding(.top, 14)
-        .animation(.spring(response: 0.36, dampingFraction: 0.86), value: phase)
+        .padding(.top, OceanSpacing.inset)
+        .animation(OceanMotion.lift, value: phase)
     }
 
     private func foundLabel(_ count: Int) -> String {
@@ -212,17 +212,17 @@ struct AskView: View {
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Find a thought, or ask what a few of them mean together.")
-                .font(.body)
+                .font(OceanType.body)
                 .foregroundStyle(OceanTheme.text)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 12)
+                .padding(.top, OceanSpacing.item)
 
             Text("Try asking")
                 .font(OceanType.sectionLabel)
                 .foregroundStyle(OceanTheme.mist)
-                .padding(.leading, 2)
+                .padding(.leading, OceanSpacing.hairline)
                 .padding(.top, OceanSpacing.section)
-                .padding(.bottom, 4)
+                .padding(.bottom, OceanSpacing.tight)
 
             ForEach(samplePrompts, id: \.self) { prompt in
                 Button {
@@ -231,13 +231,13 @@ struct AskView: View {
                 } label: {
                     // The same line as an answer's sources: a quiet glyph in
                     // a fixed slot, the words a step below content.
-                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    HStack(alignment: .firstTextBaseline, spacing: OceanSpacing.gap) {
                         Image(systemName: "text.bubble")
-                            .font(.footnote)
+                            .font(OceanType.meta)
                             .foregroundStyle(OceanTheme.mist)
-                            .frame(width: 18)
+                            .frame(width: OceanSize.glyphSlot)
                         Text(prompt)
-                            .font(.system(size: 16, weight: .regular))
+                            .font(OceanType.body)
                             .foregroundStyle(OceanTheme.text)
                             .multilineTextAlignment(.leading)
                         Spacer(minLength: 0)
@@ -264,15 +264,15 @@ struct AskView: View {
     /// above the tab bar, the send disc where the capture disc sits. It grows
     /// into a rounded rectangle with the same end radius past one line.
     private var inputBar: some View {
-        HStack(alignment: .bottom, spacing: 12) {
+        HStack(alignment: .bottom, spacing: OceanSpacing.item) {
             TextField("Ask the Ocean", text: $input, axis: .vertical)
                 .textFieldStyle(.plain)
-                .font(.body)
+                .font(OceanType.body)
                 .focused($inputFocused)
                 .foregroundStyle(OceanTheme.foam)
                 .tint(OceanTheme.accent)
                 .lineLimit(1...4)
-                .padding(.vertical, 17)
+                .padding(.vertical, FastCaptureLayout.fieldVerticalInset)
 
             Button(action: send) {
                 Image(systemName: "arrow.up")
@@ -282,7 +282,7 @@ struct AskView: View {
             .padding(.bottom, FastCaptureLayout.discInset)
             .accessibilityLabel("Ask")
         }
-        .padding(.leading, FastCaptureLayout.barHeight / 2 - 8)
+        .padding(.leading, FastCaptureLayout.fieldLeading)
         .padding(.trailing, FastCaptureLayout.discInset)
         .frame(minHeight: FastCaptureLayout.barHeight)
         .background(OceanBarBackground(cornerRadius: FastCaptureLayout.barHeight / 2))
@@ -409,18 +409,18 @@ private struct ThinkingText: View {
 
     var body: some View {
         if reduceMotion || calm {
-            Text(text).font(.subheadline).foregroundStyle(OceanTheme.mist)
+            Text(text).font(OceanType.secondary).foregroundStyle(OceanTheme.mist)
         } else {
             TimelineView(.animation) { timeline in
                 let t = timeline.date.timeIntervalSinceReferenceDate
                 // One sweep every 1.8 s, left to right, a soft band.
                 let x = CGFloat((t.truncatingRemainder(dividingBy: 1.8)) / 1.8) * 1.6 - 0.3
                 Text(text)
-                    .font(.subheadline)
+                    .font(OceanType.secondary)
                     .foregroundStyle(OceanTheme.mist)
                     .overlay {
                         Text(text)
-                            .font(.subheadline)
+                            .font(OceanType.secondary)
                             .foregroundStyle(OceanTheme.glowWarm)
                             .mask(
                                 LinearGradient(

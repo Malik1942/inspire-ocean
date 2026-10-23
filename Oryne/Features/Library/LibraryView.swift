@@ -37,6 +37,8 @@ struct LibraryView: View {
     @FocusState private var searchFocused: Bool
     /// The Library's navigation.
     @State private var path = NavigationPath()
+    /// A thought opened from the Library: it rises, as from Tide.
+    @State private var openedNode: Node?
     /// The way back from a row swiped away in Currents.
     @State private var removals = ThoughtRemovals()
     /// Bumped to bring the page back to its top (Tide's "All currents").
@@ -104,9 +106,7 @@ struct LibraryView: View {
             .onTapGesture { searchFocused = false }
             .navigationTitle("Library")
             .toolbar(.hidden, for: .navigationBar)
-            .navigationDestination(for: Node.self) { node in
-                NodeDetailContent(node: node)
-            }
+            .sheet(item: $openedNode) { ExpandedNodeView(node: $0) }
             // The system alert, as on a thought's page.
             .alert(
                 "Delete this thought?",
@@ -274,7 +274,7 @@ struct LibraryView: View {
     private var grid: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 16) {
+                LazyVStack(alignment: .leading, spacing: OceanSpacing.inset) {
                     header
                         .id(Self.gridTopID)
                     let shown = filtered
@@ -289,7 +289,7 @@ struct LibraryView: View {
                         // sections, one masonry each.
                         ForEach(timeSections(shown), id: \.title) { section in
                             sectionHeader(section.title)
-                            MasonryColumns(items: section.nodes, columns: columns, spacing: 12,
+                            MasonryColumns(items: section.nodes, columns: columns, spacing: OceanSpacing.item,
                                            estimatedHeight: estimatedCardHeight,
                                            frontRank: focusFrontRank) { node in
                                 cell(node)
@@ -299,7 +299,7 @@ struct LibraryView: View {
                         // Focused (sections dropped): one masonry over the
                         // newest-first order, pulling the anchor and related
                         // cards to the top of their columns.
-                        MasonryColumns(items: shown, columns: columns, spacing: 12,
+                        MasonryColumns(items: shown, columns: columns, spacing: OceanSpacing.item,
                                        estimatedHeight: estimatedCardHeight,
                                        frontRank: focusFrontRank) { node in
                             cell(node)
@@ -307,7 +307,7 @@ struct LibraryView: View {
                     }
                 }
                 .padding(.horizontal, OceanSpacing.gutter)
-                .padding(.bottom, 8)
+                .padding(.bottom, OceanSpacing.gap)
                 .padding(.bottom, FastCaptureLayout.pageClearance)
             }
             .opacity(gridOpacity)
@@ -318,7 +318,7 @@ struct LibraryView: View {
             // content (the spike's mid-reorder gap). Same transaction as the
             // reorder so they move together.
             .onChange(of: focusedAnchorID) { _, _ in
-                withAnimation(.snappy) { proxy.scrollTo(Self.gridTopID, anchor: .top) }
+                withAnimation(OceanMotion.lift) { proxy.scrollTo(Self.gridTopID, anchor: .top) }
             }
             .onChange(of: topRequest) { _, _ in
                 withAnimation(OceanMotion.standard) { proxy.scrollTo(Self.gridTopID, anchor: .top) }
@@ -333,7 +333,7 @@ struct LibraryView: View {
     // MARK: Currents
 
     private var currents: some View {
-        LibraryCurrents(nodes: allNodes, search: search, kind: kind, path: $path,
+        LibraryCurrents(nodes: allNodes, search: search, kind: kind, open: { openedNode = $0 },
                         removals: removals, topRequest: topRequest) {
             header
         } empty: {
@@ -342,7 +342,7 @@ struct LibraryView: View {
             let shown = filtered
             if !search.trimmed.isEmpty, shown.count >= 2 {
                 summarizeChip(shown)
-                    .padding(.top, 16)
+                    .padding(.top, OceanSpacing.inset)
             }
         }
         .modifier(CaptureComposerEdge())
@@ -388,22 +388,22 @@ struct LibraryView: View {
 
     private var focusChip: some View {
         let title = focusedAnchor?.displayTitle ?? ""
-        return HStack(spacing: 8) {
+        // The floating layer's own glass (the bars' material), 44 pt, with
+        // Clear as a Link beside the words, as Undo sits in a toast.
+        return HStack(spacing: OceanSpacing.gap) {
             Image(systemName: "point.3.connected.trianglepath.dotted")
-                .font(.caption).foregroundStyle(OceanTheme.glowWarm)
+                .font(OceanType.meta).foregroundStyle(OceanTheme.glowWarm)
             Text("Related to \"\(title)\"")
-                .font(.caption).foregroundStyle(OceanTheme.foam)
+                .font(OceanType.control).foregroundStyle(OceanTheme.foam)
                 .lineLimit(1).truncationMode(.tail)
-            Spacer(minLength: 4)
-            Button { clearFocus() } label: {
-                Text("Clear").font(.caption.weight(.semibold)).foregroundStyle(OceanTheme.glowWarm)
-            }
-            .buttonStyle(.plain)
+            Spacer(minLength: OceanSpacing.tight)
+            Button("Clear") { clearFocus() }
+                .buttonStyle(.oceanLink)
         }
-        .padding(.horizontal, 14).padding(.vertical, 10)
-        .background(.ultraThinMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(Color.white.opacity(0.08), lineWidth: 0.5))
-        .padding(.horizontal, OceanSpacing.gutter).padding(.bottom, 6)
+        .padding(.leading, OceanSpacing.inset).padding(.trailing, OceanSpacing.gap)
+        .frame(height: OceanControlSize.height)
+        .background(OceanBarBackground())
+        .padding(.horizontal, OceanSpacing.gutter).padding(.bottom, OceanSpacing.snug)
         .transition(.move(edge: .top).combined(with: .opacity))
     }
 
@@ -442,7 +442,7 @@ struct LibraryView: View {
     private func showRelated(to node: Node) {
         let anchorID = node.id
         reordering = true
-        withAnimation(.snappy) {
+        withAnimation(OceanMotion.lift) {
             focusedAnchorID = anchorID
             focusRelatedRank = [:]
         }
@@ -457,7 +457,7 @@ struct LibraryView: View {
                 rankRelated(anchorID: anchorID, among: inputs)
             }.value
             guard focusedAnchorID == anchorID else { reordering = false; return }
-            withAnimation(.snappy) {
+            withAnimation(OceanMotion.lift) {
                 focusRelatedRank = Dictionary(uniqueKeysWithValues: ranked.enumerated().map { ($1, $0) })
             } completion: {
                 // Snap the shadows back once the cards have settled. Animating the
@@ -483,7 +483,7 @@ struct LibraryView: View {
         // rebuild + full-store realization, which reads as chaos), then fade back
         // in. Engage surfaces (in-column glide); Clear is the tide settling.
         reordering = true
-        withAnimation(.easeOut(duration: 0.16)) {
+        withAnimation(OceanMotion.quick) {
             gridOpacity = 0
         } completion: {
             var restore = Transaction()
@@ -493,7 +493,7 @@ struct LibraryView: View {
                 focusRelatedRank = [:]
             }
             reordering = false
-            withAnimation(.easeIn(duration: 0.22)) { gridOpacity = 1 }
+            withAnimation(OceanMotion.quick) { gridOpacity = 1 }
         }
         #if DEBUG
         LibraryPerf.signposter.endInterval("related.clear", signpost)
@@ -507,7 +507,7 @@ struct LibraryView: View {
     /// kind is the hint for a banner), because this runs over the whole set.
     private func estimatedCardHeight(_ node: Node) -> CGFloat {
         var height: CGFloat = 92
-        if node.kind == .image || node.linkImageData != nil { height += 120 }
+        if node.kind == .image || node.linkImageData != nil { height += OceanSize.banner }
         if !node.snippet.isEmpty { height += CGFloat(min(2, node.snippet.count / 24)) * 20 }
         return height
     }
@@ -518,10 +518,16 @@ struct LibraryView: View {
     /// search field, then how the page is arranged and, while a filter is
     /// on, the filter as a chip that clears it.
     private var header: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // One tool: what kind of thought the Library shows. Settings
-            // live on Tide.
+        VStack(alignment: .leading, spacing: OceanSpacing.inset) {
+            // The page's tools on its title line, one glass group: how the
+            // page is arranged (Recent, Currents), then what kind of
+            // thought it shows. Settings live on Tide.
             PageTitleRow(title: "Library") {
+                OceanSegmentedSwitch(selection: $segment, options: [
+                    (value: .recent, title: "Recent", systemImage: "square.grid.2x2"),
+                    (value: .currents, title: "Currents", systemImage: "water.waves")
+                ])
+                OceanToolDivider()
                 Menu {
                     Picker("Kind", selection: $kind.animation(OceanMotion.quick)) {
                         ForEach(LibraryKind.allCases) { option in
@@ -534,23 +540,15 @@ struct LibraryView: View {
                 .accessibilityLabel("Filter")
                 .accessibilityIdentifier("library.filter")
             }
-            .padding(.bottom, -4)
+            // The serif's descender space, as on Tide.
+            .padding(.bottom, -OceanSpacing.tight)
 
-            VStack(alignment: .leading, spacing: 12) {
-                OceanSearchField(text: $search, prompt: "Search the Ocean", focused: $searchFocused)
-                HStack(spacing: 12) {
-                    OceanSegmentedSwitch(selection: $segment, options: [
-                        (value: .recent, title: "Recent"),
-                        (value: .currents, title: "Currents")
-                    ])
-                    Spacer(minLength: 0)
-                    if kind != .all {
-                        filterChip
-                    }
-                }
+            OceanSearchField(text: $search, prompt: "Search the Ocean", focused: $searchFocused)
+            if kind != .all {
+                filterChip
             }
         }
-        .padding(.bottom, 8)
+        .padding(.bottom, OceanSpacing.gap)
     }
 
     /// The filter that is on, under the search where the eye already is;
@@ -559,11 +557,11 @@ struct LibraryView: View {
         Button {
             withAnimation(OceanMotion.quick) { kind = .all }
         } label: {
-            HStack(spacing: 6) {
+            HStack(spacing: OceanSpacing.snug) {
                 Image(systemName: kind.symbol)
                 Text(kind.label)
                 Image(systemName: "xmark")
-                    .font(.caption.weight(.semibold))
+                    .font(OceanType.glyphSmall)
                     .foregroundStyle(OceanTheme.mist)
             }
         }
@@ -579,16 +577,15 @@ struct LibraryView: View {
             .font(OceanType.sectionLabel)
             .foregroundStyle(OceanTheme.mist)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.leading, 2)
-            .padding(.top, 12)
+            .padding(.leading, OceanSpacing.hairline)
+            .padding(.top, OceanSpacing.item)
     }
 
-    /// A grid cell: the card, a value-based NavigationLink for tap (no List
-    /// chevron to hide here), and Show related, Archive and Delete in a
-    /// context menu. Delete still routes through `pendingDelete` and the
+    /// A grid cell: the card, a tap that opens the thought as a sheet, and
+    /// Show related, Archive and Delete in a context menu. Delete still routes through `pendingDelete` and the
     /// confirmation dialog.
     private func cell(_ node: Node) -> some View {
-        NavigationLink(value: node) {
+        Button { openedNode = node } label: {
             NodeCard(node: node,
                      glow: focusGlow(node),
                      isAnchor: node.id == focusedAnchorID,
@@ -597,7 +594,7 @@ struct LibraryView: View {
         .buttonStyle(.plain)
         // Visible cards glide in place on a focus reorder (in-column, stable id);
         // cards realizing fresh at a column top surface from the deep.
-        .transition(.opacity.combined(with: .offset(y: 24)).combined(with: .scale(scale: 0.96)))
+        .transition(.opacity.combined(with: .offset(y: OceanSpacing.block)).combined(with: .scale(scale: 0.96)))
         .contextMenu {
             if node.id == focusedAnchorID {
                 Button { clearFocus() } label: {
@@ -630,9 +627,9 @@ struct LibraryView: View {
     @ViewBuilder
     private var emptyState: some View {
         let searching = !search.trimmed.isEmpty
-        VStack(spacing: 16) {
+        VStack(spacing: OceanSpacing.inset) {
             Text(emptyMessage(searching: searching))
-                .font(.subheadline)
+                .font(OceanType.secondary)
                 .foregroundStyle(OceanTheme.mist)
                 .multilineTextAlignment(.center)
             if kind != .all {
@@ -669,7 +666,7 @@ struct LibraryView: View {
         // reads meaningText / estimatedCardHeight, which are not behind NodeCard's
         // detached guard and would fault on a detached anchor. Clear, then delete.
         if node.id == focusedAnchorID {
-            withAnimation(.snappy) {
+            withAnimation(OceanMotion.lift) {
                 focusedAnchorID = nil
                 focusRelatedRank = [:]
             }

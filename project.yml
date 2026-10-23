@@ -129,6 +129,12 @@ targets:
     sources:
       - path: Shared
       - path: ShareExtension
+      # The design system's shared layer (tokens, type, material), so the
+      # share sheet wears the app's own surfaces.
+      - path: Oryne/DesignSystem/OceanTheme.swift
+      - path: Oryne/DesignSystem/OceanTokens.swift
+      - path: Oryne/DesignSystem/OceanType.swift
+      - path: Oryne/DesignSystem/OceanMaterial.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.inspireocean.app.share
@@ -165,6 +171,9 @@ targets:
       - path: Shared
       - path: OceanWidgets
       - path: Oryne/DesignSystem/OceanTheme.swift
+      - path: Oryne/DesignSystem/OceanTokens.swift
+      - path: Oryne/DesignSystem/OceanType.swift
+      - path: Oryne/DesignSystem/OceanMaterial.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.inspireocean.app.widgets
@@ -193,6 +202,9 @@ targets:
       - path: OryneWatch
       - path: Shared/Watch
       - path: Oryne/DesignSystem/OceanTheme.swift
+      - path: Oryne/DesignSystem/OceanTokens.swift
+      - path: Oryne/DesignSystem/OceanType.swift
+      - path: Oryne/DesignSystem/OceanMaterial.swift
     dependencies:
       - target: OryneWatchWidgets
         embed: true
@@ -248,6 +260,11 @@ targets:
     sources:
       - path: OryneWatchWidgets
       - path: Shared/Watch/WatchDeepLink.swift
+      # The design system's shared layer, so the complications' type is the app's.
+      - path: Oryne/DesignSystem/OceanTheme.swift
+      - path: Oryne/DesignSystem/OceanTokens.swift
+      - path: Oryne/DesignSystem/OceanType.swift
+      - path: Oryne/DesignSystem/OceanMaterial.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.inspireocean.app.watchkitapp.widgets

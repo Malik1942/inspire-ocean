@@ -1,69 +1,95 @@
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#endif
 
-/// Display type: New York, Apple's serif, names what a page is about (a
-/// tab's title, a thought or a current on its own page, a question in Ask)
-/// and wears the italic section labels. The system sans does everything
-/// else, on one scale:
+/// Type for Oryne. The roles (what a page title, a tile title, a meta line,
+/// a control's words are set in) are generated into `OceanTokens.swift`
+/// from `design/tokens/oryne.tokens.json`; this file holds how a role meets
+/// Dynamic Type and the navigation bar.
 ///
-/// - Tile title: 17 semibold (`.body.weight(.semibold)`), foam.
-/// - Reading text: 17 regular foam for the main words, 15 (`.subheadline`)
-///   in `OceanTheme.text` for snippets and summaries.
-/// - Meta: 13 (`.footnote`), mist, one line (`NodeMeta`).
-/// - Eyebrow: 13 semibold, mist, a label right above what it names.
+/// New York, Apple's serif, names what a page is about (a tab's title, a
+/// thought or a current on its own page, a question in Ask) and wears the
+/// italic section labels. The system sans does everything else, on one
+/// scale: tile titles, running text, meta lines, controls.
 enum OceanType {
-    static var pageTitle: Font { .system(size: 40, weight: .regular, design: .serif) }
-    static var sectionLabel: Font { .system(size: 21, weight: .regular, design: .serif).italic() }
-    static var resurfacingTitle: Font { .system(size: 32, weight: .regular, design: .serif) }
-    /// A thought's title on its page, a current's name on its sheet, the
-    /// question an answer replies to.
-    static var subjectTitle: Font { .system(size: 28, weight: .regular, design: .serif) }
-    static var eyebrow: Font { .footnote.weight(.semibold) }
-    /// A thought's title on a tile (card, row, current): 16 pt medium,
-    /// lighter than a heading so the tiles stay quiet.
-    static var tileTitle: Font { .system(size: 16, weight: .medium) }
-
+    #if os(iOS)
     /// The navigation bar's large title in the same face and size as
     /// `pageTitle`, so a system large title (Library, Currents) matches the
     /// custom title rows on Tide and Ask.
     static func applyLargeTitleAppearance() {
-        let base = UIFont.systemFont(ofSize: 40, weight: .regular)
-        let serif = base.fontDescriptor.withDesign(.serif).map { UIFont(descriptor: $0, size: 40) } ?? base
+        let size = pageTitleSize
+        let base = UIFont.systemFont(ofSize: size, weight: .regular)
+        let serif = base.fontDescriptor.withDesign(.serif).map { UIFont(descriptor: $0, size: size) } ?? base
         UINavigationBar.appearance().largeTitleTextAttributes = [
             .font: UIFontMetrics(forTextStyle: .largeTitle).scaledFont(for: serif)
         ]
     }
+    #endif
 }
 
-/// One gutter and one ladder. Things that belong together sit tight; groups
-/// sit far apart. The contrast between the two is the hierarchy.
-enum OceanSpacing {
-    /// Page margin, left and right, on every surface: the system's own
-    /// margin for this window, so page tools, fields, tiles, bars and words
-    /// start where a navigation bar puts its back button and a sheet its
-    /// close. UIKit uses 16 pt on standard iPhones and 20 on wide ones
-    /// (measured 2026-10-22: 16 at 402 pt, 20 at 420 and 440).
-    @MainActor static var gutter: CGFloat {
-        let width = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .map { $0.windows.first?.bounds.width ?? $0.screen.bounds.width }
-            .max() ?? 0
-        return width >= 414 ? 20 : 16
+/// How the generated type roles are built.
+enum OceanFont {
+    /// A fixed point size that still follows Dynamic Type: scaled by the
+    /// metrics of the text style it stands in for, so a 40 pt serif title
+    /// grows and shrinks with the system's large title. At the default
+    /// content size the factor is exactly 1. Where UIKit's metrics are not
+    /// available (the watch) the size stays fixed.
+    static func metrics(size: CGFloat, weight: Font.Weight, design: Font.Design, italic: Bool, relativeTo style: Font.TextStyle) -> Font {
+        #if os(iOS)
+        let base = UIFont.systemFont(ofSize: size, weight: uiWeight(weight))
+        var traits: UIFontDescriptor.SymbolicTraits = []
+        if italic { traits.insert(.traitItalic) }
+        var descriptor = base.fontDescriptor.withDesign(uiDesign(design)) ?? base.fontDescriptor
+        if !traits.isEmpty, let italicised = descriptor.withSymbolicTraits(traits) {
+            descriptor = italicised
+        }
+        let styled = UIFont(descriptor: descriptor, size: size)
+        return Font(UIFontMetrics(forTextStyle: uiStyle(style)).scaledFont(for: styled))
+        #else
+        let font = Font.system(size: size, weight: weight, design: design)
+        return italic ? font.italic() : font
+        #endif
     }
-    /// A title and its meta line.
-    static let tight: CGFloat = 4
-    /// Items in one list.
-    static let item: CGFloat = 10
-    /// Blocks inside one section: a title block, a summary, a transcript.
-    static let block: CGFloat = 24
-    /// Between sections.
-    static let section: CGFloat = 40
-}
 
-/// Three motions, used everywhere: a quick state change, the standard
-/// settle (layout, folding), and the gentle arrival of something new.
-enum OceanMotion {
-    static let quick = Animation.easeOut(duration: 0.18)
-    static let standard = Animation.smooth(duration: 0.35)
-    static let gentle = Animation.timingCurve(0.3, 0, 0.2, 1, duration: 0.8)
+    #if os(iOS)
+    private static func uiWeight(_ weight: Font.Weight) -> UIFont.Weight {
+        switch weight {
+        case .ultraLight: .ultraLight
+        case .thin: .thin
+        case .light: .light
+        case .medium: .medium
+        case .semibold: .semibold
+        case .bold: .bold
+        case .heavy: .heavy
+        case .black: .black
+        default: .regular
+        }
+    }
+
+    private static func uiDesign(_ design: Font.Design) -> UIFontDescriptor.SystemDesign {
+        switch design {
+        case .serif: .serif
+        case .rounded: .rounded
+        case .monospaced: .monospaced
+        default: .default
+        }
+    }
+
+    private static func uiStyle(_ style: Font.TextStyle) -> UIFont.TextStyle {
+        switch style {
+        case .largeTitle: .largeTitle
+        case .title: .title1
+        case .title2: .title2
+        case .title3: .title3
+        case .headline: .headline
+        case .subheadline: .subheadline
+        case .callout: .callout
+        case .footnote: .footnote
+        case .caption: .caption1
+        case .caption2: .caption2
+        default: .body
+        }
+    }
+    #endif
 }

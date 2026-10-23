@@ -25,7 +25,7 @@ struct CaptureAttachPanel: View {
     @AccessibilityFocusState private var focusedRow: Row?
 
     /// Between the strip and the rows.
-    private static let spacing: CGFloat = 8
+    private static let spacing: CGFloat = OceanSpacing.gap
     /// The strip never shrinks below a row of thumbnails you can hit.
     private static let leastStripHeight: CGFloat = 120
     /// An iPhone's keyboard, upright or turned, for a width none has shown
@@ -95,7 +95,7 @@ struct CaptureAttachPanel: View {
     private func row(_ title: LocalizedStringKey, systemImage: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Label(title, systemImage: systemImage)
-                .font(.body)
+                .font(OceanType.body)
                 .foregroundStyle(OceanTheme.foam)
                 .frame(maxWidth: .infinity, minHeight: OceanControlSize.height, alignment: .leading)
                 .contentShape(Rectangle())
