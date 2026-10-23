@@ -424,7 +424,7 @@ struct FastCaptureSessionView: View {
             }
             .opacity(cardShown ? 1 : 0)
             Spacer(minLength: 0)
-            overlayDisc(inComposer: true, send: canRelease ? saveTyped : nil)
+            overlayDisc(inComposer: true, send: canRelease ? saveTyped : nil, waiting: pictures.sendWaiting)
         }
         .frame(minHeight: FastCaptureLayout.buttonSize)
     }
@@ -563,9 +563,10 @@ struct FastCaptureSessionView: View {
     /// While the hold that opened this overlay still has its finger on the
     /// capture bar's disc (invisible, in the same frame), that disc owns
     /// the gesture; once the take locks this one is the Stop. In the
-    /// composer it is the send once there are words.
-    private func overlayDisc(inComposer: Bool = false, send: (() -> Void)? = nil) -> some View {
-        CaptureHoldButton(size: FastCaptureLayout.buttonSize, inComposer: inComposer, send: send)
+    /// composer it is the send once there are words, and shows the wait
+    /// while a send waits for pictures still loading.
+    private func overlayDisc(inComposer: Bool = false, send: (() -> Void)? = nil, waiting: Bool = false) -> some View {
+        CaptureHoldButton(size: FastCaptureLayout.buttonSize, inComposer: inComposer, send: send, waiting: waiting)
             .allowsHitTesting(asSheet || !control.isHeld)
             .accessibilityIdentifier(inComposer ? "composer.action" : "capture.overlayDisc")
     }

@@ -139,6 +139,10 @@ struct CaptureAttachments: View {
                 .accessibilityHidden(true)
         }
         .padding(10)
+        // The glyph and the site's name grow up to the largest standard
+        // size, the largest at which both lines still fit the 64 pt tile.
+        // Past it a long press shows the name large; VoiceOver reads it.
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         .frame(
             minWidth: Self.tileSize, maxWidth: 168,
             minHeight: Self.tileSize, maxHeight: Self.tileSize,
@@ -153,6 +157,13 @@ struct CaptureAttachments: View {
         .accessibilityLabel(Text(NodeKind.link.label))
         .accessibilityValue(Text(verbatim: link.host))
         .accessibilityAction(named: Text("Remove link")) { onRemoveLink(link.urlString) }
+        .accessibilityShowsLargeContentViewer {
+            Label {
+                Text(verbatim: link.host)
+            } icon: {
+                Image(systemName: "link")
+            }
+        }
     }
 }
 

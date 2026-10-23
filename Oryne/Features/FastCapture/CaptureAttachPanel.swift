@@ -71,6 +71,11 @@ struct CaptureAttachPanel: View {
                 row("All Photos", systemImage: "photo.on.rectangle", action: onLibrary)
                     .accessibilityFocused($focusedRow, equals: .library)
             }
+            // The panel stands in the keyboard's place, and its height counts
+            // on 44 pt rows: their words grow up to the second accessibility
+            // size, the largest whose line still fits a row. Past it a long
+            // press shows a row's name large.
+            .dynamicTypeSize(...DynamicTypeSize.accessibility2)
         }
         // The card's own inset and glass: the two read as one family.
         .padding(FastCaptureLayout.cardInset)
@@ -96,5 +101,6 @@ struct CaptureAttachPanel: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityShowsLargeContentViewer()
     }
 }

@@ -4151,6 +4151,16 @@
           }
         }
       }
+    },
+    "Waiting for images" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在等待图片"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"
