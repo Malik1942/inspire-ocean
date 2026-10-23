@@ -3,7 +3,8 @@ import SwiftData
 
 /// The inside of one current: its name, what can be done with all of it
 /// (labelled, not bare glyphs), then every thought that expresses the
-/// concept, newest first. Each tile opens the familiar thought page.
+/// concept, newest first. Each tile opens the familiar thought page;
+/// swiping it left archives or deletes it.
 ///
 /// Membership is by *meaning*, not by storage: any thought whose themes
 /// include the concept appears here, so a thought can surface in more than
@@ -14,6 +15,11 @@ struct ClusterStreamView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AppState.self) private var appState
     @State private var showCapture = false
+    /// Thoughts opened from this stream. A path, not `NavigationLink`s: a
+    /// link in a `List` draws a chevron the tiles don't wear.
+    @State private var path: [Node] = []
+    /// The way back from a swiped delete or archive.
+    @State private var removals = ThoughtRemovals()
     @Query(filter: #Predicate<Node> { !$0.isArchived }, sort: \Node.createdAt, order: .reverse)
     private var allNodes: [Node]
 
@@ -34,24 +40,25 @@ struct ClusterStreamView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: OceanSpacing.item) {
-                    header
-                        .padding(.bottom, OceanSpacing.block - OceanSpacing.item)
-                    ForEach(members) { node in
-                        NavigationLink { NodeDetailContent(node: node) } label: {
-                            NodeRow(node: node, showsCurrent: false)
-                        }
+        NavigationStack(path: $path) {
+            List {
+                header
+                    .tileRow(top: 4, bottom: OceanSpacing.block - OceanSpacing.item / 2)
+                ForEach(members) { node in
+                    Button { path.append(node) } label: { NodeRow(node: node, showsCurrent: false) }
                         .buttonStyle(.plain)
-                    }
+                        .thoughtSwipeActions(node, removals: removals)
+                        .tileRow()
                 }
-                .padding(.horizontal, OceanSpacing.gutter)
-                .padding(.top, 4)
-                .padding(.bottom, OceanSpacing.section)
             }
+            .tileList()
+            .contentMargins(.bottom, OceanSpacing.section, for: .scrollContent)
+            .thoughtRemovalToast(removals)
             .background(OceanBackground())
             .navigationBarTitleDisplayMode(.inline)
+            .navigationDestination(for: Node.self) { node in
+                NodeDetailContent(node: node)
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { dismiss() } label: { Image(systemName: "xmark") }
@@ -59,6 +66,7 @@ struct ClusterStreamView: View {
                 }
             }
         }
+        .settlesThoughtRemovals(removals)
         .presentationDetents([.medium, .large])
         .presentationBackground(.clear)
         // A summary or a question opens in Ask: step out of the way.

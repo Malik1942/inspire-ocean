@@ -36,6 +36,8 @@ struct OceanFieldView: View {
     /// The thought being let go stays on screen until it has gone under;
     /// resting it re-picks today's thought at once.
     @State private var goingUnder: Node?
+    /// A thought a card's menu asked to delete, waiting on the alert.
+    @State private var pendingDelete: Node?
 
     private var stilled: Bool { calm || reduceMotion }
 
@@ -121,6 +123,22 @@ struct OceanFieldView: View {
                 }
             }
             .sheet(isPresented: $showSettings) { OceanSettingsView() }
+            // The system alert, as on a thought's page and in the Library.
+            .alert(
+                "Delete this thought?",
+                isPresented: Binding(
+                    get: { pendingDelete != nil },
+                    set: { if !$0 { pendingDelete = nil } }
+                )
+            ) {
+                Button("Delete", role: .destructive) {
+                    if let node = pendingDelete { context.deleteNodeSafely(node) }
+                    pendingDelete = nil
+                }
+                Button("Cancel", role: .cancel) { pendingDelete = nil }
+            } message: {
+                Text("This drifts out of the Ocean for good.")
+            }
             .onChange(of: sheet?.id) { _, _ in updateOceanSheetPresence() }
             .onChange(of: showSettings) { _, _ in updateOceanSheetPresence() }
         }
@@ -224,6 +242,20 @@ struct OceanFieldView: View {
                            estimatedHeight: estimatedCardHeight) { node in
                 Button { open(node) } label: { GlanceCard(node: node) }
                     .buttonStyle(.plain)
+                    // The Library's long-press menu: a card half the page
+                    // wide has no room for a swipe.
+                    .contextMenu {
+                        Button { archive(node) } label: {
+                            Label("Archive", systemImage: "archivebox")
+                        }
+                        Button(role: .destructive) { pendingDelete = node } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
+                    .accessibilityActions {
+                        Button("Delete") { pendingDelete = node }
+                        Button("Archive") { archive(node) }
+                    }
             }
         }
     }
@@ -304,6 +336,13 @@ struct OceanFieldView: View {
     }
 
     // MARK: Interaction
+
+    /// The Library's archive: out of Tide and every current, kept in the
+    /// Library under Show archived.
+    private func archive(_ node: Node) {
+        ThoughtRemoval.archive(node)
+        try? context.save()
+    }
 
     private func toggleNearby(_ node: Node) {
         if !nearbyOpen {
