@@ -89,6 +89,7 @@ targets:
         NSMicrophoneUsageDescription: "Oryne uses the microphone to catch voice drifts before they disappear."
         NSSpeechRecognitionUsageDescription: "Oryne transcribes your voice captures so they can resurface and connect."
         NSPhotoLibraryUsageDescription: "Oryne lets you capture screenshots and photos as inspiration fragments."
+        NSCameraUsageDescription: "Oryne uses the camera to catch what you see."
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationLandscapeLeft

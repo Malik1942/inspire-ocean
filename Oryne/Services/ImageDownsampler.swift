@@ -24,7 +24,32 @@ enum ImageDownsampler {
     /// memory. Returns nil when the bytes aren't a decodable image, so callers
     /// can fall back to the original.
     static func downsample(_ data: Data, maxPixel: CGFloat, quality: CGFloat = 0.8) -> Data? {
+        image(data, maxPixel: maxPixel)?.jpegData(compressionQuality: quality)
+    }
+
+    /// The picture in `data`, decoded upright and no larger than `maxPixel`
+    /// on its longest edge (ImageIO never decodes the full image). Nil when
+    /// the bytes aren't a picture.
+    static func image(_ data: Data, maxPixel: CGFloat) -> UIImage? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        return thumbnail(of: source, maxPixel: maxPixel)
+    }
+
+    /// The picture in `data`, decoded upright with its short edge at `side`
+    /// pixels (or its own, when smaller): enough to fill a square of that
+    /// side without upscaling, whatever the picture's shape. Nil when the
+    /// bytes aren't a picture.
+    static func image(_ data: Data, fillingSquare side: CGFloat) -> UIImage? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+              let width = properties[kCGImagePropertyPixelWidth] as? Int,
+              let height = properties[kCGImagePropertyPixelHeight] as? Int,
+              min(width, height) > 0 else { return nil }
+        let aspect = CGFloat(max(width, height)) / CGFloat(min(width, height))
+        return thumbnail(of: source, maxPixel: (side * aspect).rounded(.up))
+    }
+
+    private static func thumbnail(of source: CGImageSource, maxPixel: CGFloat) -> UIImage? {
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,
@@ -33,7 +58,7 @@ enum ImageDownsampler {
         guard let cg = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
             return nil
         }
-        return UIImage(cgImage: cg).jpegData(compressionQuality: quality)
+        return UIImage(cgImage: cg)
     }
 
     /// The single path every multi-image surface (Capture, edit sheet, branch

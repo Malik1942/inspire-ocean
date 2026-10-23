@@ -40,6 +40,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>Oryne uses the camera to catch what you see.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Oryne uses the microphone to catch voice drifts before they disappear.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

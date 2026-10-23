@@ -170,11 +170,16 @@ struct NodeDetailContent: View {
         .task(id: node.id) {
             relatedIDs = ai.relatedNodeIDs(to: node, among: allNodes, limit: 4)
             // Safety net for links that never got a first pass — legacy nodes and
-            // share-extension captures (the extension doesn't enrich). Only the
-            // never-attempted case auto-runs; a prior failure waits for the
-            // card's explicit retry, so opening detail doesn't re-hammer it.
-            if node.linkURL != nil, node.linkEnrichmentState == .notStarted {
-                LinkEnrichmentService.shared.enrich(nodeID: node.id, context: context, ai: ai)
+            // share-extension captures (the extension doesn't enrich) — or whose
+            // pass a quit cut off (left in progress). A prior failure waits for
+            // the card's explicit retry, so opening detail doesn't re-hammer it.
+            switch node.linkEnrichmentState {
+            case .notStarted, .fetchingMeta, .fetchingContent, .summarizing:
+                if node.linkURL != nil {
+                    LinkEnrichmentService.shared.enrich(nodeID: node.id, context: context, ai: ai)
+                }
+            case .enriched, .failed:
+                break
             }
         }
     }

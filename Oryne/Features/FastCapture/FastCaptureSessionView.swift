@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import PhotosUI
 
 /// The one capture surface. Every entry point (the floating button, the
 /// Action Button, Control Center, the widget, Siri, a share, a current's +)
@@ -17,6 +18,7 @@ struct FastCaptureSessionView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.calmAccessibility) private var calm
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(CaptureControl.self) private var control
 
     let request: FastCaptureRequest
@@ -39,7 +41,28 @@ struct FastCaptureSessionView: View {
 
     @State private var phase: Phase = .composing
     @State private var text: String
-    @State private var imageData: Data?
+    /// The pictures on the card, in the order they were added.
+    @State private var images: [CaptureImage]
+    /// Pictures picked but still loading: a quiet tile each.
+    @State private var pendingImages = 0
+    /// The send was tapped while pictures were still loading: it goes once
+    /// they are in, so a release never leaves one behind.
+    @State private var releaseWhenLoaded = false
+    /// The loads behind the loading tiles, so a tile's ✕ can let them go.
+    @State private var loadTasks: [Task<Void, Never>] = []
+    /// The + panel stands in the keyboard's place: the latest photos,
+    /// Camera, All Photos.
+    @State private var attachPanelShown = false
+    @State private var cameraShown = false
+    @State private var libraryShown = false
+    @State private var libraryItems: [PhotosPickerItem] = []
+    /// Links taken off the card with the tile's ✕: they stay in the words
+    /// as text and are never attached.
+    @State private var dismissedLinks: Set<String> = []
+    /// The link the tile shows, sensed from the field a moment after the
+    /// last edit. A release senses the words afresh.
+    @State private var sensedLink: LinkSensing.Sensed?
+    @State private var senseTask: Task<Void, Never>?
     @State private var session = CaptureSession()
     /// Words of the take that just ended, held for the settle animation.
     @State private var settlingWords = ""
@@ -57,6 +80,10 @@ struct FastCaptureSessionView: View {
     /// Where the keyboard is headed, in screen points, from its own
     /// notifications. Only consulted when the safe area missed it.
     @State private var keyboardFrame: CGRect?
+    /// The id this overlay holds the shared capture state by, pinned when it
+    /// first appears: a current's sheet rebuilds its request (a new id) on
+    /// every render, and ownership must outlive that.
+    @State private var ownerID: UUID
     @FocusState private var textFocused: Bool
 
     init(
@@ -68,7 +95,10 @@ struct FastCaptureSessionView: View {
         self.onFinish = onFinish
         self.asSheet = asSheet
         _text = State(initialValue: request.seedText)
-        _imageData = State(initialValue: request.imageData)
+        // The Action Button's screenshot joins in `.task`: this view is
+        // rebuilt whenever the tabs redraw, and a decode here would rerun.
+        _images = State(initialValue: [])
+        _ownerID = State(initialValue: request.id)
     }
 
     private var listening: Bool { phase == .listening }
@@ -82,6 +112,27 @@ struct FastCaptureSessionView: View {
         let keyboardUp = geo.safeAreaInsets.bottom + missed > 120
         ZStack(alignment: .bottom) {
             backdrop
+
+            if attachPanelShown, phase == .composing {
+                CaptureAttachPanel(
+                    showsStrip: !asSheet,
+                    onPick: { item in
+                        attach([item])
+                        textFocused = true
+                    },
+                    onCamera: {
+                        closePanel()
+                        cameraShown = true
+                    },
+                    onLibrary: {
+                        closePanel()
+                        libraryShown = true
+                    }
+                )
+                .frame(height: panelHeight)
+                .padding(.horizontal, OceanSpacing.gutter)
+                .transition(stilled ? .opacity : .move(edge: .bottom).combined(with: .opacity))
+            }
 
             VStack(alignment: .leading, spacing: 14) {
                 switch phase {
@@ -120,17 +171,28 @@ struct FastCaptureSessionView: View {
             keyboardFrame = note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
         }
         .task {
-            control.overlayID = request.id
+            control.overlayID = ownerID
             control.overlayOpen = true
+            // A panel an earlier overlay left open is not this one's.
+            control.attachPanelOpen = false
             session.configure(context: context, ai: ai)
             guard !hasStarted else { return }
             hasStarted = true
+            // The Action Button's screenshot is the card's first picture,
+            // decoded once, off the main actor.
+            if let screenshot = request.imageData {
+                let shot = await CaptureImage.make(from: [screenshot])
+                withAnimation(motion) { images.insert(contentsOf: shot, at: 0) }
+            }
             // Opened to type: a draft put away earlier is back in the field
             // (before the bar's send below looks for it).
             if control.touch == .up, request.inputPreference != .voiceFirst,
                request.seedText.isEmpty, request.imageData == nil, request.anchorThemeKey == nil {
                 takeBackParked()
             }
+            // Words already in the field (a seed, a draft brought back) show
+            // their link at once.
+            senseLink(now: true)
             if control.touch != .up {
                 // The hold began on the floating button: keep listening.
                 await startListening()
@@ -195,6 +257,47 @@ struct FastCaptureSessionView: View {
             guard phase != .active else { return }
             finishInterruptedCapture()
         }
+        // A paste (more than one character at once) shows its link at once,
+        // so a send right after it never attaches a link the card didn't show.
+        .onChange(of: text) { old, new in senseLink(now: new.count - old.count > 1) }
+        // Focusing the words (a tap on the field, the + again, a photo
+        // picked) brings the keys back and the panel steps aside; so does
+        // anything that ends composing.
+        .onChange(of: textFocused) { _, focused in
+            if focused { closePanel() }
+        }
+        .onChange(of: phase) { _, phase in
+            if phase != .composing { attachPanelShown = false }
+        }
+        .onChange(of: attachPanelShown) { _, shown in
+            // The tab bar steps away under the panel, as under the keys, only
+            // where it sits at the bottom (any iPhone, or a compact iPad
+            // window), and always comes back. A composer in a sheet leaves
+            // the page behind it alone.
+            let barAtBottom = UIDevice.current.userInterfaceIdiom == .phone || sizeClass == .compact
+            if ownsControl, !asSheet {
+                withAnimation(motion) { control.attachPanelOpen = shown && barAtBottom }
+            }
+        }
+        .fullScreenCover(isPresented: $cameraShown, onDismiss: { textFocused = true }) {
+            CameraPicker(onFinish: attachShot)
+                .ignoresSafeArea()
+        }
+        .photosPicker(
+            isPresented: $libraryShown,
+            selection: $libraryItems,
+            maxSelectionCount: max(room, 1),
+            selectionBehavior: .ordered,
+            matching: .images
+        )
+        .onChange(of: libraryItems) { _, items in
+            guard !items.isEmpty else { return }
+            libraryItems = []
+            attach(items)
+        }
+        .onChange(of: libraryShown) { _, shown in
+            if !shown { textFocused = true }
+        }
     }
 
     // MARK: Pieces
@@ -207,10 +310,13 @@ struct FastCaptureSessionView: View {
                 // Open water puts the card away; anything in it waits in
                 // the bar. In a sheet (no bar) it only folds the keyboard
                 // while there is something to keep; the sheet swipes away.
-                if phase == .composing, !(asSheet && canRelease) {
+                // Pictures still loading keep the card out until they land:
+                // the bar can't hold a picture that hasn't arrived.
+                if phase == .composing, pendingImages == 0, !(asSheet && canRelease) {
                     putAway()
                 } else {
                     textFocused = false
+                    closePanel()
                 }
             }
             // Outermost, so the content shape steps aside with it: while
@@ -218,17 +324,29 @@ struct FastCaptureSessionView: View {
             .allowsHitTesting(phase != .linger)
     }
 
-    /// Typing: the bar's capsule unfolds into a card on two rows. The words
-    /// on top, across the whole card; under them one disc at the trailing
-    /// end, which whispers while the field is empty and sends once there
-    /// are words. The disc sits where the bar's disc sits, so the card
-    /// grows up from it and it never moves. There is no close: open water
-    /// folds the card back into the bar, and what was typed waits there.
-    /// Both rows stay for the whole session, empty or not.
+    /// Typing: the bar's capsule unfolds into a card. Above the words, what
+    /// rides along (pictures, the sensed link), only when there is some;
+    /// the words across the whole card; under them the + at the leading end
+    /// and one disc at the trailing end, which whispers while the field is
+    /// empty and sends once there is something to send. The disc sits where
+    /// the bar's disc sits, so the card grows up from it and it never moves.
+    /// There is no close: open water folds the card back into the bar, and
+    /// what was typed waits there. The words and the action row stay for
+    /// the whole session, empty or not.
     private var composer: some View {
         VStack(alignment: .leading, spacing: cardInset) {
-            if let imageData, let uiImage = UIImage(data: imageData) {
-                screenshotPreview(uiImage)
+            // What rides along sits above the words, only while the card
+            // is open, so the fold still lands on the bar's one line.
+            if cardShown, !images.isEmpty || pendingImages > 0 || sensedLink != nil {
+                CaptureAttachments(
+                    images: images,
+                    pending: pendingImages,
+                    link: sensedLink,
+                    onRemoveImage: removeImage,
+                    onRemoveLink: dismissLink,
+                    onCancelLoading: cancelLoading
+                )
+                .transition(.opacity)
             }
             // Closed, the actions lie over the field's row, as on the bar.
             VStack(alignment: .leading, spacing: cardShown ? 8 : -FastCaptureLayout.buttonSize) {
@@ -289,7 +407,7 @@ struct FastCaptureSessionView: View {
         // the first line of the words, cut with an ellipsis.
         .opacity(cardShown ? 1 : 0)
         .overlay(alignment: .topLeading) {
-            CaptureBarWords(draft: canRelease ? ParkedCapture(text: text, imageData: imageData, heldDraft: heldDraft).line : nil)
+            CaptureBarWords(draft: hasDraft ? ParkedCapture(text: text, images: images, heldDraft: heldDraft).line : nil)
                 .opacity(cardShown ? 0 : 1)
                 .accessibilityHidden(true)
         }
@@ -308,17 +426,40 @@ struct FastCaptureSessionView: View {
         cardShown ? FastCaptureLayout.cardInset : FastCaptureLayout.discInset
     }
 
-    /// The card's second row, at its foot: the disc at the trailing end,
-    /// and before it what the card has to say. Folded, only the disc shows,
-    /// as on the bar.
+    /// The card's second row, at its foot: the + at the leading end, the
+    /// disc at the trailing end, and between them what the card has to
+    /// say. Folded, only the disc shows, as on the bar.
     private var actionRow: some View {
         HStack(alignment: .center, spacing: 8) {
-            composerCaptions
-                .opacity(cardShown ? 1 : 0)
+            Group {
+                attachButton
+                composerCaptions
+            }
+            .opacity(cardShown ? 1 : 0)
             Spacer(minLength: 0)
             overlayDisc(inComposer: true, send: canRelease ? saveTyped : nil)
         }
         .frame(minHeight: FastCaptureLayout.buttonSize)
+    }
+
+    /// The card's +, the send disc's twin: it swaps the keyboard for the
+    /// panel (the latest photos, Camera, All Photos), and back again.
+    /// Dimmed once the thought holds all the pictures it can.
+    private var attachButton: some View {
+        Button {
+            if attachPanelShown {
+                textFocused = true
+            } else {
+                openPanel()
+            }
+        } label: {
+            Image(systemName: "plus")
+        }
+        .buttonStyle(.oceanIcon)
+        .disabled(room == 0)
+        .opacity(room == 0 ? 0.4 : 1)
+        .accessibilityLabel(attachPanelShown ? Text("Show keyboard") : Text("Add image"))
+        .accessibilityIdentifier("composer.attach")
     }
 
     /// A refusal, and the current a thought added from a stream flows
@@ -346,7 +487,7 @@ struct FastCaptureSessionView: View {
     /// for the bar's send: that draft goes straight in, the card unopened.
     private func openCard() {
         guard phase == .composing, !control.releaseParked else { return }
-        withAnimation(stilled ? OceanMotion.quick : OceanMotion.standard) { cardOpen = true }
+        withAnimation(motion) { cardOpen = true }
     }
 
     /// Open water: the card folds back into the bar. Anything in it waits
@@ -354,8 +495,10 @@ struct FastCaptureSessionView: View {
     private func putAway() {
         fadeTask?.cancel()
         textFocused = false
-        if canRelease, !asSheet {
-            control.parked = ParkedCapture(text: text, imageData: imageData, heldDraft: heldDraft)
+        closePanel()
+        senseTask?.cancel()
+        if hasDraft, !asSheet {
+            control.parked = ParkedCapture(text: text, images: images, heldDraft: heldDraft, dismissedLinks: dismissedLinks)
         }
         closeCard()
     }
@@ -365,13 +508,15 @@ struct FastCaptureSessionView: View {
         guard !asSheet, let parked = control.parked else { return }
         control.parked = nil
         text = parked.text
-        imageData = parked.imageData
+        images = parked.images
         heldDraft = parked.heldDraft
+        dismissedLinks = parked.dismissedLinks
+        senseLink(now: true)
     }
 
     /// This overlay holds the shared capture state (the bar's taps, the
     /// take's level) until it finishes or a newer overlay takes over.
-    private var ownsControl: Bool { control.overlayID == request.id }
+    private var ownsControl: Bool { control.overlayID == ownerID }
 
     /// Done: hand the bar back first, then close. A tap on the disc while
     /// this overlay still fades out opens the next one at once instead of
@@ -388,6 +533,7 @@ struct FastCaptureSessionView: View {
         control.overlayID = nil
         control.overlayOpen = false
         control.composerHeight = 0
+        control.attachPanelOpen = false
         control.toastShowing = false
         control.isListening = false
         control.level = 0
@@ -483,7 +629,36 @@ struct FastCaptureSessionView: View {
             return FastCaptureLayout.tabBarClearance
                 + (control.barOnTab ? FastCaptureLayout.barHeight + 12 : 0)
         }
+        if attachPanelShown { return panelHeight + 12 }
         return asSheet || keyboardUp ? 12 : FastCaptureLayout.tabBarClearance
+    }
+
+    /// The panel stands where the keys stood, so the card stays put when +
+    /// swaps them: the keyboard's height less the home indicator's inset,
+    /// which the panel keeps clear of. Inside a current's sheet it is only
+    /// its rows (no strip there).
+    private var panelHeight: CGFloat {
+        let least = CaptureAttachPanel.leastHeight(showsStrip: !asSheet)
+        guard !asSheet else { return least }
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        let scene = scenes.first { $0.activationState == .foregroundActive } ?? scenes.first
+        let resting = scene?.keyWindow?.safeAreaInsets.bottom ?? 0
+        let keys = keyboardFrame?.height ?? CaptureAttachPanel.usualKeyboardHeight
+        return max(keys - resting, least)
+    }
+
+    /// The card's and the panel's one motion; Reduce Motion takes the
+    /// quick one.
+    private var motion: Animation { stilled ? OceanMotion.quick : OceanMotion.standard }
+
+    private func openPanel() {
+        textFocused = false
+        withAnimation(motion) { attachPanelShown = true }
+    }
+
+    private func closePanel() {
+        guard attachPanelShown else { return }
+        withAnimation(motion) { attachPanelShown = false }
     }
 
     /// The part of the keyboard the safe area left out. SwiftUI can miss a
@@ -500,34 +675,110 @@ struct FastCaptureSessionView: View {
         return max(0, frame.maxY - keyboardFrame.minY)
     }
 
-    private func screenshotPreview(_ uiImage: UIImage) -> some View {
-        ZStack(alignment: .topTrailing) {
-            Image(uiImage: uiImage)
-                .resizable()
-                .scaledToFill()
-                .frame(height: 116)
-                .frame(maxWidth: .infinity)
-                // Concentric with the card's corner.
-                .clipShape(RoundedRectangle(
-                    cornerRadius: FastCaptureLayout.cardRadius - FastCaptureLayout.cardInset,
-                    style: .continuous
-                ))
+    /// Something to release: what the card holds, or pictures on their way.
+    private var canRelease: Bool { hasDraft || pendingImages > 0 }
 
-            Button {
-                withAnimation(.snappy) { imageData = nil }
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.title3)
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(.white)
-                    .padding(6)
-            }
-            .accessibilityLabel("Remove screenshot")
+    /// What the card holds now, which open water parks in the bar.
+    private var hasDraft: Bool {
+        !text.trimmed.isEmpty || !images.isEmpty || heldDraft?.audioData != nil
+    }
+
+    /// Pictures the thought can still take (`Node.maxImages` in all).
+    private var room: Int { max(0, Node.maxImages - images.count - pendingImages) }
+
+    /// A picture's ✕.
+    private func removeImage(_ id: CaptureImage.ID) {
+        withAnimation(.snappy) { images.removeAll { $0.id == id } }
+    }
+
+    /// The tile follows the field half a second behind, so a link still
+    /// being typed never flickers in; `now` shows it at once.
+    private func senseLink(now: Bool = false) {
+        senseTask?.cancel()
+        guard !now else {
+            sensedLink = chosenLink
+            return
+        }
+        senseTask = Task {
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            withAnimation(.snappy) { sensedLink = chosenLink }
         }
     }
 
-    private var canRelease: Bool {
-        !text.trimmed.isEmpty || imageData != nil || heldDraft?.audioData != nil
+    /// The link a release would attach right now: the words' first link
+    /// the user has not taken off the card.
+    private var chosenLink: LinkSensing.Sensed? {
+        LinkSensing.chosen(in: text, dismissed: dismissedLinks)
+    }
+
+    /// The link tile's ✕: the link stays in the words as text and is never
+    /// attached; the words' next link, if any, takes the tile.
+    private func dismissLink(_ urlString: String) {
+        dismissedLinks.insert(urlString)
+        withAnimation(.snappy) { sensedLink = chosenLink }
+    }
+
+    /// Picked photos join the card in the order picked, each shrunk to the
+    /// attachment size first, as many as the thought has room for; a quiet
+    /// tile holds each one's place meanwhile.
+    private func attach(_ items: [PhotosPickerItem]) {
+        let fits = Array(items.prefix(room))
+        if fits.count < items.count {
+            message = String(localized: "Only added \(fits.count), \(Node.maxImages) images max.")
+        }
+        guard !fits.isEmpty else { return }
+        pendingImages += fits.count
+        loadTasks.append(Task {
+            let datas = await ImageDownsampler.attachmentData(from: fits)
+            await add(datas, standingIn: fits.count)
+        })
+    }
+
+    /// The camera's shot, shrunk off the main actor like a picked photo.
+    private func attachShot(_ shot: UIImage?) {
+        cameraShown = false
+        guard let shot, room > 0 else { return }
+        pendingImages += 1
+        loadTasks.append(Task {
+            let data = await Task.detached {
+                shot.jpegData(compressionQuality: 0.9).flatMap {
+                    ImageDownsampler.downsample($0, maxPixel: ImageDownsampler.Size.attachment)
+                }
+            }.value
+            await add([data].compactMap { $0 }, standingIn: 1)
+        })
+    }
+
+    /// Loaded pictures take their tiles' places. A send tapped meanwhile
+    /// goes now.
+    @MainActor
+    private func add(_ datas: [Data], standingIn placeholders: Int) async {
+        let fresh = await CaptureImage.make(from: datas)
+        // Let go by a loading tile's ✕: its tiles are already gone.
+        guard !Task.isCancelled else { return }
+        pendingImages = max(0, pendingImages - placeholders)
+        withAnimation(.snappy) { images.append(contentsOf: fresh) }
+        guard pendingImages == 0 else { return }
+        loadTasks = []
+        // A send that waited for these goes now, only while this overlay
+        // still holds the card; either way the wait is over, so a later load
+        // (an Undo's) never sends on its own.
+        let sendNow = releaseWhenLoaded && phase == .composing && ownsControl
+        releaseWhenLoaded = false
+        if sendNow { saveTyped() }
+    }
+
+    /// A loading tile's ✕: the pictures still on their way are let go, and
+    /// a send that was waiting for them goes with what has landed.
+    private func cancelLoading() {
+        loadTasks.forEach { $0.cancel() }
+        loadTasks = []
+        withAnimation(.snappy) { pendingImages = 0 }
+        if releaseWhenLoaded {
+            releaseWhenLoaded = false
+            saveTyped()
+        }
     }
 
     // MARK: Listening
@@ -535,6 +786,7 @@ struct FastCaptureSessionView: View {
     private func startListening() async {
         guard phase == .composing, !session.transcriber.isRecording else { return }
         textFocused = false
+        closePanel()
         message = nil
         let started = await session.startRecording(onInterruption: { [self] in
             // A call, Siri, a lost mic: the take ends as a lift would.
@@ -573,7 +825,7 @@ struct FastCaptureSessionView: View {
         // Under a second with nothing said: not a thought, nothing minted.
         // Opened to whisper (the disc, a widget), it was a change of mind
         // and the overlay closes; opened to type, the field comes back.
-        if words.isEmpty, note.isEmpty, imageData == nil, heldDraft == nil, elapsed < 1 {
+        if words.isEmpty, note.isEmpty, images.isEmpty, heldDraft == nil, elapsed < 1 {
             if let url { try? FileManager.default.removeItem(at: url) }
             if request.inputPreference == .voiceFirst, !asSheet {
                 finish()
@@ -592,7 +844,11 @@ struct FastCaptureSessionView: View {
             draft.audioData = data
             draft.audioTempURL = url
         }
-        draft.imageData = imageData
+        draft.imageDatas = images.map(\.data)
+        // A typed note's link rides with the whisper; spoken words are
+        // never scanned.
+        draft.linkURLString = LinkSensing.chosen(in: note, dismissed: dismissedLinks)?.urlString
+        draft.dismissedLinks = dismissedLinks
         draft.anchorThemeKey = request.anchorThemeKey
         heldDraft = nil
 
@@ -622,6 +878,11 @@ struct FastCaptureSessionView: View {
 
     private func saveTyped() {
         guard !isSaving, canRelease else { return }
+        // Pictures still loading go too: the send waits for them.
+        guard pendingImages == 0 else {
+            releaseWhenLoaded = true
+            return
+        }
         let trimmed = text.trimmed
         var draft = heldDraft ?? CaptureDraft()
         if draft.audioData != nil {
@@ -631,10 +892,15 @@ struct FastCaptureSessionView: View {
             draft.transcript = trimmed
             draft.text = ""
         } else {
-            draft.kind = (imageData != nil && trimmed.isEmpty) ? .image : .text
+            // `release` names a thought of only pictures (NodeKind.captured).
+            draft.kind = .text
             draft.text = trimmed
         }
-        draft.imageData = imageData
+        draft.imageDatas = images.map(\.data)
+        // The words' first link the user kept becomes the thought's link;
+        // `release` lifts it out of the words when it sits at an edge.
+        draft.linkURLString = LinkSensing.chosen(in: trimmed, dismissed: dismissedLinks)?.urlString
+        draft.dismissedLinks = dismissedLinks
         draft.anchorThemeKey = request.anchorThemeKey
         guard let nodeID = session.release(draft) else {
             message = String(localized: "Couldn't save yet. Release tries again.")
@@ -676,8 +942,11 @@ struct FastCaptureSessionView: View {
         fadeTask?.cancel()
         isSaving = false
         text = ""
-        imageData = nil
+        images = []
         heldDraft = nil
+        dismissedLinks = []
+        senseTask?.cancel()
+        sensedLink = nil
         message = nil
         settlingWords = ""
         settled = false
@@ -697,7 +966,15 @@ struct FastCaptureSessionView: View {
         isSaving = false
         heldDraft = draft.audioData != nil ? draft : nil
         text = [draft.text, draft.transcript].map(\.trimmed).filter { !$0.isEmpty }.joined(separator: " ")
-        imageData = draft.imageData
+        // The pictures come back through their loading tiles, decoded off
+        // the main actor; a send meanwhile waits for them.
+        images = []
+        if !draft.imageDatas.isEmpty {
+            pendingImages += draft.imageDatas.count
+            loadTasks.append(Task { await add(draft.imageDatas, standingIn: draft.imageDatas.count) })
+        }
+        dismissedLinks = draft.dismissedLinks
+        senseLink(now: true)
         control.toastShowing = false
         withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) { phase = .composing }
         textFocused = true
@@ -707,7 +984,9 @@ struct FastCaptureSessionView: View {
     /// release it only closes, never deletes. Deleting is Undo's job.
     private func cancel() {
         fadeTask?.cancel()
+        senseTask?.cancel()
         textFocused = false
+        releaseWhenLoaded = false
         if listening {
             Task { await session.transcriber.cancel() }
             control.isListening = false
