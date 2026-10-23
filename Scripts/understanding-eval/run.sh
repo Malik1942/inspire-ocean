@@ -20,5 +20,7 @@ xcrun swiftc -O -parse-as-library -o "$bin" \
   "$here/eval.swift" \
   "$repo/Shared/Models/Enums.swift" \
   "$repo/Shared/Services/ThoughtReading.swift" \
+  "$here/../eval/Fixture.swift" \
+  "$here/../../Shared/Services/PictureReading.swift" \
   "$repo/Oryne/Services/FoundationThoughtReader.swift"
 "$bin" "${1:-1}"

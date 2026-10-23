@@ -58,4 +58,8 @@ enum UnderstandingBackfill {
     /// wait for the next open (and, in phase 4, the charging-time pass), so
     /// a large Ocean never pins the model for minutes at once.
     static let enrichmentPerOpen = 50
+
+    /// How many thoughts' pictures one Library open reads (Vision, a second
+    /// or two per picture), newest first; the rest wait for the next open.
+    static let picturesPerOpen = 20
 }

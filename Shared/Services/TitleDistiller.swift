@@ -11,8 +11,11 @@ enum TitleDistiller {
     /// A model title must be in the entry's own language. The on-device model
     /// can drift to the system's other language (an English note titled in
     /// Chinese); such a title is dropped so the entry's own words lead.
+    /// By words, not letters: a Chinese title that keeps "Tide" and
+    /// "resurfacing" in Latin is still a Chinese title (measured 2026-10-22,
+    /// the letter count rejected it and the entry's own words stood in).
     static func speaksLike(_ title: String, entry: String) -> Bool {
-        CurrentSnap.isChinese(title) == CurrentSnap.isChinese(entry)
+        ThoughtReading.mostlyChineseByWords(title) == ThoughtReading.mostlyChineseByWords(entry)
     }
 
     /// Lightly cleans a model-produced title (already short) without truncating meaning.

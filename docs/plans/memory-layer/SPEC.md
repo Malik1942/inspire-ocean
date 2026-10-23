@@ -79,6 +79,46 @@ Retrieval uses two vectors per thought, one for its own text and one for
 question's own language. Vectors are cached on disk per device (layer 5
 decision), keyed by backend and text.
 
+#### Pictures (built 2026-10-22)
+
+The on-device model takes no images on iOS 26, so a picture reached the
+record as nothing: a picture-only thought had no title, category or gist,
+and a thought with words and a picture was read from the words alone. Now
+the device reads the pictures into words first, and the one understanding
+pass takes words and pictures together. Three more defaulted fields on
+`Node`, derived and disposable like the link fields, small enough to sync
+so a second device never reads the pictures again:
+
+| field | type | from | notes |
+|---|---|---|---|
+| `pictureText` | String? | Vision text recognition | the words in the pictures, in their own languages; English-first readers get a second Chinese-first pass whose Han lines join, since an English-first pass skips Chinese outright |
+| `pictureLabels` | [String] | Vision scene classification | up to 5 lowercase English labels at confidence 0.3 and up (else the single best above 0.15); generic ones (land, liquid, outdoor…) dropped |
+| `pictureReadingVersion` | Int | system | `PictureReading.version` once read; 0 so a later Library open reads it (20 per open, newest first) |
+
+`Node.pictureContext` folds them into one passage the reader prompt, the
+embeddings (`searchableText`) and the agent's read tool take with the
+words: "Picture of document and text. Text in the picture: Blue Bottle
+Coffee…". English framing, so the model reads it as a description and
+not as the writer's words; the reader instructions say so. Capture reads
+before its understanding pass (`VoiceUnderstanding`); the branch
+composer, the edit sheet (a changed set is read afresh) and the save
+intent go through `PictureEnrichmentService`; the Library backfill
+catches share-sheet captures and older thoughts and re-derives a titled
+thought's record once its picture has words to add.
+
+Measured 2026-10-22: a receipt photo became "Coffee Shop Visit", a note,
+mixed language, entities Blue Bottle Coffee and Hayes Valley, in the
+coffee current; the Chinese line in it was read. Scene classification
+does not run in the simulator ("Failed to create espresso context"), so
+labels are verified on the Mac (waterfall 0.81, plant 0.89, document 0.64)
+and owed a device pass. The eval fixture carries two picture-only
+thoughts (a receipt, a beach) and the Ask eval asks for them.
+
+iOS 27: when the model can look at a picture itself, `PictureReader.read`
+gains that path behind the same `Reading`, writing a line of its own in
+place of the labels; `PictureReading.version` bumps to 2 and the pictures
+are read again on the next Library open. Nothing else moves.
+
 ### 2. Currents as entities (phase 3, built)
 
 A `Current` model: `key` (the language-neutral slug), `labelEN` and
@@ -162,12 +202,21 @@ slots in behind an availability check later for synthesis and long sets.
 | 2 | Ask as an agent with tools; category filter in the Library and on the thought page; a budget per window | this branch |
 | 3 | Current entity, migration, rename / merge / split, bilingual merge | this branch |
 | 4 | MemoryRecord, Settings page, consolidation task | this branch |
+| 4b | Pictures read into words (Vision OCR and scene labels) before understanding | this branch |
 | 5 | Conversation memory | |
 
 Each phase that adds a model field needs the CloudKit schema initialized
 (`OCEAN_INIT_CLOUDKIT_SCHEMA=1` on a Debug build on an iCloud-signed
 device) and deployed to Production before shipping; the deploy is Malik's
 call.
+
+## Measuring it
+
+`Scripts/eval/run.sh` is the harness: one bilingual fixture
+(`Scripts/eval/Fixture.swift`), the four evals (understanding, snap, Ask,
+memory) each printing a `RESULT` line, several runs, per-run thresholds in
+`Scripts/eval/report.py`. Its README lists the cases it was built from and
+the baseline. Every prompt, schema, budget or fixture change reruns it.
 
 ## Budget and privacy
 

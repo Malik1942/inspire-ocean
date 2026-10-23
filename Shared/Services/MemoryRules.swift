@@ -125,6 +125,81 @@ enum MemoryRules {
         return gone
     }
 
+    // MARK: Claims of repetition
+
+    /// Words that claim a pattern. Two thoughts show a pair, not a habit.
+    static let frequencyWords = ["frequently", "often", "always", "regularly", "usually", "constantly", "repeatedly",
+                                 "经常", "总是", "常常", "一直", "每天", "频繁", "反复"]
+
+    /// A record resting on fewer than three thoughts loses its claim of
+    /// repetition: "You frequently mention Oryne" becomes "You mention
+    /// Oryne" (measured 2026-10-22: two thoughts, "frequently").
+    static func softened(_ text: String, grounded: Int) -> String {
+        guard grounded < 3 else { return text }
+        var s = text
+        for word in frequencyWords {
+            s = s.replacingOccurrences(of: "\\b\(word)\\s+", with: "", options: [.regularExpression, .caseInsensitive])
+            s = s.replacingOccurrences(of: word, with: "")
+        }
+        s = s.replacingOccurrences(of: #"\s{2,}"#, with: " ", options: .regularExpression)
+        s = s.trimmingCharacters(in: .whitespaces)
+        if let first = s.first, first.isLowercase, text.first?.isUppercase == true {
+            s = first.uppercased() + s.dropFirst()
+        }
+        return s
+    }
+
+    // MARK: Current summaries
+
+    /// Why a summary cannot stand, or nil when it can: a preamble that ends
+    /// in a colon or opens with "here is", first person, a sentence that
+    /// repeats a thought's words, or one that never addresses the person.
+    static func summaryProblem(_ text: String, memberTexts: [String]) -> String? {
+        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let lower = t.lowercased()
+        if t.isEmpty { return "is empty" }
+        if t.hasSuffix(":") || t.hasSuffix("：") || lower.hasPrefix("here is") || lower.hasPrefix("here's") || lower.hasPrefix("以下是") || lower.hasPrefix("这是") && lower.contains("描述") {
+            return "is a preamble, not the sentence itself"
+        }
+        if t.range(of: #"(^|[^A-Za-z])(I|I'm|I’m|my|me)([^A-Za-z]|$)"#, options: .regularExpression) != nil || t.hasPrefix("我") || t.contains("我的") {
+            return "speaks as I instead of to you"
+        }
+        for member in memberTexts {
+            let body = normalized(member)
+            guard body.count >= 24 else { continue }
+            if normalized(t).contains(String(body.prefix(24))) { return "repeats a thought's words instead of describing them" }
+        }
+        if !lower.contains("you") && !t.contains("你") { return "does not address the person as you" }
+        return nil
+    }
+
+    // MARK: Page summaries
+
+    /// A page summary as the record may keep it: a leading preamble line
+    /// ("Sure, here is a summary of the page:") dropped, a refusal or an
+    /// apology rejected (measured 2026-10-22 on a link capture: "I can't
+    /// summarize the content of the Are.na Editorial page, as it is filled
+    /// with repetitive…" became the summary, then the gist). Nil means no
+    /// summary, and the page description stands in.
+    static func cleanedPageSummary(_ raw: String) -> String? {
+        var lines = raw.split(whereSeparator: \.isNewline)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            // A markdown heading is the page's title again, not its summary.
+            .filter { !$0.isEmpty && !$0.hasPrefix("#") }
+        if let first = lines.first, lines.count > 1, first.hasSuffix(":") || first.hasSuffix("："),
+           ["sure", "here is", "here's", "certainly", "okay", "好的", "以下是"].contains(where: { first.lowercased().hasPrefix($0) }) {
+            lines.removeFirst()
+        }
+        let text = lines.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return nil }
+        let lower = text.lowercased()
+        let refusals = ["i can't", "i cannot", "i can’t", "i'm sorry", "i’m sorry", "i am sorry", "i'm unable", "i am unable", "as an ai",
+                        "unable to summarize", "cannot summarize", "无法总结", "抱歉", "对不起", "作为一个人工智能"]
+        if refusals.contains(where: { lower.hasPrefix($0) || lower.contains(" " + $0) }) { return nil }
+        if lower.hasPrefix("sure") || lower.hasPrefix("here is") || lower.hasPrefix("here's") { return nil }
+        return text
+    }
+
     // MARK: What the person sent away
 
     static let dismissedKey = "memory.dismissed"

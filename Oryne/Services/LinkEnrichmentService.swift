@@ -201,7 +201,12 @@ final class LinkEnrichmentService {
         let currents = CurrentSnap.candidates(in: context, excluding: nodeID, forEntry: basis)
         let understanding = await ai.understand(basis, currents: currents)
         guard let fresh = Self.fetch(nodeID, in: context) else { return }
-        NodeComposer.applyUnderstanding(understanding, to: fresh)
+        // The page's context deepens the record; a thought with words of its
+        // own keeps the title those words gave it (measured 2026-10-22: the
+        // re-derive renamed a note after its link's page).
+        let hasOwnWords = !fresh.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !(fresh.transcription ?? "").isEmpty
+        NodeComposer.applyUnderstanding(understanding, to: fresh, preserveTitle: hasOwnWords)
         try? context.save()
         CurrentRegistry.reconcile(context: context)
     }
@@ -309,8 +314,8 @@ final class LinkEnrichmentService {
             }
             let prompt = title.map { "Title: \($0)\n\nContent:\n\(input)" } ?? "Content:\n\(input)"
             let response = try await session.respond(to: prompt)
-            let summary = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
-            return summary.isEmpty ? nil : summary
+            // A refusal or a chatty preamble is not a summary of the page.
+            return MemoryRules.cleanedPageSummary(response.content)
         } catch {
             return nil
         }

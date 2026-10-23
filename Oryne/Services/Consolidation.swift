@@ -169,7 +169,12 @@ enum Consolidation {
             var parts = [node.createdAt.formatted(.relative(presentation: .named))]
             if let category = node.category { parts.append(category.rawValue) }
             if !node.entities.isEmpty { parts.append("mentions " + node.entities.joined(separator: ", ")) }
-            return .init(reference: ref, text: "\(parts.joined(separator: " · ")) · “\(node.displayTitle)”: \(String(node.rawContent.prefix(110)))")
+            return .init(
+                reference: ref,
+                text: "\(parts.joined(separator: " · ")) · “\(node.displayTitle)”: \(String(node.rawContent.prefix(110)))",
+                category: node.category?.rawValue,
+                entities: node.entities
+            )
         }
         let kept = records.filter { !pruneIDs.contains($0.id) }
         let existingTexts = kept.map(\.text)
@@ -189,8 +194,9 @@ enum Consolidation {
             let grounded = MemoryRules.groundedEvidence(for: text, evidence: cited.map { texts[$0] ?? "" })
             let evidence = grounded.map { cited[$0] }
             guard evidence.count >= 2 else { continue }
-            context.insert(MemoryRecord(kind: proposal.kind, text: text, evidenceNodeIDs: evidence))
-            existing.append(text)
+            let worded = MemoryRules.softened(text, grounded: evidence.count)
+            context.insert(MemoryRecord(kind: proposal.kind, text: worded, evidenceNodeIDs: evidence))
+            existing.append(worded)
             added += 1
             if kept.count + added >= MemoryRules.maxRecords { break }
         }

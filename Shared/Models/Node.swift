@@ -73,6 +73,24 @@ final class Node {
     /// Optional + cascade-deleted with the node, mirroring `children`.
     @Relationship(deleteRule: .cascade) var images: [NodeImage]?
 
+    // MARK: Picture reading (docs/plans/memory-layer/SPEC.md, pictures)
+    //
+    // The on-device model takes no images on iOS 26, so what a picture
+    // holds reaches the understanding layer as words the device read off
+    // it: the text in it and what it shows. Derived and disposable, like
+    // the link fields; small text, so it syncs and a second device never
+    // reads the pictures again. Every field is defaulted for CloudKit.
+
+    /// The words in the attached pictures, as Vision read them, in the
+    /// pictures' own languages.
+    var pictureText: String? = nil
+    /// What the pictures show: a few lowercase English labels from scene
+    /// classification ("sunset", "beach").
+    var pictureLabels: [String] = []
+    /// `PictureReading.version` when the pictures were last read, else 0 so
+    /// a later open reads them (and a better reader rereads them).
+    var pictureReadingVersion: Int = 0
+
     /// Lightweight, AI-detected themes used for clustering and rediscovery.
     var themes: [String] = []
     var mood: String?
@@ -288,6 +306,27 @@ extension Node {
     /// legacy single image).
     var hasImages: Bool { !(images?.isEmpty ?? true) || imageData != nil }
 
+    /// What the device read off the attached pictures, as one passage the
+    /// understanding and retrieval layers take alongside the words
+    /// (`PictureReading.context`). Empty without pictures or before they
+    /// were read.
+    var pictureContext: String {
+        guard hasImages else { return "" }
+        return PictureReading.context(text: pictureText, labels: pictureLabels)
+    }
+
+    /// Whether the pictures still wait for the current reader.
+    var needsPictureReading: Bool {
+        hasImages && pictureReadingVersion < PictureReading.version
+    }
+
+    /// Drops the derived picture fields so a changed set is read afresh.
+    func clearPictureReading() {
+        pictureText = nil
+        pictureLabels = []
+        pictureReadingVersion = 0
+    }
+
     var isBranch: Bool { parent != nil }
 
     /// The current this thought belongs to: the user's placement
@@ -344,7 +383,7 @@ extension Node {
     /// enriched context joins in so link drifts cluster and surface by what
     /// they're actually about, not by their URL.
     var searchableText: String {
-        [title, text, transcription ?? "", linkContext, themes.joined(separator: " "), entities.joined(separator: " ")]
+        [title, text, transcription ?? "", linkContext, pictureContext, themes.joined(separator: " "), entities.joined(separator: " ")]
             .filter { !$0.isEmpty }
             .joined(separator: " ")
     }
@@ -352,9 +391,10 @@ extension Node {
     /// The thought's own content (interpreted essence + raw text, no theme
     /// labels) — used for meaning-level similarity where themes are weighed
     /// separately, so a shared theme isn't counted twice. A link contributes
-    /// its enriched context (what it's about), never its bare URL.
+    /// its enriched context (what it's about), never its bare URL; a picture
+    /// what the device read off it.
     var meaningText: String {
-        [title, text, transcription ?? "", linkContext]
+        [title, text, transcription ?? "", linkContext, pictureContext]
             .filter { !$0.isEmpty }
             .joined(separator: " ")
     }
@@ -367,12 +407,13 @@ extension Node {
     }
 
     /// The raw content used to interpret a concise title from. For a link, that
-    /// is what enrichment learned about it (title + summary/description); a bare
-    /// URL only as a last resort.
+    /// is what enrichment learned about it (title + summary/description); for
+    /// a picture, what the device read off it; a bare URL only as a last resort.
     var rawContent: String {
         if !text.isEmpty { return text }
         if let transcription, !transcription.isEmpty { return transcription }
         if !linkContext.isEmpty { return linkContext }
+        if !pictureContext.isEmpty { return pictureContext }
         return linkURLString ?? ""
     }
 

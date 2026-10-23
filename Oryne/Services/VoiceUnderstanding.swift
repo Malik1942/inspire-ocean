@@ -50,6 +50,12 @@ enum VoiceUnderstanding {
             // A confirmed transcript wins — the temp file has no further use.
             try? FileManager.default.removeItem(at: audioTempURL)
         }
+        // Pictures are read before the one understanding pass, so a thought
+        // with a picture is understood once, words and picture together.
+        if node.needsPictureReading {
+            await PictureEnrichmentService.shared.read(nodeID: nodeID, context: context)
+            guard !Task.isCancelled else { return nil }
+        }
         return await understand(nodeID: nodeID, context: context, ai: ai)
     }
 

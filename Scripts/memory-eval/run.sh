@@ -13,6 +13,10 @@ xcrun swiftc -O -parse-as-library -o "$bin" \
   "$here/eval.swift" \
   "$repo/Shared/Models/MemoryRecord.swift" \
   "$repo/Shared/Services/MemoryRules.swift" \
+  "$here/../eval/Fixture.swift" \
+  "$here/../../Shared/Services/PictureReading.swift" \
+  "$repo/Shared/Models/Enums.swift" \
+  "$repo/Shared/Services/ThoughtReading.swift" \
   "$repo/Shared/Services/ThemeDetector.swift" \
   "$repo/Shared/Services/AnswerMarkdown.swift" \
   "$repo/Oryne/Services/FoundationMemoryExtractor.swift"

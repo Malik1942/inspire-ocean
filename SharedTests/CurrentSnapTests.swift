@@ -51,9 +51,12 @@ final class CurrentSnapTests: XCTestCase {
     func test_candidates_groupByKey_largestCurrentFirst_thenByKey() {
         let members = [
             member("cooking", "Weeknight noodles"),
+            member("cooking", "Braised ribs"),
             member("light and color", "Sunset gradient study"),
             member("light and color", "Golden hour on the walk home"),
+            member("light and color", "Desk at 6pm"),
             member("interface design", "A button without a label"),
+            member("interface design", "Settings that hide the toggle"),
         ]
         let keys = CurrentSnap.candidates(from: members, forEntry: "Warm light").map(\.key)
         XCTAssertEqual(keys, ["light and color", "cooking", "interface design"])
@@ -77,14 +80,15 @@ final class CurrentSnapTests: XCTestCase {
     }
 
     func test_candidates_cappedAtMaxCandidates() {
-        let members = (0..<(CurrentSnap.maxCandidates + 5)).map { member("topic \($0)", "Title \($0)") }
+        // Two thoughts each, so every current is offered and only the cap cuts.
+        let members = (0..<(CurrentSnap.maxCandidates + 5)).flatMap { [member("topic \($0)", "Title \($0)"), member("topic \($0)", "Other \($0)")] }
         XCTAssertEqual(CurrentSnap.candidates(from: members, forEntry: "Anything").count, CurrentSnap.maxCandidates)
     }
 
     /// A current literally named "none" would collide with the no-snap choice.
     func test_candidates_excludeKeyThatCollidesWithNoneChoice() {
-        let members = [member("none", "Odd one"), member("cooking", "Weeknight noodles")]
-        XCTAssertEqual(CurrentSnap.candidates(from: members, forEntry: "Braised ribs").map(\.key), ["cooking"])
+        let members = [member("none", "Odd one"), member("none", "Odder one"), member("cooking", "Weeknight noodles"), member("cooking", "Braised ribs")]
+        XCTAssertEqual(CurrentSnap.candidates(from: members, forEntry: "Braised ribs again").map(\.key), ["cooking"])
     }
 
     // MARK: - candidates: one Ocean across languages
@@ -94,7 +98,9 @@ final class CurrentSnapTests: XCTestCase {
     func test_candidates_offerEveryCurrent_withLabels() {
         let members = [
             CurrentSnap.Member(key: "光与色彩", title: "傍晚的光", createdAt: base),
+            CurrentSnap.Member(key: "光与色彩", title: "窗边的光斑", createdAt: base),
             CurrentSnap.Member(key: "light-and-color", title: "Golden hour", createdAt: base, label: "Light and Color"),
+            CurrentSnap.Member(key: "light-and-color", title: "Desk at 6pm", createdAt: base, label: "Light and Color"),
         ]
         let english = CurrentSnap.candidates(from: members, forEntry: "The room feels slower when the light turns warm.")
         XCTAssertEqual(Set(english.map(\.key)), ["光与色彩", "light-and-color"])
@@ -161,5 +167,25 @@ final class CurrentSnapTests: XCTestCase {
         New entry:
         The room feels slower when the light turns warm.
         """)
+    }
+
+    // MARK: - candidates: one-thought currents
+
+    /// A current of one thought attracts only an entry that names it; two
+    /// thoughts are offered to every entry.
+    func test_candidates_oneThoughtCurrent_offeredOnlyOnASharedWord() {
+        let members = [
+            member("travel", "Night train to Lisbon"),
+            member("light-and-color", "Sunset gradient study"),
+            member("light-and-color", "Golden hour on the walk home"),
+        ]
+        XCTAssertEqual(
+            CurrentSnap.candidates(from: members, forEntry: "Ran 5k this morning, knees complained.").map(\.key),
+            ["light-and-color"]
+        )
+        XCTAssertEqual(
+            Set(CurrentSnap.candidates(from: members, forEntry: "Booking the Lisbon train for March.").map(\.key)),
+            ["light-and-color", "travel"]
+        )
     }
 }

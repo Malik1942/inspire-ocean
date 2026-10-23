@@ -82,11 +82,16 @@ struct SaveToOceanIntent: AppIntent {
         let context = Persistence.shared.mainContext
         let node = NodeComposer.make(kind: .image, text: trimmedNote, imageData: data)
         context.insert(node)
+        try? context.save()
 
-        if !trimmedNote.isEmpty {
-            let currents = CurrentSnap.candidates(in: context, excluding: node.id, forEntry: trimmedNote)
-            let understanding = await LocalOceanAIService().understand(trimmedNote, currents: currents)
-            NodeComposer.applyUnderstanding(understanding, to: node)
+        // The picture is read first, so the note and the picture are
+        // understood together (a screenshot's words reach the record).
+        await PictureEnrichmentService.shared.read(nodeID: node.id, context: context)
+        let basis = node.meaningText
+        if !basis.isEmpty {
+            let currents = CurrentSnap.candidates(in: context, excluding: node.id, forEntry: basis)
+            let understanding = await LocalOceanAIService().understand(basis, currents: currents)
+            NodeComposer.applyUnderstanding(understanding, to: node, preserveTitle: !trimmedNote.isEmpty)
         }
         try? context.save()
         CurrentRegistry.reconcile(context: context)

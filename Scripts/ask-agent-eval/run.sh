@@ -19,6 +19,8 @@ xcrun swiftc -O -parse-as-library -o "$bin" \
   "$here/eval.swift" \
   "$repo/Shared/Models/Enums.swift" \
   "$repo/Shared/Services/ThoughtReading.swift" \
+  "$here/../eval/Fixture.swift" \
+  "$here/../../Shared/Services/PictureReading.swift" \
   "$repo/Shared/Services/CurrentSnap.swift" \
   "$repo/Shared/Services/TitleDistiller.swift" \
   "$repo/Shared/Services/ThemeDetector.swift" \
