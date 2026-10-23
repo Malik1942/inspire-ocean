@@ -59,6 +59,15 @@ final class ThoughtRemovals {
     }
 }
 
+/// The swipe's circles, glyph only (the names stay for VoiceOver): a dark
+/// slate that keeps or restores, and a deep red that deletes. Darker and a
+/// touch more saturated than the system's, so they sit with the matte
+/// tiles; without a tint they would take the app's near-white accent.
+enum SwipeTint {
+    static let archive = Color(red: 0.21, green: 0.24, blue: 0.30)
+    static let delete = Color(red: 0.50, green: 0.11, blue: 0.10)
+}
+
 extension ThoughtRemoval {
     /// What the toast says, and what VoiceOver hears.
     var message: String {
@@ -71,19 +80,20 @@ extension ThoughtRemoval {
 
 extension View {
     /// A thought's row in a list: swipe left for Archive and Delete, swipe
-    /// all the way to delete, as in Notes. VoiceOver gets the same two as
-    /// actions on the row. The discs wear the system's own colors; without
-    /// a tint they would take the app's near-white accent.
+    /// all the way to delete, as in Notes: the system's own swipe and
+    /// motion. VoiceOver gets the same two as actions on the row.
     func thoughtSwipeActions(_ node: Node, removals: ThoughtRemovals) -> some View {
         swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive) { removals.delete(node) } label: {
                 Label("Delete", systemImage: "trash")
             }
-            .tint(.red)
+            .labelStyle(.iconOnly)
+            .tint(SwipeTint.delete)
             Button { removals.archive(node) } label: {
                 Label("Archive", systemImage: "archivebox")
             }
-            .tint(.gray)
+            .labelStyle(.iconOnly)
+            .tint(SwipeTint.archive)
         }
         // SwiftUI hands these to VoiceOver last first: the rotor reads
         // Archive, then Delete, the way the discs read.
