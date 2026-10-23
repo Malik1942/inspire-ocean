@@ -532,6 +532,7 @@ struct LibraryView: View {
                     OceanToolGlyph(systemName: "line.3.horizontal.decrease")
                 }
                 .accessibilityLabel("Filter")
+                .accessibilityIdentifier("library.filter")
             }
             .padding(.bottom, -4)
 
