@@ -14,3 +14,6 @@ Oryne.xcodeproj/
 # Swift Package Manager
 .swiftpm/
 .build/
+
+# Runtime profiling output
+*.profraw

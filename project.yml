@@ -30,6 +30,8 @@ targets:
     sources:
       - path: Shared
       - path: Oryne
+        excludes:
+          - "*.profraw"
     dependencies:
       - target: ShareExtension
         embed: true
