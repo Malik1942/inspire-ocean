@@ -26,14 +26,17 @@ struct FixtureThought {
     /// What the device read off the picture (`PictureReading.context`), for
     /// a thought whose picture is its substance; nil when the words are.
     let pictureContext: String?
+    /// Open or done, for a task or bug the user marked; nil is open.
+    let status: ThoughtStatus?
 
     init(_ key: String, _ title: String, _ body: String, gist: String?, _ category: ThoughtCategory,
          also: Set<ThoughtCategory> = [], daysAgo: Int, themes: [String], english: [String]? = nil, entities: [String] = [],
-         pictures: Bool = false, picture: String? = nil) {
+         pictures: Bool = false, picture: String? = nil, status: ThoughtStatus? = nil) {
         self.key = key; self.title = title; self.body = body; self.gist = gist; self.category = category
         self.alsoAccept = also; self.daysAgo = daysAgo; self.themes = themes
         self.themesEnglish = english ?? themes; self.entities = entities
         self.hasPictures = pictures || picture != nil; self.pictureContext = picture
+        self.status = status
     }
 
     /// The entry as the reader and the agent see it: the words, then what
@@ -61,7 +64,8 @@ enum EvalFixture {
         FixtureThought("oryne-bug-undo", "Undo toast hides the tab bar", "The Undo toast covers the tab bar on iPhone SE, so Library cannot be tapped.", gist: "iPhone SE 上撤销提示挡住了标签栏，点不到库。", .bug, daysAgo: 3, themes: ["interface design", "product"], entities: ["iPhone SE"]),
         FixtureThought("oryne-bug-ask", "Ask 不会翻译", "Oryne 的 Ask 还不够聪明，连翻译都做不到。", gist: "Oryne's Ask is not smart enough to translate.", .bug, also: [.note], daysAgo: 1, themes: ["产品", "智能"], english: ["product", "intelligence"], entities: ["Oryne"]),
         FixtureThought("oryne-idea-tide", "Tide 按海流轮换", "想把 Tide 的 resurfacing 改成按海流轮换。", gist: "Change Tide's resurfacing to rotate through the currents.", .idea, also: [.task], daysAgo: 5, themes: ["产品", "浮现"], english: ["product", "resurfacing"], entities: ["Tide"]),
-        FixtureThought("oryne-task-invoice", "寄发票", "周五之前把 Oryne 的发票寄给会计。", gist: "Send the Oryne invoice to the accountant before Friday.", .task, daysAgo: 4, themes: ["事务", "财务"], english: ["errands", "finance"], entities: ["Oryne"]),
+        // Marked done, so "which tasks are still open" has something to leave out.
+        FixtureThought("oryne-task-invoice", "寄发票", "周五之前把 Oryne 的发票寄给会计。", gist: "Send the Oryne invoice to the accountant before Friday.", .task, daysAgo: 4, themes: ["事务", "财务"], english: ["errands", "finance"], entities: ["Oryne"], status: .done),
         FixtureThought("oryne-button", "A button that doesn't need a label", "If the shape says what it does, the word is noise.", gist: "如果形状已经说明了用途，文字就是噪音。", .idea, also: [.note], daysAgo: 12, themes: ["interface design"]),
         // Ideas.
         FixtureThought("water", "One line a day", "An app where the whole screen is a single sentence, like a tide that brings one line a day.", gist: "一个整屏只显示一句话的应用，像潮水一样每天带来一行。", .idea, daysAgo: 12, themes: ["product ideas", "digital minimalism"]),

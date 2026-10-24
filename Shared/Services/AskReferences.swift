@@ -68,6 +68,26 @@ enum AskReferences {
         resolve(text, titles: [:])
     }
 
+    /// The prose without the sentences that stand only on references no
+    /// tool handed out: a claim cited to an invented [t99] is the model's,
+    /// not the person's, and removing the marker alone would leave the
+    /// claim reading as grounded. A sentence that also cites a known
+    /// reference stays; it has something real under it.
+    static func droppingSentences(citingOnly unknown: Set<String>, from text: String) -> String {
+        guard !unknown.isEmpty,
+              let sentences = try? NSRegularExpression(pattern: #"[^.!?。！？\n]*(?:[.!?。！？]+|\n+|$)"#)
+        else { return text }
+        let ns = text as NSString
+        var out = ""
+        for match in sentences.matches(in: text, range: NSRange(location: 0, length: ns.length)) where match.range.length > 0 {
+            let sentence = ns.substring(with: match.range)
+            let cited = references(in: sentence)
+            let invented = !cited.isEmpty && cited.allSatisfy(unknown.contains)
+            if !invented { out += sentence }
+        }
+        return out.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     private static func tidy(_ text: String) -> String {
         var s = text
         s = s.replacingOccurrences(of: #"\s+([,.;:!?，。；：！？])"#, with: "$1", options: .regularExpression)

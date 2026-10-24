@@ -7,7 +7,7 @@ let thoughts: [AskAgent.Thought] = EvalFixture.thoughts.map { t in
     AskAgent.Thought(
         id: UUID(), title: t.title, body: t.entry, gist: t.gist, summary: nil,
         createdAt: t.createdAt, category: t.category, kind: .text,
-        themes: t.themes, themeKeys: t.themeKeys, entities: t.entities, hasPictures: t.hasPictures
+        themes: t.themes, themeKeys: t.themeKeys, entities: t.entities, hasPictures: t.hasPictures, status: t.status
     )
 }
 let keyByID = Dictionary(uniqueKeysWithValues: zip(thoughts.map(\.id), EvalFixture.thoughts.map(\.key)))
@@ -16,7 +16,13 @@ let cases: [(question: String, must: Set<String>, mustNot: Set<String>)] = [
     ("What bugs have I noted?", ["oryne-bug-undo", "oryne-bug-ask"], ["task-dentist", "water"]),
     ("我记过哪些 bug？", ["oryne-bug-undo", "oryne-bug-ask"], ["task-dentist"]),
     ("那个关于水的想法", ["water"], ["oryne-bug-undo"]),
-    ("What tasks are still open?", ["task-dentist", "oryne-task-invoice"], ["oryne-bug-undo"]),
+    // Status: the invoice task is marked done, so it must stay out.
+    ("What tasks are still open?", ["task-dentist"], ["oryne-task-invoice", "oryne-bug-undo"]),
+    ("哪些任务已经完成了？", ["oryne-task-invoice"], ["task-dentist"]),
+    // Compound: a kind and a topic together, in each language.
+    ("What bugs did I note about Ask?", ["oryne-bug-ask"], ["oryne-bug-undo", "task-dentist"]),
+    ("关于撤销提示的 bug", ["oryne-bug-undo"], ["oryne-bug-ask"]),
+    ("What bugs did I note about payments?", [], ["oryne-bug-undo", "oryne-bug-ask"]),
     ("What did I say about Mara?", ["task-dentist", "memory-train"], ["oryne-bug-ask"]),
     ("Translate my thought about the bakery into Chinese.", ["note-bakery"], []),
     ("把我关于工具的那句引用翻译成中文", ["quote-tools"], []),
@@ -48,8 +54,9 @@ struct Eval {
             answered += 1
             if answer.forcedRetry { forcedRetries += 1 }
             let cited = Set(answer.cited.compactMap { keyByID[$0] })
-            let surfaced = Set(answer.surfaced.compactMap { keyByID[$0] })
-            let stood = cited.isEmpty ? surfaced : cited
+            // What the app shows as sources: cited, else read and named by
+            // title; never the raw surfaced set.
+            let stood = cited.isEmpty ? Set((answer.read + answer.named).compactMap { keyByID[$0] }) : cited
             let mustOK = item.must.isSubset(of: stood) && item.mustNot.isDisjoint(with: cited)
             let request = AskAgent.translationRequest(in: item.question)
             let answerChinese = ThoughtReading.mostlyChineseByWords(answer.text)
@@ -64,7 +71,7 @@ struct Eval {
             if langOK { languageOK += 1 }
             if echo { translateEcho += 1 }
             print("\(mustOK ? "✓" : "✗") sources \(langOK ? "✓" : "✗") language\(echo ? " ✗ echo" : "")\(answer.forcedRetry ? "  (forced retry)" : "")   \(item.question)")
-            print("    tools: \(answer.calls.joined(separator: " ; "))  cited: \(answer.cited.compactMap { keyByID[$0] })  read: \(answer.read.compactMap { keyByID[$0] })  surfaced: \(answer.surfaced.count)")
+            print("    tools: \(answer.calls.joined(separator: " ; "))  cited: \(answer.cited.compactMap { keyByID[$0] })  read: \(answer.read.compactMap { keyByID[$0] })  named: \(answer.named.compactMap { keyByID[$0] })  surfaced: \(answer.surfaced.count)\(answer.inventedReferences.isEmpty ? "" : "  invented: \(answer.inventedReferences)")")
             print("    answer: \(answer.text.replacingOccurrences(of: "\n", with: " / "))")
         }
         let mean = latencies.reduce(0, +) / Double(max(latencies.count, 1))

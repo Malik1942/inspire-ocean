@@ -268,19 +268,22 @@ final class LocalOceanAIService: OceanAIService {
                aboutPerson: await MainActor.run { Consolidation.preamble(context: Persistence.shared.mainContext) }
            ) {
             let byID = Dictionary(uniqueKeysWithValues: active.map { ($0.id, $0) })
-            // What the answer cited; failing that, what it read and what the
-            // tools surfaced, so the sources are never empty while the tools
-            // found something.
+            // What the answer cited; failing that, what it read in full and
+            // what it names by title. Never the whole surfaced set: what a
+            // tool returned is not what the answer drew on, and "Drawn from"
+            // must not claim more than the words warrant.
             let sourceIDs = answer.cited.isEmpty
-                ? Array((answer.read + answer.surfaced.filter { !answer.read.contains($0) }).prefix(12))
+                ? Array((answer.read + answer.named.filter { !answer.read.contains($0) }).prefix(12))
                 : answer.cited
             let sources = sourceIDs.compactMap { byID[$0] }
             // Open sea only when the Ocean had nothing: a list of two bugs
             // is a complete answer, and a note "beyond" it reads as a lecture
             // (observed 2026-10-22: "what bugs have I noted" drew three
-            // paragraphs on malware).
+            // paragraphs on malware). An answer that surfaced thoughts but
+            // cited none is still the Ocean's, just without a sources list.
+            let oceanHadNothing = answer.surfaced.isEmpty
             var outward: String?
-            if sources.isEmpty {
+            if oceanHadNothing {
                 outward = await foundationModelOutward(query: query, sources: [])
             }
             return OceanResponse(
@@ -289,7 +292,7 @@ final class LocalOceanAIService: OceanAIService {
                 patternSummary: nil,
                 suggestedBranches: [],
                 outwardNote: outward,
-                provenance: sources.isEmpty ? .noSources : (degraded ? .degraded : .onDevice)
+                provenance: oceanHadNothing ? .noSources : (degraded ? .degraded : .onDevice)
             )
         }
 
@@ -830,7 +833,8 @@ extension AskAgent.Thought {
             themes: node.themes,
             themeKeys: node.themeKeys,
             entities: node.entities,
-            hasPictures: node.hasImages
+            hasPictures: node.hasImages,
+            status: node.status
         )
     }
 }

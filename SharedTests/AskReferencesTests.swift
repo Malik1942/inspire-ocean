@@ -38,4 +38,18 @@ final class AskReferencesTests: XCTestCase {
         )
         XCTAssertEqual(AskReferences.resolve("See [t9] for more", titles: titles), "See for more")
     }
+
+    func test_droppingSentences_removesClaimsThatStandOnlyOnInventedReferences() {
+        let text = "You noted an undo bug [t1]. You also planned a trip to Lisbon [t99]. Both matter [t1, t99]."
+        XCTAssertEqual(
+            AskReferences.droppingSentences(citingOnly: ["t99"], from: text),
+            "You noted an undo bug [t1]. Both matter [t1, t99]."
+        )
+        XCTAssertEqual(
+            AskReferences.droppingSentences(citingOnly: ["t99"], from: "你去过里斯本 [t99]。你记过一个 bug [t1]。"),
+            "你记过一个 bug [t1]。"
+        )
+        XCTAssertEqual(AskReferences.droppingSentences(citingOnly: [], from: text), text)
+        XCTAssertEqual(AskReferences.droppingSentences(citingOnly: ["t99"], from: "Only this [t99]."), "")
+    }
 }

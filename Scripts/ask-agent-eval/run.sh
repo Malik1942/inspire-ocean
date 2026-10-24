@@ -28,6 +28,8 @@ xcrun swiftc -O -parse-as-library -o "$bin" \
   "$repo/Shared/Services/EmbeddingService.swift" \
   "$repo/Shared/Services/AnswerMarkdown.swift" \
   "$repo/Shared/Services/AskReferences.swift" \
+  "$repo/Shared/Models/MemoryRecord.swift" \
+  "$repo/Shared/Services/MemoryRules.swift" \
   "$repo/Oryne/Services/FoundationThoughtReader.swift" \
   "$repo/Oryne/Services/AskAgent.swift"
 "$bin"
