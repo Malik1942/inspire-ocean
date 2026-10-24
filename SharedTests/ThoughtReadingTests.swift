@@ -74,6 +74,45 @@ final class ThoughtReadingTests: XCTestCase {
         XCTAssertEqual(gist?.count, ThoughtReading.maxGistLength)
     }
 
+    // MARK: Themes in the entry's script
+
+    func test_themes_keptWhenInTheEntrysScript() {
+        XCTAssertEqual(
+            ThoughtReading.themesInEntryScript(["training", "algorithms"], english: ["training", "algorithms"], entry: "I want a tool that understands my training type"),
+            ["training", "algorithms"]
+        )
+        XCTAssertEqual(
+            ThoughtReading.themesInEntryScript(["训练", "算法"], english: ["training", "algorithms"], entry: "我想要一个能自动识别训练类型的工具"),
+            ["训练", "算法"]
+        )
+    }
+
+    func test_themes_englishEntryTakesTheEnglishRenderingWhenThemesCameBackChinese() {
+        XCTAssertEqual(
+            ThoughtReading.themesInEntryScript(["训练", "算法", "适应"], english: ["training", "algorithms", "adaptation"], entry: "I want a tool that understands my training type"),
+            ["training", "algorithms", "adaptation"]
+        )
+    }
+
+    func test_themes_keepTheOnesInScriptWhenMixed() {
+        XCTAssertEqual(
+            ThoughtReading.themesInEntryScript(["training", "算法"], english: ["training", "algorithms"], entry: "我想要一个能自动识别训练类型的工具"),
+            ["算法"]
+        )
+    }
+
+    func test_themes_standAsWrittenWhenNothingIsInScript() {
+        // No rendering to turn to: the model's themes beat none at all.
+        XCTAssertEqual(
+            ThoughtReading.themesInEntryScript(["训练", "算法"], english: [], entry: "I want a tool that understands my training type"),
+            ["训练", "算法"]
+        )
+        XCTAssertEqual(
+            ThoughtReading.themesInEntryScript(["childhood", "memory"], english: ["childhood", "memory"], entry: "小时候外婆家的厨房总有八角的味道。"),
+            ["childhood", "memory"]
+        )
+    }
+
     // MARK: Entities
 
     func test_entities_trimDedupeAndCap() {

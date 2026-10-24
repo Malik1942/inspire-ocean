@@ -151,6 +151,27 @@ enum ThoughtReading {
         return mostlyChineseByWords(s) == wantsChinese ? s : nil
     }
 
+    /// The model's themes, kept only in the entry's script, by the rule
+    /// `TitleDistiller.speaksLike` applies to the title. A long English
+    /// whisper came back with Chinese themes (observed 2026-10-23: a
+    /// five-minute English note themed 训练, 算法, 适应, and its current took
+    /// the Chinese name); the English rendering the model wrote alongside
+    /// is the same themes in the right script, so an English entry takes
+    /// those. A Chinese entry has no Chinese rendering to turn to, and the
+    /// concept fallback cannot theme Chinese text (`SemanticThemes.concepts`),
+    /// so when none of its themes is Chinese they stand as written: a
+    /// meaningful theme in the other script beats none.
+    static func themesInEntryScript(_ themes: [String], english: [String], entry: String) -> [String] {
+        let wantsChinese = mostlyChineseByWords(entry)
+        let own = themes.filter { mostlyChineseByWords($0) == wantsChinese }
+        if own.count == themes.count { return themes }
+        if !wantsChinese {
+            let rendered = english.filter { !mostlyChineseByWords($0) }
+            if !rendered.isEmpty { return rendered }
+        }
+        return own.isEmpty ? themes : own
+    }
+
     /// Whether a line is Chinese by words rather than letters: Han carries
     /// a word per character and Latin about five letters a word, so a
     /// Chinese sentence quoting "iPhone SE" and "Library" still counts as
@@ -195,7 +216,9 @@ enum ThoughtReading {
     /// must use, so the model never has to infer them. Title and themes
     /// follow the entry's dominant script (the same rule
     /// `TitleDistiller.speaksLike` checks afterwards); the gist is the other
-    /// language.
+    /// language. The rule is repeated after the entry: on a long whisper
+    /// the opening line is a thousand tokens from the output, and the only
+    /// language cue still near it was the gist's (observed 2026-10-23).
     static func prompt(entry: String) -> String {
         let language = language(of: entry)
         let entryName: String
@@ -212,6 +235,8 @@ enum ThoughtReading {
 
         Entry:
         \(entry)
+
+        Remember: title and themes in \(ownName); only gistInOtherLanguage in \(gistName).
         """
     }
 

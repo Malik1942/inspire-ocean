@@ -117,7 +117,11 @@ final class LocalOceanAIService: OceanAIService {
             let essence = (!title.isEmpty && TitleDistiller.speaksLike(title, entry: text))
                 ? title
                 : TitleDistiller.essence(from: text)
-            let modelThemes = SemanticThemes.tidyThemeList(reading.themes.joined(separator: ", "))
+            // Themes are held to the entry's script the way the title is;
+            // an English entry whose themes came back Chinese takes the
+            // model's own English rendering of them.
+            let inScript = ThoughtReading.themesInEntryScript(reading.themes, english: reading.themesInEnglish, entry: text)
+            let modelThemes = SemanticThemes.tidyThemeList(inScript.joined(separator: ", "))
             let themes = modelThemes.isEmpty ? SemanticThemes.themes(for: text, essence: essence) : modelThemes
             return ThoughtUnderstanding(
                 essence: essence,

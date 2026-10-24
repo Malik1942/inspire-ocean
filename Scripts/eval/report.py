@@ -9,7 +9,7 @@ from pathlib import Path
 # metric: (comparison, bound). "min" means value >= bound on every run;
 # "max" means value <= bound on every run. Missing metrics fail.
 THRESHOLDS = {
-    "understanding": {"category": ("min", 24), "gist": ("min", 23), "title_language": ("min", 28), "no_answer": ("max", 0)},
+    "understanding": {"category": ("min", 24), "gist": ("min", 23), "title_language": ("min", 28), "theme_language": ("min", 27), "no_answer": ("max", 0)},
     "snap":          {"missed": ("max", 0), "false_merges": ("max", 0), "no_answer": ("max", 0)},
     "ask":           {"answered": ("min", 11), "sources": ("min", 10), "language": ("min", 10), "translate_echo": ("max", 0), "no_tool": ("max", 1)},
     "memory":        {"kept": ("min", 1), "overstated": ("max", 0), "ungrounded_kept": ("max", 0),

@@ -20,8 +20,9 @@ takes a few minutes. The logs stay in the temp folder the report names.
 
 - **understanding** (`Scripts/understanding-eval`): the reader's category
   against the fixture's (and the alternatives an honest reader could pick),
-  the gist landing in the other language, the title staying in the entry's
-  language by words, no refusals.
+  the gist landing in the other language, the title and the themes staying
+  in the entry's language by words, no refusals. Reads the fixture's two
+  long whispers (`EvalFixture.longEntries`) as well; the other evals do not.
 - **snap** (`Scripts/current-snap-eval`): related entries join a right
   current (`missed`), near misses and unrelated entries join none
   (`false_merges`); a join the fixture allows but does not require is `may`.
@@ -45,6 +46,7 @@ takes a few minutes. The logs stay in the temp folder the report names.
 | missed patterns | proposed two single-entry observations and missed a person named in three entries | counted hints in the prompt: names in more than one entry, entries by kind |
 | summaries | a preamble ending in a colon, a thought quoted verbatim, first person | `MemoryRules.summaryProblem` and one retry naming the problem; a second miss is no summary |
 | pictures | a picture-only thought had no record at all (the model takes no images); asked for pictures, the agent searched by meaning, then listed "the last 7 days" for a question that named no time | pictures are read into words first (`PictureReading`, Vision OCR and scene labels) and the fixture carries two picture-only thoughts; a named form leads the search; a `withinDays` the model invents is dropped unless the question names a time (`AskAgent.namesTime`) |
+| theme language (2026-10-23) | a five-minute English whisper came back themed 训练, 算法, 适应, and its one-thought current took the Chinese name; the language rule sat a thousand tokens before the output and only the title was checked afterwards | the prompt repeats the rule after the entry; `ThoughtReading.themesInEntryScript` holds themes to the entry's script as `speaksLike` holds the title, taking the model's English rendering for an English entry; `theme_language` measures the model's own output over the fixture plus two long whispers |
 
 ## Baseline (2026-10-22, macOS 26.6, Xcode 27.1, three runs)
 
@@ -53,6 +55,7 @@ takes a few minutes. The logs stay in the temp folder the report names.
 | understanding | category | 27 of 30 | ≥ 24 |
 | understanding | gist in the other language | 27 of 30 | ≥ 23 |
 | understanding | title in its language | 29 of 30 | ≥ 28 |
+| understanding | themes in its language (2026-10-23, 32 entries) | 29 of 32 | ≥ 27 |
 | snap | missed joins | 0 of 12 | 0 |
 | snap | false merges | 0 of 7 | 0 |
 | ask | answered | 12 of 12 | ≥ 11 |
@@ -65,7 +68,12 @@ takes a few minutes. The logs stay in the temp folder the report names.
 
 The understanding and Ask rows are from the picture pass later that day
 (two picture-only thoughts added to the fixture, two Ask cases for them;
-understanding one run, Ask two). Current summaries go missing one run in
+understanding one run, Ask two). The theme-language row is from 2026-10-23,
+three runs over the fixture plus the two long whispers: the same three
+short entries miss each run (two Chinese entries themed in English, which
+have no Chinese rendering to turn to and stand as written; one English
+quote themed in Chinese, which the guard corrects), and both long entries
+land in their own language. Current summaries go missing one run in
 three or so (the model declines twice for "Light and Color" or 家, both
 currents without pictures); the threshold allows one a run.
 

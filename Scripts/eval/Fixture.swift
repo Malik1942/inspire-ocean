@@ -6,7 +6,8 @@ import Foundation
 /// first theme. The understanding eval reads the bodies and checks the
 /// categories; the snap eval offers the currents; the Ask eval answers over
 /// the thoughts; the memory eval reads the recent ones. Change it here and
-/// every eval moves together.
+/// every eval moves together. `longEntries` sit outside the Ocean and are
+/// read by the understanding eval alone.
 struct FixtureThought {
     let key: String
     let title: String
@@ -89,6 +90,38 @@ enum EvalFixture {
                        picture: PictureReading.context(text: "Blue Bottle Coffee  Cappuccino x2  9.50  Thank you", labels: ["document", "text"])),
         FixtureThought("pic-beach", "Beach at dusk", "", gist: "黄昏时的海滩，有海和天空。", .note, also: [.memory], daysAgo: 7, themes: ["sea", "travel"],
                        picture: PictureReading.context(text: nil, labels: ["beach", "sea", "sunset", "sky"])),
+    ]
+
+    /// Long whispers, read by the understanding eval only: the Ocean above
+    /// stays as the snap, Ask and memory evals measured it. A long entry is
+    /// where the reader drifts into the other language (observed
+    /// 2026-10-23: a five-minute English whisper themed 训练, 算法, 适应).
+    static let longEntries: [FixtureThought] = [
+        FixtureThought("long-training", "Sports or training", """
+            Sports or training. Session calculator. Why is about algorithm of sensing calories during a basketball session? \
+            Mm. Differentiating by solo training, one on one, half court, full court, and then the weights, like different \
+            weights and different machines. So I want to create a tool that automatically understands what kind of training \
+            I am doing without me having to input the details every single time, because every time I open one of these apps \
+            it asks me what I did and how long and how heavy and I just stop using it after a week. I want it to track \
+            everything I do over time and show me my progress through numbers or curves, like a simple graph that tells me \
+            whether I am actually getting stronger or just tired. And I want it to help me build strength safely, so if I am \
+            adding weight too fast it should quietly say something, not a notification, just something I notice when I look. \
+            Maybe the interface adapts naturally based on what I do, using the camera or the machine itself, so it learns my \
+            habits and the kind of sessions I have on different days. Monday is usually weights, Thursday is usually a pickup \
+            game, Saturday is a long solo shooting session. It should figure that out on its own. The whole point is that it \
+            should not make me feel overwhelmed. I do not want a dashboard. I want something that feels like a notebook that \
+            already knows what I wrote.
+            """, gist: "想做一个能自动识别训练类型、长期追踪进度并帮助安全增肌的工具。", .idea, also: [.note], daysAgo: 0,
+                       themes: ["training", "algorithms", "adaptive interface"]),
+        FixtureThought("long-kitchen-zh", "厨房的重新设计", """
+            今天又在想厨房的事。我们家的厨房太小了，每次做饭两个人就转不开身，锅碗瓢盆没有地方放，切菜的时候总是要先把东西挪开。\
+            我想把靠窗那面墙打通，把水槽移到窗下，这样洗菜的时候可以看到外面的树。灶台放在中间做成一个小岛，两边都可以站人。\
+            冰箱太高了，上面那一层我根本够不着，可以换一个矮一点的，上面放一排小罐子装香料。还有灯，现在只有顶上一盏白灯，\
+            晚上做饭的时候整个厨房都是惨白的，想换成暖一点的射灯，照在台面上就好。地板也想换，现在的瓷砖太滑，有一次端着汤差点摔倒。\
+            预算大概是三万左右，不想超过这个数。先去问问楼下那家做橱柜的，看看能不能帮忙出一个方案。如果能在春节之前弄好就最好了，\
+            这样过年的时候一家人可以一起在厨房里忙。
+            """, gist: "Redesigning a small kitchen: a sink under the window, an island stove, warmer light, a budget of about thirty thousand.", .idea, also: [.note, .task], daysAgo: 0,
+                       themes: ["厨房改造", "家居设计"], english: ["kitchen renovation", "home design"]),
     ]
 
     static func thought(_ key: String) -> FixtureThought {
