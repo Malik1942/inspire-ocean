@@ -24,6 +24,10 @@ final class Current {
     /// it described, so it is refreshed when the membership moves.
     var summary: String? = nil
     var summaryMemberCount: Int = 0
+    /// What the summary was written from (`summaryFingerprint(of:)`), so an
+    /// edited thought or a swapped member refreshes it too, not only a
+    /// changed count. Empty on rows from before it existed.
+    var summaryFingerprint: String = ""
     var createdAt: Date = Date.now
     var updatedAt: Date = Date.now
     /// Keys of currents merged into this one, oldest merge first.
@@ -43,6 +47,14 @@ final class Current {
     /// language, else the other language's, else the key made readable.
     func name(preferringChinese: Bool) -> String {
         CurrentKey.name(pinnedName: pinnedName, labelEN: labelEN, labelZH: labelZH, key: key, preferringChinese: preferringChinese)
+    }
+
+    /// A digest of exactly what a summary reads: which thoughts, in which
+    /// order, with which words. Order matters because the summary reads the
+    /// newest first and only so many.
+    static func summaryFingerprint(of lines: [(id: UUID, text: String)]) -> String {
+        let joined = lines.map { "\($0.id.uuidString)|\($0.text)" }.joined(separator: "\n")
+        return String(NodeComposer.stableHash(joined), radix: 36)
     }
 }
 

@@ -129,6 +129,23 @@ enum NodeComposer {
         node.updatedAt = .now
     }
 
+    /// The words changed under the understanding record, so the record is
+    /// no longer a reading of this thought: the gist and the names it found
+    /// go (a corrected thought must not stay findable through what it used
+    /// to say), a whisper's summary goes with its transcript, and the
+    /// version drops so the next enrichment pass (Library open, the
+    /// charging-time pass) reads it again with the title, themes and place
+    /// kept, as every enrichment does. Fields the user owns are not touched;
+    /// the category stays, since it is read as the kind in lists and a bug
+    /// corrected is still a bug until a model says otherwise.
+    static func wordsChanged(on node: Node) {
+        node.gistOther = nil
+        node.entities = []
+        node.summary = nil
+        node.understandingVersion = 0
+        node.updatedAt = .now
+    }
+
     /// Stable hue in 0...1 derived from a string.
     static func hue(for key: String) -> Double {
         Double(stableHash(key) % 1000) / 1000.0

@@ -108,8 +108,10 @@ enum Consolidation {
         return count
     }
 
-    /// One sentence per current whose membership changed since its last
-    /// summary, in the language most of its thoughts are in.
+    /// One sentence per current whose summary no longer reads what its
+    /// thoughts say: a member joined or left, or one was edited (the words
+    /// the summary read are part of its fingerprint, so the count alone is
+    /// not the test). In the language most of its thoughts are in.
     @available(iOS 26, *)
     private static func refreshCurrentSummaries(context: ModelContext) async -> Int {
         let currents = (try? context.fetch(FetchDescriptor<Current>())) ?? []
@@ -118,21 +120,33 @@ enum Consolidation {
         for node in nodes { if let key = node.currentKey { byKey[key, default: []].append(node) } }
 
         var count = 0
+        var stamped = false
         for current in currents {
             if count >= currentSummariesPerRun || Task.isCancelled { break }
             let members = (byKey[current.key] ?? []).sorted { $0.createdAt > $1.createdAt }
-            guard members.count >= 2, members.count != current.summaryMemberCount else { continue }
+            guard members.count >= 2 else { continue }
+            let read = members.prefix(10).map { ($0.displayTitle, String($0.rawContent.prefix(120))) }
+            let fingerprint = Current.summaryFingerprint(of: zip(members.prefix(10), read).map { ($0.id, "\($1.0): \($1.1)") })
+            // A row from before fingerprints, still current by count, learns
+            // its fingerprint without a rewrite.
+            if current.summaryFingerprint.isEmpty, current.summary != nil, members.count == current.summaryMemberCount {
+                current.summaryFingerprint = fingerprint
+                stamped = true
+                continue
+            }
+            guard fingerprint != current.summaryFingerprint else { continue }
             let chinese = members.filter { ThoughtReading.dominantScriptIsChinese($0.rawContent) }.count * 2 > members.count
-            let lines = members.prefix(10).map { "- “\($0.displayTitle)”: \(String($0.rawContent.prefix(120)))" }
+            let lines = read.map { "- “\($0.0)”: \($0.1)" }
             let name = current.name(preferringChinese: chinese)
             if let text = await FoundationMemoryExtractor.summarizeCurrent(name: name, lines: lines, inChinese: chinese) {
                 current.summary = text
                 current.summaryMemberCount = members.count
+                current.summaryFingerprint = fingerprint
                 current.updatedAt = .now
                 count += 1
             }
         }
-        if count > 0 { try? context.save() }
+        if count > 0 || stamped { try? context.save() }
         return count
     }
 
@@ -155,6 +169,11 @@ enum Consolidation {
             context.delete(record)
             removed += 1
         }
+        // Tombstones are not pruned by evidence (the refusal outlives the
+        // thoughts), only capped.
+        let dropTombstones = Set(MemoryRules.tombstonesToDrop(tombstones.compactMap { stone in stone.dismissedAt.map { (stone.id, $0) } }))
+        for stone in tombstones where dropTombstones.contains(stone.id) { context.delete(stone) }
+        let dismissedTexts = tombstones.filter { !dropTombstones.contains($0.id) }.map(\.text)
 
         let since = Date.now.addingTimeInterval(-Double(recentDays) * 86_400)
         let recent = live.filter { $0.createdAt >= since }.sorted { $0.createdAt > $1.createdAt }.prefix(recentThoughts)
@@ -162,11 +181,6 @@ enum Consolidation {
             if removed > 0 { try? context.save() }
             return (0, removed)
         }
-        // Tombstones are not pruned by evidence (the refusal outlives the
-        // thoughts), only capped.
-        let dropTombstones = Set(MemoryRules.tombstonesToDrop(tombstones.compactMap { stone in stone.dismissedAt.map { (stone.id, $0) } }))
-        for stone in tombstones where dropTombstones.contains(stone.id) { context.delete(stone) }
-        let dismissedTexts = tombstones.filter { !dropTombstones.contains($0.id) }.map(\.text)
 
         var refs: [String: UUID] = [:]
         var texts: [UUID: String] = [:]

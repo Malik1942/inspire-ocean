@@ -457,6 +457,11 @@ struct NodeEditSheet: View {
         if noteChanged, hasNote {
             node.text = noteDraft.trimmed
         }
+        // The words the record was read from changed, so the reading is
+        // stale: it is cleared here and re-read by the next enrichment pass.
+        if bodyChanged || (noteChanged && hasNote) {
+            NodeComposer.wordsChanged(on: node)
+        }
         if themesChanged {
             node.themes = themesDraft
             node.themesEditedByUser = true

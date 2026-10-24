@@ -6,6 +6,15 @@ import Foundation
 /// merge, and how a key reads.
 final class CurrentRegistryTests: XCTestCase {
 
+    func test_summaryFingerprint_changesWhenAMemberIsEditedOrSwapped_notWhenNothingDid() {
+        let a = UUID(), b = UUID(), c = UUID()
+        let before = Current.summaryFingerprint(of: [(a, "Dusk light: the lamp at six"), (b, "Color: linen and clay")])
+        XCTAssertEqual(before, Current.summaryFingerprint(of: [(a, "Dusk light: the lamp at six"), (b, "Color: linen and clay")]))
+        XCTAssertNotEqual(before, Current.summaryFingerprint(of: [(a, "Dusk light: the lamp at seven"), (b, "Color: linen and clay")]))
+        XCTAssertNotEqual(before, Current.summaryFingerprint(of: [(a, "Dusk light: the lamp at six"), (c, "Color: linen and clay")]))
+        XCTAssertNotEqual(before, Current.summaryFingerprint(of: [(b, "Color: linen and clay"), (a, "Dusk light: the lamp at six")]))
+    }
+
     func test_labels_comeFromMembersWhoseThemeNamesTheCurrent() {
         let labels = CurrentRegistry.labels(for: "light-and-color", from: [
             (theme: "interior", themeKey: "interior", language: .en),          // joined by pick: names nothing
