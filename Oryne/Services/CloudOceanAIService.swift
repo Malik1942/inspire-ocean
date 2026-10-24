@@ -333,7 +333,10 @@ final class CloudOceanAIService: OceanAIService {
             // Ocean cohere.
             var understanding = await fallback.understand(cleaned, currents: currents)
             understanding.essence = essence
-            let joinedCurrent = understanding.themes.first.map { lead in currents.contains { $0.key == lead } } ?? false
+            // Joined means the local pass picked an existing current's key;
+            // the first theme is a label ("light and color"), never a key
+            // ("light-and-color"), so comparing it to keys missed every join.
+            let joinedCurrent = understanding.currentKey.map { key in currents.contains { $0.key == key } } ?? false
             if !themes.isEmpty, !joinedCurrent {
                 understanding.themes = themes
                 understanding.themeKeys = ThoughtReading.keys(fromEnglish: [], fallbackLabels: themes)
