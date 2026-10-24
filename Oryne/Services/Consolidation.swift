@@ -137,10 +137,13 @@ enum Consolidation {
     }
 
     /// Add what the recent thoughts show and is not yet kept; remove what
-    /// lost every thought it rested on; never touch what the user edited.
+    /// lost every thought it rested on; never touch what the user edited,
+    /// never write again what they sent away.
     @available(iOS 26, *)
     private static func maintainMemory(context: ModelContext) async -> (added: Int, removed: Int) {
-        let records = (try? context.fetch(FetchDescriptor<MemoryRecord>())) ?? []
+        let all = (try? context.fetch(FetchDescriptor<MemoryRecord>())) ?? []
+        let tombstones = all.filter(\.isDismissed)
+        let records = all.filter { !$0.isDismissed }
         let live = (try? context.fetch(FetchDescriptor<Node>(predicate: #Predicate { !$0.isArchived && !$0.isExample }))) ?? []
         let liveIDs = Set(live.map(\.id))
 
@@ -159,6 +162,11 @@ enum Consolidation {
             if removed > 0 { try? context.save() }
             return (0, removed)
         }
+        // Tombstones are not pruned by evidence (the refusal outlives the
+        // thoughts), only capped.
+        let dropTombstones = Set(MemoryRules.tombstonesToDrop(tombstones.compactMap { stone in stone.dismissedAt.map { (stone.id, $0) } }))
+        for stone in tombstones where dropTombstones.contains(stone.id) { context.delete(stone) }
+        let dismissedTexts = tombstones.filter { !dropTombstones.contains($0.id) }.map(\.text)
 
         var refs: [String: UUID] = [:]
         var texts: [UUID: String] = [:]
@@ -188,9 +196,13 @@ enum Consolidation {
         var existing = existingTexts
         for proposal in proposals {
             let fresh = MemoryRules.fresh([proposal.text], against: existing)
-            guard let text = fresh.first, !MemoryRules.isDismissed(text) else { continue }
-            // Two thoughts at least, and each must actually touch the observation.
-            let cited = proposal.evidence.compactMap { refs[$0.lowercased().trimmingCharacters(in: .whitespaces)] }
+            guard let text = fresh.first, !MemoryRules.isDismissed(text, among: dismissedTexts) else { continue }
+            // Two distinct thoughts at least (one thought cited twice is
+            // still one), and each must actually touch the observation.
+            var seen = Set<UUID>()
+            let cited = proposal.evidence
+                .compactMap { refs[$0.lowercased().trimmingCharacters(in: .whitespaces)] }
+                .filter { seen.insert($0).inserted }
             let grounded = MemoryRules.groundedEvidence(for: text, evidence: cited.map { texts[$0] ?? "" })
             let evidence = grounded.map { cited[$0] }
             guard evidence.count >= 2 else { continue }
@@ -207,8 +219,12 @@ enum Consolidation {
     // MARK: What Ask reads
 
     /// The newest records as a short preamble, read on the main actor.
+    /// Dismissed records are tombstones, not knowledge.
     static func preamble(context: ModelContext) -> String? {
-        var descriptor = FetchDescriptor<MemoryRecord>(sortBy: [SortDescriptor(\.updatedAt, order: .reverse)])
+        var descriptor = FetchDescriptor<MemoryRecord>(
+            predicate: #Predicate { $0.dismissedAt == nil },
+            sortBy: [SortDescriptor(\.updatedAt, order: .reverse)]
+        )
         descriptor.fetchLimit = MemoryRules.preambleRecords
         let records = (try? context.fetch(descriptor)) ?? []
         return MemoryRules.preamble(records.map { ($0.kind, $0.text) })

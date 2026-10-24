@@ -51,6 +51,13 @@ final class MemoryRecord {
     var updatedAt: Date = Date.now
     /// The user rewrote it: consolidation never changes or removes it.
     var userEdited: Bool = false
+    /// The user sent it away. The row stays as a tombstone so the refusal
+    /// syncs with the records (a dismissal kept only on one phone would let
+    /// the other phone propose it again); nothing reads or shows it, and
+    /// consolidation will not write its like again.
+    var dismissedAt: Date? = nil
+
+    var isDismissed: Bool { dismissedAt != nil }
 
     init(kind: MemoryKind, text: String, evidenceNodeIDs: [UUID] = []) {
         self.id = UUID()

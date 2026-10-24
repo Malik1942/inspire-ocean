@@ -60,6 +60,28 @@ final class MemoryRulesTests: XCTestCase {
         XCTAssertEqual(MemoryRules.groundedEvidence(for: "You keep mentioning things.", evidence: evidence), [])
     }
 
+    func test_groundedEvidence_needsTheSameLean_notJustTheSameWords() {
+        let evidence = [
+            "I hate linen curtains, they hold the dust.",
+            "Linen curtains again; the light through them at six is the best thing in the flat.",
+        ]
+        XCTAssertEqual(MemoryRules.groundedEvidence(for: "You prefer linen curtains.", evidence: evidence), [1])
+        XCTAssertEqual(MemoryRules.groundedEvidence(for: "You don't like linen curtains.", evidence: evidence), [0])
+        XCTAssertEqual(MemoryRules.groundedEvidence(for: "你不喜欢亚麻窗帘。", evidence: ["我不喜欢亚麻窗帘。", "亚麻窗帘真好看。"]), [0])
+        XCTAssertTrue(MemoryRules.negated("I never finish the books I start."))
+        XCTAssertFalse(MemoryRules.negated("这家店不错，下次再来。"))
+    }
+
+    func test_dismissed_isRememberedAcrossTombstones_andTombstonesAreCapped() {
+        let defaults = UserDefaults(suiteName: "MemoryRulesTests-\(UUID().uuidString)")!
+        XCTAssertTrue(MemoryRules.isDismissed("you keep returning to the light", among: ["You keep returning to light."], defaults: defaults))
+        XCTAssertFalse(MemoryRules.isDismissed("Mara keeps appearing in your plans.", among: ["You keep returning to light."], defaults: defaults))
+
+        let stones = (0..<(MemoryRules.maxTombstones + 3)).map { (id: UUID(), dismissedAt: Date(timeIntervalSince1970: Double($0))) }
+        XCTAssertEqual(MemoryRules.tombstonesToDrop(stones), [stones[0].id, stones[1].id, stones[2].id])
+        XCTAssertEqual(MemoryRules.tombstonesToDrop(Array(stones.prefix(5))), [])
+    }
+
     func test_sameness_allowsWordForms() {
         XCTAssertTrue(MemoryRules.isSame("You frequently notice the light at the end of the day.", "You keep noticing the light at the end of the day."))
         XCTAssertFalse(MemoryRules.isSame("You frequently mention Mara.", "You keep noticing the light at the end of the day."))

@@ -84,17 +84,56 @@ enum MemoryRules {
         "你", "你的", "一直", "经常", "常常", "提到", "喜欢", "正在", "关于"
     ]
 
-    /// Which of the evidence texts actually touch the observation: they
-    /// share a content word with it (a name, a thing, a place). Measured
+    /// Which of the evidence texts actually touch the observation: some
+    /// sentence of theirs shares a content word with it (a name, a thing, a
+    /// place) and leans the same way. Shared words alone are vocabulary,
+    /// not support: "I hate linen curtains" carried "You prefer linen
+    /// curtains" (observed 2026-10-23), so a sentence that negates where the
+    /// observation affirms, or the reverse, does not count. Measured
     /// 2026-10-22: the model cited a run for a curtain preference and an
     /// unrelated bug for an app project; this is the gate that catches it.
     static func groundedEvidence(for text: String, evidence: [String]) -> [Int] {
         let subject = contentTokens(text).subtracting(groundingStopwords)
         guard !subject.isEmpty else { return [] }
+        let polarity = negated(text)
         return evidence.indices.filter { index in
-            let tokens = contentTokens(evidence[index])
-            return subject.contains { word in tokens.contains { related(word, $0) } }
+            sentences(in: evidence[index]).contains { sentence in
+                let tokens = contentTokens(sentence)
+                guard subject.contains(where: { word in tokens.contains { related(word, $0) } }) else { return false }
+                return negated(sentence) == polarity
+            }
         }
+    }
+
+    /// Words that turn a statement around, in both languages. Chinese keeps
+    /// to the unambiguous forms: a bare 不 sits inside 不错 and 不过.
+    private static let negationWords: Set<String> = [
+        "not", "never", "no", "none", "nothing", "hate", "hated", "dislike", "disliked", "can't", "cannot", "can’t",
+        "won't", "won’t", "don't", "don’t", "doesn't", "doesn’t", "didn't", "didn’t", "isn't", "isn’t", "aren't", "aren’t",
+        "wasn't", "wasn’t", "stop", "stopped", "quit", "avoid", "avoided", "rarely", "seldom", "without",
+        "没有", "没", "不喜欢", "不想", "不要", "不再", "不是", "不会", "别", "讨厌", "放弃", "避免", "很少", "从不", "从未"
+    ]
+
+    /// Whether a sentence leans against its subject.
+    static func negated(_ text: String) -> Bool {
+        let lowered = text.lowercased()
+        let tokenizer = NLTokenizer(unit: .word)
+        tokenizer.string = lowered
+        var found = false
+        tokenizer.enumerateTokens(in: lowered.startIndex..<lowered.endIndex) { range, _ in
+            if negationWords.contains(String(lowered[range])) { found = true }
+            return !found
+        }
+        if found { return true }
+        return negationWords.contains { word in
+            word.unicodeScalars.contains(where: { $0.properties.isIdeographic }) && lowered.contains(word)
+        }
+    }
+
+    private static func sentences(in text: String) -> [String] {
+        text.split(whereSeparator: { ".!?。！？\n;；".contains($0) })
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
     }
 
     struct Standing: Equatable {
@@ -203,10 +242,25 @@ enum MemoryRules {
     // MARK: What the person sent away
 
     static let dismissedKey = "memory.dismissed"
+    /// How many dismissed records stay as tombstones; the oldest go first.
+    static let maxTombstones = 200
+
+    /// Whether a proposal is one the person already sent away, against the
+    /// texts of the dismissed records (tombstones, which sync) and this
+    /// device's own list.
+    static func isDismissed(_ text: String, among dismissed: [String], defaults: UserDefaults = .standard) -> Bool {
+        dismissed.contains { isSame($0, text) } || isDismissed(text, defaults: defaults)
+    }
 
     static func isDismissed(_ text: String, defaults: UserDefaults = .standard) -> Bool {
         let dismissed = defaults.stringArray(forKey: dismissedKey) ?? []
         return dismissed.contains { isSame($0, text) }
+    }
+
+    /// Tombstones beyond the cap, oldest dismissal first.
+    static func tombstonesToDrop(_ dismissed: [(id: UUID, dismissedAt: Date)]) -> [UUID] {
+        guard dismissed.count > maxTombstones else { return [] }
+        return dismissed.sorted { $0.dismissedAt < $1.dismissedAt }.prefix(dismissed.count - maxTombstones).map(\.id)
     }
 
     static func dismiss(_ text: String, defaults: UserDefaults = .standard) {

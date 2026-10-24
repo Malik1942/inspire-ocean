@@ -8,12 +8,16 @@ import SwiftData
 struct MemoryRecordsView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.oceanAI) private var ai
-    @Query(sort: \MemoryRecord.updatedAt, order: .reverse) private var records: [MemoryRecord]
+    @Query(sort: \MemoryRecord.updatedAt, order: .reverse) private var allRecords: [MemoryRecord]
 
     @State private var editing: MemoryRecord?
     @State private var draft = ""
     @State private var refreshing = false
     @State private var lastRun = Consolidation.lastRun
+
+    /// Dismissed records stay in the store as tombstones so the dismissal
+    /// syncs; here they are gone.
+    private var records: [MemoryRecord] { allRecords.filter { !$0.isDismissed } }
 
     private var grouped: [(kind: MemoryKind, records: [MemoryRecord])] {
         MemoryKind.allCases.compactMap { kind in
@@ -59,7 +63,8 @@ struct MemoryRecordsView: View {
                         for index in offsets {
                             let record = group.records[index]
                             MemoryRules.dismiss(record.text)
-                            context.delete(record)
+                            record.dismissedAt = .now
+                            record.updatedAt = .now
                         }
                         try? context.save()
                     }
