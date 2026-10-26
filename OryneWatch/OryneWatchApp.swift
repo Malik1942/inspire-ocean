@@ -9,7 +9,8 @@ struct OryneWatchApp: App {
     init() {
         let queue = TakeQueue()
         let cloud = CloudInbox.makeIfAvailable()
-        let sync = TakeSync(queue: queue, link: PhoneLink(), cloud: cloud) { date in
+        let library = WristLibrary()
+        let sync = TakeSync(queue: queue, link: PhoneLink(), cloud: cloud, library: library) { date in
             WKApplication.shared().scheduleBackgroundRefresh(
                 withPreferredDate: date,
                 userInfo: TakeSync.refreshIdentifier as NSString
