@@ -27,6 +27,7 @@ final class WatchCaptureModel {
     private(set) var stage: Stage = .idle
     let recorder = WatchRecorder()
     let queue: TakeQueue
+    let player: WatchPlayer
     private let sync: TakeSync
     @ObservationIgnored private var current: (id: UUID, startedAt: Date)?
     @ObservationIgnored private var undoTask: Task<Void, Never>?
@@ -37,9 +38,10 @@ final class WatchCaptureModel {
     @ObservationIgnored private var demoStageAwaitingActive: Stage?
     #endif
 
-    init(queue: TakeQueue, sync: TakeSync) {
+    init(queue: TakeQueue, sync: TakeSync, player: WatchPlayer) {
         self.queue = queue
         self.sync = sync
+        self.player = player
         recorder.onEndedBySystem = { [weak self] in
             Task { await self?.finish() }
         }
@@ -47,10 +49,6 @@ final class WatchCaptureModel {
 
     var statusLine: WatchStatusLine {
         .derive(from: queue.state)
-    }
-
-    var lastTitle: String? {
-        WatchStatusLine.lastTitle(from: queue.state)
     }
 
     /// The one rule every trigger shares: idle or caught → record (a take
@@ -67,6 +65,8 @@ final class WatchCaptureModel {
         // The idle disc and the retry button call this directly; a second
         // start must never replace the take in progress.
         guard stage != .starting, stage != .recording else { return }
+        // Capture wins (PHILOSOPHY §1): a replay stops before the mic opens.
+        player.stop()
         releaseHeldTake()
         stage = .starting
         let id = UUID()
@@ -168,6 +168,7 @@ final class WatchCaptureModel {
         #endif
         // Recovery once the microphone has been allowed in Settings.
         if stage == .denied, !recorder.permissionDenied { stage = .idle }
+        sync.requestSnapshot()
         await sync.flush()
     }
 

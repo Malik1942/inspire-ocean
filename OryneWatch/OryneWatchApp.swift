@@ -16,7 +16,7 @@ struct OryneWatchApp: App {
                 userInfo: TakeSync.refreshIdentifier as NSString
             ) { _ in }
         }
-        let model = WatchCaptureModel(queue: queue, sync: sync)
+        let model = WatchCaptureModel(queue: queue, sync: sync, player: WatchPlayer())
         self.model = model
         // The Action Button and Siri reach the same model the screen shows.
         AppDependencyManager.shared.add { model }
