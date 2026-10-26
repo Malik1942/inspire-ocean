@@ -194,10 +194,11 @@ final class WatchCaptureModel {
 
     #if DEBUG
     /// Screenshot seams (`SIMCTL_CHILD_` prefix on `simctl launch`):
-    /// `ORYNE_WATCH_DEMO=empty|waiting|onItsWay|inOcean` shows a sample queue;
+    /// `ORYNE_WATCH_DEMO=empty|waiting|onItsWay|inOcean|recent|today` shows a
+    /// sample queue (`recent` and `today` add a sample snapshot);
     /// `ORYNE_WATCH_STAGE=recording|caught|denied|failed|nothing` shows that screen;
     /// `ORYNE_WATCH_DEMO_TITLE` names the sample's last whisper.
-    func applyDemoEnvironment() {
+    func applyDemoEnvironment(library: WristLibrary) {
         let env = ProcessInfo.processInfo.environment
         let now = Date()
         func take(_ secondsAgo: TimeInterval) -> WatchTake {
@@ -205,8 +206,9 @@ final class WatchCaptureModel {
         }
         var demo = TakeQueueState()
         let named = take(600)
+        let title = env["ORYNE_WATCH_DEMO_TITLE"] ?? "Lighthouse café"
         demo.add(named, phoneReachableAtStop: true)
-        demo.apply([WatchConfirmation(id: named.id, title: env["ORYNE_WATCH_DEMO_TITLE"] ?? "Lighthouse café")])
+        demo.apply([WatchConfirmation(id: named.id, title: title)])
         switch env["ORYNE_WATCH_DEMO"] {
         case "empty":
             queue.showDemo(TakeQueueState())
@@ -221,6 +223,10 @@ final class WatchCaptureModel {
             queue.showDemo(demo)
         case "inOcean":
             queue.showDemo(demo)
+        case "recent", "today":
+            demo.add(take(60), phoneReachableAtStop: false)
+            queue.showDemo(demo)
+            library.showDemo(Self.demoSnapshot(named: named, title: title, now: now, withToday: env["ORYNE_WATCH_DEMO"] == "today"))
         default:
             break
         }
@@ -232,6 +238,20 @@ final class WatchCaptureModel {
         case "nothing": stage = .nothingCaught
         default: break
         }
+    }
+
+    private static func demoSnapshot(named: WatchTake, title: String, now: Date, withToday: Bool) -> WristSnapshot {
+        var whisper = WristThought(id: named.id, title: title, createdAt: named.createdAt)
+        whisper.reading = "Warm light on the counter at closing time, the menu chalked in two languages. A room that tells you to stay."
+        whisper.readingIsSummary = true
+        whisper.hasTranscript = true
+        whisper.isVoice = true
+        var today = WristThought(id: UUID(), title: "Warm to cool, not a filter", createdAt: now.addingTimeInterval(-40 * 86_400))
+        today.reading = "Grade the photo by the time of day it was taken, not by a preset."
+        return WristSnapshot(
+            recent: [whisper], today: withToday ? today : nil, todayDay: withToday ? now : nil,
+            deletedIDs: [], generatedAt: now
+        )
     }
     #endif
 }
