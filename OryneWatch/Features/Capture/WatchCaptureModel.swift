@@ -205,7 +205,10 @@ final class WatchCaptureModel {
             WatchTake(id: UUID(), createdAt: now.addingTimeInterval(-secondsAgo), duration: 8)
         }
         var demo = TakeQueueState()
-        let named = take(600)
+        // The thought page opens the newest recent row. On these seams that
+        // row is the named lighthouse take; the untitled take waits behind
+        // it. Other seams keep the named take ten minutes back.
+        let named = take(env["ORYNE_WATCH_DEMO"] == "recent" || env["ORYNE_WATCH_DEMO"] == "today" ? 30 : 600)
         let title = env["ORYNE_WATCH_DEMO_TITLE"] ?? "Lighthouse café"
         demo.add(named, phoneReachableAtStop: true)
         demo.apply([WatchConfirmation(id: named.id, title: title)])
@@ -224,7 +227,7 @@ final class WatchCaptureModel {
         case "inOcean":
             queue.showDemo(demo)
         case "recent", "today":
-            demo.add(take(60), phoneReachableAtStop: false)
+            demo.add(take(600), phoneReachableAtStop: false)
             queue.showDemo(demo)
             library.showDemo(Self.demoSnapshot(named: named, title: title, now: now, withToday: env["ORYNE_WATCH_DEMO"] == "today"))
         default:
@@ -246,6 +249,7 @@ final class WatchCaptureModel {
         whisper.readingIsSummary = true
         whisper.hasTranscript = true
         whisper.isVoice = true
+        whisper.hasAudio = true
         var today = WristThought(id: UUID(), title: "Warm to cool, not a filter", createdAt: now.addingTimeInterval(-40 * 86_400))
         today.reading = "Grade the photo by the time of day it was taken, not by a preset."
         return WristSnapshot(
