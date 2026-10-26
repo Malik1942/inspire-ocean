@@ -134,6 +134,18 @@ final class TakeQueueStateTests: XCTestCase {
         XCTAssertFalse(state.audioDisposable(UUID(), now: soon), "a recording the queue can't account for is never deleted")
     }
 
+    func test_audioDisposable_keepsAnUnconfirmedTake_evenTranscribedAndOld() {
+        var state = TakeQueueState()
+        let onWatch = take(), clouded = take(1)
+        [onWatch, clouded].forEach { state.add($0, phoneReachableAtStop: true) }
+        state.markInICloud(clouded.id)
+        state.apply(snapshot([transcribed(onWatch), transcribed(clouded)]))
+        let late = t0.addingTimeInterval(TakeQueueState.audioRetention * 2)
+
+        XCTAssertFalse(state.audioDisposable(onWatch.id, now: late))
+        XCTAssertFalse(state.audioDisposable(clouded.id, now: late))
+    }
+
     func test_audioDisposable_expiresATranscribedTakeAsThePhoneDoes() {
         var state = TakeQueueState()
         let withWords = take(), withoutWords = take(1)
