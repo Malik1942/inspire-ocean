@@ -9,6 +9,16 @@ final class TakeQueueStateTests: XCTestCase {
         WatchTake(id: UUID(), createdAt: t0.addingTimeInterval(offset), duration: 3)
     }
 
+    private func snapshot(_ thoughts: [WristThought] = [], deleted: [UUID] = []) -> WristSnapshot {
+        WristSnapshot(recent: thoughts, today: nil, todayDay: nil, deletedIDs: deleted, generatedAt: t0)
+    }
+
+    private func transcribed(_ take: WatchTake, title: String? = nil) -> WristThought {
+        var thought = WristThought(id: take.id, title: title, createdAt: take.createdAt)
+        thought.hasTranscript = true
+        return thought
+    }
+
     func test_add_queuesOnWatchAndIgnoresDuplicates() {
         var state = TakeQueueState()
         let a = take()
@@ -110,20 +120,73 @@ final class TakeQueueStateTests: XCTestCase {
         XCTAssertEqual(state.item(a.id)?.title, "Lighthouse café")
     }
 
-    func test_audioDisposable_followsWhereTheTakeIsSafe() {
+    func test_audioDisposable_keepsEveryRecordingTheWristCanReplay() {
         var state = TakeQueueState()
-        let onWatch = take(), cloudWhileSending = take(1), cloudDone = take(2), confirmed = take(3)
-        [onWatch, cloudWhileSending, cloudDone, confirmed].forEach { state.add($0, phoneReachableAtStop: true) }
-        state.markPhoneTransfer(cloudWhileSending.id, .pending)
-        state.markInICloud(cloudWhileSending.id)
-        state.markInICloud(cloudDone.id)
+        let onWatch = take(), clouded = take(1), confirmed = take(2)
+        [onWatch, clouded, confirmed].forEach { state.add($0, phoneReachableAtStop: true) }
+        state.markInICloud(clouded.id)
         state.apply([WatchConfirmation(id: confirmed.id, title: nil)])
+        let soon = t0.addingTimeInterval(60)
 
-        XCTAssertFalse(state.audioDisposable(onWatch.id))
-        XCTAssertFalse(state.audioDisposable(cloudWhileSending.id), "a pending transfer still reads the file")
-        XCTAssertTrue(state.audioDisposable(cloudDone.id))
-        XCTAssertTrue(state.audioDisposable(confirmed.id))
-        XCTAssertFalse(state.audioDisposable(UUID()), "a recording the queue can't account for is never deleted")
+        XCTAssertFalse(state.audioDisposable(onWatch.id, now: soon))
+        XCTAssertFalse(state.audioDisposable(clouded.id, now: soon))
+        XCTAssertFalse(state.audioDisposable(confirmed.id, now: soon))
+        XCTAssertFalse(state.audioDisposable(UUID(), now: soon), "a recording the queue can't account for is never deleted")
+    }
+
+    func test_audioDisposable_expiresATranscribedTakeAsThePhoneDoes() {
+        var state = TakeQueueState()
+        let withWords = take(), withoutWords = take(1)
+        [withWords, withoutWords].forEach { state.add($0, phoneReachableAtStop: true) }
+        state.apply([WatchConfirmation(id: withWords.id, title: nil), WatchConfirmation(id: withoutWords.id, title: nil)])
+        state.apply(snapshot([transcribed(withWords)]))
+        let retention = TakeQueueState.audioRetention
+
+        XCTAssertFalse(state.audioDisposable(withWords.id, now: t0.addingTimeInterval(retention - 10)))
+        XCTAssertTrue(state.audioDisposable(withWords.id, now: t0.addingTimeInterval(retention + 10)))
+        XCTAssertFalse(state.audioDisposable(withoutWords.id, now: t0.addingTimeInterval(retention + 10)),
+                       "with no transcript the recording is the only copy of the words")
+    }
+
+    func test_applySnapshot_removesOnlyConfirmedTakesThePhoneDeleted() {
+        var state = TakeQueueState()
+        let waiting = take(), confirmed = take(1)
+        [waiting, confirmed].forEach { state.add($0, phoneReachableAtStop: true) }
+        state.apply([WatchConfirmation(id: confirmed.id, title: nil)])
+        let before = state
+
+        state.apply(snapshot(deleted: [waiting.id, confirmed.id]))
+
+        XCTAssertNotNil(state.item(waiting.id), "the phone can't have deleted a take it never confirmed")
+        XCTAssertNil(state.item(confirmed.id))
+        XCTAssertEqual(state.idsRemoved(since: before), [confirmed.id])
+    }
+
+    func test_applySnapshot_takesCurrentTitles_butANilTitleNeverErases() {
+        var state = TakeQueueState()
+        let renamed = take(), unnamed = take(1)
+        [renamed, unnamed].forEach { state.add($0, phoneReachableAtStop: true) }
+        state.apply([
+            WatchConfirmation(id: renamed.id, title: "Lighthouse café"),
+            WatchConfirmation(id: unnamed.id, title: "Old idea"),
+        ])
+
+        state.apply(snapshot([transcribed(renamed, title: "The café by the lighthouse"), transcribed(unnamed)]))
+
+        XCTAssertEqual(state.item(renamed.id)?.title, "The café by the lighthouse")
+        XCTAssertEqual(state.item(unnamed.id)?.title, "Old idea")
+        XCTAssertEqual(state.item(renamed.id)?.hasTranscript, true)
+    }
+
+    func test_indexFromAnEarlierVersion_stillLoads() throws {
+        let id = UUID()
+        let json = """
+        {"takes":[{"take":{"id":"\(id.uuidString)","createdAt":0,"duration":3,"version":1},\
+        "status":"confirmed","phoneTransfer":"delivered","phoneReachableAtStop":true,"title":"Lighthouse café"}]}
+        """
+        let state = try JSONDecoder().decode(TakeQueueState.self, from: Data(json.utf8))
+        XCTAssertEqual(state.item(id)?.title, "Lighthouse café")
+        XCTAssertEqual(state.item(id)?.hasTranscript, false)
     }
 
     func test_prune_keepsNewestConfirmedAndEveryUnconfirmed() {

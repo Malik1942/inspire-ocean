@@ -3,9 +3,9 @@ import AVFoundation
 import Observation
 
 /// The watch's queue of takes: the only place `TakeQueueState` is mutated.
-/// Every change saves at once and sweeps audio the state says is safe
-/// elsewhere, so a take is never lost to a crash and never kept longer than
-/// it needs to be. A sweep never touches a recording the index doesn't list
+/// Every change saves at once and sweeps audio the state no longer needs
+/// (safe on the phone, transcribed there, and past the replay window), so a
+/// take is never lost to a crash and never kept longer than it needs to be. A sweep never touches a recording the index doesn't list
 /// (see `TakeQueueState.audioDisposable`); a take that leaves the queue
 /// (Undo, or pruned once confirmed) takes its audio with it deliberately.
 @MainActor
@@ -38,6 +38,11 @@ final class TakeQueue {
 
     func audioURL(for id: UUID) -> URL {
         store.audioURL(for: id)
+    }
+
+    /// Whether the watch still holds this take's recording.
+    func hasAudio(_ id: UUID) -> Bool {
+        FileManager.default.fileExists(atPath: store.audioURL(for: id).path)
     }
 
     func change(_ mutate: (inout TakeQueueState) -> Void) {

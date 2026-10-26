@@ -40,16 +40,16 @@ struct TakeQueueStore {
         try? data.write(to: indexURL, options: .atomic)
     }
 
-    /// Deletes audio the state says is safe elsewhere. A recording the index
-    /// doesn't list (one being recorded, an unreadable index, a crash
-    /// mid-recording) is kept: `audioDisposable` never guesses about it.
-    func sweep(_ state: TakeQueueState) {
+    /// Deletes audio the state says the wrist no longer needs. A recording
+    /// the index doesn't list (one being recorded, an unreadable index, a
+    /// crash mid-recording) is kept: `audioDisposable` never guesses about it.
+    func sweep(_ state: TakeQueueState, now: Date = .now) {
         let files = (try? FileManager.default.contentsOfDirectory(
             at: directory, includingPropertiesForKeys: nil
         )) ?? []
         for file in files where file.pathExtension == "m4a" {
             guard let id = UUID(uuidString: file.deletingPathExtension().lastPathComponent),
-                  state.audioDisposable(id)
+                  state.audioDisposable(id, now: now)
             else { continue }
             try? FileManager.default.removeItem(at: file)
         }
