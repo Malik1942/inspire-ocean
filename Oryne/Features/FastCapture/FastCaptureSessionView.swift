@@ -291,6 +291,12 @@ struct FastCaptureSessionView: View {
         .onChange(of: pictures.sendReadyCount) { _, _ in
             if phase == .composing, ownsControl { saveTyped() }
         }
+        .onChange(of: control.parkForNavigation) { _, requested in
+            if requested { parkForNavigationIfReady() }
+        }
+        .onChange(of: pictures.isLoading) { _, loading in
+            if !loading { parkForNavigationIfReady() }
+        }
     }
 
     // MARK: Pieces
@@ -495,6 +501,13 @@ struct FastCaptureSessionView: View {
         closeCard()
     }
 
+    private func parkForNavigationIfReady() {
+        guard control.parkForNavigation, ownsControl,
+              phase == .composing, !isSaving, !pictures.isLoading else { return }
+        control.parkForNavigation = false
+        putAway()
+    }
+
     /// A draft put away earlier comes back to the field.
     private func takeBackParked() {
         guard !asSheet, let parked = control.parked else { return }
@@ -526,6 +539,7 @@ struct FastCaptureSessionView: View {
         control.overlayOpen = false
         control.composerHeight = 0
         control.attachPanelOpen = false
+        control.parkForNavigation = false
         control.toastShowing = false
         control.isListening = false
         control.level = 0

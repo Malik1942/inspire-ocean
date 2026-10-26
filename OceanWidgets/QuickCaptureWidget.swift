@@ -1,11 +1,8 @@
 import WidgetKit
 import SwiftUI
 
-/// Drift Capture from the Home Screen and Lock Screen (PRD §7: "widget").
-///
-/// - systemSmall — one tap opens Fast Capture with the user's preferred input.
-/// - systemMedium — Thought (typing-first) and Whisper (voice-first) buttons.
-/// - accessoryCircular — Lock Screen: one tap into Fast Capture.
+/// One tap to the existing capture flow. Medium offers typing and voice;
+/// the smallest families honour the user's preferred input.
 struct QuickCaptureWidget: Widget {
     let kind = "com.inspireocean.app.widgets.quickcapture"
 
@@ -14,12 +11,13 @@ struct QuickCaptureWidget: Widget {
             QuickCaptureView()
         }
         .configurationDisplayName("Quick Capture")
-        .description("Catch a thought before it disappears.")
-        .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular])
+        .description("Catch a thought or record a whisper.")
+        .supportedFamilies([
+            .systemSmall, .systemMedium,
+            .accessoryCircular, .accessoryRectangular, .accessoryInline
+        ])
     }
 }
-
-// MARK: - Provider (static — the widget never changes)
 
 struct QuickCaptureEntry: TimelineEntry {
     let date: Date
@@ -39,100 +37,98 @@ struct QuickCaptureProvider: TimelineProvider {
     }
 }
 
-// MARK: - Views
-
 struct QuickCaptureView: View {
     @Environment(\.widgetFamily) private var family
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        switch family {
-        case .accessoryCircular:
-            lockScreen
-        case .systemMedium:
-            medium
-        default:
-            small
-        }
-    }
-
-    /// Lock Screen circle — a single drop, one tap to capture.
-    private var lockScreen: some View {
-        ZStack {
-            AccessoryWidgetBackground()
-            Image(systemName: "drop")
-                .font(OceanType.glyphLarge)
+        Group {
+            switch family {
+            case .accessoryCircular:
+                ZStack {
+                    AccessoryWidgetBackground()
+                    Image(systemName: "drop")
+                        .font(OceanType.glyphLarge)
+                }
+                .accessibilityLabel("Catch a thought")
+            case .accessoryRectangular:
+                VStack(alignment: .leading, spacing: OceanSpacing.tight) {
+                    Label("Oryne", systemImage: "drop")
+                        .font(OceanType.eyebrow)
+                        .widgetAccentable()
+                    Text("Catch a thought")
+                        .font(OceanType.tileTitle)
+                        .lineLimit(1)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+            case .accessoryInline:
+                Label("Catch a thought", systemImage: "drop")
+            case .systemMedium:
+                medium
+            default:
+                small
+            }
         }
         .widgetURL(URL(string: "oryne://capture"))
-        .containerBackground(for: .widget) { Color.clear }
+        .containerBackground(for: .widget) {
+            if family == .systemSmall || family == .systemMedium {
+                OceanWidgetStyle.water
+            } else {
+                Color.clear
+            }
+        }
     }
 
-    /// Small — the whole widget is one capture surface.
     private var small: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Image(systemName: "drop")
-                .font(OceanType.glyphLarge)
-                .foregroundStyle(OceanTheme.mist)
-            Spacer()
+        VStack(alignment: .leading, spacing: OceanSpacing.gap) {
             Text("Catch a\nthought")
-                .font(OceanType.tileTitle)
+                .font(OceanType.subjectTitle)
                 .foregroundStyle(OceanTheme.foam)
-                .lineSpacing(OceanSpacing.hairline)
-            Spacer(minLength: OceanSpacing.gap)
-            Text("Before it disappears")
-                .font(OceanType.meta)
-                .foregroundStyle(OceanTheme.mist)
+                .minimumScaleFactor(0.8)
+                .lineLimit(2)
+                .layoutPriority(1)
+            Spacer(minLength: 0)
+            if !typeSize.isAccessibilitySize {
+                Text("Before it disappears")
+                    .font(OceanType.note)
+                    .foregroundStyle(OceanTheme.text)
+                    .lineLimit(2)
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .widgetURL(URL(string: "oryne://capture"))
-        .containerBackground(for: .widget) { OceanWidgetStyle.water }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    /// Medium — Thought and Whisper side by side, resting at the waterline:
-    /// header whispers at the top, open water between, actions at the bottom.
     private var medium: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // The widget names what it is the way a page does: New York.
-            HStack(alignment: .firstTextBaseline, spacing: OceanSpacing.gap) {
-                Image(systemName: "water.waves")
-                    .font(OceanType.glyphLarge)
-                    .foregroundStyle(OceanTheme.mist)
-                Text("Fast Capture")
+        VStack(alignment: .leading, spacing: OceanSpacing.block) {
+            VStack(alignment: .leading, spacing: OceanSpacing.snug) {
+                Text("Catch a thought")
                     .font(OceanType.subjectTitle)
                     .foregroundStyle(OceanTheme.foam)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
+                if !typeSize.isAccessibilitySize {
+                    Text("Before it disappears")
+                        .font(OceanType.secondary)
+                        .foregroundStyle(OceanTheme.text)
+                        .lineLimit(1)
+                }
             }
-
-            Spacer(minLength: OceanSpacing.inset)
-
-            HStack(spacing: OceanSpacing.gap) {
-                captureLink(
-                    url: "oryne://capture/thought",
-                    symbol: "text.cursor",
-                    title: "Thought"
-                )
-                captureLink(
-                    url: "oryne://capture/whisper",
-                    symbol: "waveform",
-                    title: "Whisper"
-                )
-            }
+            OceanWidgetActions()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .containerBackground(for: .widget) { OceanWidgetStyle.water }
+        .padding(.horizontal, OceanSpacing.tight)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
+}
 
-    /// One action: the app's Secondary control, a raised matte capsule with
-    /// a glyph and a word, 44 pt. No gradient, no rim: the widget wears the
-    /// same surfaces as the app.
-    private func captureLink(url: String, symbol: String, title: LocalizedStringKey) -> some View {
-        Link(destination: URL(string: url)!) {
-            Label(title, systemImage: symbol)
-                .font(OceanType.control)
-                .foregroundStyle(OceanTheme.foam)
-                .frame(maxWidth: .infinity)
-                .frame(height: OceanControlSize.height)
-                .background(OceanSurface(shape: Capsule(), raised: true))
-        }
-    }
+#Preview(as: .systemSmall) {
+    QuickCaptureWidget()
+} timeline: {
+    QuickCaptureEntry(date: .now)
+}
+
+#Preview(as: .systemMedium) {
+    QuickCaptureWidget()
+} timeline: {
+    QuickCaptureEntry(date: .now)
 }

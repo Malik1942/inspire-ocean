@@ -12,15 +12,3 @@ struct OceanWidgetsBundle: WidgetBundle {
         FastCaptureControl()
     }
 }
-
-/// Shared visual language for the widgets — the same deep, near-monochrome
-/// water the app uses, rendered statically (widgets don't animate).
-enum OceanWidgetStyle {
-    static var water: LinearGradient {
-        LinearGradient(
-            colors: [OceanTheme.abyss, OceanTheme.deep, OceanTheme.mid],
-            startPoint: .top,
-            endPoint: .bottom
-        )
-    }
-}
