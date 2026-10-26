@@ -1,6 +1,10 @@
 import Foundation
 import SwiftData
 import CoreData
+import os
+
+/// Failures only, and never a thought's words: domain and code.
+private let log = Logger(subsystem: "com.inspireocean.app", category: "watch")
 
 /// Keeps the wrist's snapshot current (watch redesign spec §2): rebuilt
 /// after every save to the store and every change CloudKit brings in,
@@ -47,10 +51,11 @@ final class WristSnapshotPublisher {
     }
 
     /// Builds the snapshot now, and sends it when it differs from the last
-    /// one sent. Returned for a watch that asked.
+    /// one sent. Nil when the store couldn't be read: nothing is sent and
+    /// `lastSent` stays. Returned for a watch that asked.
     @discardableResult
-    func publish(now: Date = .now) -> WristSnapshot {
-        let snapshot = build(now: now)
+    func publish(now: Date = .now) -> WristSnapshot? {
+        guard let snapshot = build(now: now) else { return nil }
         if !snapshot.hasSameContent(as: lastSent) {
             link.send(snapshot)
             lastSent = snapshot
@@ -70,16 +75,25 @@ final class WristSnapshotPublisher {
     }
 
     /// Only the newest wrist takes become sources: reading `audioData` loads
-    /// the recording, so the rest are counted by ID alone.
-    private func build(now: Date) -> WristSnapshot {
+    /// the recording, so the rest are counted by ID alone. Nil when either
+    /// fetch throws: a failed read must not be sent as an empty Ocean.
+    /// An empty store still builds.
+    private func build(now: Date) -> WristSnapshot? {
         let ids = Array(ImportLedger.load(from: defaults).entries.keys)
         let placeholders = VoiceUnderstanding.whisperPlaceholders
-        let wrist = (try? context.fetch(FetchDescriptor<Node>(predicate: #Predicate { ids.contains($0.id) }))) ?? []
+        let wrist: [Node]
+        let everything: [Node]
+        do {
+            wrist = try context.fetch(FetchDescriptor<Node>(predicate: #Predicate { ids.contains($0.id) }))
+            everything = try context.fetch(FetchDescriptor<Node>())
+        } catch {
+            logReadFailure(error)
+            return nil
+        }
         let newest = wrist
             .sorted { $0.createdAt > $1.createdAt }
             .prefix(WristSnapshotBuilder.recentLimit)
             .map { WristSnapshotBuilder.Source(node: $0, placeholders: placeholders) }
-        let everything = (try? context.fetch(FetchDescriptor<Node>())) ?? []
         let today = Resurfacing.pick(from: everything, now: now)
         return WristSnapshotBuilder.build(
             ledgerIDs: Set(ids),
@@ -88,6 +102,12 @@ final class WristSnapshotPublisher {
             today: today.map { WristSnapshotBuilder.Source(node: $0, placeholders: placeholders) },
             now: now
         )
+    }
+
+    /// Domain and code only. A SwiftData error's description can name a thought.
+    private func logReadFailure(_ error: Error) {
+        let error = error as NSError
+        log.error("Snapshot read failed: \(error.domain, privacy: .public) \(error.code, privacy: .public)")
     }
 
     private func node(_ id: UUID) -> Node? {

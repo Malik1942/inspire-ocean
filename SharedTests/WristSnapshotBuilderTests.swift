@@ -96,9 +96,30 @@ final class WristSnapshotBuilderTests: XCTestCase {
         let pick = source(-40 * 86_400, isVoice: false)
         let with = build([], today: pick)
         XCTAssertEqual(with.today?.id, pick.id)
-        XCTAssertEqual(with.todayDay, now)
+        XCTAssertEqual(with.todayDay, Calendar.current.startOfDay(for: now))
         let without = build([])
         XCTAssertNil(without.today)
         XCTAssertNil(without.todayDay)
+    }
+
+    /// Noon and 1pm of `now`'s local day, so the pair cannot cross midnight.
+    /// Today is that day: a later build is not a new snapshot.
+    func test_buildsAnHourApart_shareTodayDayAndContent() throws {
+        let calendar = Calendar.current
+        let day = calendar.startOfDay(for: now)
+        let noon = try XCTUnwrap(calendar.date(bySettingHour: 12, minute: 0, second: 0, of: day))
+        let one = try XCTUnwrap(calendar.date(bySettingHour: 13, minute: 0, second: 0, of: day))
+        let sources = [source(), source(1)]
+        let today = source(-40 * 86_400, isVoice: false)
+        let ids = Set(sources.map(\.id))
+        let earlier = WristSnapshotBuilder.build(
+            ledgerIDs: ids, liveIDs: ids, recent: sources, today: today, now: noon
+        )
+        let later = WristSnapshotBuilder.build(
+            ledgerIDs: ids, liveIDs: ids, recent: sources, today: today, now: one
+        )
+        XCTAssertEqual(earlier.todayDay, later.todayDay)
+        XCTAssertEqual(earlier.todayDay, calendar.startOfDay(for: noon))
+        XCTAssertTrue(later.hasSameContent(as: earlier))
     }
 }

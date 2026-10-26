@@ -38,7 +38,8 @@ enum WristSnapshotBuilder {
         return WristSnapshot(
             recent: Array(newest),
             today: today.map(thought(from:)),
-            todayDay: today == nil ? nil : now,
+            // The calendar day, so a later build the same day is the same snapshot.
+            todayDay: today == nil ? nil : Calendar.current.startOfDay(for: now),
             deletedIDs: ledgerIDs.subtracting(liveIDs).sorted { $0.uuidString < $1.uuidString },
             generatedAt: now
         )
