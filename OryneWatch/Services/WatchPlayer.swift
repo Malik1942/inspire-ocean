@@ -22,13 +22,20 @@ final class WatchPlayer {
     private(set) var duration: TimeInterval = 0
     @ObservationIgnored private var player: AVAudioPlayer?
     @ObservationIgnored private var ticker: Task<Void, Never>?
+    /// True after `setActive(true)` succeeds, until `stop` has attempted to
+    /// deactivate. Covers the gap before `player` is assigned, so a throw
+    /// from `AVAudioPlayer(contentsOf:)` still releases the session.
+    @ObservationIgnored private var sessionHeld = false
 
     /// Resumes `id` when it is the paused one, else plays `url` from the
     /// start. False when the file doesn't play.
     @discardableResult
     func play(_ url: URL, id: UUID) -> Bool {
         if currentID == id, state == .paused, let player {
-            player.play()
+            guard player.play() else {
+                stop()
+                return false
+            }
             state = .playing
             startTicking()
             return true
@@ -38,6 +45,7 @@ final class WatchPlayer {
             let session = AVAudioSession.sharedInstance()
             try session.setCategory(.playback, mode: .default)
             try session.setActive(true)
+            sessionHeld = true
             let player = try AVAudioPlayer(contentsOf: url)
             self.player = player
             guard player.play() else {
@@ -67,7 +75,7 @@ final class WatchPlayer {
     /// arriving after a recording began (the thought closing as Capture
     /// returns) never takes the session from the recorder.
     func stop() {
-        let held = player != nil
+        let held = player != nil || sessionHeld
         ticker?.cancel()
         ticker = nil
         player?.stop()
@@ -79,6 +87,7 @@ final class WatchPlayer {
         if held {
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }
+        sessionHeld = false
     }
 
     /// Reads the position for the toolbar's time, and ends playback when the
