@@ -48,6 +48,12 @@ final class WristSnapshotSourceTests: XCTestCase {
         XCTAssertEqual(s.words, "Not a filter")
     }
 
+    func test_words_areHidden_whenTheyAreTheTitle() {
+        let s = source(Node(kind: .text, title: "Warm to cool", text: " Warm to cool\n"))
+        XCTAssertEqual(s.title, "Warm to cool")
+        XCTAssertNil(s.words)
+    }
+
     func test_audio_isReportedOnlyWhenThere() {
         XCTAssertTrue(source(Node(kind: .voice, audioData: Data([1]))).hasAudio)
         XCTAssertFalse(source(Node(kind: .voice)).hasAudio)
