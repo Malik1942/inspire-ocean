@@ -43,8 +43,8 @@ struct CurrentGroup: Identifiable {
 /// folders. Searching or filtering lists every match under its current,
 /// without counts. No cards around currents, no expanding in place.
 ///
-/// The page's header (title, search, the switch) is the list's first row,
-/// so it scrolls with the currents the way it scrolls with Recent's grid.
+/// The page's header (the filter chip while one is on) is the list's first
+/// row, so it scrolls with the currents the way it scrolls with Recent's grid.
 struct LibraryCurrents<Header: View, Empty: View, Lead: View>: View {
     /// Every thought, archived ones too: the live ones make the currents,
     /// the archived ones only the Archived count.

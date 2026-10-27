@@ -47,7 +47,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "捕捉念头"
+            "value": "记一条灵感"
           }
         }
       }
@@ -64,7 +64,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "捕捉\n念头"
+            "value": "记一条\n灵感"
           }
         }
       }
@@ -98,7 +98,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "念头"
+            "value": "灵感"
           }
         }
       }
@@ -115,7 +115,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "低语"
+            "value": "语音"
           }
         }
       }
@@ -132,7 +132,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "问海"
+            "value": "提问"
           }
         }
       }
@@ -166,7 +166,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "一个念头带着你保存的文字与图片，再次浮现。"
+            "value": "一条灵感带着你保存的文字与图片，再次浮现。"
           }
         }
       }
@@ -200,7 +200,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "如果工具先为念头留出空间，再问要如何使用它呢？"
+            "value": "如果工具先为灵感留出空间，再问要如何使用它呢？"
           }
         }
       }
@@ -234,7 +234,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "暂时没有念头浮现"
+            "value": "暂时没有灵感浮现"
           }
         }
       }
@@ -251,7 +251,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "给念头一点时间，它们会再次浮现。"
+            "value": "给灵感一点时间，它们会再次浮现。"
           }
         }
       }
@@ -285,7 +285,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "海洋恢复后，你的念头会在这里浮现。"
+            "value": "海洋恢复后，你的灵感会在这里浮现。"
           }
         }
       }
@@ -370,7 +370,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "在念头消逝之前捕捉它。"
+            "value": "趁灵感消失前，留住它。"
           }
         }
       }
@@ -421,7 +421,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "捕捉念头，或录下低语。"
+            "value": "记一条灵感，或说一段语音。"
           }
         }
       }

@@ -106,23 +106,25 @@ struct NodeDetailContent: View {
                         .accessibilityLabel("Back")
                 }
             }
-            ToolbarItem(placement: .topBarTrailing) {
-                // The quiet escape hatch: move this one thought to a chosen
-                // current when the Ocean filed it wrong. Never surfaced
-                // anywhere else, never suggested.
+            // One group in the system's own glass: move, share, delete.
+            // Share is absent when there is nothing of the user's to hand
+            // out (an example, or an empty whisper).
+            ToolbarItemGroup(placement: .topBarTrailing) {
                 Button {
                     showMovePicker = true
                 } label: {
                     Image(systemName: "folder")
                 }
                 .accessibilityLabel("Move to a current")
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button(role: .destructive) {
+                if ThoughtShareContent.make(from: node) != nil {
+                    ThoughtShareMenu(node: node)
+                }
+                Button {
                     showDeleteConfirm = true
                 } label: {
                     Image(systemName: "trash")
                 }
+                .accessibilityLabel("Delete")
             }
         }
         // The system alert: centered within reach of the thumb, Cancel always

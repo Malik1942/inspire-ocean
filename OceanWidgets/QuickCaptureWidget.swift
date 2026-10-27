@@ -116,7 +116,6 @@ struct QuickCaptureView: View {
             }
             OceanWidgetActions()
         }
-        .padding(.horizontal, OceanSpacing.tight)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 }

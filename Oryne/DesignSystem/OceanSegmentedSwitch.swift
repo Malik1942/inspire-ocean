@@ -3,15 +3,14 @@ import SwiftUI
 /// Two ways of looking at one page (the Library's Recent and Currents),
 /// as Weather switches its layers: glyph cells in the page's tool group,
 /// the one in use on a selected fill. The words stay for VoiceOver. It
-/// lives inside an `OceanToolGroup` (a `PageTitleRow`'s tools), beside the
-/// page's other tools past an `OceanToolDivider`.
+/// lives inside an `OceanToolGroup` in the page's bar, beside the page's
+/// other tools past an `OceanToolDivider`.
 struct OceanSegmentedSwitch<Value: Hashable>: View {
     @Binding var selection: Value
     let options: [(value: Value, title: LocalizedStringKey, systemImage: String)]
 
     @Namespace private var thumb
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.oceanToolCellWidth) private var cellWidth
 
     var body: some View {
         HStack(spacing: 0) {
@@ -32,7 +31,7 @@ struct OceanSegmentedSwitch<Value: Hashable>: View {
             Image(systemName: option.systemImage)
                 .font(OceanType.glyph)
                 .foregroundStyle(selected ? OceanTheme.foam : OceanTheme.mist)
-                .frame(width: cellWidth, height: OceanControlSize.height)
+                .frame(width: OceanControlSize.height, height: OceanControlSize.height)
                 .background {
                     if selected {
                         Capsule()

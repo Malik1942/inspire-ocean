@@ -49,6 +49,16 @@
         }
       }
     },
+    "%lld thoughts" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 条灵感"
+          }
+        }
+      }
+    },
     "%lld thoughts drift here" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -4845,6 +4855,116 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "你的灵感，随时可以带走。"
+          }
+        }
+      }
+    },
+    "Share" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "分享"
+          }
+        }
+      }
+    },
+    "Share…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "分享…"
+          }
+        }
+      }
+    },
+    "Copy Text" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "拷贝文字"
+          }
+        }
+      }
+    },
+    "Copied" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "已拷贝"
+          }
+        }
+      }
+    },
+    "Couldn't copy the text." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "文字未能拷贝。"
+          }
+        }
+      }
+    },
+    "Some pictures couldn't be prepared" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "有些图片无法处理"
+          }
+        }
+      }
+    },
+    "1 picture couldn't be prepared." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "有 1 张图片无法处理。"
+          }
+        }
+      }
+    },
+    "%lld pictures couldn't be prepared." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "有 %lld 张图片无法处理。"
+          }
+        }
+      }
+    },
+    "Share without them" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "不带这些图片分享"
+          }
+        }
+      }
+    },
+    "Couldn't prepare the pictures" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "图片无法处理"
+          }
+        }
+      }
+    },
+    "These pictures can't be shared." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "这些图片无法分享。"
           }
         }
       }

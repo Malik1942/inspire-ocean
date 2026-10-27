@@ -90,7 +90,6 @@ struct OceanFieldView: View {
                 } else {
                     ScrollView {
                         VStack(alignment: .leading, spacing: OceanSpacing.section) {
-                            pageTitle
                             if let shown = goingUnder ?? resurfacing {
                                 // One thought goes under, then the next comes
                                 // up: never both on screen at once.
@@ -102,15 +101,26 @@ struct OceanFieldView: View {
                             if !currents.isEmpty { currentsSection }
                         }
                         .padding(.horizontal, OceanSpacing.gutter)
-                        .padding(.top, 0)
+                        // Under the large title, the first label keeps the
+                        // distance it had from the old title row.
+                        .padding(.top, OceanSpacing.block + OceanSpacing.snug)
                         .padding(.bottom, FastCaptureLayout.contentClearance)
                     }
                     .modifier(CaptureComposerEdge())
                 }
                 ShoreGradient()
             }
+            // The system's large title, in New York (`applyLargeTitleAppearance`),
+            // folds into the bar as the page scrolls; the gear stays pinned
+            // in the bar's own glass.
             .navigationTitle(OceanTab.homeTitle)
-            .toolbar(.hidden, for: .navigationBar)
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { showSettings = true } label: { Image(systemName: "gearshape") }
+                        .accessibilityLabel("Ocean settings")
+                }
+            }
             .onAppear(perform: consumePendingFocus)
             .onChange(of: appState.pendingFocusNodeID) { _, _ in consumePendingFocus() }
             .onChange(of: resurfacing?.id) { _, _ in
@@ -152,15 +162,6 @@ struct OceanFieldView: View {
             .onChange(of: sheet?.id) { _, _ in updateOceanSheetPresence() }
             .onChange(of: showSettings) { _, _ in updateOceanSheetPresence() }
         }
-    }
-
-    /// The page title in the brand's display face, with the gear beside it
-    /// (the system bar is hidden here so the title can wear the serif).
-    private var pageTitle: some View {
-        PageTitleRow(title: OceanTab.homeTitle, showSettings: $showSettings)
-            // The serif's descender space: the first label sits one tight
-            // step closer than the section gap, as under a system large title.
-            .padding(.bottom, -OceanSpacing.tight)
     }
 
     // MARK: Resurfacing
