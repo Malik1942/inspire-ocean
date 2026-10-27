@@ -10,8 +10,6 @@ import UniformTypeIdentifiers
 struct ThoughtShareMenu: View {
     let node: Node
 
-    @Environment(\.oceanToolCellWidth) private var cellWidth
-
     @State private var preparing = false
     @State private var anchor: UIView?
     @State private var showBlocked = false
@@ -24,12 +22,10 @@ struct ThoughtShareMenu: View {
             if preparing {
                 ProgressView()
                     .controlSize(.small)
-                    .frame(width: cellWidth, height: OceanControlSize.height)
             } else {
-                OceanToolGlyph(systemName: "square.and.arrow.up")
+                Image(systemName: "square.and.arrow.up")
             }
         }
-        .buttonStyle(.plain)
         .accessibilityLabel("Share")
         .disabled(preparing)
         .background(ShareAnchor { anchor = $0 })

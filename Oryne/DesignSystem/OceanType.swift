@@ -14,15 +14,16 @@ import UIKit
 /// scale: tile titles, running text, meta lines, controls.
 enum OceanType {
     #if os(iOS)
-    /// The navigation bar's large title in the same face and size as
-    /// `pageTitle`, so a system large title (Library, Currents) matches the
-    /// custom title rows on Tide and Ask.
+    /// The navigation bar's large title in `pageTitle`'s face, size and ink:
+    /// every tab (Tide, Ask, the Library) names itself with the system's
+    /// large title, which folds into the bar's own small title on scroll.
     static func applyLargeTitleAppearance() {
         let size = pageTitleSize
         let base = UIFont.systemFont(ofSize: size, weight: .regular)
         let serif = base.fontDescriptor.withDesign(.serif).map { UIFont(descriptor: $0, size: size) } ?? base
         UINavigationBar.appearance().largeTitleTextAttributes = [
-            .font: UIFontMetrics(forTextStyle: .largeTitle).scaledFont(for: serif)
+            .font: UIFontMetrics(forTextStyle: .largeTitle).scaledFont(for: serif),
+            .foregroundColor: UIColor(OceanTheme.foam)
         ]
     }
     #endif

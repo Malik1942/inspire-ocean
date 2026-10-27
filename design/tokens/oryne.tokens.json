@@ -102,7 +102,6 @@
       "$description": "Every control is 44 pt tall, the system's own. Floating bars are 56.",
       "height": { "$type": "dimension", "$value": { "value": 44, "unit": "px" }, "$description": "A button, a field, a tool cell, the capture disc, a segmented switch." },
       "compact": { "$type": "dimension", "$value": { "value": 36, "unit": "px" }, "$description": "A disc inside a field (the composer's + and its disc), as Messages sizes its own: smaller than a page tool, inside a 44 pt target." },
-      "toolCell": { "$type": "dimension", "$value": { "value": 50, "unit": "px" }, "$description": "One tool's cell in a group of several, as the system toolbar spaces them." },
       "bar": { "$type": "dimension", "$value": { "value": 56, "unit": "px" }, "$description": "The capture bar and Ask's bar: a capsule whose end radius is half of this." },
       "toast": { "$type": "dimension", "$value": { "value": 48, "unit": "px" }, "$description": "A toast: the bar's material, a step shorter than the bar." },
       "discInset": { "$type": "dimension", "$value": "{form.space.snug}", "$description": "The disc's inset inside the bar on every side, so disc and capsule end are concentric." }

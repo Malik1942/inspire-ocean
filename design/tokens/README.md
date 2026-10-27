@@ -54,7 +54,7 @@ sh Scripts/design-tokens/lint.sh                      # exit 1 on raw values in 
 | space | `OceanSpacing` | hairline 2, tight 4, snug 6, gap 8, item 12, inset 16, controlInset 20, block 24, section 40; `insetCompact` = item, `afterLabel` = inset; `gutter` (16 or 20, computed in the app from the window width) |
 | radius | `OceanRadius` | card 20, media 14, field = media, thumbnail 10, composer 24, icon 4; anything up to a control's height is a capsule |
 | size | `OceanSize` | metaIcon 14, glyphSlot 18, removeTarget 32, thumbnail 44, pictureTile 64, banner 120, hero 160 |
-| control | `OceanControlSize` | height 44, toolCell 50, bar 56, toast 48, discInset 6 |
+| control | `OceanControlSize` | height 44, bar 56, toast 48, discInset 6 |
 | type | `OceanType` | see below |
 
 Type roles. New York names what a page is about and wears the italic
@@ -118,11 +118,11 @@ one soft shadow.
 | Link card | media radius, insetCompact, pictureTile thumbnail | fill surface | |
 | Picture strip `OceanPictureStrip` | pictureTile, thumbnail radius, gap | remove badge on photoScrim | standard |
 | Toast `OceanToast` | toast height, controlInset leading, control + Link | bar glass | lift |
-| Sheet header `OceanSheetHeader` | grabber, then subjectTitle with the one action (Primary) on the same line ending on the gutter, as Tide's tools sit on its title; no close, no cancel | glass action on the water | |
-| Segmented switch `OceanSegmentedSwitch` | glyph cells in the page's tool group (Weather's layer switch), past an `OceanToolDivider` from the other tools | glass group; selected fill under the cell in use | standard |
+| Sheet header `OceanSheetHeader` | grabber, then subjectTitle with the one action (Primary) on the same line ending on the gutter; no close, no cancel | glass action on the water | |
+| Page tools | the system toolbar's trailing items, pinned as the page scrolls; a choice of view is a segmented `Picker` of glyphs, set apart from the other tools by a `ToolbarSpacer` | the bar's own glass | standard |
 | Floating bar `OceanBarBackground` | bar height capsule, or composer radius | glass; bar shadow before iOS 26 | lift |
 | Section | sectionLabel, afterLabel to content, section between | mist (glowWarm for the one lit section) | |
-| Page | PageTitleRow, gutter, section between | PageBackground (water + lamp) | |
+| Page | the system's large title (New York via `applyLargeTitleAppearance`), gutter, section between | PageBackground (water + lamp) | |
 
 Every button in the app wears one of the four styles. A chip is a Secondary
 button. A chevron in content is a bare `glyphDisclosure`, never an Icon

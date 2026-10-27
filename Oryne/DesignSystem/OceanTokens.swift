@@ -114,8 +114,6 @@ enum OceanControlSize {
     /// A disc inside a field (the composer's + and its disc), as Messages sizes its
     /// own: smaller than a page tool, inside a 44 pt target.
     static let compact: CGFloat = 36
-    /// One tool's cell in a group of several, as the system toolbar spaces them.
-    static let toolCell: CGFloat = 50
     /// The capture bar and Ask's bar: a capsule whose end radius is half of this.
     static let bar: CGFloat = 56
     /// A toast: the bar's material, a step shorter than the bar.

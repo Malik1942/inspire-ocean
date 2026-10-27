@@ -106,15 +106,25 @@ struct NodeDetailContent: View {
                         .accessibilityLabel("Back")
                 }
             }
-            if #available(iOS 26, *) {
-                ToolbarItem(placement: .topBarTrailing) {
-                    thoughtTools
+            // One group in the system's own glass: move, share, delete.
+            // Share is absent when there is nothing of the user's to hand
+            // out (an example, or an empty whisper).
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button {
+                    showMovePicker = true
+                } label: {
+                    Image(systemName: "folder")
                 }
-                .sharedBackgroundVisibility(.hidden)
-            } else {
-                ToolbarItem(placement: .topBarTrailing) {
-                    thoughtTools
+                .accessibilityLabel("Move to a current")
+                if ThoughtShareContent.make(from: node) != nil {
+                    ThoughtShareMenu(node: node)
                 }
+                Button {
+                    showDeleteConfirm = true
+                } label: {
+                    Image(systemName: "trash")
+                }
+                .accessibilityLabel("Delete")
             }
         }
         // The system alert: centered within reach of the thumb, Cancel always
@@ -627,35 +637,6 @@ struct NodeDetailContent: View {
                 }
             }
         }
-    }
-
-    /// One glass group: move, share, delete. Share is absent when there is
-    /// nothing of the user's to hand out (an example, or an empty whisper).
-    /// A group of tools uses the wider cell, and the bar must not squeeze
-    /// it — a proposed size under 44 pt packs the glyphs against each other.
-    /// The toolbar's own capsule is hidden on iOS 26 so this glass is the only one.
-    private var thoughtTools: some View {
-        OceanToolGroup {
-            Button {
-                showMovePicker = true
-            } label: {
-                OceanToolGlyph(systemName: "folder")
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Move to a current")
-            if ThoughtShareContent.make(from: node) != nil {
-                ThoughtShareMenu(node: node)
-            }
-            Button(role: .destructive) {
-                showDeleteConfirm = true
-            } label: {
-                OceanToolGlyph(systemName: "trash")
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Delete")
-        }
-        .environment(\.oceanToolCellWidth, OceanControlSize.toolCell)
-        .fixedSize()
     }
 
     /// Two quiet actions. Nothing on a thought's page is the main action;

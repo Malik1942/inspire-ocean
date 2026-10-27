@@ -5,14 +5,16 @@ import SwiftData
 /// filter, and browse by time or by current. "Library exists as a structured
 /// fallback for accessibility and trust."
 ///
-/// One header for both ways of looking: the title with its one tool (the
-/// Kind filter), the search field, then the switch between Recent (time
-/// sections, a waterfall of cards) and Currents (each current with its
-/// newest rows), and the filter as a chip while one is on.
+/// One header for both ways of looking: the system title with the page's
+/// tools pinned beside it (the switch between Recent, time sections in a
+/// waterfall of cards, and Currents, each current with its newest rows;
+/// then the Kind filter), the search field, and the filter as a chip while
+/// one is on.
 struct LibraryView: View {
     @Environment(\.modelContext) private var context
     @Environment(AppState.self) private var appState
     @Environment(\.oceanAI) private var ai
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(sort: \Node.createdAt, order: .reverse) private var allNodes: [Node]
 
     @State private var search = ""
@@ -105,7 +107,8 @@ struct LibraryView: View {
             .contentShape(Rectangle())
             .onTapGesture { searchFocused = false }
             .navigationTitle("Library")
-            .toolbar(.hidden, for: .navigationBar)
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar { tools }
             .sheet(item: $openedNode) { ExpandedNodeView(node: $0) }
             // The system alert, as on a thought's page.
             .alert(
@@ -514,41 +517,53 @@ struct LibraryView: View {
 
     // MARK: Header
 
-    /// Tide's page header with the Library's one tool, then the page's own
-    /// search field, then how the page is arranged and, while a filter is
-    /// on, the filter as a chip that clears it.
+    /// The page's own search field under the system's large title and,
+    /// while a filter is on, the filter as a chip that clears it.
     private var header: some View {
         VStack(alignment: .leading, spacing: OceanSpacing.inset) {
-            // The page's tools on its title line, one glass group: how the
-            // page is arranged (Recent, Currents), then what kind of
-            // thought it shows. Settings live on Tide.
-            PageTitleRow(title: "Library") {
-                OceanSegmentedSwitch(selection: $segment, options: [
-                    (value: .recent, title: "Recent", systemImage: "square.grid.2x2"),
-                    (value: .currents, title: "Currents", systemImage: "water.waves")
-                ])
-                OceanToolDivider()
-                Menu {
-                    Picker("Kind", selection: $kind.animation(OceanMotion.quick)) {
-                        ForEach(LibraryKind.allCases) { option in
-                            Label(option.label, systemImage: option.symbol).tag(option)
-                        }
-                    }
-                } label: {
-                    OceanToolGlyph(systemName: "line.3.horizontal.decrease")
-                }
-                .accessibilityLabel("Filter")
-                .accessibilityIdentifier("library.filter")
-            }
-            // The serif's descender space, as on Tide.
-            .padding(.bottom, -OceanSpacing.tight)
-
             OceanSearchField(text: $search, prompt: "Search the Ocean", focused: $searchFocused)
             if kind != .all {
                 filterChip
             }
         }
+        .padding(.top, OceanSpacing.snug)
         .padding(.bottom, OceanSpacing.gap)
+    }
+
+    /// The page's tools, pinned in the system bar as the page scrolls: how
+    /// the page is arranged (Recent, Currents), then, in a group of its own,
+    /// what kind of thought it shows. Settings live on Tide.
+    @ToolbarContentBuilder
+    private var tools: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            Picker("View", selection: $segment.animation(reduceMotion ? OceanMotion.quick : OceanMotion.standard)) {
+                Image(systemName: "square.grid.2x2")
+                    .accessibilityLabel("Recent")
+                    .tag(Segment.recent)
+                Image(systemName: "water.waves")
+                    .accessibilityLabel("Currents")
+                    .tag(Segment.currents)
+            }
+            .pickerStyle(.segmented)
+            // Two glyphs: as wide as they need, not the bar's spare width.
+            .fixedSize()
+        }
+        if #available(iOS 26, *) {
+            ToolbarSpacer(.fixed, placement: .topBarTrailing)
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+            Menu {
+                Picker("Kind", selection: $kind.animation(OceanMotion.quick)) {
+                    ForEach(LibraryKind.allCases) { option in
+                        Label(option.label, systemImage: option.symbol).tag(option)
+                    }
+                }
+            } label: {
+                Image(systemName: "line.3.horizontal.decrease")
+            }
+            .accessibilityLabel("Filter")
+            .accessibilityIdentifier("library.filter")
+        }
     }
 
     /// The filter that is on, under the search where the eye already is;

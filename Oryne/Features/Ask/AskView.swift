@@ -47,8 +47,10 @@ struct AskView: View {
             // Tapping open water folds the keyboard. Buttons, rows, and the
             // input bar sit above this gesture, so their taps still win.
             .onTapGesture { inputFocused = false }
+            // The system's large title, as on Tide and in the Library. No
+            // tools: Ask is for asking, and Settings live on Tide.
             .navigationTitle("Ask")
-            .toolbar(.hidden, for: .navigationBar)
+            .navigationBarTitleDisplayMode(.large)
             .safeAreaInset(edge: .bottom) { inputBar }
             .sheet(item: $openedNode) { ExpandedNodeView(node: $0) }
             .onAppear {
@@ -62,15 +64,12 @@ struct AskView: View {
 
     // MARK: Transcript
 
-    /// The page reads like Tide: the title row, then each question in New
+    /// The page reads like Tide: the title, then each question in New
     /// York with its answer under it as plain text. No bubbles, no boxes.
     private var transcript: some View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    // No gear here: Ask is for asking. Settings live on Tide
-                    // and the Library.
-                    PageTitleRow(title: "Ask")
                     if messages.isEmpty && searchPhase == nil { emptyState }
                     ForEach(messages) { message in
                         messageView(message).id(message.id)
@@ -78,7 +77,9 @@ struct AskView: View {
                     if let searchPhase { searchLine(searchPhase).id("searching") }
                 }
                 .padding(.horizontal, OceanSpacing.gutter)
-                .padding(.top, 0)
+                // The large title leaves more room under it than the old
+                // title row did; the first line keeps its old distance.
+                .padding(.top, -OceanSpacing.snug)
                 .padding(.bottom, OceanSpacing.block)
             }
             .scrollDismissesKeyboard(.interactively)

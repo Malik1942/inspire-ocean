@@ -238,90 +238,6 @@ struct OceanSendDiscStyle: ButtonStyle {
     }
 }
 
-/// How every tab opens, laid out like a native large-title page: the tab's
-/// name in New York where a system large title would be, under the empty
-/// band the navigation bar would take, and the page's tools on the same
-/// line, centred on the title and ending on the gutter. It scrolls with
-/// the page.
-struct PageTitleRow<Tools: View>: View {
-    let title: LocalizedStringKey
-    @ViewBuilder var tools: Tools
-
-    var body: some View {
-        HStack(alignment: .center, spacing: OceanSpacing.item) {
-            Text(title)
-                .font(OceanType.pageTitle)
-                .foregroundStyle(OceanTheme.foam)
-                .lineLimit(1)
-                .accessibilityAddTraits(.isHeader)
-            Spacer(minLength: 0)
-            if Tools.self != EmptyView.self {
-                OceanToolGroup { tools }
-            }
-        }
-        .padding(.top, OceanControlSize.height + OceanSpacing.snug)
-    }
-}
-
-extension PageTitleRow where Tools == EmptyView {
-    /// A page with no tools of its own (Ask).
-    init(title: LocalizedStringKey) {
-        self.init(title: title) { EmptyView() }
-    }
-}
-
-extension PageTitleRow where Tools == SettingsTool {
-    /// The common case: the gear alone, which makes the group a circle.
-    init(title: LocalizedStringKey, showSettings: Binding<Bool>) {
-        self.init(title: title) { SettingsTool(isPresented: showSettings) }
-    }
-}
-
-/// Page tools in one glass capsule, 44 pt tall, 44 pt cells. One tool
-/// makes a circle (Tide's and Ask's gear); three make a capsule (Library).
-struct OceanToolGroup<Content: View>: View {
-    @Environment(\.oceanToolCellWidth) private var cellWidth
-    @ViewBuilder var content: Content
-
-    var body: some View {
-        HStack(spacing: 0) { content }
-            .padding(.horizontal, cellWidth > OceanControlSize.height ? OceanSpacing.tight : 0)
-            .tint(OceanTheme.foam)
-            .frame(height: OceanControlSize.height)
-            .oceanGlass(in: Capsule())
-    }
-}
-
-extension EnvironmentValues {
-    /// A lone tool is a 44 pt circle; a group of several uses wider cells,
-    /// as the system toolbar does (`OceanControlSize.toolCell`).
-    @Entry var oceanToolCellWidth: CGFloat = OceanControlSize.height
-}
-
-/// One glyph in a tool group: the control glyph, foam, in a 44 pt cell.
-struct OceanToolGlyph: View {
-    let systemName: String
-    @Environment(\.oceanToolCellWidth) private var cellWidth
-
-    var body: some View {
-        Image(systemName: systemName)
-            .font(OceanType.glyph)
-            .foregroundStyle(OceanTheme.foam)
-            .frame(width: cellWidth, height: OceanControlSize.height)
-            .contentShape(Rectangle())
-    }
-}
-
-struct SettingsTool: View {
-    @Binding var isPresented: Bool
-
-    var body: some View {
-        Button { isPresented = true } label: { OceanToolGlyph(systemName: "gearshape") }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Ocean settings")
-    }
-}
-
 /// A page's own search field, drawn like Tide's surfaces: the tile fill, a
 /// capsule, body type, mist glyphs.
 struct OceanSearchField: View {
@@ -500,7 +416,7 @@ struct OceanPictureStrip: View {
     }
 }
 
-/// How a sheet opens, in the page's own grammar (`PageTitleRow`): the
+/// How a sheet opens, in the grammar of a tab's large title: the
 /// grabber that says the sheet can be pulled away (every sheet's way out),
 /// then the subject in New York with the sheet's one action on the same
 /// line as Primary, ending on the gutter. No close and no cancel: a sheet
