@@ -35,7 +35,12 @@ struct WatchThoughtView: View {
             }
         }
         .onAppear { model.appeared() }
-        .onDisappear { model.leave() }
+        .onDisappear {
+            // Wrist-down disappears this screen after the scene leaves
+            // .active. That path already stopped playback and keeps the
+            // fetched file; only a pop while the app is up deletes it.
+            if scenePhase == .active { model.leave() }
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 model.sceneBecameActive()
