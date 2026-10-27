@@ -13,27 +13,27 @@ struct WatchThoughtView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: OceanSpacing.gap) {
-                if let title = model.row.title {
-                    Text(title)
-                        .font(.system(.headline, design: .serif))
-                        .foregroundStyle(OceanTheme.foam)
+        VStack(spacing: OceanSpacing.tight) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: OceanSpacing.gap) {
+                    if let title = model.row.title {
+                        Text(title)
+                            .font(.system(.headline, design: .serif))
+                            .foregroundStyle(OceanTheme.foam)
+                    }
+                    notice
+                    reading
                 }
-                notice
-                reading
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal)
+            if model.audio != .none {
+                // Below the words, not over them: the watch toolbar draws
+                // on top of a short reading.
+                playControl
+            }
         }
         .background(OceanTheme.abyss.ignoresSafeArea())
-        .toolbar {
-            if model.audio != .none {
-                ToolbarItemGroup(placement: .bottomBar) {
-                    playControl
-                }
-            }
-        }
         .onAppear { model.appeared() }
         .onDisappear {
             // Wrist-down disappears this screen after the scene leaves
@@ -92,20 +92,26 @@ struct WatchThoughtView: View {
         .buttonStyle(.plain)
     }
 
-    @ViewBuilder private var playControl: some View {
-        if model.audio == .fetching {
-            Text("Getting audio…")
-                .font(OceanType.note)
-                .foregroundStyle(OceanTheme.mist)
-        } else {
-            Button { Task { await model.togglePlay() } } label: {
-                Image(systemName: model.isPlaying ? "pause.fill" : "play.fill")
-            }
-            .accessibilityLabel(model.isPlaying ? Text("Pause") : Text("Play"))
-            if model.isPlayerOnThis {
-                Text(verbatim: "\(Self.time(model.player.elapsed)) / \(Self.time(model.player.duration))")
-                    .font(.system(.footnote, design: .monospaced))
+    private var playControl: some View {
+        HStack(spacing: OceanSpacing.gap) {
+            if model.audio == .fetching {
+                Text("Getting audio…")
+                    .font(OceanType.note)
                     .foregroundStyle(OceanTheme.mist)
+            } else {
+                Button { Task { await model.togglePlay() } } label: {
+                    Image(systemName: model.isPlaying ? "pause.fill" : "play.fill")
+                        .font(OceanType.control)
+                        .foregroundStyle(OceanTheme.foam)
+                        .frame(width: 44, height: 32)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(model.isPlaying ? Text("Pause") : Text("Play"))
+                if model.isPlayerOnThis {
+                    Text(verbatim: "\(Self.time(model.player.elapsed)) / \(Self.time(model.player.duration))")
+                        .font(.system(.footnote, design: .monospaced))
+                        .foregroundStyle(OceanTheme.mist)
+                }
             }
         }
     }

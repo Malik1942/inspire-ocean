@@ -36,6 +36,7 @@ private struct RecentRow: View {
             HStack(spacing: OceanSpacing.tight) {
                 Text(row.caughtAt, format: .relative(presentation: .named))
                 if let duration = row.duration {
+                    Text(verbatim: "·")
                     Text(verbatim: String(format: "%d:%02d", Int(duration) / 60, Int(duration) % 60))
                 }
             }
