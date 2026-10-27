@@ -2,8 +2,9 @@ import Foundation
 import Observation
 
 /// One thought on the wrist: its reading, and its recording from the watch
-/// or fetched from the phone. A notice about the audio stays until tapped
-/// (PHILOSOPHY §5: failure never fades on its own).
+/// or fetched from the phone. A notice about the audio stays in place of
+/// play until tapped, and the tap tries again (PHILOSOPHY §5: failure never
+/// fades on its own).
 @MainActor
 @Observable
 final class WatchThoughtModel {
@@ -72,10 +73,6 @@ final class WatchThoughtModel {
         case .phone:
             await playFromPhone()
         }
-    }
-
-    func dismissNotice() {
-        if audio == .phoneAway || audio == .failed { audio = .ready }
     }
 
     /// The wrist went down: playback stops. The fetched copy stays, and a

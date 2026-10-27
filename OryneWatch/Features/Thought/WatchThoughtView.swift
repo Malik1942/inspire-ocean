@@ -21,13 +21,16 @@ struct WatchThoughtView: View {
                             .font(.system(.headline, design: .serif))
                             .foregroundStyle(OceanTheme.foam)
                     }
-                    notice
                     reading
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal)
             }
-            if model.audio != .none {
+            if model.audio == .phoneAway || model.audio == .failed {
+                // The failure is the control: it stays until tapped, and
+                // the tap tries again. The reading above it stays whole.
+                noticeButton
+            } else if model.audio != .none {
                 // Below the words, not over them: the watch toolbar draws
                 // on top of a short reading.
                 playControl
@@ -72,24 +75,24 @@ struct WatchThoughtView: View {
         }
     }
 
-    /// Stays until tapped.
-    @ViewBuilder private var notice: some View {
-        switch model.audio {
-        case .phoneAway: noticeButton(Text("Your iPhone isn't nearby"))
-        case .failed: noticeButton(Text("Couldn't get the audio"))
-        default: EmptyView()
-        }
-    }
-
-    private func noticeButton(_ text: Text) -> some View {
-        Button { model.dismissNotice() } label: {
-            text
-                .font(OceanType.meta)
-                .foregroundStyle(OceanTheme.foam)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
+    /// The failure, in place of play. It stays until tapped, and the tap
+    /// tries again (PHILOSOPHY §5: failure never fades on its own).
+    private var noticeButton: some View {
+        Button { Task { await model.togglePlay() } } label: {
+            Group {
+                if model.audio == .phoneAway {
+                    Text("Your iPhone isn't nearby")
+                } else {
+                    Text("Couldn't get the audio")
+                }
+            }
+            .font(OceanType.meta)
+            .foregroundStyle(OceanTheme.foam)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
         }
         .buttonStyle(.plain)
+        .padding(.horizontal)
     }
 
     private var playControl: some View {
