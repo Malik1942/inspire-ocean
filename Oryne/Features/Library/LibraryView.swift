@@ -5,11 +5,12 @@ import SwiftData
 /// filter, and browse by time or by current. "Library exists as a structured
 /// fallback for accessibility and trust."
 ///
-/// One header for both ways of looking: the system title with the page's
-/// tools pinned beside it (the switch between Recent, time sections in a
-/// waterfall of cards, and Currents, each current with its newest rows;
-/// then the Kind filter), the search field, and the filter as a chip while
-/// one is on.
+/// One header for both ways of looking: the page's tools pinned in its own
+/// bar (search; the switch between Recent, time sections in a waterfall of
+/// cards, and Currents, each current with its newest rows; then the Kind
+/// filter), the title in New York, and the filter as a chip while one is
+/// on. Search is a state of its own: the tools grow into the field and the
+/// title folds away until its ✕.
 struct LibraryView: View {
     @Environment(\.modelContext) private var context
     @Environment(AppState.self) private var appState
@@ -37,6 +38,11 @@ struct LibraryView: View {
     @State private var focusRelatedRank: [UUID: Int] = [:]
 
     @FocusState private var searchFocused: Bool
+    /// Searching: the tools grow into the search field and the title folds
+    /// away, until the field's ✕ puts them back.
+    @State private var searching = false
+    /// The tools and the search field are one glass shape that changes.
+    @Namespace private var searchGlass
     /// The Library's navigation.
     @State private var path = NavigationPath()
     /// A thought opened from the Library: it rises, as from Tide.
@@ -106,9 +112,11 @@ struct LibraryView: View {
             // does in the capture overlay. Cards and buttons keep their taps.
             .contentShape(Rectangle())
             .onTapGesture { searchFocused = false }
+            .modifier(TopBar { topBar })
             .navigationTitle("Library")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar { tools }
+            // The page draws its own bar, so the tools and the search field
+            // can be one shape that changes (Tide keeps the system's).
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(item: $openedNode) { ExpandedNodeView(node: $0) }
             // The system alert, as on a thought's page.
             .alert(
@@ -138,6 +146,9 @@ struct LibraryView: View {
                 focusedAnchorID = nil
                 focusRelatedRank = [:]
             }
+            // The search bar stays reachable while the page is scrolled:
+            // what it finds is shown from the top, not where the page was.
+            .onChange(of: search) { _, _ in topRequest += 1 }
             .onAppear(perform: consumeAllCurrents)
             .onChange(of: appState.pendingAllCurrents) { _, _ in consumeAllCurrents() }
             #if DEBUG
@@ -154,6 +165,7 @@ struct LibraryView: View {
         guard appState.pendingAllCurrents else { return }
         appState.pendingAllCurrents = false
         search = ""
+        searching = false
         kind = .all
         searchFocused = false
         path = NavigationPath()
@@ -285,7 +297,7 @@ struct LibraryView: View {
                         emptyState
                     }
                     if !search.trimmed.isEmpty, shown.count >= 2 {
-                        summarizeChip(shown)
+                        summarizeLine(shown)
                     }
                     if focusedAnchorID == nil {
                         // Unfocused: the Today / Previous 7 Days / Earlier
@@ -344,7 +356,7 @@ struct LibraryView: View {
         } lead: {
             let shown = filtered
             if !search.trimmed.isEmpty, shown.count >= 2 {
-                summarizeChip(shown)
+                summarizeLine(shown)
                     .padding(.top, OceanSpacing.inset)
             }
         }
@@ -354,14 +366,72 @@ struct LibraryView: View {
 
     /// A search that found more than one thought can be read across in one
     /// tap: the result set goes to Ask as a summary (SPEC, Ask: one mode).
-    private func summarizeChip(_ shown: [Node]) -> some View {
-        Button {
-            appState.summarize(shown.map(\.id), title: search.trimmed)
-        } label: {
-            Label(String(localized: "Summarize these \(shown.count)"),
-                  systemImage: "text.line.first.and.arrowtriangle.forward")
+    /// One quiet line, as on a thought's page beside Nearby: how many were
+    /// found, then Summarize.
+    private func summarizeLine(_ shown: [Node]) -> some View {
+        HStack(spacing: OceanSpacing.gap) {
+            Text("\(shown.count) thoughts")
+                .font(OceanType.meta)
+                .foregroundStyle(OceanTheme.mist)
+            Spacer(minLength: 0)
+            Button {
+                appState.summarize(shown.map(\.id), title: search.trimmed)
+            } label: {
+                Label("Summarize", systemImage: "text.line.first.and.arrowtriangle.forward")
+            }
+            .buttonStyle(.oceanSecondary)
         }
-        .buttonStyle(.oceanSecondary)
+    }
+
+    // MARK: Search
+
+    /// The page's bar, pinned on the line where Tide's gear sits: the tools
+    /// at rest; while searching, the field and its ✕. The group's glass
+    /// grows into the field and the ✕ separates from it, so opening and
+    /// closing is one shape changing on one spring.
+    private var topBar: some View {
+        SearchGlassContainer {
+            HStack(spacing: OceanSpacing.item) {
+                if searching {
+                    OceanSearchField(text: $search, prompt: "Search the Ocean",
+                                     focused: $searchFocused, glass: true)
+                        .searchGlassID("search", in: searchGlass)
+                        .onAppear { searchFocused = true }
+                    Button(action: endSearch) {
+                        Image(systemName: "xmark")
+                    }
+                    .buttonStyle(.oceanIcon)
+                    .searchGlassID("close", in: searchGlass)
+                    .accessibilityLabel("Cancel")
+                } else {
+                    Spacer(minLength: 0)
+                    toolGroup
+                        .searchGlassID("search", in: searchGlass)
+                }
+            }
+        }
+        .frame(height: OceanControlSize.height)
+        .padding(.horizontal, OceanSpacing.gutter)
+        .padding(.bottom, OceanSpacing.gap)
+    }
+
+    /// Opening and closing share one spring, the floating layer's, so the
+    /// glass, the title and the page move together. Reduce Motion crossfades.
+    private var searchMotion: Animation {
+        reduceMotion ? OceanMotion.quick : OceanMotion.lift
+    }
+
+    private func startSearch() {
+        withAnimation(searchMotion) { searching = true }
+    }
+
+    /// The keyboard leaves as the field folds back, not after it.
+    private func endSearch() {
+        searchFocused = false
+        withAnimation(searchMotion) {
+            searching = false
+            search = ""
+        }
     }
 
     /// The focused anchor resolved to a live node, or nil once it leaves the set.
@@ -517,41 +587,47 @@ struct LibraryView: View {
 
     // MARK: Header
 
-    /// The page's own search field under the system's large title and,
-    /// while a filter is on, the filter as a chip that clears it.
+    /// The page's title in New York, as Tide's sits under its bar, and,
+    /// while a filter is on, the filter as a chip that clears it. The title
+    /// folds away while searching, so the results start under the field.
     private var header: some View {
         VStack(alignment: .leading, spacing: OceanSpacing.inset) {
-            OceanSearchField(text: $search, prompt: "Search the Ocean", focused: $searchFocused)
+            if !searching {
+                Text("Library")
+                    .font(OceanType.pageTitle)
+                    .foregroundStyle(OceanTheme.foam)
+                    .lineLimit(1)
+                    .accessibilityAddTraits(.isHeader)
+                    // Where the system's large title stands on Tide and Ask,
+                    // and as far from the first section.
+                    .padding(.top, OceanSpacing.hairline)
+                    .padding(.bottom, OceanSpacing.snug)
+                    // It rises into the bar as the page rises after it,
+                    // so the two never overlap.
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
             if kind != .all {
                 filterChip
             }
         }
-        .padding(.top, OceanSpacing.snug)
-        .padding(.bottom, OceanSpacing.gap)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// The page's tools, pinned in the system bar as the page scrolls: how
-    /// the page is arranged (Recent, Currents), then, in a group of its own,
-    /// what kind of thought it shows. Settings live on Tide.
-    @ToolbarContentBuilder
-    private var tools: some ToolbarContent {
-        ToolbarItem(placement: .topBarTrailing) {
-            Picker("View", selection: $segment.animation(reduceMotion ? OceanMotion.quick : OceanMotion.standard)) {
-                Image(systemName: "square.grid.2x2")
-                    .accessibilityLabel("Recent")
-                    .tag(Segment.recent)
-                Image(systemName: "water.waves")
-                    .accessibilityLabel("Currents")
-                    .tag(Segment.currents)
+    /// One glass group: search, how the page is arranged (Recent, Currents),
+    /// then what kind of thought it shows. Settings live on Tide.
+    private var toolGroup: some View {
+        OceanToolGroup {
+            Button(action: startSearch) {
+                OceanToolGlyph(systemName: "magnifyingglass")
             }
-            .pickerStyle(.segmented)
-            // Two glyphs: as wide as they need, not the bar's spare width.
-            .fixedSize()
-        }
-        if #available(iOS 26, *) {
-            ToolbarSpacer(.fixed, placement: .topBarTrailing)
-        }
-        ToolbarItem(placement: .topBarTrailing) {
+            .buttonStyle(.plain)
+            .accessibilityLabel("Search")
+            OceanToolDivider()
+            OceanSegmentedSwitch(selection: $segment, options: [
+                (value: .recent, title: "Recent", systemImage: "square.grid.2x2"),
+                (value: .currents, title: "Currents", systemImage: "water.waves")
+            ])
+            OceanToolDivider()
             Menu {
                 Picker("Kind", selection: $kind.animation(OceanMotion.quick)) {
                     ForEach(LibraryKind.allCases) { option in
@@ -559,11 +635,15 @@ struct LibraryView: View {
                     }
                 }
             } label: {
-                Image(systemName: "line.3.horizontal.decrease")
+                OceanToolGlyph(systemName: "line.3.horizontal.decrease")
             }
+            // Its cell alone, without the bar's own button padding.
+            .menuStyle(.button)
+            .buttonStyle(.plain)
             .accessibilityLabel("Filter")
             .accessibilityIdentifier("library.filter")
         }
+        .fixedSize()
     }
 
     /// The filter that is on, under the search where the eye already is;
@@ -689,6 +769,46 @@ struct LibraryView: View {
         // Archive-then-detach (see deleteNodeSafely): a direct delete of a node
         // with branches cascades and faults a row still rendering a child.
         context.deleteNodeSafely(node)
+    }
+}
+
+/// The page's own bar at the top. On iOS 26 the page scrolls under it with
+/// the system's soft edge, as under a navigation bar; earlier, a plain inset.
+private struct TopBar<Bar: View>: ViewModifier {
+    @ViewBuilder var bar: () -> Bar
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content.safeAreaBar(edge: .top, content: bar)
+        } else {
+            content.safeAreaInset(edge: .top, spacing: 0, content: bar)
+        }
+    }
+}
+
+/// Lets the bar's glass shapes morph into each other on iOS 26; earlier
+/// they crossfade.
+private struct SearchGlassContainer<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        if #available(iOS 26, *) {
+            GlassEffectContainer { content }
+        } else {
+            content
+        }
+    }
+}
+
+private extension View {
+    /// The identity a glass shape keeps while it morphs into another.
+    @ViewBuilder
+    func searchGlassID(_ id: String, in namespace: Namespace.ID) -> some View {
+        if #available(iOS 26, *) {
+            glassEffectID(id, in: namespace)
+        } else {
+            self
+        }
     }
 }
 

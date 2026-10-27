@@ -49,6 +49,16 @@
         }
       }
     },
+    "%lld thoughts" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 条灵感"
+          }
+        }
+      }
+    },
     "%lld thoughts drift here" : {
       "extractionState" : "stale",
       "localizations" : {

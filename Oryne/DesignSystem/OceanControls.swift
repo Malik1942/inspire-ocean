@@ -238,14 +238,52 @@ struct OceanSendDiscStyle: ButtonStyle {
     }
 }
 
+/// Page tools in one glass capsule, 44 pt tall, 44 pt cells (the Library's
+/// view switch and filter). It sits in the system bar as one item with the
+/// bar's own glass hidden, so this capsule is the only one.
+struct OceanToolGroup<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        HStack(spacing: 0) { content }
+            // The bar enlarges its symbols; the group keeps the glyph's size.
+            .imageScale(.medium)
+            .tint(OceanTheme.foam)
+            .frame(height: OceanControlSize.height)
+            .oceanGlass(in: Capsule())
+    }
+}
+
+/// One glyph in a tool group: the control glyph, foam, in a 44 pt cell.
+struct OceanToolGlyph: View {
+    let systemName: String
+
+    var body: some View {
+        Image(systemName: systemName)
+            .font(OceanType.glyph)
+            .foregroundStyle(OceanTheme.foam)
+            .frame(width: OceanControlSize.height, height: OceanControlSize.height)
+            .contentShape(Rectangle())
+    }
+}
+
 /// A page's own search field, drawn like Tide's surfaces: the tile fill, a
-/// capsule, body type, mist glyphs.
+/// capsule, body type, mist glyphs. In a bar over the page (`glass`) it
+/// wears the floating layer's glass instead, like the tools it sits among.
 struct OceanSearchField: View {
     @Binding var text: String
     let prompt: LocalizedStringKey
     var focused: FocusState<Bool>.Binding
+    var glass = false
 
-    var body: some View { field }
+    @ViewBuilder
+    var body: some View {
+        if glass {
+            field.oceanGlass(in: Capsule())
+        } else {
+            field.background(OceanSurface(shape: Capsule()))
+        }
+    }
 
     private var field: some View {
         HStack(spacing: OceanSpacing.gap) {
@@ -277,7 +315,6 @@ struct OceanSearchField: View {
         .padding(.leading, OceanSpacing.inset)
         .padding(.trailing, text.isEmpty ? OceanSpacing.inset : OceanSpacing.snug)
         .frame(height: OceanControlSize.height)
-        .background(OceanSurface(shape: Capsule()))
     }
 }
 

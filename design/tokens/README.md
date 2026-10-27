@@ -119,10 +119,10 @@ one soft shadow.
 | Picture strip `OceanPictureStrip` | pictureTile, thumbnail radius, gap | remove badge on photoScrim | standard |
 | Toast `OceanToast` | toast height, controlInset leading, control + Link | bar glass | lift |
 | Sheet header `OceanSheetHeader` | grabber, then subjectTitle with the one action (Primary) on the same line ending on the gutter; no close, no cancel | glass action on the water | |
-| Page tools | the system toolbar's trailing items, pinned as the page scrolls; a choice of view is a segmented `Picker` of glyphs, set apart from the other tools by a `ToolbarSpacer` | the bar's own glass | standard |
+| Page tools | pinned at the top as the page scrolls: the system toolbar's items (Tide's gear); the Library's own bar holds one `OceanToolGroup` (search, then `OceanSegmentedSwitch` glyph cells, then the filter, past `OceanToolDivider`s) | glass; the Library's group morphs into its search field (`glassEffectID`) | lift |
 | Floating bar `OceanBarBackground` | bar height capsule, or composer radius | glass; bar shadow before iOS 26 | lift |
 | Section | sectionLabel, afterLabel to content, section between | mist (glowWarm for the one lit section) | |
-| Page | the system's large title (New York via `applyLargeTitleAppearance`), gutter, section between | PageBackground (water + lamp) | |
+| Page | the system's large title (New York via `applyLargeTitleAppearance`), or on the Library a `pageTitle` in the page at the same place; gutter, section between | PageBackground (water + lamp) | |
 
 Every button in the app wears one of the four styles. A chip is a Secondary
 button. A chevron in content is a bare `glyphDisclosure`, never an Icon
