@@ -132,9 +132,8 @@ struct ResurfacingView: View {
         case .accessoryRectangular:
             VStack(alignment: .leading, spacing: OceanSpacing.tight) {
                 Label("Resurfacing", systemImage: "arrow.up.heart")
-                    .font(OceanType.sectionLabel)
+                    .font(OceanType.eyebrow)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.7)
                     .widgetAccentable()
                 Text(fragment.title)
                     .font(OceanType.tileTitle)
@@ -234,11 +233,18 @@ struct ResurfacingView: View {
         HStack(spacing: OceanSpacing.item) {
             header
             Spacer(minLength: OceanSpacing.gap)
+            // The app's quiet Link, which the widget cannot import: a way on
+            // beside a section label, never louder than it.
             Link(destination: URL(string: "oryne://ask")!) {
-                Label("Ask", systemImage: "sparkle.magnifyingglass")
-                    .font(OceanType.control)
-                    .foregroundStyle(OceanTheme.foam)
-                    .frame(minWidth: OceanControlSize.height, minHeight: OceanControlSize.height)
+                HStack(spacing: OceanSpacing.snug) {
+                    Image(systemName: "sparkle.magnifyingglass")
+                        .accessibilityHidden(true)
+                    Text("Ask")
+                }
+                .font(OceanType.control)
+                .foregroundStyle(OceanTheme.mist)
+                .frame(minWidth: OceanControlSize.height, minHeight: OceanControlSize.height)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .unredacted()
