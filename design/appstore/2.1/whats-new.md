@@ -6,7 +6,7 @@ Draft for review. Sources: PRs #15 to #33 and the share and widget commits since
 
 Oryne 2.1. Quicker to catch, easier to find, and more of your Ocean on your wrist.
 
-• Whisper with a tap. Tap the disc to start and tap Stop to keep it. Holding still works, and ✕ lets a take go.
+• Whisper with a tap. Tap the disc to start and tap Stop to keep it. Holding still works, and you can cancel a take.
 • Typing opens into a card. Add pictures with +, and a link in your words becomes the thought's link.
 • The Library is built for finding. Search sits with the tools at the top, results start right under it, and Summarize reads them all in one tap. Switch between Recent and Currents, filter by kind, and find Archived at the end.
 • Swipe a thought left to archive or delete it, with Undo.
@@ -21,7 +21,7 @@ Oryne 2.1. Quicker to catch, easier to find, and more of your Ocean on your wris
 
 Oryne 2.1：捕捉更轻快，查找更从容，手腕上也能翻看你的海洋。
 
-• 轻点即可录语音。轻点圆钮开始，轻点「停止」留下；按住说话依然可用，轻点 ✕ 放弃这一段。
+• 轻点即可录语音。轻点圆钮开始，轻点「停止」留下；按住说话依然可用，也可以取消这一段。
 • 打字时，输入栏会展开为卡片。用「+」添加图片，文字里的链接会成为这条灵感的链接。
 • 库为查找而生。搜索与工具一起停在顶部，结果紧接其下，轻点「总结」即可一次读完。可在「最近」与「洋流」之间切换、按类型筛选，已归档的灵感在最后。
 • 向左轻扫一条灵感，即可归档或删除，并可撤销。
@@ -31,6 +31,8 @@ Oryne 2.1：捕捉更轻快，查找更从容，手腕上也能翻看你的海�
 • 设置中新增「Oryne 了解的你」：从你的灵感中整理出的几条简短记录，可随时编辑或删除。它们在你的设备上、充电时生成。
 • 小组件全新设计。「再次浮现」会显示灵感中的图片，并新增大尺寸，可直接提问；快速捕捉也能放在锁屏上，以矩形或单行显示。
 • Apple Watch 新增「今天」与「最近」。转动数码表冠，查看今天浮现的灵感或最近的语音，并在手腕上回放。
+
+App Store Connect rejects ✕ (and other dingbats) in this field, so the cancel is said in words.
 
 ## Promotional Text (170 characters at most; can change without a new version)
 
