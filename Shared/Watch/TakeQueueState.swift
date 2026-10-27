@@ -28,8 +28,29 @@ struct QueuedTake: Codable, Equatable, Identifiable {
     /// caught out of reach goes to the iCloud inbox at once.
     var phoneReachableAtStop: Bool
     var title: String? = nil
+    /// The phone has a transcript for it, so its audio here may expire as
+    /// the phone's does.
+    var hasTranscript: Bool = false
 
     var id: UUID { take.id }
+}
+
+extension QueuedTake {
+    private enum CodingKeys: String, CodingKey {
+        case take, status, phoneTransfer, phoneReachableAtStop, title, hasTranscript
+    }
+
+    /// Fields added after an index was written decode to their defaults, so
+    /// an index from an earlier version still loads (and its takes stay).
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        take = try container.decode(WatchTake.self, forKey: .take)
+        status = try container.decodeIfPresent(TakeStatus.self, forKey: .status) ?? .onWatch
+        phoneTransfer = try container.decodeIfPresent(PhoneTransfer.self, forKey: .phoneTransfer) ?? .notSent
+        phoneReachableAtStop = try container.decode(Bool.self, forKey: .phoneReachableAtStop)
+        title = try container.decodeIfPresent(String.self, forKey: .title)
+        hasTranscript = try container.decodeIfPresent(Bool.self, forKey: .hasTranscript) ?? false
+    }
 }
 
 /// The watch's queue of takes as pure state. Every rule about what to send,
@@ -44,6 +65,11 @@ struct TakeQueueState: Codable, Equatable {
     /// How long to wait before trying the iCloud fallback again for a take
     /// whose upload already failed.
     static let cloudRetryInterval: TimeInterval = 15 * 60
+
+    /// How long the watch keeps a transcribed take's audio: the phone's own
+    /// retention (`OryneApp.expireConfirmedAudio`), so the wrist's copy
+    /// never outlives the phone's.
+    static let audioRetention: TimeInterval = 30 * 24 * 60 * 60
 
     /// Oldest first.
     private(set) var takes: [QueuedTake]
@@ -88,6 +114,22 @@ struct TakeQueueState: Codable, Equatable {
         prune()
     }
 
+    /// Applies the phone's snapshot: current titles and transcripts for the
+    /// takes it lists, and takes the user deleted leave the queue (their
+    /// audio with them). Only a confirmed take can leave this way: the phone
+    /// can't have deleted a take it never confirmed. A missing title never
+    /// erases one the watch already has.
+    mutating func apply(_ snapshot: WristSnapshot) {
+        for thought in snapshot.recent {
+            update(thought.id) {
+                $0.hasTranscript = thought.hasTranscript
+                if let title = thought.title { $0.title = title }
+            }
+        }
+        let deleted = Set(snapshot.deletedIDs)
+        takes.removeAll { $0.status == .confirmed && deleted.contains($0.id) }
+    }
+
     /// Takes to hand to WatchConnectivity: only on the watch and not yet
     /// handed over. (A take in iCloud reaches the phone from there.)
     func needingPhoneSend() -> [QueuedTake] {
@@ -129,18 +171,16 @@ struct TakeQueueState: Codable, Equatable {
         before.takes.map(\.id).filter { item($0) == nil }
     }
 
-    /// Whether the watch may delete this take's audio: it's confirmed, or
-    /// it's in iCloud with no WatchConnectivity transfer still reading the
-    /// file. A recording the queue can't account for (an unreadable index,
-    /// a crash mid-recording) is never deleted: guessing wrong loses a
-    /// caught take. Undo deletes its own file.
-    func audioDisposable(_ id: UUID) -> Bool {
-        guard let item = item(id) else { return false }
-        switch item.status {
-        case .onWatch: return false
-        case .inICloud: return item.phoneTransfer != .pending
-        case .confirmed: return true
-        }
+    /// Whether the watch may delete this take's audio while the take stays
+    /// in the queue. It keeps every recording the wrist can replay; only a
+    /// confirmed take with a transcript expires, after `audioRetention`, as
+    /// the phone's copy does. A take leaving the queue (Undo, pruning, deleted
+    /// on the phone) takes its audio through `TakeQueue.change`. A recording
+    /// the queue can't account for (an unreadable index, a crash mid-recording)
+    /// is never deleted: guessing wrong loses a caught take.
+    func audioDisposable(_ id: UUID, now: Date = .now) -> Bool {
+        guard let item = item(id), item.status == .confirmed, item.hasTranscript else { return false }
+        return now.timeIntervalSince(item.take.createdAt) > Self.audioRetention
     }
 
     /// Keeps every unconfirmed take and the newest `confirmedKept` confirmed.

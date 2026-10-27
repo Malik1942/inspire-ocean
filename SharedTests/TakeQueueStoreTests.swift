@@ -44,20 +44,24 @@ final class TakeQueueStoreTests: XCTestCase {
         XCTAssertEqual(store.load(), TakeQueueState())
     }
 
-    func test_sweep_deletesOnlyAudioSafeElsewhere() throws {
+    func test_sweep_deletesOnlyExpiredTranscribedAudio() throws {
         var state = TakeQueueState()
-        let waiting = take(), clouded = take(1), confirmed = take(2)
+        let waiting = take(), clouded = take(1), confirmed = take(2), expired = take(3)
         let unlisted = UUID()
-        [waiting, clouded, confirmed].forEach { state.add($0, phoneReachableAtStop: true) }
+        [waiting, clouded, confirmed, expired].forEach { state.add($0, phoneReachableAtStop: true) }
         state.markInICloud(clouded.id)
-        state.apply([WatchConfirmation(id: confirmed.id, title: nil)])
-        for id in [waiting.id, clouded.id, confirmed.id, unlisted] { try writeAudio(id) }
+        state.apply([WatchConfirmation(id: confirmed.id, title: nil), WatchConfirmation(id: expired.id, title: nil)])
+        var words = WristThought(id: expired.id, title: nil, createdAt: expired.createdAt)
+        words.hasTranscript = true
+        state.apply(WristSnapshot(recent: [words], today: nil, todayDay: nil, deletedIDs: [], generatedAt: expired.createdAt))
+        for id in [waiting.id, clouded.id, confirmed.id, expired.id, unlisted] { try writeAudio(id) }
 
-        store.sweep(state)
+        store.sweep(state, now: expired.createdAt.addingTimeInterval(TakeQueueState.audioRetention + 60))
 
         XCTAssertTrue(audioExists(waiting.id))
-        XCTAssertFalse(audioExists(clouded.id))
-        XCTAssertFalse(audioExists(confirmed.id))
+        XCTAssertTrue(audioExists(clouded.id), "kept for replay")
+        XCTAssertTrue(audioExists(confirmed.id), "no transcript: kept")
+        XCTAssertFalse(audioExists(expired.id))
         XCTAssertTrue(audioExists(unlisted), "a recording the index doesn't list is never guessed away")
     }
 

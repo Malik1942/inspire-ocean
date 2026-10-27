@@ -39,15 +39,6 @@ struct WatchCaptureView: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Catch a whisper"))
             statusLine
-            if let title = model.lastTitle {
-                // A thought's title is New York on the phone: the meta
-                // line's size in the serif, the wrist's own role.
-                Text("Last: \(title)")
-                    .font(.system(.footnote, design: .serif))
-                    .foregroundStyle(OceanTheme.foam)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
-            }
         }
         .padding(.horizontal)
     }

@@ -145,3 +145,28 @@ wrist-down recording.
   `audio`) in the development environment so every field exists in the
   schema. Then, before release, deploy the `WatchTake` record type in
   CloudKit Console (development creates it on first write).
+- [ ] **Live wrist snapshot** — with the phone near and both apps running,
+  capture a thought on the phone, rename a wrist take, and delete another:
+  within a few seconds the watch's Recent shows the new title and the
+  deleted take is gone (its audio too). Record the latency.
+- [ ] **Snapshot while away** — make the same changes with the watch out of
+  range: they land on their own once the two are near again.
+- [ ] **Today with the phone app closed** — on a day the phone app hasn't
+  been opened, force quit it, raise the watch with the phone near: Today
+  appears (the snapshot request wakes the phone). If it doesn't, record it
+  (spec §8.2).
+- [ ] **Another device's edit** — rename a wrist take on a Mac or iPad: it
+  reaches the watch once the phone has synced it, with the phone app
+  running, or at the next watch screen-on. Record whether the remote change
+  notification fired in the background (spec §8.3).
+- [ ] **Replay from the watch** — open a recent take, play: it plays at once
+  through the watch speaker, and through AirPods when connected. Lower the
+  wrist: it stops. If speaker playback is refused, record it (spec §8.1).
+- [ ] **Replay from the phone** — open Today on a voice thought under 30
+  days old, play: "Getting audio…", then it plays. With the phone in
+  airplane mode: "Your iPhone isn't nearby", which stays until tapped.
+- [ ] **Capture wins** — play a take, then press the Action Button: playback
+  stops, the watch returns to Capture, and the take records cleanly.
+- [ ] **Met on the wrist** — open Today on the watch with the phone away,
+  then bring it back: the phone treats that thought as met (it doesn't rise
+  again for two weeks).

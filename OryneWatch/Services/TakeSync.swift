@@ -7,11 +7,14 @@ protocol PhoneLinking: AnyObject {
     var onConfirmations: (@MainActor ([WatchConfirmation]) -> Void)? { get set }
     var onTransferFinished: (@MainActor (_ id: UUID, _ delivered: Bool) -> Void)? { get set }
     var onActivated: (@MainActor () -> Void)? { get set }
+    var onSnapshot: (@MainActor (WristSnapshot) -> Void)? { get set }
     var isReachable: Bool { get }
     var outstandingTakeIDs: Set<UUID> { get }
     func activate()
     func send(_ take: WatchTake, audioURL: URL) -> Bool
     func wake(_ id: UUID)
+    /// Asks the phone for a fresh wrist snapshot; nothing when it's out of reach.
+    func requestSnapshot()
 }
 
 /// The iCloud inbox as `TakeSync` reaches it: `CloudInbox`, or a test's fake.
@@ -34,6 +37,7 @@ final class TakeSync {
     private let queue: TakeQueue
     private let link: any PhoneLinking
     private let cloud: (any CloudInboxUploading)?
+    private let library: WristLibrary
     private let scheduleRefresh: @MainActor (Date) -> Void
     private var flushTask: Task<Void, Never>?
     private var flushAgain = false
@@ -47,14 +51,22 @@ final class TakeSync {
         queue: TakeQueue,
         link: any PhoneLinking,
         cloud: (any CloudInboxUploading)?,
+        library: WristLibrary,
         scheduleRefresh: @escaping @MainActor (Date) -> Void
     ) {
         self.queue = queue
         self.link = link
         self.cloud = cloud
+        self.library = library
         self.scheduleRefresh = scheduleRefresh
         link.onConfirmations = { [weak self] confirmations in
             self?.queue.change { $0.apply(confirmations) }
+        }
+        link.onSnapshot = { [weak self] snapshot in
+            // A reply and a context update can cross: only a newer snapshot
+            // changes anything.
+            guard let self, self.library.receive(snapshot) else { return }
+            self.queue.change { $0.apply(snapshot) }
         }
         link.onTransferFinished = { [weak self] id, delivered in
             // A failed transfer is retried on the next flush, not in a loop.
@@ -62,6 +74,7 @@ final class TakeSync {
         }
         link.onActivated = { [weak self] in
             self?.reconcile()
+            self?.requestSnapshot()
             Task { await self?.flush() }
         }
     }
@@ -73,6 +86,13 @@ final class TakeSync {
 
     func start() {
         link.activate()
+    }
+
+    /// On screen with the phone in reach: ask it for a fresh snapshot. Out
+    /// of reach this does nothing; the held snapshot stays, and nothing says
+    /// "syncing" (PHILOSOPHY §5).
+    func requestSnapshot() {
+        link.requestSnapshot()
     }
 
     /// Sends what each take still needs. A call that arrives while a pass

@@ -20,14 +20,4 @@ enum WatchStatusLine: Equatable {
         if state.takes.contains(where: { $0.status == .confirmed }) { return .inOcean }
         return .empty
     }
-
-    /// The title of the newest confirmed take, once the phone has named it.
-    /// Nil while that take is unnamed: an older title would describe the
-    /// wrong thought.
-    static func lastTitle(from state: TakeQueueState) -> String? {
-        state.takes
-            .filter { $0.status == .confirmed }
-            .max { $0.take.createdAt < $1.take.createdAt }?
-            .title
-    }
 }

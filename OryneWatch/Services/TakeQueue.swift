@@ -3,11 +3,13 @@ import AVFoundation
 import Observation
 
 /// The watch's queue of takes: the only place `TakeQueueState` is mutated.
-/// Every change saves at once and sweeps audio the state says is safe
-/// elsewhere, so a take is never lost to a crash and never kept longer than
-/// it needs to be. A sweep never touches a recording the index doesn't list
-/// (see `TakeQueueState.audioDisposable`); a take that leaves the queue
-/// (Undo, or pruned once confirmed) takes its audio with it deliberately.
+/// Every change saves at once and sweeps audio the state no longer needs
+/// (confirmed and transcribed on the phone, and past the replay window), so
+/// a take is never lost to a crash and its recording stays for replay. A
+/// sweep never touches a recording the index doesn't list (see
+/// `TakeQueueState.audioDisposable`); a take that leaves the queue (Undo,
+/// pruned once confirmed, or deleted on the phone) takes its audio with it
+/// deliberately.
 @MainActor
 @Observable
 final class TakeQueue {
@@ -40,6 +42,11 @@ final class TakeQueue {
         store.audioURL(for: id)
     }
 
+    /// Whether the watch still holds this take's recording.
+    func hasAudio(_ id: UUID) -> Bool {
+        FileManager.default.fileExists(atPath: store.audioURL(for: id).path)
+    }
+
     func change(_ mutate: (inout TakeQueueState) -> Void) {
         let before = state
         mutate(&state)
@@ -48,10 +55,10 @@ final class TakeQueue {
         if isShowingDemo { return }
         #endif
         store.save(state)
-        // A take leaves the index only by Undo or by being pruned once
-        // confirmed (even when confirmed and pruned in the same change):
-        // either way its audio goes now, since the sweep keeps anything the
-        // index doesn't list.
+        // A take leaves the index only by Undo, by being pruned once
+        // confirmed (even when confirmed and pruned in the same change), or
+        // by the phone deleting it: either way its audio goes now, since the
+        // sweep keeps anything the index doesn't list.
         for id in state.idsRemoved(since: before) {
             store.deleteAudio(id)
         }

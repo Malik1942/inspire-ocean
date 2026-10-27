@@ -14,6 +14,7 @@ final class WatchBridge {
     private var link: WatchLink?
     private var inboxReader: WatchInboxReader?
     private var inboxFolder: WatchInboxFolder?
+    private var publisher: WristSnapshotPublisher?
     private var activationKnown = false
     private var activationWaiters: [CheckedContinuation<Void, Never>] = []
 
@@ -55,6 +56,12 @@ final class WatchBridge {
         link.onActivated = { isPaired in
             Task { @MainActor in WatchBridge.shared.linkActivated(isPaired: isPaired) }
         }
+        let publisher = WristSnapshotPublisher(context: context, defaults: FastCapturePreferences.defaults, link: link)
+        link.snapshotProvider = { [weak publisher] in publisher?.publish() }
+        link.audioProvider = { [weak publisher] id in publisher?.audio(for: id) }
+        link.onMet = { [weak publisher] id in publisher?.markMet(id) }
+        self.publisher = publisher
+        publisher.start()
         self.importer = importer
         self.link = link
         self.inboxFolder = folder
@@ -114,6 +121,7 @@ final class WatchBridge {
         guard isPaired, let importer else { return }
         // A watch that missed an update catches up on activation.
         link?.send(importer.recentConfirmations)
+        publisher?.publish()
         startInboxReader()
     }
 

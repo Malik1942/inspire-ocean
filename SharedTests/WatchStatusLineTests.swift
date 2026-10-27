@@ -1,7 +1,7 @@
 import XCTest
 import Foundation
 
-/// Every row of the spec's status table, plus the last-title rule.
+/// Every row of the spec's status table.
 final class WatchStatusLineTests: XCTestCase {
 
     private let t0 = Date(timeIntervalSinceReferenceDate: 800_000_000)
@@ -38,35 +38,5 @@ final class WatchStatusLineTests: XCTestCase {
         state.add(a, phoneReachableAtStop: true)
         state.apply([WatchConfirmation(id: a.id, title: nil)])
         XCTAssertEqual(WatchStatusLine.derive(from: state), .inOcean)
-    }
-
-    func test_lastTitle_isTheNewestConfirmedTakesTitle() {
-        var state = TakeQueueState()
-        let older = take(0), newer = take(10)
-        [older, newer].forEach { state.add($0, phoneReachableAtStop: true) }
-        state.apply([
-            WatchConfirmation(id: older.id, title: "Old idea"),
-            WatchConfirmation(id: newer.id, title: "Lighthouse café"),
-        ])
-        XCTAssertEqual(WatchStatusLine.lastTitle(from: state), "Lighthouse café")
-    }
-
-    func test_lastTitle_isNilWhileTheNewestConfirmedIsUnnamed() {
-        var state = TakeQueueState()
-        let older = take(0), newer = take(10)
-        [older, newer].forEach { state.add($0, phoneReachableAtStop: true) }
-        state.apply([
-            WatchConfirmation(id: older.id, title: "Old idea"),
-            WatchConfirmation(id: newer.id, title: nil),
-        ])
-        XCTAssertNil(WatchStatusLine.lastTitle(from: state), "an older title would describe the wrong thought")
-    }
-
-    func test_lastTitle_ignoresUnconfirmedTakes() {
-        var state = TakeQueueState()
-        let named = take(0), waiting = take(10)
-        [named, waiting].forEach { state.add($0, phoneReachableAtStop: true) }
-        state.apply([WatchConfirmation(id: named.id, title: "Lighthouse café")])
-        XCTAssertEqual(WatchStatusLine.lastTitle(from: state), "Lighthouse café")
     }
 }

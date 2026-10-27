@@ -79,6 +79,7 @@ final class AppState {
         seedText: String = "",
         anchorThemeKey: String? = nil
     ) {
+        captureControl.parkForNavigation = false
         fastCaptureRequest = FastCaptureRequest(
             source: source,
             inputPreference: inputPreference ?? FastCapturePreferences.inputPreference,
@@ -100,6 +101,7 @@ final class AppState {
     /// - `oryne://capture/thought` — Fast Capture, typing first
     /// - `oryne://capture/whisper` — Fast Capture, voice first
     /// - `oryne://capture` — Fast Capture, user's preferred input
+    /// - `oryne://ask` — the existing Ask page, ready for a question
     /// - `oryne://node/<uuid>` — focus + open a node in the Ocean
     func handleDeepLink(_ url: URL) {
         guard url.scheme == "oryne" || url.scheme == "oryn" || url.scheme == "inspireocean" else { return }
@@ -115,6 +117,10 @@ final class AppState {
             default: nil
             }
             startFastCapture(source: .widget, inputPreference: preference)
+
+        case "ask":
+            captureControl.parkForNavigation = fastCaptureRequest != nil
+            selectedTab = .ask
 
         case "node":
             guard path.count > 1, let id = UUID(uuidString: path[1]) else { return }

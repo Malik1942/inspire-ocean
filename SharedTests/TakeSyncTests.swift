@@ -12,6 +12,7 @@ final class TakeSyncTests: XCTestCase {
     @MainActor
     private final class Fixture {
         let queue: TakeQueue
+        let library: WristLibrary
         let link = FakePhoneLink()
         let cloud = FakeCloudInbox()
         var scheduled: [Date] = []
@@ -19,7 +20,8 @@ final class TakeSyncTests: XCTestCase {
 
         init(directory: URL) {
             queue = TakeQueue(store: TakeQueueStore(directory: directory))
-            sync = TakeSync(queue: queue, link: link, cloud: cloud) { [unowned self] date in
+            library = WristLibrary(store: WristSnapshotStore(url: directory.appendingPathComponent("wrist.json")))
+            sync = TakeSync(queue: queue, link: link, cloud: cloud, library: library) { [unowned self] date in
                 self.scheduled.append(date)
             }
         }
@@ -43,6 +45,8 @@ final class TakeSyncTests: XCTestCase {
         var onConfirmations: (@MainActor ([WatchConfirmation]) -> Void)?
         var onTransferFinished: (@MainActor (_ id: UUID, _ delivered: Bool) -> Void)?
         var onActivated: (@MainActor () -> Void)?
+        var onSnapshot: (@MainActor (WristSnapshot) -> Void)?
+        private(set) var snapshotRequests = 0
         var isActivated = true
         var isReachable = false
         var outstandingTakeIDs: Set<UUID> = []
@@ -57,6 +61,10 @@ final class TakeSyncTests: XCTestCase {
         }
 
         func wake(_ id: UUID) {}
+
+        func requestSnapshot() {
+            snapshotRequests += 1
+        }
     }
 
     @MainActor
@@ -261,6 +269,54 @@ final class TakeSyncTests: XCTestCase {
         XCTAssertEqual(f.link.sent, [first, later])
         XCTAssertEqual(f.cloud.started, [first])
         XCTAssertEqual(f.item(later)?.phoneTransfer, .pending)
+    }
+
+    // MARK: - The wrist snapshot
+
+    @MainActor
+    func test_snapshot_dropsATakeDeletedOnThePhone_withItsAudio() throws {
+        let f = makeFixture()
+        let id = f.catchTake(reachable: true)
+        try Data([1]).write(to: f.queue.audioURL(for: id))
+        f.link.onConfirmations?([WatchConfirmation(id: id, title: "Lighthouse café")])
+        let snapshot = WristSnapshot(recent: [], today: nil, todayDay: nil, deletedIDs: [id], generatedAt: Date())
+
+        f.link.onSnapshot?(snapshot)
+
+        XCTAssertNil(f.item(id))
+        XCTAssertFalse(f.queue.hasAudio(id))
+        XCTAssertEqual(f.library.snapshot, snapshot)
+    }
+
+    @MainActor
+    func test_olderSnapshot_changesNothing() {
+        let f = makeFixture()
+        let id = f.catchTake(reachable: true)
+        f.link.onConfirmations?([WatchConfirmation(id: id, title: nil)])
+        let now = Date()
+        let newer = WristSnapshot(recent: [], today: nil, todayDay: nil, deletedIDs: [], generatedAt: now)
+        let older = WristSnapshot(recent: [], today: nil, todayDay: nil, deletedIDs: [id], generatedAt: now.addingTimeInterval(-5))
+
+        f.link.onSnapshot?(newer)
+        f.link.onSnapshot?(older)
+
+        XCTAssertNotNil(f.item(id), "a crossed, older snapshot deletes nothing")
+        XCTAssertEqual(f.library.snapshot, newer)
+    }
+
+    @MainActor
+    func test_activation_asksForAFreshSnapshot() async {
+        let f = makeFixture()
+        f.link.onActivated?()
+        await f.sync.flush()
+        XCTAssertEqual(f.link.snapshotRequests, 1)
+    }
+
+    @MainActor
+    func test_requestSnapshot_asksTheLink() {
+        let f = makeFixture()
+        f.sync.requestSnapshot()
+        XCTAssertEqual(f.link.snapshotRequests, 1)
     }
 
     // MARK: - Background refresh

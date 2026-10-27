@@ -27,6 +27,7 @@ final class WatchCaptureModel {
     private(set) var stage: Stage = .idle
     let recorder = WatchRecorder()
     let queue: TakeQueue
+    let player: WatchPlayer
     private let sync: TakeSync
     @ObservationIgnored private var current: (id: UUID, startedAt: Date)?
     @ObservationIgnored private var undoTask: Task<Void, Never>?
@@ -37,9 +38,10 @@ final class WatchCaptureModel {
     @ObservationIgnored private var demoStageAwaitingActive: Stage?
     #endif
 
-    init(queue: TakeQueue, sync: TakeSync) {
+    init(queue: TakeQueue, sync: TakeSync, player: WatchPlayer) {
         self.queue = queue
         self.sync = sync
+        self.player = player
         recorder.onEndedBySystem = { [weak self] in
             Task { await self?.finish() }
         }
@@ -47,10 +49,6 @@ final class WatchCaptureModel {
 
     var statusLine: WatchStatusLine {
         .derive(from: queue.state)
-    }
-
-    var lastTitle: String? {
-        WatchStatusLine.lastTitle(from: queue.state)
     }
 
     /// The one rule every trigger shares: idle or caught → record (a take
@@ -67,6 +65,9 @@ final class WatchCaptureModel {
         // The idle disc and the retry button call this directly; a second
         // start must never replace the take in progress.
         guard stage != .starting, stage != .recording else { return }
+        // Capture wins (PHILOSOPHY §1): a replay stops before the mic opens,
+        // and a fetch already on its way must not start when it arrives.
+        player.invalidate()
         releaseHeldTake()
         stage = .starting
         let id = UUID()
@@ -168,6 +169,7 @@ final class WatchCaptureModel {
         #endif
         // Recovery once the microphone has been allowed in Settings.
         if stage == .denied, !recorder.permissionDenied { stage = .idle }
+        sync.requestSnapshot()
         await sync.flush()
     }
 
@@ -193,19 +195,24 @@ final class WatchCaptureModel {
 
     #if DEBUG
     /// Screenshot seams (`SIMCTL_CHILD_` prefix on `simctl launch`):
-    /// `ORYNE_WATCH_DEMO=empty|waiting|onItsWay|inOcean` shows a sample queue;
+    /// `ORYNE_WATCH_DEMO=empty|waiting|onItsWay|inOcean|recent|today` shows a
+    /// sample queue (`recent` and `today` add a sample snapshot);
     /// `ORYNE_WATCH_STAGE=recording|caught|denied|failed|nothing` shows that screen;
     /// `ORYNE_WATCH_DEMO_TITLE` names the sample's last whisper.
-    func applyDemoEnvironment() {
+    func applyDemoEnvironment(library: WristLibrary) {
         let env = ProcessInfo.processInfo.environment
         let now = Date()
         func take(_ secondsAgo: TimeInterval) -> WatchTake {
             WatchTake(id: UUID(), createdAt: now.addingTimeInterval(-secondsAgo), duration: 8)
         }
         var demo = TakeQueueState()
-        let named = take(600)
+        // The thought page opens the newest recent row. On these seams that
+        // row is the named lighthouse take; the untitled take waits behind
+        // it. Other seams keep the named take ten minutes back.
+        let named = take(env["ORYNE_WATCH_DEMO"] == "recent" || env["ORYNE_WATCH_DEMO"] == "today" ? 30 : 600)
+        let title = env["ORYNE_WATCH_DEMO_TITLE"] ?? "Lighthouse café"
         demo.add(named, phoneReachableAtStop: true)
-        demo.apply([WatchConfirmation(id: named.id, title: env["ORYNE_WATCH_DEMO_TITLE"] ?? "Lighthouse café")])
+        demo.apply([WatchConfirmation(id: named.id, title: title)])
         switch env["ORYNE_WATCH_DEMO"] {
         case "empty":
             queue.showDemo(TakeQueueState())
@@ -220,6 +227,10 @@ final class WatchCaptureModel {
             queue.showDemo(demo)
         case "inOcean":
             queue.showDemo(demo)
+        case "recent", "today":
+            demo.add(take(600), phoneReachableAtStop: false)
+            queue.showDemo(demo)
+            library.showDemo(Self.demoSnapshot(named: named, title: title, now: now, withToday: env["ORYNE_WATCH_DEMO"] == "today"))
         default:
             break
         }
@@ -231,6 +242,21 @@ final class WatchCaptureModel {
         case "nothing": stage = .nothingCaught
         default: break
         }
+    }
+
+    private static func demoSnapshot(named: WatchTake, title: String, now: Date, withToday: Bool) -> WristSnapshot {
+        var whisper = WristThought(id: named.id, title: title, createdAt: named.createdAt)
+        whisper.reading = "Warm light on the counter at closing time, the menu chalked in two languages. A room that tells you to stay."
+        whisper.readingIsSummary = true
+        whisper.hasTranscript = true
+        whisper.isVoice = true
+        whisper.hasAudio = true
+        var today = WristThought(id: UUID(), title: "Warm to cool, not a filter", createdAt: now.addingTimeInterval(-40 * 86_400))
+        today.reading = "Grade the photo by the time of day it was taken, not by a preset."
+        return WristSnapshot(
+            recent: [whisper], today: withToday ? today : nil, todayDay: withToday ? now : nil,
+            deletedIDs: [], generatedAt: now
+        )
     }
     #endif
 }

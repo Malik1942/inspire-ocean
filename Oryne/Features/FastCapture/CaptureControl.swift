@@ -57,6 +57,9 @@ final class CaptureControl {
     /// The bar's send was tapped: the overlay releases the parked draft,
     /// opening for it if it isn't up, so the toast and Undo are the same.
     var releaseParked = false
+    /// A widget opened Ask while a composer was up. The composer uses its
+    /// usual put-away path, waiting for attached pictures to finish loading.
+    var parkForNavigation = false
     /// The overlay is only its toast now: the bar comes back, and a tap or a
     /// hold on it starts the next capture in the same overlay.
     var toastShowing = false
