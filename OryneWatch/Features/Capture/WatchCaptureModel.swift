@@ -65,8 +65,9 @@ final class WatchCaptureModel {
         // The idle disc and the retry button call this directly; a second
         // start must never replace the take in progress.
         guard stage != .starting, stage != .recording else { return }
-        // Capture wins (PHILOSOPHY §1): a replay stops before the mic opens.
-        player.stop()
+        // Capture wins (PHILOSOPHY §1): a replay stops before the mic opens,
+        // and a fetch already on its way must not start when it arrives.
+        player.invalidate()
         releaseHeldTake()
         stage = .starting
         let id = UUID()

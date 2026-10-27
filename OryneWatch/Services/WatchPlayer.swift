@@ -18,6 +18,10 @@ final class WatchPlayer {
     private(set) var state: State = .idle
     /// The thought being played or paused.
     private(set) var currentID: UUID?
+    /// Bumped by `invalidate`. A phone fetch keeps the value it saw and plays
+    /// only if it still matches, so leaving or starting a capture cannot
+    /// start audio after the fact.
+    private(set) var generation = 0
     private(set) var elapsed: TimeInterval = 0
     private(set) var duration: TimeInterval = 0
     @ObservationIgnored private var player: AVAudioPlayer?
@@ -69,6 +73,15 @@ final class WatchPlayer {
         player?.pause()
         ticker?.cancel()
         state = .paused
+    }
+
+    /// Ends playback and retires the current generation. A fetch that started
+    /// before this must not start playback when it returns. `stop` itself
+    /// does not retire the generation: a file that arrives while the wrist
+    /// is down is kept for a later tap.
+    func invalidate() {
+        generation += 1
+        stop()
     }
 
     /// Releases the audio session only when this player held it, so a stop

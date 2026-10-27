@@ -54,6 +54,13 @@ final class WristSnapshotSourceTests: XCTestCase {
         XCTAssertNil(s.words)
     }
 
+    func test_voiceTranscriptThatEqualsTheTitle_stillCounts() {
+        let s = source(Node(kind: .voice, title: "Lighthouse café", transcription: " Lighthouse café\n"))
+        XCTAssertEqual(s.title, "Lighthouse café")
+        XCTAssertNil(s.words)
+        XCTAssertTrue(s.hasTranscript)
+    }
+
     func test_audio_isReportedOnlyWhenThere() {
         XCTAssertTrue(source(Node(kind: .voice, audioData: Data([1]))).hasAudio)
         XCTAssertFalse(source(Node(kind: .voice)).hasAudio)

@@ -37,7 +37,11 @@ struct WatchThoughtView: View {
         .onAppear { model.appeared() }
         .onDisappear { model.leave() }
         .onChange(of: scenePhase) { _, phase in
-            if phase != .active { model.sceneWentInactive() }
+            if phase == .active {
+                model.sceneBecameActive()
+            } else {
+                model.sceneWentInactive()
+            }
         }
     }
 
@@ -56,7 +60,7 @@ struct WatchThoughtView: View {
                     .font(OceanType.note)
                     .foregroundStyle(OceanTheme.mist)
             }
-        } else if model.row.isVoice {
+        } else if model.row.isVoice && !model.row.hasTranscript {
             Text("Not transcribed yet")
                 .font(OceanType.meta)
                 .foregroundStyle(OceanTheme.mist)

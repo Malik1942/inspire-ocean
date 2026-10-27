@@ -6,7 +6,8 @@ extension WristSnapshotBuilder.Source {
     /// transcript, else a link's page summary. The words are the transcript
     /// for a whisper and the text for anything else, as the user left them,
     /// except that words which already are the title are dropped so the wrist
-    /// never shows one line twice (`ExpandedNodeView.showsWords`).
+    /// never shows one line twice (`ExpandedNodeView.showsWords`). Dropping
+    /// them does not clear the transcript: a repeated title was still heard.
     /// `placeholders` is `VoiceUnderstanding.whisperPlaceholders`.
     init(node: Node, placeholders: Set<String>) {
         let hasTranscript = !(node.transcription ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -21,7 +22,8 @@ extension WristSnapshotBuilder.Source {
             words: Self.trimmed(words) == title ? nil : words,
             isVoice: node.kind == .voice,
             hasAudio: node.audioData?.isEmpty == false,
-            createdAt: node.createdAt
+            createdAt: node.createdAt,
+            hasTranscript: hasTranscript
         )
     }
 

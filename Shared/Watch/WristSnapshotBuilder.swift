@@ -22,6 +22,29 @@ enum WristSnapshotBuilder {
         var isVoice: Bool
         var hasAudio: Bool
         var createdAt: Date
+        /// A voice thought has a transcript, even when those words are the
+        /// title and so are not shown again.
+        var hasTranscript: Bool
+
+        init(
+            id: UUID,
+            title: String?,
+            summary: String?,
+            words: String?,
+            isVoice: Bool,
+            hasAudio: Bool,
+            createdAt: Date,
+            hasTranscript: Bool = false
+        ) {
+            self.id = id
+            self.title = title
+            self.summary = summary
+            self.words = words
+            self.isVoice = isVoice
+            self.hasAudio = hasAudio
+            self.createdAt = createdAt
+            self.hasTranscript = hasTranscript
+        }
     }
 
     /// `ledgerIDs`: every wrist take the phone has imported. `liveIDs`: those
@@ -52,7 +75,9 @@ enum WristSnapshotBuilder {
         var thought = WristThought(id: source.id, title: source.title, createdAt: source.createdAt)
         thought.isVoice = source.isVoice
         thought.hasAudio = source.hasAudio
-        thought.hasTranscript = source.isVoice && words != nil
+        // Words that repeated the title were dropped upstream, but they were
+        // still a transcript: the wrist must not say it hasn't been transcribed.
+        thought.hasTranscript = source.hasTranscript || (source.isVoice && words != nil)
         if let summary = trimmed(source.summary) {
             thought.reading = summary
             thought.readingIsSummary = true

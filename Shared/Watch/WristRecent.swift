@@ -23,6 +23,9 @@ struct WristRow: Hashable, Identifiable {
     var readingIsSummary: Bool
     var continues: Bool
     var isVoice: Bool
+    /// The phone has a transcript, even when the reading was omitted because
+    /// it repeated the title.
+    var hasTranscript: Bool
     var audio: Audio
     /// Opened from Today: opening it tells the phone it was met.
     var isToday: Bool
@@ -78,7 +81,8 @@ enum WristRecent {
         return WristRow(
             id: id, title: thought?.title ?? fallbackTitle, caughtAt: caughtAt, duration: duration,
             isWaiting: isWaiting, reading: thought?.reading, readingIsSummary: thought?.readingIsSummary ?? false,
-            continues: thought?.continues ?? false, isVoice: isVoice, audio: audio, isToday: isToday
+            continues: thought?.continues ?? false, isVoice: isVoice,
+            hasTranscript: thought?.hasTranscript ?? false, audio: audio, isToday: isToday
         )
     }
 }

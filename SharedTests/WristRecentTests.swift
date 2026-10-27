@@ -86,6 +86,25 @@ final class WristRecentTests: XCTestCase {
         XCTAssertEqual(audio[silent.id], WristRow.Audio.none)
     }
 
+    func test_hasTranscript_followsTheSnapshot_andAQueueOnlyTakeHasNone() {
+        let id = UUID()
+        var spoken = WristThought(id: id, title: "Lighthouse café", createdAt: t0)
+        spoken.hasTranscript = true
+        spoken.isVoice = true
+
+        let fromSnapshot = WristRecent.rows(
+            queue: TakeQueueState(), snapshot: snapshot([spoken]), hasLocalAudio: noAudio
+        ).first
+        XCTAssertEqual(fromSnapshot?.hasTranscript, true)
+        XCTAssertNil(fromSnapshot?.reading)
+
+        var queue = TakeQueueState()
+        queue.add(take(0), phoneReachableAtStop: false)
+        let fromQueue = WristRecent.rows(queue: queue, snapshot: nil, hasLocalAudio: noAudio).first
+        XCTAssertEqual(fromQueue?.isVoice, true)
+        XCTAssertEqual(fromQueue?.hasTranscript, false)
+    }
+
     func test_today_showsOnItsDayOnly_andIsMarked() {
         let pick = thought(UUID(), title: "Warm to cool", hasAudio: true, at: t0.addingTimeInterval(-40 * 86_400))
         let snap = snapshot(today: pick)

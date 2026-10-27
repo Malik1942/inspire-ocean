@@ -85,6 +85,16 @@ final class WristSnapshotBuilderTests: XCTestCase {
         XCTAssertFalse(WristSnapshotBuilder.thought(from: source(words: "words", isVoice: false)).hasTranscript)
     }
 
+    func test_transcriptFlagWithoutWords_isATranscriptAndHasNoReading() {
+        let source = WristSnapshotBuilder.Source(
+            id: UUID(), title: nil, summary: nil, words: nil,
+            isVoice: true, hasAudio: false, createdAt: now, hasTranscript: true
+        )
+        let thought = WristSnapshotBuilder.thought(from: source)
+        XCTAssertTrue(thought.hasTranscript)
+        XCTAssertNil(thought.reading)
+    }
+
     func test_titleAndAudio_passThrough() {
         let thought = WristSnapshotBuilder.thought(from: source(title: "Lighthouse café", hasAudio: true))
         XCTAssertEqual(thought.title, "Lighthouse café")
