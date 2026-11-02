@@ -1,0 +1,1073 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Oryne 2.1 Identity</title>
+<style>
+/* App values from design/tokens/oryne.tokens.json (2.0) and design/identity-2.1.md (2.1). */
+:root{
+  --abyss:rgb(5,5,8); --deep:rgb(13,14,17); --mid:rgb(23,24,28); --current:rgb(38,40,45); --surf:rgb(61,62,69);
+  --foam:rgba(255,255,255,.92); --text:rgba(255,255,255,.66); --hint:rgba(255,255,255,.58); --mist:rgba(255,255,255,.5); --faint:rgba(255,255,255,.26);
+  --warm0:rgb(242,237,224); --warm1:rgb(250,230,194); --ring:rgb(173,199,235);
+  --serif:ui-serif,"New York",Georgia,serif; --sans:-apple-system,system-ui,"SF Pro Text","Helvetica Neue",sans-serif;
+  --z:.8; --slow:1;
+  --page:#151517; --pageInk:#d6d5d2; --pageMute:#8b8a87; --line:#2a2a2d;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--page);color:var(--pageInk);font:14px/1.5 var(--sans);padding:0 24px 80px}
+header{max-width:1200px;margin:0 auto;padding:40px 0 16px}
+h1{font:600 26px/1.2 var(--sans);letter-spacing:-.2px}
+header p{color:var(--pageMute);max-width:760px;margin-top:6px}
+.warn{display:none;margin-top:12px;padding:8px 12px;border-radius:8px;background:#3a2a12;color:#f3d6a4;max-width:760px}
+.controls{position:sticky;top:0;z-index:10;background:rgba(21,21,23,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);margin:0 -24px;padding:10px 24px}
+.controls .in{max-width:1200px;margin:0 auto;display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center}
+.seg{display:inline-flex;gap:2px;background:#232326;border-radius:8px;padding:2px}
+.seg button{border:0;background:none;color:var(--pageMute);font:500 12px var(--sans);padding:5px 10px;border-radius:6px;cursor:pointer}
+.seg button.on{background:#3a3a3e;color:#fff}
+.ctl{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--pageMute)}
+.ctl b{color:var(--pageInk);font-weight:600}
+section{max-width:1200px;margin:48px auto 0}
+h2{font:600 18px/1.3 var(--sans)}
+.tags{margin-top:4px;color:var(--pageMute)}
+.tag{display:inline-block;font:600 11px var(--sans);padding:1px 6px;border-radius:4px;background:#2a2a2e;color:#cfcfd4;margin-right:6px}
+.row{display:flex;flex-wrap:wrap;gap:36px;margin-top:20px;align-items:flex-start}
+figure{display:flex;flex-direction:column;gap:12px}
+figcaption{max-width:calc(402px * var(--z));color:var(--pageMute);font-size:12.5px}
+figcaption b{color:var(--pageInk);font-weight:600;display:block;font-size:13px;margin-bottom:2px}
+.scaled{zoom:var(--z)}
+
+/* Phone */
+.phone{position:relative;width:402px;height:874px;border-radius:56px;overflow:hidden;
+  background:radial-gradient(120% 60% at 50% 0%,var(--mid),var(--deep) 55%,var(--abyss));
+  box-shadow:0 0 0 9px #050506,0 0 0 10px #38383c;margin:10px;color:var(--foam);font-family:var(--sans)}
+.status{position:absolute;top:0;left:0;right:0;height:54px;padding:8px 34px 0 46px;display:flex;justify-content:space-between;align-items:center;font:600 17px var(--sans);z-index:5}
+.status svg{height:13px}
+.content{position:absolute;inset:0;padding:62px 16px 0}
+.home{position:absolute;bottom:8px;left:50%;width:134px;height:5px;margin-left:-67px;border-radius:3px;background:rgba(255,255,255,.7);z-index:6}
+.shore{position:absolute;left:0;right:0;bottom:0;height:260px;background:linear-gradient(to bottom,transparent,rgba(5,5,8,.92) 70%);z-index:3}
+.glass{background:rgba(32,34,40,.6);backdrop-filter:blur(24px) saturate(150%);-webkit-backdrop-filter:blur(24px) saturate(150%);
+  box-shadow:inset 0 0 0 .5px rgba(255,255,255,.12),inset 0 .5px 0 rgba(255,255,255,.16),0 6px 20px rgba(0,0,0,.35)}
+.tabs{position:absolute;bottom:24px;left:50%;margin-left:-133px;width:266px;height:62px;border-radius:31px;display:flex;padding:4px;z-index:4}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--text);font:500 10px var(--sans);border-radius:27px}
+.tab svg{width:26px;height:26px}
+.tab.sel{background:rgba(255,255,255,.1);color:var(--foam)}
+.bar{position:absolute;bottom:98px;left:16px;right:16px;height:56px;border-radius:28px;display:flex;align-items:center;gap:8px;padding:0 6px 0 20px;z-index:4}
+.bar .ph{flex:1;color:var(--hint);font:400 17px var(--sans)}
+.bar.listen{padding-left:6px}
+.disc{position:relative;width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;color:var(--foam)}
+.disc svg.g{width:20px;height:20px}
+.d20{background:rgba(255,255,255,.08)}
+.d20.on{background:rgba(255,255,255,.18)}
+.ringsvg{position:absolute;inset:0;width:44px;height:44px;overflow:visible}
+.ringsvg circle{fill:none;stroke:var(--ring);stroke-width:1.5}
+.d21.on .ringsvg circle{stroke:var(--warm1);stroke-width:3}
+.levels{flex:1;display:flex;align-items:center;justify-content:center;gap:3px;height:28px}
+.levels i{display:block;width:3px;border-radius:2px;background:var(--mist)}
+.spacer{flex:1}
+
+/* Type at app values */
+.pt20{font:400 40px/48px var(--serif);color:var(--foam);margin:6px 0 0 2px}
+.pt21{font:600 34px/41px var(--sans);letter-spacing:.37px;color:var(--foam);margin:10px 0 0 0}
+body[data-b="ny"] .pt21{font:400 40px/48px var(--serif);letter-spacing:0;margin:6px 0 0 2px}
+.sl20{font:italic 400 21px/26px var(--serif);color:var(--mist);margin-left:2px}
+.sl20.w{color:var(--warm0)}
+.sl21{font:500 15px/20px var(--sans);letter-spacing:.3px;color:var(--mist)}
+.secA{font:italic 400 21px/26px var(--serif);color:var(--warm1);margin-left:2px}
+body[data-a="1"] .secA{font:500 15px/20px var(--sans);font-style:normal;letter-spacing:.3px;color:var(--mist);margin-left:0}
+.rt20{font:400 32px/39px var(--serif);color:var(--foam)}
+.rt21{font:400 44px/50px var(--serif);color:var(--warm1);letter-spacing:-.2px}
+.body20{font:400 17px/26px var(--sans);color:var(--text)}
+.tb21{font:400 19px/28px var(--serif);color:var(--foam)}
+.tb21.w{color:var(--warm1)}
+.tt20{font:500 16px/21px var(--sans);color:var(--foam)}
+.tt21{font:400 17px/22px var(--serif);color:var(--foam)}
+.sec{font:400 15px/21px var(--sans);color:var(--text)}
+.meta{font:400 13px/18px var(--sans);color:var(--mist)}
+.subj{font:400 28px/34px var(--serif);color:var(--foam)}
+.stmt{font:500 22px/28px var(--sans);color:var(--foam)}
+.clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+.lamp{position:absolute;left:-40px;right:-40px;height:380px;pointer-events:none;z-index:0}
+.lamp.l20{background:radial-gradient(closest-side,rgba(242,237,224,.09),transparent)}
+.lamp.l21{background:radial-gradient(closest-side,color-mix(in srgb,var(--warm1) 12%,transparent),transparent)}
+.z{position:relative;z-index:1}
+.tile{border-radius:20px;padding:16px;display:flex;gap:12px;align-items:center}
+.f20{background:rgba(255,255,255,.055);box-shadow:0 8px 24px rgba(0,0,0,.28)}
+.f21{background:rgba(255,255,255,.10);box-shadow:0 8px 24px rgba(0,0,0,.28)}
+.thumb{width:44px;height:44px;border-radius:10px;flex:none}
+.rowline{display:flex;gap:12px;align-items:center;padding:10px 0}
+
+/* Sheet */
+.dimmed{position:absolute;inset:0;background:var(--abyss)}
+.sheet{position:absolute;left:0;right:0;top:62px;bottom:0;border-radius:38px 38px 0 0;
+  background:radial-gradient(120% 50% at 50% 0%,var(--current),var(--mid) 45%,var(--deep));padding:0 16px}
+.grab{width:36px;height:5px;border-radius:3px;background:var(--faint);margin:6px auto 0}
+.tools{display:flex;justify-content:space-between;margin-top:10px}
+.tool{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--foam)}
+.tool svg{width:20px;height:20px}
+.toolgroup{height:44px;border-radius:22px;display:flex;align-items:center;padding:0 4px}
+.toolgroup span{width:40px;height:36px;border-radius:18px;display:flex;align-items:center;justify-content:center;color:var(--text)}
+.toolgroup span.on{background:rgba(255,255,255,.12);color:var(--foam)}
+.toolgroup svg{width:19px;height:19px}
+
+/* Library cards */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;align-items:start}
+.card{border-radius:20px;padding:14px;display:flex;flex-direction:column;gap:6px}
+.pic{height:110px;border-radius:14px;margin-bottom:4px}
+
+/* Strips */
+.strip{position:relative;width:402px;height:110px;border-radius:24px;overflow:hidden;
+  background:radial-gradient(140% 120% at 50% 0%,var(--mid),var(--deep) 60%,var(--abyss))}
+.strip .bar{bottom:27px}
+.strip.tall{height:180px}
+.toast{position:absolute;left:16px;right:16px;bottom:95px;height:48px;border-radius:24px;display:flex;align-items:center;gap:10px;padding:0 18px;
+  background:rgba(13,14,17,.85);font:500 15px var(--sans);color:var(--foam);opacity:0;transform:translateY(14px);z-index:5;
+  transition:opacity calc(360ms*var(--slow)) cubic-bezier(.25,.1,.25,1),transform calc(360ms*var(--slow)) cubic-bezier(.25,.1,.25,1)}
+.toast.in{opacity:1;transform:none}
+.toast .undo{margin-left:auto;font-weight:600;color:var(--foam)}
+.toast svg{width:14px;height:14px;flex:none}
+.toast circle{fill:none;stroke-width:1.5;stroke:var(--warm1);transition:stroke calc(360ms*var(--slow)) cubic-bezier(.25,.1,.25,1) calc(120ms*var(--slow))}
+.toast.in.cool circle{stroke:var(--ring)}
+.ghost{position:absolute;width:44px;height:44px;right:22px;bottom:33px;z-index:6;pointer-events:none;opacity:0}
+.ghost circle{fill:none;stroke:var(--warm1);stroke-width:3}
+.ghost.go{animation:sink calc(360ms*var(--slow)) cubic-bezier(.25,.1,.25,1) forwards}
+@keyframes sink{from{opacity:1;transform:none}to{opacity:0;transform:translateY(16px) scale(.55)}}
+.d21 .g,.d21 .ringsvg circle{transition:all calc(150ms*var(--slow)) cubic-bezier(0,0,.58,1)}
+.play{border:0;background:#2c2c30;color:#fff;font:600 12px var(--sans);padding:6px 12px;border-radius:7px;cursor:pointer}
+
+/* Directions: the stage and the water column */
+body[data-d="0"] .drift{display:none}
+.stS{background:radial-gradient(72% 62% at 50% 4%,rgba(255,178,104,.32),rgba(255,166,92,.11) 55%,transparent 86%),linear-gradient(180deg,rgb(14,12,12),var(--abyss) 62%)}
+.stC{background:radial-gradient(115% 58% at 50% 0%,rgba(240,204,164,.19),rgba(240,204,164,.07) 50%,transparent 86%),linear-gradient(180deg,var(--mid),var(--deep) 45%,var(--abyss))}
+.wc{background:radial-gradient(90% 26% at 50% 0%,rgba(255,190,120,.26),transparent 80%),linear-gradient(180deg,rgb(40,34,30) 0%,rgb(22,22,26) 24%,rgb(11,13,18) 52%,rgb(5,6,10) 78%,rgb(2,2,4))}
+.stLabel{font:italic 400 19px/24px var(--serif);color:rgb(255,196,140)}
+.stTitle{font:500 46px/51px var(--serif);color:#fff8ee;letter-spacing:-.4px}
+.stWords{font:400 20px/29px var(--serif);color:rgba(255,248,238,.84)}
+.cLabel{font:500 13px/18px var(--sans);letter-spacing:.4px;color:rgba(240,210,178,.72)}
+.cTitle{font:400 42px/48px var(--serif);color:rgba(250,242,232,.9)}
+.cWords{font:400 19px/28px var(--serif);color:rgba(250,242,232,.66)}
+.dLabel{font:500 13px/18px var(--sans);letter-spacing:.4px;color:rgba(255,255,255,.34)}
+.dRow{font:400 17px/24px var(--serif);color:rgba(255,255,255,.5);margin-top:6px}
+.dp{font-family:var(--serif);color:#fff;line-height:1.25}
+
+/* The direction: stage and column */
+.dir{--warm1:rgb(255,196,140)}
+.sc{background:radial-gradient(70% 46% at 50% 0%,rgba(255,178,104,.34),rgba(255,166,92,.12) 55%,transparent 88%),linear-gradient(180deg,rgb(16,13,12) 0%,rgb(10,11,15) 48%,rgb(5,6,10) 76%,var(--abyss))}
+.scEmpty{background:radial-gradient(70% 50% at 50% 0%,rgba(255,178,104,.22),rgba(255,166,92,.08) 55%,transparent 88%),linear-gradient(180deg,rgb(14,12,12),rgb(8,9,13) 60%,var(--abyss))}
+.coolSheet{background:radial-gradient(90% 40% at 50% 0%,rgba(173,199,235,.16),rgba(173,199,235,.05) 55%,transparent 88%),linear-gradient(180deg,rgb(20,22,27),var(--deep) 50%,var(--abyss))}
+.deepLib{background:radial-gradient(100% 22% at 50% 0%,rgba(173,199,235,.07),transparent 85%),linear-gradient(180deg,var(--deep),rgb(6,7,10) 60%,rgb(2,2,4))}
+.col{text-align:center;margin-top:52px}
+.col .dp,.cool{color:rgb(232,238,250)}
+.col .dp{transition:font-size calc(350ms*var(--slow)) cubic-bezier(.25,.1,.25,1),opacity calc(350ms*var(--slow)) cubic-bezier(.25,.1,.25,1),margin-top calc(350ms*var(--slow)) cubic-bezier(.25,.1,.25,1),transform calc(800ms*var(--slow)) cubic-bezier(.3,0,.2,1)}
+/* The spec's depth ladder: every tappable line at 4.5:1 or more, in ink/litCool */
+body[data-ladder="floor"] .col .dp,body[data-ladder="floor"] .cool{color:rgb(242,246,255)}
+body[data-ladder="floor"] .coolSheet .dLabel{color:var(--mist)}
+/* Nearby enters the ladder at level 2: a neighbour never outranks the page's own words (19) */
+body[data-ladder="floor"] .nb0{font-size:17px!important;opacity:.64!important;margin-top:12px!important}
+body[data-ladder="floor"] .nb1{font-size:15px!important;opacity:.56!important;margin-top:18px!important}
+body[data-ladder="floor"] .nb2{font-size:14px!important;opacity:.52!important;margin-top:16px!important}
+.ctTitle{font:500 32px/38px var(--serif);color:#f2f6ff;letter-spacing:-.2px}
+.ctWords{font:400 19px/28px var(--serif);color:rgba(242,246,255,.84)}
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:20px}
+.legend div{background:#1c1c1f;border-radius:12px;padding:14px 16px}
+.legend b{display:block;font-size:13px;margin-bottom:4px;color:var(--pageInk)}
+.legend span{color:var(--pageMute);font-size:12.5px}
+
+/* Round 3: left aligned, every kind of thought */
+.r3{max-width:1340px}
+.r3 .scaled{zoom:calc(var(--z)*.875)}
+.r3 figcaption{max-width:calc(402px*var(--z)*.875)}
+.r3 h3{font:600 16px/1.3 var(--sans);margin-top:44px}
+.r3 .idea{color:var(--pageMute);max-width:900px;margin-top:4px}
+.r3p{background:linear-gradient(180deg,rgb(15,13,13) 0%,rgb(10,11,15) 48%,rgb(5,6,10) 76%,var(--abyss))!important}
+.r3p .light{position:absolute;inset:0;pointer-events:none}
+.r3p .lTL{background:radial-gradient(100% 55% at 18% 0%,rgba(255,178,104,.30),rgba(255,166,92,.10) 55%,transparent 90%)}
+.r3p .lRow{background:radial-gradient(80% 36% at 18% 12%,rgba(255,178,104,.26),rgba(255,166,92,.08) 60%,transparent 92%)}
+.r3p .stack{position:relative}
+.r3p .gear{position:absolute;top:56px;right:16px;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--foam);z-index:2}
+.r3p .lbl{font:italic 400 17px/22px var(--serif);color:rgb(255,196,140)}
+.r3p .t{font-family:var(--serif);font-weight:500;color:#fff8ee;letter-spacing:-.2px}
+.r3p .w{font:400 19px/28px var(--serif);color:rgba(255,248,238,.84)}
+.r3p .hero{font:400 26px/35px var(--serif);color:#fff8ee}
+.r3p .name{font:500 16px/22px var(--serif);color:rgba(255,248,238,.66)}
+.r3p .acts{display:flex;gap:8px;flex-wrap:wrap}
+.r3p .btn{height:44px;border-radius:22px;padding:0 16px;display:inline-flex;align-items:center;gap:6px;font:500 15px var(--sans);color:var(--foam);background:rgba(255,255,255,.14)}
+.r3p .plate{position:relative;overflow:hidden;border-radius:14px}
+.r3p .sky{position:absolute;left:0;right:0;bottom:0;width:100%;height:30%}
+.r3p .og{position:absolute;inset:26% 14%}
+.r3p .og i{display:block;height:11%;min-height:3px;border-radius:99px;background:rgba(255,255,255,.3);margin-bottom:7%}
+.r3p .src{font:400 13px/18px var(--sans);color:var(--mist);display:flex;align-items:center;gap:6px}
+.r3p .desc{font:400 15px/21px var(--sans);color:var(--text);margin-top:4px}
+.r3p .dl{font:500 13px/18px var(--sans);letter-spacing:.4px;color:var(--mist);margin-bottom:4px}
+.r3p .crow{display:flex;align-items:center;gap:12px;min-height:44px}
+.r3p .ct{flex:1;min-width:0;font-family:var(--serif);color:rgb(242,246,255)}
+.r3p .stage{position:absolute;left:0;right:0;top:0;height:420px}
+.r3p .stageLight{position:absolute;inset:0;background:radial-gradient(90% 78% at 50% 0%,rgba(255,178,104,.40),rgba(255,166,92,.13) 55%,transparent 92%)}
+.r3p .fade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.30),transparent 20%,transparent 40%,rgba(10,11,14,.78) 80%,rgb(10,11,14))}
+.r3p .cap{position:absolute;left:16px;right:16px;bottom:16px}
+.r3p .onPhoto .t{color:#fff;text-shadow:0 1px 14px rgba(0,0,0,.5)}
+.r3p .onPhoto .lbl{text-shadow:0 1px 10px rgba(0,0,0,.6)}
+
+/* Round 4: the stage fits what came back */
+.r3p .hstage{position:absolute;left:0;right:0;top:0}
+.r3p .hlight{position:absolute;inset:0;background:radial-gradient(100% 55% at 18% 0%,rgba(255,178,104,.30),rgba(255,166,92,.10) 55%,transparent 90%)}
+.r3p .hrows{position:relative}
+.r3p .hbleed{position:absolute;left:-70px;right:-70px;top:0;filter:blur(32px) saturate(1.15) brightness(.72)}
+.r3p .hscrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.26),transparent 18%)}
+/* WebKit does not clip a filtered layer to a border radius; clip the content layer itself */
+.r3p .content{clip-path:inset(0 round 56px)}
+
+/* Motion tweak pane */
+.tweak{position:fixed;right:16px;top:16px;width:310px;max-height:calc(100vh - 32px);overflow:auto;z-index:50;background:rgba(28,28,31,.97);border:1px solid #34343a;border-radius:12px;padding:10px 12px 12px;font:12px/1.4 var(--sans);color:var(--pageInk);box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.tweak.min .tw-b{display:none}
+.tw-h{display:flex;align-items:center;gap:6px}
+.tw-h b{font-size:13px;color:#fff}
+.tw-h .sp{flex:1}
+.tweak button{border:0;background:#3a3a3e;color:#fff;font:600 11.5px var(--sans);padding:5px 9px;border-radius:6px;cursor:pointer}
+.tweak button[data-a="play"]{background:#e9e9ee;color:#111}
+.tw-m{border-top:1px solid #34343a;margin-top:10px;padding-top:8px}
+.tw-l{font-weight:600;color:#fff}
+body.tw-open{padding-right:350px}
+.tw-row{display:flex;align-items:center;gap:8px;margin-top:6px}
+.tw-row label{color:var(--pageMute);width:86px;flex:none}
+.tw-row input[type=range]{flex:1;min-width:0}
+.tw-row output{width:40px;text-align:right;font-variant-numeric:tabular-nums}
+.tweak select,.tweak input[type=text]{background:#232326;color:#fff;border:1px solid #3a3a3e;border-radius:6px;padding:3px 6px;font:12px var(--sans)}
+.tweak input[type=text]{flex:1;min-width:0}
+.tweak .ck{width:auto;display:flex;gap:4px;align-items:center;color:var(--pageInk)}
+.tweak pre{white-space:pre-wrap;background:#141416;border-radius:8px;padding:8px;margin:12px 0 6px;font:10.5px/1.5 ui-monospace,Menlo,monospace;color:#cfcfd4;user-select:all}
+.tw-note{color:var(--pageMute)}
+
+/* Ring sizes and contrast */
+.ringset{display:flex;align-items:flex-end;gap:28px;padding:28px;border-radius:24px;background:radial-gradient(140% 120% at 50% 0%,var(--mid),var(--deep) 60%,var(--abyss))}
+.ringset figure{align-items:center;gap:8px}
+.ringset figcaption{text-align:center;font-size:11.5px;max-width:110px}
+.icon{width:120px;height:120px;border-radius:27px;display:block}
+table{border-collapse:collapse;margin-top:16px;font-size:13px;min-width:640px}
+th,td{text-align:left;padding:7px 14px 7px 0;border-bottom:1px solid var(--line)}
+th{color:var(--pageMute);font-weight:500}
+td.ok{color:#9fd9a8}td.no{color:#f0a3a3}
+.sw{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:6px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+</style>
+</head>
+<body data-a="2" data-b="sf" data-d="1" data-ladder="floor">
+
+<header>
+  <h1>Oryne 2.1 identity: wireframes</h1>
+  <p>Built from design/identity-2.1.md at app values: iPhone 17 Pro (402 × 874), tokens from oryne.tokens.json, copy from the screenshot seed. The picked direction is first; the earlier rounds follow, 2.0 on the left of each pair and the spec's 2.1 on the right. Glyphs are hand-drawn stand-ins for SF Symbols.</p>
+  <div class="warn" id="warn">This browser is not WebKit, so New York falls back to Georgia. Open this file in Safari to judge R2.</div>
+</header>
+
+<aside id="tweak" class="tweak" aria-label="Motion tweak pane"></aside>
+
+<!-- The direction -->
+<section class="r3" id="round4">
+  <h2>Round 4: the stage fits what came back</h2>
+  <div class="tags"><span class="tag">2026-11-02</span>Directions 1 and 2 combined. A thought with a picture or a link image gets 2's immersive stage, the title at its foot. A thought without one stands in the same light from the top of the screen, as in 1, so no stage sits empty. Both use direction 1's set: its warm light, one title scale (34, 28, 24 pt by length), one label, one action row and one column. Under a picture, its lower color blurs down into the water instead of a fade to black. The motion pane on the right plays the capture moment on these four frames.</div>
+  <div class="row" id="r4"></div>
+</section>
+
+<section class="r3">
+  <h2>Round 3: Tide, left aligned, every kind of thought</h2>
+  <div class="tags"><span class="tag">2026-11-02</span>Centered read like lyrics and broke on long titles. Four left-aligned ways to stage the thought that came back, each with a short text thought, a long-titled voice thought, a picture and a link. The light rule stays: warm light means it returned. Pick one to build.</div>
+  <div id="r3"></div>
+</section>
+
+<section class="dir">
+  <h2>Round 2: the direction, stage and column</h2>
+  <div class="tags"><span class="tag">2026-10-30</span><b>Centered layout rejected 2026-11-02: it reads like lyrics, and long titles break it.</b>Light from above, depth below. What returns to you stands in a warm light, what you reach for gets a cool one, and everything else sinks by age into the dark. Press Play capture to watch a thought enter the water.</div>
+  <div class="legend">
+    <div><b><span class="sw" style="background:rgb(255,178,104)"></span>Warm light: it returned</b><span>Only today's resurfacing thought, and the ring while it listens. The warm is the light, never the ink.</span></div>
+    <div><b><span class="sw" style="background:var(--ring)"></span>Cool light: you reached for it</b><span>A thought you open, and the ring at rest. The icon's rim color.</span></div>
+    <div><b>Depth is time</b><span>The newest catch sits just under the surface; each older one smaller and darker. No dates on Tide.</span></div>
+    <div><b>Two voices, one mark</b><span>New York is the user's words, SF is Oryne's. The ring is the only shape Oryne owns.</span></div>
+  </div>
+  <div class="row">
+    <figure>
+      <div class="scaled"><div class="phone sc" id="tideDemo" data-v="21" data-tab="tide" data-bar>
+        <div class="content" style="text-align:center">
+          <div class="stLabel" style="margin-top:92px">Resurfacing</div>
+          <div class="stTitle" style="margin-top:14px">A button that doesn't need a label</div>
+          <div class="stWords" style="margin-top:18px">If the icon is the action, the word next to it is noise. Cut the word first.</div>
+          <div class="col" id="col"></div>
+        </div>
+        <div class="toast glass" style="bottom:164px"><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="6.25"/></svg>Carried into the sea<span class="undo">Undo</span></div>
+        <svg class="ghost" style="bottom:104px" viewBox="0 0 44 44"><circle cx="22" cy="22" r="20.5"/></svg>
+      </div></div>
+      <figcaption><b>Tide</b><button class="play" id="playCapture">Play capture</button> <button class="play" id="resetCapture">Reset</button><br>The stage over the column. The ring listens in the warm light, sinks on release, and the new catch enters just under the surface while every older one steps one level deeper; the oldest goes dark. Uses the existing <code>lift</code>, <code>standard</code> and <code>gentle</code> curves, but the sinking rows are new motion and need your say.</figcaption>
+    </figure>
+    <figure>
+      <div class="scaled"><div class="phone" data-v="21">
+        <div class="dimmed"></div>
+        <div class="sheet coolSheet">
+          <div class="grab"></div>
+          <div class="tools"><div class="tool glass" data-i="chevron"></div><div class="tool glass" data-i="ellipsis"></div></div>
+          <div class="ctTitle" style="margin-top:28px">Warm to cool, not a filter</div>
+          <div class="ctWords" style="margin-top:18px">Stop adding an orange overlay. The sunset is already a temperature shift: 3500K down into blue. Match that, don't fake it.</div>
+          <div class="dLabel" style="margin-top:52px">Nearby</div>
+          <div class="dp cool nb0" style="font-size:18px;opacity:.62;margin-top:12px">Sunset gradient study</div>
+          <div class="dp cool nb1" style="font-size:16px;opacity:.42;margin-top:14px">Golden hour on the walk home</div>
+          <div class="dp cool nb2" style="font-size:15px;opacity:.26;margin-top:12px">Desk at 6pm</div>
+        </div>
+      </div></div>
+      <figcaption><b>The thought page</b>A cool light from above: you reached for this one, it did not come back on its own. Title New York 32 medium, words New York 19, left aligned for reading, no meta line. Nearby sinks the same way as Tide's column. No tiles.</figcaption>
+    </figure>
+    <figure>
+      <div class="scaled"><div class="phone deepLib" data-v="21" data-tab="library">
+        <div class="content">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="font:600 34px/41px var(--sans);letter-spacing:.37px;color:var(--foam)">Library</div>
+            <div class="toolgroup glass" data-lib></div>
+          </div>
+          <div class="grid" data-cards="21"></div>
+        </div>
+      </div></div>
+      <figcaption><b>The Library</b>The depth. No stage light performs here: only a faint cool surface far above, and the water darkens as you scroll. Scanning is the job, so this is the one place with fills (white 10%) and New York 17 titles.</figcaption>
+    </figure>
+    <figure>
+      <div class="scaled"><div class="phone scEmpty" data-v="21" data-tab="tide" data-bar>
+        <div class="content">
+          <div style="position:absolute;left:16px;right:16px;top:250px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center">
+            <svg width="48" height="48" viewBox="0 0 48 48"><circle cx="24" cy="24" r="23.25" fill="none" stroke="var(--ring)" stroke-width="1.5"/></svg>
+            <div class="stmt">The Ocean is still</div>
+            <div class="sec" style="color:var(--mist)">Capture a thought and watch it drift in.</div>
+          </div>
+        </div>
+      </div></div>
+      <figcaption><b>Empty Tide</b>An empty stage: the light already falls, waiting. The ring stands where the first thought will return.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 0. Directions -->
+<section>
+  <h2>0. Directions: the bone on Tide</h2>
+  <div class="tags"><span class="tag">Surface and depth</span>A thought sinks into the sea; one day it rises into the light. Tide is the surface, the Library is the depth. Each frame puts that axis on screen: light above, dark below, one thing in the light.</div>
+  <div class="row">
+    <figure>
+      <div class="scaled"><div class="phone stS" data-v="21" data-tab="tide" data-bar>
+        <div class="content" style="text-align:center">
+          <div class="stLabel" style="margin-top:112px">Resurfacing</div>
+          <div class="stTitle" style="margin-top:14px">A button that doesn't need a label</div>
+          <div class="stWords" style="margin-top:18px">If the icon is the action, the word next to it is noise. Cut the word first.</div>
+          <div class="drift" style="position:absolute;left:16px;right:16px;top:572px">
+            <div class="dLabel">Drifted in</div>
+            <div class="dRow">Warm to cool, not a filter</div>
+            <div class="dRow">Desk at 6pm</div>
+          </div>
+        </div>
+      </div></div>
+      <figcaption><b>Stage, bold</b>Your note. A warm tungsten light falls from above into the dark; the thought stands in it in near-white New York 46 medium, centered like a line spoken on a stage. The warm is the light, not the ink. Everything else is the dark house: the newest catches are dim, cool and small.</figcaption>
+    </figure>
+    <figure>
+      <div class="scaled"><div class="phone stC" data-v="21" data-tab="tide" data-bar>
+        <div class="content">
+          <div class="cLabel" style="margin-top:96px">Resurfacing</div>
+          <div class="cTitle" style="margin-top:12px">A button that doesn't need a label</div>
+          <div class="cWords" style="margin-top:16px">If the icon is the action, the word next to it is noise. Cut the word first.</div>
+          <div class="drift" style="position:absolute;left:16px;right:16px;top:560px">
+            <div class="dLabel">Drifted in</div>
+            <div class="dRow">Warm to cool, not a filter</div>
+            <div class="dRow">Desk at 6pm</div>
+            <div class="dRow">Are.na Editorial</div>
+          </div>
+        </div>
+      </div></div>
+      <figcaption><b>Stage, calm</b>The same structure, quieter: a wide, low dawn light instead of a spot, regular weight, left aligned on the system margin. The warm is a tint of the water; the ink is soft white. Closer to 2.0's restraint, with the light doing the identity work.</figcaption>
+    </figure>
+    <figure>
+      <div class="scaled"><div class="phone wc" data-v="21" data-tab="tide" data-bar>
+        <div class="content">
+          <div class="cLabel" style="margin-top:26px">Resurfacing</div>
+          <div class="dp" style="font-size:40px;line-height:46px;margin-top:10px">A button that doesn't need a label</div>
+          <div class="dp" style="font-size:19px;line-height:28px;opacity:.8;margin-top:14px">If the icon is the action, the word next to it is noise. Cut the word first.</div>
+          <div class="drift" style="margin-top:58px">
+            <div class="dp" style="font-size:21px;opacity:.78">Warm to cool, not a filter</div>
+            <div class="dp" style="font-size:19px;opacity:.56;margin-top:22px">Desk at 6pm</div>
+            <div class="dp" style="font-size:17px;opacity:.38;margin-top:20px">Are.na Editorial</div>
+            <div class="dp" style="font-size:15px;opacity:.24;margin-top:18px">Golden hour on the walk home</div>
+            <div class="dp" style="font-size:14px;opacity:.13;margin-top:16px">Sunset gradient study</div>
+          </div>
+        </div>
+      </div></div>
+      <figcaption><b>Water column</b>The screen is a section of the sea. Sunlight warms the surface at the top, where today's thought has risen; below, the newest catches sink by age, each smaller and darker, into the depth the Library holds. No labels for time: depth is the time. Every row stays tappable (PHILOSOPHY §4).</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 1. Tide -->
+<section>
+  <h2>1. Tide, the gray test</h2>
+  <div class="tags"><span class="tag">R1</span><span class="tag">R2</span><span class="tag">R3</span>A text-only resurfacing thought, no picture. Pass: still recognizably Oryne without the sunset.</div>
+  <div class="row">
+    <figure>
+      <div class="scaled"><div class="phone" data-v="20" data-tab="tide" data-bar>
+        <div class="content">
+          <div class="pt20">Tide</div>
+          <div class="lamp l20" style="top:120px"></div>
+          <div class="z" style="margin-top:24px">
+            <div class="sl20 w">Resurfacing</div>
+            <div class="rt20" style="margin-top:12px">A button that doesn't need a label</div>
+            <div class="body20" style="margin-top:8px">If the icon is the action, the word next to it is noise. Cut the word first.</div>
+            <div class="meta" style="margin-top:8px">3 weeks ago</div>
+          </div>
+          <div class="z" style="margin-top:40px">
+            <div class="sl20">Drifted in</div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+              <div class="tile f20"><div style="flex:1"><div class="tt20">Warm to cool, not a filter</div><div class="meta">Today</div></div></div>
+              <div class="tile f20"><div style="flex:1"><div class="tt20">Desk at 6pm</div><div class="meta">Yesterday</div></div><div class="thumb" style="background:linear-gradient(135deg,#e9b69a,#8f8f9c)"></div></div>
+              <div class="tile f20"><div style="flex:1"><div class="tt20">Are.na Editorial</div><div class="meta">2 days ago</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+      <figcaption><b>2.0 now</b>Gray type on black. New York dresses the chrome (Tide, Resurfacing, Drifted in); the thought's words are SF at white 66%, the class of a meta line. Tiles at 5.5% sit about 1.1:1 on the water. The waves glyph and the solid disc repeat nothing from the icon.</figcaption>
+    </figure>
+    <figure>
+      <div class="scaled"><div class="phone" data-v="21" data-tab="tide" data-bar>
+        <div class="content">
+          <div class="lamp l21" style="top:40px"></div>
+          <div class="z" style="margin-top:14px">
+            <div class="secA">Resurfacing</div>
+            <div class="rt21" style="margin-top:12px">A button that doesn't need a label</div>
+            <div class="tb21 w" style="margin-top:12px">If the icon is the action, the word next to it is noise. Cut the word first.</div>
+            <div class="meta" style="margin-top:10px">3 weeks ago</div>
+          </div>
+          <div class="z" style="margin-top:40px">
+            <div class="sl21">Drifted in</div>
+            <div style="margin-top:6px">
+              <div class="rowline"><div style="flex:1"><div class="tt21">Warm to cool, not a filter</div><div class="meta">Today</div></div></div>
+              <div class="rowline"><div style="flex:1"><div class="tt21">Desk at 6pm</div><div class="meta">Yesterday</div></div><div class="thumb" style="background:linear-gradient(135deg,#e9b69a,#8f8f9c)"></div></div>
+              <div class="rowline"><div style="flex:1"><div class="tt21">Are.na Editorial</div><div class="meta">2 days ago</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+      <figcaption><b>2.1 proposal</b>No large title: the first line is today's thought. One warm block (R3): label per decision A, title New York 44 and words New York 19 in the warm point (toggle above), over the lamp. Drifted in is type on the water, no fills. The ring is the disc's stroke and the Tide tab (R1).</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 2. Capture ring -->
+<section>
+  <h2>2. The capture disc: rest, listening, release</h2>
+  <div class="tags"><span class="tag">R1</span><span class="tag">R3</span>Listening brightness follows a simulated mic level. Release uses the real <code>touch</code> (150 ms) and <code>lift</code> (360 ms) curves; switch Motion to ×4 to inspect.</div>
+  <div class="row">
+    <figure>
+      <div class="scaled" style="display:flex;flex-direction:column;gap:14px">
+        <div class="strip" id="s20rest"></div>
+        <div class="strip" id="s20listen"></div>
+      </div>
+      <figcaption><b>2.0 now</b>Rest: a flat matte disc with the waveform. Listening: ✕ at the leading end, level bars, the disc tinted 18% with Stop.</figcaption>
+    </figure>
+    <figure>
+      <div class="scaled" style="display:flex;flex-direction:column;gap:14px">
+        <div class="strip" id="s21rest"></div>
+        <div class="strip" id="s21listen"></div>
+      </div>
+      <figcaption><b>2.1 rest and listening</b>Rest: glass, a 1.5 pt ring stroke, no tint. Listening: the stroke thickens to 3 pt, warms to glowWarm, and its brightness carries the level in place of the bars. Reduce Motion holds it steady.</figcaption>
+    </figure>
+    <figure>
+      <div class="scaled"><div class="strip tall" id="s21release"></div></div>
+      <figcaption><b>2.1 release</b><button class="play" id="play">Play release</button><br>The ring contracts and sinks (<code>lift</code>); the disc returns to rest (<code>touch</code>); the toast's leading glyph is the same ring at 14 pt, warm, cooling to the ring color as the toast settles.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 3. Thought page -->
+<section>
+  <h2>3. The thought page</h2>
+  <div class="tags"><span class="tag">R2</span><span class="tag">R3</span>Serif is the user's words, sans is Oryne's. Nothing warm on this page.</div>
+  <div class="row">
+    <figure>
+      <div class="scaled"><div class="phone" data-v="20">
+        <div class="dimmed"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="tools"><div class="tool glass" data-i="chevron"></div><div class="tool glass" data-i="ellipsis"></div></div>
+          <div class="subj" style="margin-top:20px">Warm to cool, not a filter</div>
+          <div class="meta" style="margin-top:6px">Today · Typed</div>
+          <div class="body20" style="margin-top:16px">Stop adding an orange overlay. The sunset is already a temperature shift: 3500K down into blue. Match that, don't fake it.</div>
+          <div class="sl20" style="margin-top:40px">Nearby</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+            <div class="tile f20"><div style="flex:1"><div class="tt20">Sunset gradient study</div><div class="meta">Sep 30</div></div><div class="thumb" style="background:linear-gradient(180deg,#f2a65a,#e0745a 35%,#8a5a9e 70%,#3b3f6e)"></div></div>
+            <div class="tile f20"><div style="flex:1"><div class="tt20">Golden hour on the walk home</div><div class="meta">Oct 4</div></div><div class="thumb" style="background:linear-gradient(180deg,#f6b77c,#c97c5d 50%,#5b5f73)"></div></div>
+          </div>
+        </div>
+      </div></div>
+      <figcaption><b>2.0 now</b>The title is New York 28, but the words are SF 17 at white 66%, quieter than Oryne's own labels.</figcaption>
+    </figure>
+    <figure>
+      <div class="scaled"><div class="phone" data-v="21">
+        <div class="dimmed"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="tools"><div class="tool glass" data-i="chevron"></div><div class="tool glass" data-i="ellipsis"></div></div>
+          <div class="subj" style="margin-top:20px">Warm to cool, not a filter</div>
+          <div class="meta" style="margin-top:6px">Today · Typed</div>
+          <div class="tb21" style="margin-top:16px">Stop adding an orange overlay. The sunset is already a temperature shift: 3500K down into blue. Match that, don't fake it.</div>
+          <div class="sl21" style="margin-top:40px">Nearby</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+            <div class="tile f21"><div style="flex:1"><div class="tt21">Sunset gradient study</div><div class="meta">Sep 30</div></div><div class="thumb" style="background:linear-gradient(180deg,#f2a65a,#e0745a 35%,#8a5a9e 70%,#3b3f6e)"></div></div>
+            <div class="tile f21"><div style="flex:1"><div class="tt21">Golden hour on the walk home</div><div class="meta">Oct 4</div></div><div class="thumb" style="background:linear-gradient(180deg,#f6b77c,#c97c5d 50%,#5b5f73)"></div></div>
+          </div>
+        </div>
+      </div></div>
+      <figcaption><b>2.1 proposal</b>Title New York 28, words <code>thoughtBody</code> New York 19 in foam with +5 leading. Meta and Nearby are SF. Tiles at 10% with New York 17 titles.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 4. Library -->
+<section>
+  <h2>4. The Library</h2>
+  <div class="tags"><span class="tag">R2</span><span class="tag">Finding 1</span>Fills belong here, where scanning is the job. The page title follows decision B.</div>
+  <div class="row">
+    <figure>
+      <div class="scaled"><div class="phone" data-v="20" data-tab="library">
+        <div class="content">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div class="pt20" style="margin-top:0">Library</div>
+            <div class="toolgroup glass" data-lib></div>
+          </div>
+          <div class="grid" data-cards="20"></div>
+        </div>
+      </div></div>
+      <figcaption><b>2.0 now</b>New York 40 page title. Cards at white 5.5%, titles SF 16 medium, words SF 15 at 66%.</figcaption>
+    </figure>
+    <figure>
+      <div class="scaled"><div class="phone" data-v="21" data-tab="library">
+        <div class="content">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div class="pt21" style="margin-top:0">Library</div>
+            <div class="toolgroup glass" data-lib></div>
+          </div>
+          <div class="grid" data-cards="21"></div>
+        </div>
+      </div></div>
+      <figcaption><b>2.1 proposal</b>Page title per decision B. Cards at white 10%, titles New York 17 regular. The words preview stays SF 15 because the spec's table does not name it (see the note in chat).</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 5. Empty -->
+<section>
+  <h2>5. The empty page</h2>
+  <div class="tags"><span class="tag">R1</span><span class="tag">R2</span>Tide before the first thought. All three ring placements are on screen at once here.</div>
+  <div class="row">
+    <figure>
+      <div class="scaled"><div class="phone" data-v="20" data-tab="tide" data-bar>
+        <div class="content">
+          <div class="pt20">Tide</div>
+          <div style="position:absolute;left:16px;right:16px;top:300px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">
+            <div data-i="waves" data-size="48" style="color:var(--surf)"></div>
+            <div class="subj">The Ocean is still</div>
+            <div class="sec" style="color:var(--mist)">Capture a thought and watch it drift in.</div>
+          </div>
+        </div>
+      </div></div>
+      <figcaption><b>2.0 now</b>The waves symbol at <code>glyphHero</code> 48 in <code>surface</code>, the line in New York 28.</figcaption>
+    </figure>
+    <figure>
+      <div class="scaled"><div class="phone" data-v="21" data-tab="tide" data-bar>
+        <div class="content">
+          <div style="position:absolute;left:16px;right:16px;top:300px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">
+            <svg width="48" height="48" viewBox="0 0 48 48"><circle cx="24" cy="24" r="23.25" fill="none" stroke="var(--ring)" stroke-width="1.5"/></svg>
+            <div class="stmt">The Ocean is still</div>
+            <div class="sec" style="color:var(--mist)">Capture a thought and watch it drift in.</div>
+          </div>
+        </div>
+      </div></div>
+      <figcaption><b>2.1 proposal</b>The ring at <code>ringHero</code> 48, 1.5 pt, ring color; the line in <code>statement</code> SF 22 medium. The second line's fate is not in the spec, so it stays as it is.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 6. Ring and contrast -->
+<section>
+  <h2>6. The ring against the icon, and contrast</h2>
+  <div class="tags"><span class="tag">R1</span><span class="tag">Decision C</span><span class="tag">Verification 3</span>The ring color is the spec's estimate (0.68 / 0.78 / 0.92), not yet sampled from the icon.</div>
+  <div class="row">
+    <div class="ringset">
+      <figure><img class="icon" src="../Oryne/Assets.xcassets/AppIcon.appiconset/icon-1024.png" alt="Oryne app icon"><figcaption>The icon</figcaption></figure>
+      <figure><svg width="48" height="48" viewBox="0 0 48 48"><circle cx="24" cy="24" r="23.25" fill="none" stroke="var(--ring)" stroke-width="1.5"/></svg><figcaption>Empty page, 48</figcaption></figure>
+      <figure><div class="disc d21"><svg class="ringsvg" viewBox="0 0 44 44"><circle cx="22" cy="22" r="21.25"/></svg></div><figcaption>Disc at rest, 44</figcaption></figure>
+      <figure><div class="disc d21 on"><svg class="ringsvg" viewBox="0 0 44 44"><circle cx="22" cy="22" r="20.5"/></svg></div><figcaption>Listening, 44</figcaption></figure>
+      <figure><div data-i="ring" data-size="26" style="color:var(--foam)"></div><figcaption>Tide tab, 26</figcaption></figure>
+      <figure><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6.25" fill="none" stroke="var(--ring)" stroke-width="1.5"/></svg><figcaption>Toast glyph, 14</figcaption></figure>
+    </div>
+  </div>
+  <table id="contrast"><thead><tr><th>Pair</th><th>2.0</th><th>2.1</th><th>Target</th></tr></thead><tbody></tbody></table>
+  <p style="color:var(--pageMute);margin-top:8px;font-size:12px">Computed in sRGB from the token values (white at alpha composited over <code>deep</code>), not measured on a device.</p>
+</section>
+
+<script>
+const I={
+  waves:'<path d="M2.5 7.5c2.4-1.8 4.6-1.8 7 0s4.6 1.8 7 0 4.6-1.8 5 0M2.5 12.5c2.4-1.8 4.6-1.8 7 0s4.6 1.8 7 0 4.6-1.8 5 0M2.5 17.5c2.4-1.8 4.6-1.8 7 0s4.6 1.8 7 0 4.6-1.8 5 0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>',
+  ring:'<circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.7"/>',
+  bubble:'<path d="M5 4.5h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H10l-4.5 3.2V17.5H5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
+  stack:'<rect x="3.5" y="8.5" width="17" height="12" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M6 5.5h12M8.5 2.8h7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>',
+  waveform:'<path d="M4 10v4M8 6v12M12 3v18M16 7v10M20 10v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  stop:'<rect x="6" y="6" width="12" height="12" rx="2.5" fill="currentColor"/>',
+  x:'<path d="M7 7l10 10M17 7L7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  chevron:'<path d="M15 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
+  ellipsis:'<circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/>',
+  grid:'<rect x="3.5" y="3.5" width="7" height="7" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.7"/>',
+  list:'<path d="M8 6h13M8 12h13M8 18h13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="4" cy="6" r="1.3" fill="currentColor"/><circle cx="4" cy="12" r="1.3" fill="currentColor"/><circle cx="4" cy="18" r="1.3" fill="currentColor"/>',
+  search:'<circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>'
+};
+const svg=(k,s=24,cls='')=>`<svg class="${cls}" width="${s}" height="${s}" viewBox="0 0 24 24">${I[k]}</svg>`;
+const status='<svg viewBox="0 0 70 13" width="70"><rect x="0" y="8" width="3" height="5" rx="1" fill="#fff"/><rect x="5" y="5.5" width="3" height="7.5" rx="1" fill="#fff"/><rect x="10" y="3" width="3" height="10" rx="1" fill="#fff"/><rect x="15" y="0.5" width="3" height="12.5" rx="1" fill="#fff"/><path d="M24 4.5a10 10 0 0 1 13 0M26.5 7.5a6 6 0 0 1 8 0" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/><circle cx="30.5" cy="11" r="1.5" fill="#fff"/><rect x="43" y="1" width="23" height="11" rx="3.5" fill="none" stroke="rgba(255,255,255,.4)"/><rect x="45" y="3" width="17" height="7" rx="2" fill="#fff"/><path d="M67.5 5v3" stroke="rgba(255,255,255,.4)" stroke-width="1.5" stroke-linecap="round"/></svg>';
+
+function disc(v,state){
+  const g=svg(state==='rest'?'waveform':'stop',24,'g');
+  if(v==='20') return `<div class="disc d20${state==='rest'?'':' on'}">${g}</div>`;
+  const r=state==='rest'?21.25:20.5;
+  return `<div class="disc d21${state==='rest'?'':' on'}"><svg class="ringsvg" viewBox="0 0 44 44"><circle cx="22" cy="22" r="${r}"/></svg>${g}</div>`;
+}
+function bar(v,state){
+  if(state==='rest') return `<div class="bar glass"><span class="ph">What are you noticing?</span>${disc(v,'rest')}</div>`;
+  const mid=v==='20'
+    ? `<div class="levels">${[6,12,18,9,22,14,26,11,17,8,20,13,7,15,10].map(h=>`<i style="height:${h}px"></i>`).join('')}</div>`
+    : '<div class="spacer"></div>';
+  return `<div class="bar glass listen"><div class="disc d20">${svg('x',24,'g')}</div>${mid}${disc(v,'listen')}</div>`;
+}
+function tabbar(v,sel){
+  const t=(k,label,id)=>`<div class="tab${sel===id?' sel':''}">${svg(k,26)}<span>${label}</span></div>`;
+  return `<div class="tabs glass">${t(v==='21'?'ring':'waves','Tide','tide')}${t('bubble','Ask','ask')}${t('stack','Library','library')}</div>`;
+}
+
+// Round 3: four left-aligned ways to stage the thought that came back.
+Object.assign(I,{
+  gear:'<circle cx="12" cy="12" r="8.2" fill="none" stroke="currentColor" stroke-width="3" stroke-dasharray="3.1 3.34"/><circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="2.3" fill="none" stroke="currentColor" stroke-width="1.7"/>',
+  link:'<path d="M10.2 13.8a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.1 1.1M13.8 10.2a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.1-1.1" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>',
+  play:'<path d="M8 5.2v13.6l10.8-6.8z" fill="currentColor"/>'
+});
+const SKY='<svg class="sky" viewBox="0 0 400 80" preserveAspectRatio="none"><path d="M0 80V54h22V40h18v18h16V32h12v-8h10v26h24V42h20v16h14V26h8v-6h6v32h26V46h18v10h22V36h16v16h20V48h28V28h12v24h20V42h18v38z" fill="#15161c"/></svg>';
+const PH={
+  golden:{bg:'linear-gradient(180deg,#f7c48a 0%,#f0a26e 26%,#c97c5d 50%,#6b6378 76%,#2f3340)',sky:1,tone:'#4b4459'},
+  desk:{bg:'linear-gradient(135deg,#e9b69a,#b99a96 50%,#8f8f9c)'},
+  sunset:{bg:'linear-gradient(180deg,#f2a65a,#e0745a 35%,#8a5a9e 70%,#3b3f6e)'},
+  arena:{bg:'linear-gradient(135deg,#dedbd3,#a9a59c)'},
+  og:{bg:'linear-gradient(135deg,#101a2c,#22406e 55%,#6f93c9)',og:1,tone:'#2c4d82'}
+};
+const pic=(p,style='',cls='plate')=>`<div class="${cls}" style="background:${p.bg};${style}">${p.sky?SKY:''}${p.og?'<div class="og"><i style="width:46%;background:rgba(255,255,255,.55)"></i><i style="width:72%"></i><i style="width:58%"></i></div>':''}</div>`;
+const R3={
+  text:{label:'Text',title:"A button that doesn't need a label",words:'If the icon is the action, the word next to it is noise. Cut the word first.'},
+  voice:{label:'Long title, voice',title:'Tires hiss instead of roar after rain, and the whole city sounds like it is finally listening',words:'Walking home after the rain. Everything is quieter. I want the capture sound to feel like that, soft and close.',dur:'0:24'},
+  photo:{label:'Picture',title:'Golden hour on the walk home',words:'Streetlights coming on while the sky is still warm.',img:PH.golden},
+  link:{label:'Link',title:'Apple Design Principles',domain:'developer.apple.com',desc:'The HIG contains guidance and best practices that keep an interface feeling like it belongs.',img:PH.og}
+};
+const R3COL=[['Warm to cool, not a filter'],['Desk at 6pm',PH.desk],['Are.na Editorial',PH.arena],['Sunset gradient study',PH.sunset],["A button that doesn't need a label"],['Golden hour on the walk home',PH.golden]];
+const LAD=[.90,.76,.64,.56,.52];
+const clamp=n=>`display:-webkit-box;-webkit-line-clamp:${n};-webkit-box-orient:vertical;overflow:hidden`;
+// A title steps down by its length, never by squeezing: [up to chars, size, line height].
+const fit=(t,steps)=>steps.find(s=>t.length<=s[0]);
+const gear=`<div class="gear glass">${svg('gear',20)}</div>`;
+const acts=c=>`<div class="acts"><span class="btn">Nearby</span><span class="btn">Let it rest</span>${c.dur?`<span class="btn">${svg('play',14)}${c.dur}</span>`:''}</div>`;
+const src=(c,desc=true)=>`<div class="src">${svg('link',14)}${c.domain}</div>${desc?`<div class="desc" style="${clamp(2)}">${c.desc}</div>`:''}`;
+function column(c,{sizes,size=17,thumb=36,label=true}={}){
+  const rows=R3COL.filter(r=>r[0]!==c.title).slice(0,5);
+  return (label?'<div class="dl">Drifted in</div>':'')+rows.map((r,i)=>{
+    const s=sizes?sizes[i]:size;
+    return `<div class="crow" style="opacity:${LAD[i]}"><span class="ct" style="font-size:${s}px;line-height:${Math.round(s*1.3)}px;${clamp(1)}">${r[0]}</span>${r[1]?pic(r[1],`width:${thumb}px;height:${thumb}px;border-radius:${thumb>36?10:8}px;flex:none`):''}</div>`;
+  }).join('');
+}
+const D3own=c=>c.words&&!c.domain;
+const DIRS=[
+  {name:'1. Reading light',steps:[[40,34,40],[80,28,34],[1e9,24,30]],
+   idea:'The refinement. Everything on one left edge, the warm light from the upper left like a reading lamp. The title steps down by length (34, 28, 24 pt, four lines at most) instead of shrinking to fit. A picture or a link image is a plate in the flow. The column keeps its sinking sizes, now left aligned, with a small picture on the right of any catch that has one.',
+   render(c){const [,s,lh]=fit(c.title,this.steps);return `<div class="light lTL"></div><div class="content">${gear}<div class="stack" style="margin-top:52px">
+     <div class="lbl">Resurfacing</div>
+     <div class="t" style="font-size:${s}px;line-height:${lh}px;margin-top:10px;${clamp(4)}">${c.title}</div>
+     ${c.img?pic(c.img,`height:${c.domain?168:220}px;margin-top:16px`):''}
+     ${c.words&&!c.domain?`<div class="w" style="margin-top:${c.img?14:12}px;${clamp(4)}">${c.words}</div>`:''}
+     ${c.domain?`<div style="margin-top:12px">${src(c)}</div>`:''}
+     <div style="margin-top:18px">${acts(c)}</div>
+     <div style="margin-top:34px">${column(c,{sizes:[21,19,17,15,14]})}</div></div></div>`}},
+  {name:'2. The picture is the stage',steps:[[40,30,36],[80,26,32],[1e9,22,28]],
+   idea:'The boldest. The top half of Tide is the stage: the thought\'s own picture or link image, edge to edge, fading into the water. A thought with no picture gets the warm light in the same place, so every day has a stage. The title sits at its foot (30, 26, 22 pt). The user\'s pictures become the color of the app on the days they return.',
+   render(c){const [,s,lh]=fit(c.title,this.steps),photo=!!c.img;return `<div class="content">
+     <div class="stage">${photo?pic(c.img,'position:absolute;inset:0;border-radius:0')+'<div class="fade"></div>':'<div class="stageLight"></div>'}
+       <div class="cap${photo?' onPhoto':''}"><div class="lbl">Resurfacing</div>
+       <div class="t" style="font-size:${s}px;line-height:${lh}px;margin-top:8px;${clamp(3)}">${c.title}</div></div></div>
+     ${gear}<div class="stack" style="margin-top:374px">
+     ${c.words&&!c.domain?`<div class="w" style="${clamp(3)}">${c.words}</div>`:''}
+     ${c.domain?src(c):''}
+     <div style="margin-top:16px">${acts(c)}</div>
+     <div style="margin-top:30px">${column(c)}</div></div></div>`}},
+  {name:'3. Your words come back',
+   idea:'The most Oryne. What returns is what the user wrote or said, set large (New York 26); the title steps back to a name under it, so a long title is never the problem. A picture leads with the picture. A link has no words of the user\'s, so its name takes the large size and the site\'s words stay in SF.',
+   render(c){const own=D3own(c);return `<div class="light lTL"></div><div class="content">${gear}<div class="stack" style="margin-top:52px">
+     <div class="lbl">Resurfacing</div>
+     ${c.img?pic(c.img,`height:${c.domain?168:230}px;margin-top:14px`):''}
+     <div class="hero" style="margin-top:${c.img?16:10}px;${clamp(c.img?3:6)}">${own?c.words:c.title}</div>
+     ${own?`<div class="name" style="margin-top:12px;${clamp(3)}">${c.title}</div>`:''}
+     ${c.domain?`<div style="margin-top:10px">${src(c)}</div>`:''}
+     <div style="margin-top:18px">${acts(c)}</div>
+     <div style="margin-top:32px">${column(c)}</div></div></div>`}},
+  {name:'4. One column',steps:[[40,24,30],[80,22,28],[1e9,20,26]],
+   idea:'The calmest. Today\'s thought is the top of the column, risen into the light: title 24, 22 or 20 pt, a square picture on the right for a picture or a link. Five catches follow at one size and one rhythm, dimming with age, no label. Most of Tide fits on the first screen.',
+   render(c){const [,s,lh]=fit(c.title,this.steps);return `<div class="light lRow"></div><div class="content">${gear}<div class="stack" style="margin-top:52px">
+     <div class="lbl">Resurfacing</div>
+     <div style="display:flex;gap:14px;align-items:flex-start;margin-top:10px"><div style="flex:1;min-width:0">
+       <div class="t" style="font-size:${s}px;line-height:${lh}px;${clamp(4)}">${c.title}</div>
+       ${c.words&&!c.domain?`<div class="w" style="font-size:17px;line-height:25px;margin-top:8px;${clamp(3)}">${c.words}</div>`:''}
+       ${c.domain?`<div style="margin-top:8px">${src(c,false)}</div>`:''}</div>
+       ${c.img?pic(c.img,'width:88px;height:88px;border-radius:12px;flex:none'):''}</div>
+     <div style="margin-top:16px">${acts(c)}</div>
+     <div style="margin-top:28px">${column(c,{size:18,thumb:40,label:false})}</div></div></div>`}}
+];
+const capOf=(d,c)=>d.steps?`Title ${fit(c.title,d.steps)[1]} pt (${c.title.length} characters).`:(D3own(c)?'Their words 26 pt, the name 16 pt.':'No words of the user\'s: the name takes the large size.');
+document.getElementById('r3').innerHTML=DIRS.map((d,i)=>`<div class="dirblk" id="r3d${i+1}"><h3>${d.name}</h3><div class="idea">${d.idea}</div><div class="row">${
+  Object.entries(R3).map(([key,c])=>`<figure><div class="scaled"><div class="phone r3p" id="r3d${i+1}-${key}" data-v="21" data-tabv="20" data-tab="tide" data-bar>${d.render(c)}</div></div><figcaption><b>${c.label}</b>${capOf(d,c)}</figcaption></figure>`).join('')}</div></div>`).join('');
+
+// Round 4: the stage fits what came back. A picture or a link image gets the immersive
+// stage; a thought without one stands in the same light, with no empty stage above it.
+const HSTEPS=[[40,34,40],[80,28,34],[1e9,24,30]];
+const HLAD=[{s:21,o:.90},{s:19,o:.76},{s:17,o:.64},{s:15,o:.56},{s:14,o:.52},{s:13,o:0}];
+const hrow=(r,i)=>`<div class="crow" style="opacity:${HLAD[i].o}"><span class="ct" style="font-size:${HLAD[i].s}px;line-height:${Math.round(HLAD[i].s*1.3)}px;${clamp(1)}">${r[0]}</span>${r[1]?pic(r[1],'width:36px;height:36px;border-radius:8px;flex:none'):''}</div>`;
+const hrows=c=>R3COL.filter(r=>r[0]!==c.title).slice(0,5).map(hrow).join('');
+// The picture's lower color carries on below it: a blurred copy of the picture over its own
+// foot, then the average color of its lower third, fading out into the water. In SwiftUI:
+// the image with .blur(radius: 32, opaque: true), and CIAreaAverage over the bottom third.
+const bleed=(img,h,b)=>{const m=`linear-gradient(180deg,#000 ${h+20}px,rgba(0,0,0,.5) ${h+Math.round(b/2)}px,transparent ${h+b}px)`;
+  return `<div class="hbleed" style="height:${h+b}px;-webkit-mask-image:${m};mask-image:${m}">${pic(img,`position:absolute;left:0;right:0;top:0;height:${h}px;border-radius:0`)}<div style="position:absolute;left:0;right:0;top:${h}px;height:${b}px;background:${img.tone}"></div></div>`};
+function hyb(c,key){
+  const [,s,lh]=fit(c.title,HSTEPS),id='hyb-'+key,h=c.img?(c.domain?300:360):0;
+  const head=`<div class="lbl">Resurfacing</div><div class="t" id="${id}-title" style="font-size:${s}px;line-height:${lh}px;margin-top:10px;${clamp(h?3:4)}">${c.title}</div>`;
+  return `<div class="content">${h
+      ?`<div class="hstage" id="${id}-stage" style="height:${h}px">${bleed(c.img,h,c.domain?300:320)}${pic(c.img,'position:absolute;inset:0;border-radius:0;-webkit-mask-image:linear-gradient(180deg,#000 48%,transparent 96%);mask-image:linear-gradient(180deg,#000 48%,transparent 96%)')}<div class="hscrim"></div><div class="cap onPhoto">${head}</div></div>`
+      :`<div class="hlight" id="${id}-stage"></div>`}${gear}
+    <div class="stack" style="margin-top:${h?h-46:52}px">${h?'':head}
+    ${c.words&&!c.domain?`<div class="w" id="${id}-words" style="margin-top:${h?0:12}px;${clamp(h?3:4)}">${c.words}</div>`:''}
+    ${c.domain?`<div id="${id}-source">${src(c)}</div>`:''}
+    <div id="${id}-actions" style="margin-top:18px">${acts(c)}</div>
+    <div id="${id}-column" style="margin-top:34px"><div class="dl">Drifted in</div><div class="hrows">${hrows(c)}</div></div></div></div>`;
+}
+document.getElementById('r4').innerHTML=Object.entries(R3).map(([key,c])=>`<figure><div class="scaled"><div class="phone r3p hyb" id="hyb-${key}" data-key="${key}" data-v="21" data-tabv="20" data-tab="tide" data-bar>${hyb(c,key)}</div></div><figcaption><b>${c.label}</b>${c.img?'The picture is the stage, the title at its foot; its lower color blurs down into the water.':'No picture: the Reading light, and the title starts at the top.'} Title ${fit(c.title,HSTEPS)[1]} pt.</figcaption></figure>`).join('');
+
+document.querySelectorAll('.phone').forEach(p=>{
+  const v=p.dataset.v;
+  p.insertAdjacentHTML('afterbegin',`<div class="status"><span>9:41</span>${status}</div>`);
+  if(p.hasAttribute('data-bar')) p.insertAdjacentHTML('beforeend','<div class="shore"></div>'+bar(v,'rest'));
+  if(p.dataset.tab) p.insertAdjacentHTML('beforeend',tabbar(p.dataset.tabv||v,p.dataset.tab));
+  p.insertAdjacentHTML('beforeend','<div class="home"></div>');
+});
+document.querySelectorAll('[data-i]').forEach(e=>{e.innerHTML=svg(e.dataset.i,+(e.dataset.size||20))});
+document.querySelectorAll('[data-lib]').forEach(e=>{e.innerHTML=`<span class="on">${svg('grid')}</span><span>${svg('list')}</span><span>${svg('search')}</span>`});
+
+const cards=[
+  ['Sunset gradient study','The orange does not end. It cools into violet before the horizon eats it.','Sep 30','linear-gradient(180deg,#f2a65a,#e0745a 35%,#8a5a9e 70%,#3b3f6e)'],
+  ['Warm to cool, not a filter','Stop adding an orange overlay. The sunset is already a temperature shift.','Today'],
+  ['A button that doesn\'t need a label','If the icon is the action, the word next to it is noise. Cut the word first.','Oct 9'],
+  ['Golden hour on the walk home','Streetlights coming on while the sky is still warm.','Oct 4','linear-gradient(180deg,#f6b77c,#c97c5d 50%,#5b5f73)'],
+  ['Apple Design Principles','The HIG contains guidance and best practices that keep an interface feeling like it belongs.','Oct 12'],
+  ['Desk at 6pm','The wall goes peach then slate as the sun drops.','Yesterday','linear-gradient(135deg,#e9b69a,#8f8f9c)']
+];
+document.querySelectorAll('[data-cards]').forEach(g=>{
+  const v=g.dataset.cards;
+  const cols=[[],[]];
+  cards.forEach((c,i)=>cols[i%2].push(`<div class="card f${v}">${c[3]?`<div class="pic" style="background:${c[3]}"></div>`:''}<div class="tt${v} clamp2">${c[0]}</div><div class="sec clamp2">${c[1]}</div><div class="meta">${c[2]}</div></div>`));
+  g.innerHTML=cols.map(c=>`<div style="display:flex;flex-direction:column;gap:10px">${c.join('')}</div>`).join('');
+});
+
+// Strips
+const put=(id,html)=>{document.getElementById(id).innerHTML=html};
+put('s20rest',bar('20','rest'));
+put('s20listen',bar('20','listen'));
+put('s21rest',bar('21','rest'));
+put('s21listen',bar('21','listen'));
+put('s21release',bar('21','listen')+
+  '<div class="toast glass" id="toast"><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="6.25"/></svg>Carried into the sea<span class="undo">Undo</span></div>'+
+  '<svg class="ghost" id="ghost" viewBox="0 0 44 44"><circle cx="22" cy="22" r="20.5"/></svg>');
+
+// Simulated mic level drives the listening ring's brightness (R3). Reduce Motion holds it steady.
+const reduce=matchMedia('(prefers-reduced-motion: reduce)');
+let lvl=.5,target=.5;
+function tick(){
+  if(Math.random()<.12) target=Math.random()<.25?.95:.2+Math.random()*.5;
+  lvl+= (target-lvl)*.18;
+  document.querySelectorAll('.d21.on .ringsvg circle').forEach(c=>{
+    if(c.closest('.ringset')) return;
+    c.style.strokeOpacity=reduce.matches?1:(.35+.65*lvl).toFixed(3);
+  });
+  requestAnimationFrame(tick);
+}
+tick();
+
+// Release: ring sinks (lift), disc swaps to rest (touch), toast lifts in, its ring cools.
+const relRoot=document.getElementById('s21release');
+let busy=false;
+document.getElementById('play').onclick=()=>{
+  if(busy) return; busy=true;
+  const slow=+getComputedStyle(document.body).getPropertyValue('--slow')||1;
+  const ghost=document.getElementById('ghost'),toast=document.getElementById('toast');
+  const b=relRoot.querySelector('.bar');
+  b.outerHTML=bar('21','rest');
+  ghost.classList.remove('go');void ghost.offsetWidth;ghost.classList.add('go');
+  toast.classList.add('in');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>toast.classList.add('cool')));
+  setTimeout(()=>{toast.classList.remove('in','cool');ghost.classList.remove('go');
+    setTimeout(()=>{relRoot.querySelector('.bar').outerHTML=bar('21','listen');busy=false},400*slow);
+  },2600*slow);
+};
+
+// Decision toggles
+document.querySelectorAll('.seg').forEach(s=>s.addEventListener('click',e=>{
+  const btn=e.target.closest('button'); if(!btn) return;
+  s.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===btn));
+  const k=s.dataset.key,v=btn.dataset.v;
+  if(k==='w'){warm=v.split(',').map(Number);document.body.style.setProperty('--warm1',rgb(warm));renderContrast()}
+  else if(k==='z'||k==='slow') document.body.style.setProperty('--'+k,v);
+  else document.body.dataset[k]=v;
+  if(k==='ladder') layoutColumn();
+}));
+
+// Contrast (Verification 3), sRGB from the token components.
+const deep=[.05,.055,.065];
+const over=(a,base)=>base.map(c=>c*(1-a)+a);
+const lum=c=>c.map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4).reduce((s,v,i)=>s+v*[.2126,.7152,.0722][i],0);
+const cr=(a,b)=>{const x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05)};
+const rgb=c=>`rgb(${c.map(v=>Math.round(v*255)).join(',')})`;
+let warm=[.98,.90,.76];
+function renderContrast(){
+  const rows=[
+    ['Tile fill on deep',over(.055,deep),over(.10,deep),deep,1.3,'≥ 1.3:1'],
+    ['Raised on deep',over(.08,deep),over(.13,deep),deep,1.3,'≥ 1.3:1'],
+    ['Selected on deep',over(.12,deep),over(.18,deep),deep,1.3,'≥ 1.3:1'],
+    ['Warm point on deep',[.95,.93,.88],warm,deep,4.5,'≥ 4.5:1 (words)'],
+    ['Ring stroke on deep',null,[.68,.78,.92],deep,3,'≥ 3:1 (non-text)'],
+    ['Mist meta on a tile',over(.5,over(.055,deep)),over(.5,over(.10,deep)),null,4.5,'≥ 4.5:1 (words)']
+  ];
+  const tb=document.querySelector('#contrast tbody');
+  tb.innerHTML='';
+  rows.forEach(([name,a,b,ground,min,label])=>{
+    const cell=(c,which)=>{
+      if(!c) return '<td>—</td>';
+      const g=ground||over(which==='a'?.055:.10,deep);
+      const r=cr(c,g);
+      return `<td class="${r>=min?'ok':'no'}"><span class="sw" style="background:${rgb(c)}"></span>${r.toFixed(2)}:1</td>`;
+    };
+    tb.insertAdjacentHTML('beforeend',`<tr><td>${name}</td>${cell(a,'a')}${cell(b,'b')}<td>${label}</td></tr>`);
+  });
+}
+renderContrast();
+
+// The column: depth is time. Index 0 sits just under the surface; the last level is the one leaving.
+// "floor" is the spec's ladder (every tappable line at 4.5:1 or more); "wire" is the first wireframe's.
+const LADDERS={
+  floor:[{s:21,o:.90,m:0},{s:19,o:.76,m:22},{s:17,o:.64,m:20},{s:15,o:.56,m:18},{s:14,o:.52,m:16},{s:13,o:0,m:14}],
+  wire:[{s:21,o:.78,m:0},{s:19,o:.56,m:22},{s:17,o:.38,m:20},{s:15,o:.24,m:18},{s:14,o:.13,m:16},{s:13,o:0,m:14}]
+};
+const ladder=()=>LADDERS[document.body.dataset.ladder]||LADDERS.floor;
+const COLUMN=['Warm to cool, not a filter','Desk at 6pm','Are.na Editorial','Golden hour on the walk home','Sunset gradient study'];
+const col=document.getElementById('col');
+function layoutColumn(){
+  const DEPTH=ladder();
+  [...col.children].forEach((el,i)=>{const d=DEPTH[Math.min(i,DEPTH.length-1)];el.style.fontSize=d.s+'px';el.style.opacity=d.o;el.style.marginTop=(i?d.m:0)+'px'});
+}
+function resetColumn(){col.innerHTML=COLUMN.map(t=>`<div class="dp">${t}</div>`).join('');layoutColumn()}
+resetColumn();
+function sinkIn(title,slow){
+  const el=document.createElement('div');el.className='dp';el.textContent=title;
+  Object.assign(el.style,{fontSize:'23px',opacity:0,transform:'translateY(-18px)',marginTop:'0px',
+    transition:`opacity ${800*slow}ms cubic-bezier(.3,0,.2,1),transform ${800*slow}ms cubic-bezier(.3,0,.2,1),font-size ${350*slow}ms ease,margin-top ${350*slow}ms ease`});
+  col.prepend(el);void el.offsetWidth;
+  layoutColumn();el.style.transform='none';
+  setTimeout(()=>[...col.children].slice(ladder().length-1).forEach(x=>x.remove()),900*slow);
+}
+const demo=document.getElementById('tideDemo');
+let demoBusy=false;
+document.getElementById('playCapture').onclick=()=>{
+  if(demoBusy) return;demoBusy=true;
+  const slow=+getComputedStyle(document.body).getPropertyValue('--slow')||1;
+  const setBar=s=>{demo.querySelector('.bar').outerHTML=bar('21',s)};
+  setBar('listen');
+  setTimeout(()=>{
+    setBar('rest');
+    const g=demo.querySelector('.ghost'),t=demo.querySelector('.toast');
+    g.classList.remove('go');void g.getBoundingClientRect();g.classList.add('go');
+    t.classList.add('in');requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('cool')));
+    sinkIn('Apple Design Principles',slow);
+    setTimeout(()=>{t.classList.remove('in','cool');g.classList.remove('go');demoBusy=false},2600*slow);
+  },1800*slow);
+};
+document.getElementById('resetCapture').onclick=()=>{if(!demoBusy) resetColumn()};
+
+// Motion pane: the capture moment, tuned live on Round 4 and exported as SwiftUI.
+// Presets are OceanMotion's own values; a spring is simulated exactly as
+// SwiftUI's spring(response:dampingFraction:) and played as CSS linear().
+document.querySelectorAll('.phone.hyb').forEach(p=>p.insertAdjacentHTML('beforeend',
+  '<div class="toast glass" style="bottom:164px;transition:none"><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="6.25"/></svg>Carried into the sea<span class="undo">Undo</span></div>'+
+  '<svg class="ghost" style="bottom:104px" viewBox="0 0 44 44"><circle cx="22" cy="22" r="20.5"/></svg>'));
+const CURVES={
+  touch:{t:'bezier',d:150,b:[0,0,.58,1]},
+  quick:{t:'bezier',d:180,b:[0,0,.58,1]},
+  standard:{t:'spring',r:.35,z:1},
+  lift:{t:'spring',r:.36,z:.86},
+  gentle:{t:'bezier',d:800,b:[.3,0,.2,1]}
+};
+const MOMENTS=[
+  {k:'listen',name:'Ring starts listening',curve:'touch',x:{}},
+  {k:'release',name:'Ring sinks on release',curve:'lift',x:{sink:[16,0,48,1,'Sink, pt'],scale:[.55,.2,1,.05,'End scale']}},
+  {k:'toast',name:'Toast rises',curve:'lift',x:{rise:[14,0,40,1,'Rise, pt'],stay:[2600,800,5000,100,'Stays, ms']}},
+  {k:'cool',name:'Toast ring cools',curve:'lift',x:{delay:[120,0,800,10,'Delay, ms']}},
+  {k:'entry',name:'New thought enters',curve:'gentle',x:{drop:[18,0,60,1,'Drop, pt'],delay:[0,0,800,10,'Delay, ms']}},
+  {k:'step',name:'Older thoughts step down',curve:'standard',x:{stagger:[0,0,120,5,'Stagger, ms']}}
+];
+const MDEF=()=>Object.fromEntries(MOMENTS.map(m=>[m.k,{...structuredClone(CURVES[m.curve]),...Object.fromEntries(Object.entries(m.x).map(([f,v])=>[f,v[0]]))}]));
+let M=MDEF(),G={speed:1,loop:false,rm:false,hold:1800};
+try{const s=JSON.parse(localStorage.getItem('oryne-motion-1')||'null');if(s){for(const k in M) Object.assign(M[k],s.M?.[k]||{});Object.assign(G,s.G||{})}}catch(e){}
+const save=()=>{try{localStorage.setItem('oryne-motion-1',JSON.stringify({M,G}))}catch(e){}};
+const springs={};
+function spring(r,z){
+  const key=r+'/'+z;if(springs[key]) return springs[key];
+  const k=(2*Math.PI/r)**2,c=4*Math.PI*z/r,xs=[];let x=0,v=0,last=0;
+  for(let i=1;i<=4000;i++){v+=(-k*(x-1)-c*v)/1000;x+=v/1000;xs.push(x);if(Math.abs(x-1)>=.001||Math.abs(v)>=.01) last=i}
+  const d=Math.max(last,60),n=48,pts=[0];
+  for(let j=1;j<n;j++) pts.push(+xs[Math.round(j*d/n)-1].toFixed(4));
+  pts.push(1);
+  return springs[key]={easing:`linear(${pts.join(',')})`,d};
+}
+const timingOf=c=>{const s=c.t==='spring'?spring(c.r,c.z):{easing:`cubic-bezier(${c.b.join(',')})`,d:c.d};return {easing:s.easing,duration:s.d*G.speed}};
+const timing=k=>timingOf(M[k]);
+const same=(m,c)=>m.t===c.t&&(m.t==='spring'?m.r===c.r&&m.z===c.z:m.d===c.d&&m.b.join()===c.b.join());
+const presetOf=m=>Object.keys(CURVES).find(n=>same(m,CURVES[n]));
+function swiftOf(m){
+  const p=presetOf(m);if(p) return 'OceanMotion.'+p;
+  if(m.t==='spring') return `.spring(response: ${m.r}, dampingFraction: ${m.z})`;
+  if(m.b.join()==='0,0,0.58,1') return `.easeOut(duration: ${m.d/1000})`;
+  return `.timingCurve(${m.b.join(', ')}, duration: ${m.d/1000})`;
+}
+const exportText=()=>[
+  '// Capture moment, tuned in identity-2.1-wireframes.html',
+  `ring listens:     ${swiftOf(M.listen)}`,
+  `ring sinks:       ${swiftOf(M.release)}, ${M.release.sink} pt down, to scale ${M.release.scale}`,
+  `toast rises:      ${swiftOf(M.toast)}, from ${M.toast.rise} pt below, stays ${M.toast.stay/1000} s`,
+  `toast ring cools: ${swiftOf(M.cool)}, after ${M.cool.delay/1000} s`,
+  `new thought:      ${swiftOf(M.entry)}, from ${M.entry.drop} pt above, after ${M.entry.delay/1000} s`,
+  `older thoughts:   ${swiftOf(M.step)}, ${M.step.stagger/1000} s apart`].join('\n');
+
+const opt=(v,l,on)=>`<option value="${v}"${on?' selected':''}>${l}</option>`;
+const slider=(attr,f,v,min,max,step,label)=>`<div class="tw-row"><label>${label}</label><input type="range" ${attr}="${f}" min="${min}" max="${max}" step="${step}" value="${v}"><output>${v}</output></div>`;
+function momentHTML(def){
+  const m=M[def.k],p=presetOf(m);
+  return `<div class="tw-m" data-m="${def.k}"><div class="tw-l">${def.name}</div><div class="tw-row"><select data-f="curve">${Object.keys(CURVES).map(n=>opt(n,n,p===n)).join('')}${opt('spring','custom spring',!p&&m.t==='spring')}${opt('bezier','custom curve',!p&&m.t==='bezier')}</select><span class="tw-note" data-o="len"></span></div>
+    ${m.t==='spring'?slider('data-f','r',m.r,.1,1.5,.01,'Response, s')+slider('data-f','z',m.z,.2,1.2,.01,'Damping')
+      :slider('data-f','d',m.d,50,1500,10,'Duration, ms')+`<div class="tw-row"><label>Curve</label><input type="text" data-f="b" value="${m.b.join(', ')}"></div>`}
+    ${Object.entries(def.x).map(([f,v])=>slider('data-f',f,m[f],v[1],v[2],v[3],v[4])).join('')}</div>`;
+}
+const pane=document.getElementById('tweak');
+function renderPane(){
+  const z=getComputedStyle(document.body).getPropertyValue('--z').trim();
+  pane.innerHTML=`<div class="tw-h"><b>Capture motion</b><span class="sp"></span><button data-a="play">Play</button><button data-a="reset">Reset</button><button data-a="min">${pane.classList.contains('min')?'+':'–'}</button></div>
+  <div class="tw-b"><div class="tw-note" style="margin-top:6px">Plays on the four Round 4 frames. Presets are OceanMotion's values; anything you change exports as SwiftUI below.</div>
+  <div class="tw-row"><label>Speed</label><select data-g="speed">${[1,2,4].map(v=>opt(v,v===1?'Real speed':'×'+v+' slower',G.speed==v)).join('')}</select></div>
+  <div class="tw-row"><label>Scale</label><select data-g="zoom">${['.6','.8','1'].map(v=>opt(v,Math.round(v*100)+'%',z===v)).join('')}</select></div>
+  <div class="tw-row"><label class="ck"><input type="checkbox" data-g="loop"${G.loop?' checked':''}>Loop</label><label class="ck"><input type="checkbox" data-g="rm"${G.rm?' checked':''}>Reduce Motion</label></div>
+  ${slider('data-g','hold',G.hold,400,4000,50,'Listening, ms')}
+  ${MOMENTS.map(momentHTML).join('')}
+  <pre id="tw-out"></pre><div class="tw-row"><button data-a="copy">Copy for SwiftUI</button><button data-a="defaults">Back to tokens</button></div></div>`;
+  refresh();
+}
+function refresh(){
+  pane.querySelectorAll('.tw-m').forEach(f=>{const m=M[f.dataset.m];f.querySelector('[data-o="len"]').textContent=m.t==='spring'?`settles in ${spring(m.r,m.z).d} ms`:`${m.d} ms`});
+  const o=document.getElementById('tw-out');if(o) o.textContent=exportText();
+  save();
+}
+pane.addEventListener('input',e=>{
+  const t=e.target,f=t.dataset.f,g=t.dataset.g,fs=t.closest('.tw-m');
+  if(g){
+    if(g==='speed'){G.speed=+t.value;document.body.style.setProperty('--slow',t.value)}
+    else if(g==='zoom') document.body.style.setProperty('--z',t.value);
+    else if(g==='loop') G.loop=t.checked;
+    else if(g==='rm') G.rm=t.checked;
+    else if(g==='hold'){G.hold=+t.value;t.nextElementSibling.textContent=t.value}
+    save();return;
+  }
+  if(!fs) return;
+  const m=M[fs.dataset.m];
+  if(f==='curve'){
+    const v=t.value;
+    if(CURVES[v]) Object.assign(m,structuredClone(CURVES[v]));
+    else if(v==='spring'&&m.t!=='spring') Object.assign(m,{t:'spring',r:.4,z:.85});
+    else if(v==='bezier'&&m.t!=='bezier') Object.assign(m,{t:'bezier',d:300,b:[.25,.1,.25,1]});
+    renderPane();return;
+  }
+  if(f==='b'){const b=t.value.split(',').map(Number);if(b.length===4&&b.every(n=>!isNaN(n))) m.b=b}
+  else{m[f]=+t.value;t.nextElementSibling.textContent=t.value}
+  fs.querySelector('[data-f="curve"]').value=presetOf(m)||m.t;
+  refresh();
+});
+pane.addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');if(!b) return;
+  const a=b.dataset.a;
+  if(a==='play') playAll();
+  else if(a==='reset') resetFrames();
+  else if(a==='min'){pane.classList.toggle('min');document.body.classList.toggle('tw-open',!pane.classList.contains('min'));b.textContent=pane.classList.contains('min')?'+':'–'}
+  else if(a==='defaults'){M=MDEF();renderPane()}
+  else if(a==='copy'){
+    const sel=getSelection(),r=document.createRange();r.selectNodeContents(document.getElementById('tw-out'));sel.removeAllRanges();sel.addRange(r);
+    (navigator.clipboard?navigator.clipboard.writeText(exportText()):Promise.reject()).then(()=>{b.textContent='Copied';setTimeout(()=>b.textContent='Copy for SwiftUI',1200)},()=>{b.textContent='Selected, press ⌘C'});
+  }
+});
+
+function resetFrames(){
+  document.querySelectorAll('.phone.hyb').forEach(p=>{
+    p.querySelectorAll('.toast,.ghost,.toast circle').forEach(el=>el.getAnimations().forEach(an=>an.cancel()));
+    p.querySelector('.hrows').innerHTML=hrows(R3[p.dataset.key]);
+    p.querySelector('.bar').outerHTML=bar('21','rest');
+  });
+}
+// The new thought enters level 0; every older one steps one level deeper (FLIP on
+// offsetTop, which zoom does not distort); the one past level 4 fades and leaves.
+function sinkColumn(p){
+  const box=p.querySelector('.hrows'),rows=[...box.children],S=G.speed,rm=G.rm,E=rm?timingOf(CURVES.quick):timing('entry'),St=timing('step');
+  const before=rows.map(r=>r.offsetTop);
+  const el=document.createElement('div');el.className='crow';el.style.opacity=HLAD[0].o;
+  el.innerHTML=`<span class="ct" style="font-size:${HLAD[0].s}px;line-height:${Math.round(HLAD[0].s*1.3)}px;${clamp(1)}">Quiet hours for notifications</span>`;
+  box.prepend(el);
+  rows.forEach((r,i)=>{
+    const a=HLAD[i],b=HLAD[Math.min(i+1,5)],ct=r.querySelector('.ct'),dy=before[i]-r.offsetTop;
+    r.style.opacity=b.o;ct.style.fontSize=b.s+'px';ct.style.lineHeight=Math.round(b.s*1.3)+'px';
+    if(rm){if(i>=4) r.remove();return}
+    const o={...St,delay:i*M.step.stagger*S,fill:'backwards'};
+    const an=r.animate([{transform:`translateY(${dy}px)`,opacity:a.o},{transform:'none',opacity:b.o}],o);
+    ct.animate([{fontSize:a.s+'px',lineHeight:Math.round(a.s*1.3)+'px'},{fontSize:b.s+'px',lineHeight:Math.round(b.s*1.3)+'px'}],o);
+    if(i>=4) an.finished.then(()=>r.remove());
+  });
+  el.animate(rm?[{opacity:0},{opacity:HLAD[0].o}]:[{opacity:0,transform:`translateY(${-M.entry.drop}px)`},{opacity:HLAD[0].o,transform:'none'}],E);
+}
+function playOne(p){
+  const S=G.speed,rm=G.rm,Q=timingOf(CURVES.quick);
+  p.querySelector('.bar').outerHTML=bar('21','listen');
+  const L=timing('listen');
+  if(!rm) p.querySelector('.bar .ringsvg circle').animate([{strokeWidth:'1.5px',stroke:'rgb(173,199,235)'},{strokeWidth:'3px',stroke:'rgb(255,196,140)'}],L);
+  setTimeout(()=>{
+    p.querySelector('.bar').outerHTML=bar('21','rest');
+    const g=p.querySelector('.ghost'),t=p.querySelector('.toast'),T=rm?Q:timing('toast');
+    g.animate(rm?[{opacity:1},{opacity:0}]:[{opacity:1,transform:'none'},{opacity:0,transform:`translateY(${M.release.sink}px) scale(${M.release.scale})`}],{...(rm?Q:timing('release')),fill:'forwards'});
+    t.animate(rm?[{opacity:0},{opacity:1}]:[{opacity:0,transform:`translateY(${M.toast.rise}px)`},{opacity:1,transform:'none'}],{...T,fill:'forwards'});
+    t.querySelector('circle').animate([{stroke:'rgb(255,196,140)'},{stroke:'rgb(173,199,235)'}],rm?{duration:1,fill:'both'}:{...timing('cool'),delay:M.cool.delay*S,fill:'both'});
+    setTimeout(()=>sinkColumn(p),rm?0:M.entry.delay*S);
+    setTimeout(()=>t.animate([{opacity:1,transform:'none'},{opacity:0,transform:rm?'none':`translateY(${M.toast.rise}px)`}],{...T,fill:'forwards'}),M.toast.stay*S);
+  },G.hold*S);
+}
+let playing=false;
+function playAll(){
+  if(playing) return;playing=true;resetFrames();
+  document.querySelectorAll('.phone.hyb').forEach(playOne);
+  const S=G.speed,col=M.entry.delay*S+Math.max(timing('entry').duration,timing('step').duration+5*M.step.stagger*S);
+  const total=G.hold*S+Math.max(M.toast.stay*S+timing('toast').duration,col)+300;
+  setTimeout(()=>{playing=false;if(G.loop) setTimeout(playAll,700)},total);
+}
+document.body.style.setProperty('--slow',G.speed);
+document.body.classList.add('tw-open');
+renderPane();
+
+if(/Chrome|Chromium|Edg|Firefox|Electron/.test(navigator.userAgent)) document.getElementById('warn').style.display='block';
+</script>
+</body>
+</html>
