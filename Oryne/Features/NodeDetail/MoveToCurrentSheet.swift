@@ -77,23 +77,27 @@ struct MoveToCurrentSheet: View {
             }
         }
         .presentationDetents([.medium, .large])
+        // The header draws the sheet's grabber; the system's would be a second.
+        .presentationDragIndicator(.hidden)
     }
 
     private var list: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: OceanSpacing.item) {
+            VStack(alignment: .leading, spacing: 0) {
                 OceanSheetHeader(
                     title: nodes.count == 1 ? Text("Move to a current") : Text("Move \(nodes.count) to a current")
                 )
-                .padding(.bottom, OceanSpacing.block - OceanSpacing.item)
                 Text("It will stay where you put it.")
-                    .font(OceanType.meta)
+                    .oceanText(OceanType.meta)
                     .foregroundStyle(OceanTheme.mist)
-                    .padding(.bottom, OceanSpacing.hairline)
-                newCurrentRow
-                ForEach(currents) { current in
-                    row(current)
+                    .padding(.top, OceanSpacing.block)
+                VStack(alignment: .leading, spacing: OceanSpacing.item) {
+                    newCurrentRow
+                    ForEach(currents) { current in
+                        row(current)
+                    }
                 }
+                .padding(.top, OceanSpacing.inset)
             }
             .padding(.horizontal, OceanSpacing.gutter)
             .padding(.top, OceanSpacing.gap)
@@ -111,7 +115,7 @@ struct MoveToCurrentSheet: View {
                     .foregroundStyle(OceanTheme.mist)
                     .frame(width: OceanSize.metaIcon)
                 Text("New current…")
-                    .font(OceanType.tileTitle)
+                    .oceanText(OceanType.body)
                     .foregroundStyle(OceanTheme.foam)
                 Spacer()
             }
@@ -119,6 +123,8 @@ struct MoveToCurrentSheet: View {
         .buttonStyle(.plain)
     }
 
+    /// A current to move into, named in New York as everywhere a current
+    /// is named: the name is the user's.
     private func row(_ current: CurrentChoice) -> some View {
         Button {
             move(to: current.id)
@@ -128,9 +134,9 @@ struct MoveToCurrentSheet: View {
                     .fill(OceanTheme.color(forHue: current.hue, brightness: 0.85).opacity(0.30))
                     .frame(width: OceanSize.metaIcon, height: OceanSize.metaIcon)
                 Text(current.label)
-                    .font(OceanType.tileTitle)
+                    .oceanText(OceanType.cardTitle)
                     .foregroundStyle(OceanTheme.foam)
-                    .lineLimit(1)
+                    .oceanLineLimit(1)
                 Spacer()
                 if current.id == homeKey {
                     Image(systemName: "checkmark")
@@ -145,7 +151,7 @@ struct MoveToCurrentSheet: View {
 
     /// One choice: a tile, like every row that opens or picks something.
     private func choice<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
-        HStack(spacing: OceanSpacing.item) { content() }
+        HStack(spacing: OceanSpacing.snug) { content() }
             .padding(.horizontal, OceanSpacing.inset)
             .padding(.vertical, OceanSpacing.item)
             .frame(minHeight: OceanControlSize.height)

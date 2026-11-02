@@ -95,7 +95,8 @@ struct CaptureAttachPanel: View {
     private func row(_ title: LocalizedStringKey, systemImage: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Label(title, systemImage: systemImage)
-                .font(OceanType.body)
+                .labelStyle(OceanControlLabelStyle())
+                .oceanText(OceanType.body)
                 .foregroundStyle(OceanTheme.foam)
                 .frame(maxWidth: .infinity, minHeight: OceanControlSize.height, alignment: .leading)
                 .contentShape(Rectangle())

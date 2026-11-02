@@ -16,16 +16,21 @@ struct CaptureBar: View {
             Button {
                 control.tap()
             } label: {
-                CaptureBarWords(draft: control.parked?.line)
+                CaptureBarWords(draft: control.parked?.line, glyph: control.parked?.glyph)
                     .padding(.leading, FastCaptureLayout.fieldLeading)
-                    // A draft's line stops short of the disc.
-                    .padding(.trailing, control.parked == nil ? 0 : FastCaptureLayout.buttonSize + FastCaptureLayout.discInset + OceanSpacing.gap)
-                    // minWidth 0: long words keep their width and overflow
-                    // into the clip instead of widening the bar.
+                    // The words stop short of the disc.
+                    .padding(.trailing, FastCaptureLayout.buttonSize + FastCaptureLayout.discInset + OceanSpacing.gap)
+                    // minWidth 0: long words are cut short instead of
+                    // widening the bar.
                     .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            // Past the bar's cap a long press shows its words large. They
+            // are given here: by default the viewer shows the label.
+            .accessibilityShowsLargeContentViewer {
+                Text(verbatim: control.parked?.line ?? String(localized: "What are you noticing?"))
+            }
             .accessibilityLabel("Capture a thought")
             // A draft of only pictures reads its line ("3 images").
             .accessibilityValue(Text(verbatim: control.parked.map { $0.text.trimmed.isEmpty ? $0.line : $0.text } ?? ""))
@@ -47,28 +52,49 @@ struct CaptureBar: View {
         .clipShape(Capsule())
         .background(OceanBarBackground())
         .frame(maxWidth: .infinity, alignment: .trailing)
+        // The bar stays 56 pt: up to the largest standard size one line of
+        // its words still fits the disc's 44 pt row.
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 }
 
 /// What the bar says: its question, or the first line of a draft put away,
 /// cut with an ellipsis clear of the disc. The composer's card says the
 /// same in the same place while it is folded, so the fold lands on the bar.
+/// A draft's words are set in the user's serif, as they were typed; a line
+/// that only names what rides along (a whisper, pictures) is Oryne's, in
+/// SF, as the question is.
 struct CaptureBarWords: View {
     let draft: String?
+    /// Before a line that names what rides along (a whisper, pictures).
+    var glyph: String? = nil
+
+    private var role: OceanTextRole { glyph == nil ? OceanType.inputWords : OceanType.body }
 
     var body: some View {
         if let draft {
-            Text(verbatim: draft)
-                .font(OceanType.body)
-                .foregroundStyle(OceanTheme.foam)
-                .lineLimit(1)
-                .truncationMode(.tail)
+            HStack(spacing: OceanSpacing.snug) {
+                if let glyph {
+                    // Inside the line, so it takes the line's role and
+                    // grows with its words.
+                    Image(systemName: glyph)
+                        .oceanText(role)
+                        .imageScale(.small)
+                        .foregroundStyle(OceanTheme.mist)
+                        .accessibilityHidden(true)
+                }
+                Text(verbatim: draft)
+                    .oceanText(role)
+                    .foregroundStyle(OceanTheme.foam)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
         } else {
             Text("What are you noticing?")
-                .font(OceanType.body)
-                .foregroundStyle(OceanTheme.hint)
+                .oceanText(OceanType.body)
+                .foregroundStyle(OceanTheme.mist)
                 .lineLimit(1)
-                .fixedSize()
+                .truncationMode(.tail)
         }
     }
 }

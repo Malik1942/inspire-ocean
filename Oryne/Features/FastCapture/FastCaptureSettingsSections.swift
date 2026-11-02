@@ -55,6 +55,9 @@ struct FastCaptureShortcutSection: View {
             }
         } header: {
             Text("Shortcut")
+                .oceanText(OceanType.sectionLabel)
+                .foregroundStyle(OceanTheme.mist)
+                .textCase(nil)
         }
     }
 }

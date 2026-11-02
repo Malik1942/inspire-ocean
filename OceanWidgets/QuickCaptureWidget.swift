@@ -54,20 +54,25 @@ struct QuickCaptureView: View {
             case .accessoryRectangular:
                 VStack(alignment: .leading, spacing: OceanSpacing.tight) {
                     Label("Oryne", systemImage: "drop")
-                        .font(OceanType.eyebrow)
+                        .oceanText(OceanType.sectionLabel)
                         .widgetAccentable()
                     Text("Catch a thought")
-                        .font(OceanType.tileTitle)
+                        .oceanText(OceanType.tileTitle)
                         .lineLimit(1)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             case .accessoryInline:
                 Label("Catch a thought", systemImage: "drop")
+            // A Home Screen slot cannot grow, so its words stop at the
+            // largest standard size; typeSize is read above the cap, so the
+            // tagline still steps aside at accessibility sizes.
             case .systemMedium:
                 medium
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             default:
                 small
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             }
         }
         .widgetURL(URL(string: "oryne://capture"))
@@ -82,16 +87,15 @@ struct QuickCaptureView: View {
 
     private var small: some View {
         VStack(alignment: .leading, spacing: OceanSpacing.gap) {
-            Text("Catch a\nthought")
-                .font(OceanType.subjectTitle)
+            Text("Catch a thought")
+                .oceanText(OceanType.statement)
                 .foregroundStyle(OceanTheme.foam)
-                .minimumScaleFactor(0.8)
-                .lineLimit(2)
+                .lineLimit(3)
                 .layoutPriority(1)
             Spacer(minLength: 0)
             if !typeSize.isAccessibilitySize {
                 Text("Before it disappears")
-                    .font(OceanType.note)
+                    .oceanText(OceanType.secondary)
                     .foregroundStyle(OceanTheme.text)
                     .lineLimit(2)
             }
@@ -100,16 +104,16 @@ struct QuickCaptureView: View {
     }
 
     private var medium: some View {
-        VStack(alignment: .leading, spacing: OceanSpacing.block) {
+        VStack(alignment: .leading, spacing: OceanSpacing.inset) {
             VStack(alignment: .leading, spacing: OceanSpacing.snug) {
                 Text("Catch a thought")
-                    .font(OceanType.subjectTitle)
+                    .oceanText(OceanType.statement)
                     .foregroundStyle(OceanTheme.foam)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                    .minimumScaleFactor(0.9)
                 if !typeSize.isAccessibilitySize {
                     Text("Before it disappears")
-                        .font(OceanType.secondary)
+                        .oceanText(OceanType.secondary)
                         .foregroundStyle(OceanTheme.text)
                         .lineLimit(1)
                 }

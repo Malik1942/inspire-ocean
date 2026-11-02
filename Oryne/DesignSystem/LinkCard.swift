@@ -40,12 +40,12 @@ struct LinkCard: View {
             Button(action: open) {
                 HStack(spacing: OceanSpacing.item) {
                     thumbnail
-                    VStack(alignment: .leading, spacing: OceanSpacing.tight) {
+                    VStack(alignment: .leading, spacing: OceanSpacing.snug) {
                         Text(node.linkTitle ?? node.linkURL?.absoluteString ?? String(localized: "Link"))
-                            .font(OceanType.tileTitle)
+                            .oceanText(OceanType.tileTitle)
                             .foregroundStyle(OceanTheme.foam)
                             .multilineTextAlignment(.leading)
-                            .lineLimit(2)
+                            .oceanLineLimit(2)
                         statusLine
                     }
                     Spacer(minLength: 0)
@@ -88,7 +88,7 @@ struct LinkCard: View {
     private var statusLine: some View {
         HStack(spacing: OceanSpacing.snug) {
             if let domain = node.linkDomain {
-                Text(domain).font(OceanType.meta).foregroundStyle(OceanTheme.mist).lineLimit(1)
+                Text(domain).oceanText(OceanType.meta).foregroundStyle(OceanTheme.mist).lineLimit(1)
             }
             switch state {
             case .fetchingMeta, .fetchingContent:
@@ -112,9 +112,9 @@ struct LinkCard: View {
     }
 
     private func progressTag(_ text: LocalizedStringKey) -> some View {
-        HStack(spacing: OceanSpacing.tight) {
+        HStack(spacing: OceanSpacing.snug) {
             ProgressView().controlSize(.mini).tint(OceanTheme.mist)
-            Text(text).font(OceanType.meta).foregroundStyle(OceanTheme.mist)
+            Text(text).oceanText(OceanType.meta).foregroundStyle(OceanTheme.mist)
         }
     }
 
@@ -123,18 +123,24 @@ struct LinkCard: View {
     private var plainRow: some View {
         HStack(spacing: 0) {
             Button(action: open) {
-                HStack(spacing: OceanSpacing.gap) {
-                    Image(systemName: "link").font(OceanType.glyph).foregroundStyle(OceanTheme.mist)
-                    VStack(alignment: .leading, spacing: OceanSpacing.hairline) {
+                HStack(spacing: OceanSpacing.snug) {
+                    Image(systemName: "link").oceanText(OceanType.tileTitle).foregroundStyle(OceanTheme.mist)
+                    VStack(alignment: .leading, spacing: OceanSpacing.snug) {
                         Text(node.linkURL?.absoluteString ?? String(localized: "Link"))
-                            .font(OceanType.tileTitle).foregroundStyle(OceanTheme.foam).lineLimit(1)
+                            .oceanText(OceanType.tileTitle).foregroundStyle(OceanTheme.foam).oceanLineLimit(1)
                         if case .failed(let reason) = state {
-                            Text(reason).font(OceanType.note).foregroundStyle(OceanTheme.faint).lineLimit(1)
+                            // A sentence to act on, so secondary in text and
+                            // never cut: the row's minimum height lets it grow.
+                            Text(reason)
+                                .oceanText(OceanType.secondary)
+                                .foregroundStyle(OceanTheme.text)
+                                .multilineTextAlignment(.leading)
                         }
                     }
                     Spacer(minLength: 0)
                 }
                 .padding(.vertical, OceanSpacing.gap).padding(.horizontal, OceanSpacing.insetCompact)
+                .frame(minHeight: OceanControlSize.height)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)

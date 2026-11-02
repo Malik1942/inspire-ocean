@@ -11,42 +11,50 @@ import SwiftUI
 
 // MARK: - Form: space
 
-/// One ladder on 4 pt, used by role. Things that belong together sit tight;
-/// groups sit far apart. The contrast between the two is the hierarchy.
+/// One ladder on 4 pt, used by role and measured between what you see. Things
+/// that belong together sit tight; groups sit far apart. The contrast between
+/// the two is the hierarchy.
 enum OceanSpacing {
-    /// An optical nudge: a section label's lead-in over the gutter, a badge's
-    /// vertical breath.
+    /// An optical nudge: a label's 2 pt lead-in over the gutter
+    /// (OceanSectionLabel), a badge's vertical breath.
     static let hairline: CGFloat = 2
-    /// Inside a control: a segmented switch's padding around its parts, a tool
-    /// group's end padding, a title's breath above its footer.
+    /// Inside a control: the segmented switch's padding around its parts; a
+    /// capsule's or a Link's vertical floor inside its 44 pt minimum, so wrapped
+    /// words never touch its edge.
     static let tight: CGFloat = 4
-    /// A title and its meta line inside a tile; a glyph and the words beside it in
-    /// a meta line.
+    /// Inside a tile, a title to its meta line or words; a line to its meta line; a
+    /// glyph to the words beside it, everywhere.
     static let snug: CGFloat = 6
-    /// Buttons or chips in a row; a label above its field; a glyph beside a
-    /// control's words.
+    /// Buttons or chips in a row; the vertical floor inside a 44 pt line row; a
+    /// page's first line under the bar; pictures in a strip; words to their actions
+    /// inside a card; inside a 64 pt attachment tile.
     static let gap: CGFloat = 8
-    /// Tiles apart in a list or a grid; things apart inside a row (a picture and
-    /// its words).
+    /// Tiles apart in a list or a grid; a title to its words on a page, a stage or
+    /// a sheet; a title beside its own action; tools on the floating layer.
     static let item: CGFloat = 12
     /// Inside a compact card or a field: the link card, a text field, the
-    /// composer's card.
+    /// composer's card, the + panel.
     static let insetCompact: CGFloat = 12
-    /// Inside a tile, on every side; a floating capsule's end inset.
+    /// Inside a tile, on every side; words to their actions on a page or a sheet; a
+    /// mark to its headline; a floating capsule's end inset.
     static let inset: CGFloat = 16
-    /// From a section label down to its content.
-    static let afterLabel: CGFloat = 16
+    /// From a label down to what it names, measured to what you see: a tile's or a
+    /// field's edge, a paragraph's first line. A list of 44 pt rows sits right
+    /// under its label instead (0): each row's own slack is the gap.
+    static let afterLabel: CGFloat = 8
     /// A capsule button's horizontal inset, Primary and Secondary alike, the same
     /// as a tile's; a toast's leading inset.
     static let controlInset: CGFloat = 16
-    /// Blocks inside one section: a title block, a summary, a transcript; media
-    /// above the meta line.
+    /// Blocks inside one section (a summary, a transcript); a header to its first
+    /// group, on pages and sheets; groups in a sheet.
     static let block: CGFloat = 24
-    /// Between sections, on every page.
+    /// Groups inside one list: the Library's time sections, its currents and the
+    /// Archived row. Tighter than a page's sections, so a list reads as one.
+    static let group: CGFloat = 32
+    /// Between a page's sections (Tide, a thought's page, Ask), measured between
+    /// what you see: where a 44 pt row starts or ends a section, its slack comes
+    /// off the 40 (OceanTextRole.rowSlack).
     static let section: CGFloat = 40
-    /// A pull-up sheet's title under the sheet's edge: a section's air past the
-    /// grabber.
-    static let sheetTop: CGFloat = 40
     /// The page margin on standard iPhones: the system's own layout margin, where a
     /// navigation bar puts its back button.
     static let gutterCompact: CGFloat = 16
@@ -81,11 +89,13 @@ enum OceanRadius {
 
 /// Fixed sizes of things that are not controls.
 enum OceanSize {
-    /// The kind glyph's slot and a site icon in a meta line.
+    /// The kind glyph's slot and a site's icon in a meta line (scaled with the line
+    /// at the call site, @ScaledMetric relative to caption2); the toast's ring,
+    /// which never scales.
     static let metaIcon: CGFloat = 14
-    /// A glyph's fixed slot beside a line of text (a source line, a sample
-    /// question), so the words start on one edge; also the dark disc under a remove
-    /// badge's ✕.
+    /// A glyph's slot beside a line of text (a source line, a sample question),
+    /// scaled with the line at the call site so the words start on one edge; the
+    /// remove badge's dark disc.
     static let glyphSlot: CGFloat = 18
     /// A sheet's grabber, the system's own proportions, drawn by OceanSheetHeader.
     static let grabberWidth: CGFloat = 36
@@ -101,151 +111,427 @@ enum OceanSize {
     static let pictureTile: CGFloat = 64
     /// A card's full-bleed picture at the top.
     static let banner: CGFloat = 120
-    /// The resurfacing thought's picture on Tide.
-    static let hero: CGFloat = 160
+    /// The tallest a shared picture's preview stands in the share sheet.
+    static let hero: CGFloat = 200
+    /// Tide's stage when today's thought has a picture: the picture's height from
+    /// the top edge of the screen, under the status bar.
+    static let stage: CGFloat = 360
+    /// The same stage for a link's image, which is wider than it is tall.
+    static let stageLink: CGFloat = 300
+    /// The small picture at the end of a line on the depth ladder.
+    static let depthThumb: CGFloat = 36
+    /// The reading column at the default text size, scaled with body
+    /// (@ScaledMetric): about 70 characters of SF 17 or New York 19. On iPad and in
+    /// landscape the column is centered and the gutter is its least margin; on
+    /// iPad, under the system's large title (Ask), it keeps to the leading gutter
+    /// so the words start under the page's name. Phones in portrait never reach it.
+    static let readableWidth: CGFloat = 560
+    /// The ring on the empty Tide, where the first thought will come back.
+    static let ringHero: CGFloat = 48
+    /// The ring's line, the icon's own weight, at every size.
+    static let ringStroke: CGFloat = 1.5
+    /// The capture disc's ring at rest: a hairline in the ring's own blue, there
+    /// when looked for.
+    static let ringHairline: CGFloat = 1
+    /// The capture disc's ring while it listens, wide enough for its two lights to
+    /// read.
+    static let ringStrokeListening: CGFloat = 2
 }
 
 // MARK: - Form: control
 
 /// Every control is 44 pt tall, the system's own. Floating bars are 56.
 enum OceanControlSize {
-    /// A button, a field, a tool cell, the capture disc, a segmented switch.
+    /// A button's, a field's, a tool cell's, the capture disc's and a line row's
+    /// minimum: the system's 44.
     static let height: CGFloat = 44
     /// A disc inside a field (the composer's + and its disc), as Messages sizes its
     /// own: smaller than a page tool, inside a 44 pt target.
     static let compact: CGFloat = 36
     /// The capture bar and Ask's bar: a capsule whose end radius is half of this.
     static let bar: CGFloat = 56
-    /// A toast: the bar's material, a step shorter than the bar.
+    /// A toast's height at one line: the bar's material, a step shorter than the
+    /// bar. A minimum: a two-line toast grows.
     static let toast: CGFloat = 48
     /// The disc's inset inside the bar on every side, so disc and capsule end are
-    /// concentric.
+    /// concentric. Its own primitive, so the folded composer's 6 + 44 + 6 never
+    /// follows a retune of snug.
     static let discInset: CGFloat = 6
 }
 
 // MARK: - Form: type
 
-/// New York, Apple's serif, names what a page is about and wears the italic
-/// section labels. SF does everything else, on one scale. com.oryne.font.scale
-/// says how a role meets Dynamic Type: native (a system text style), metrics (a
-/// fixed size scaled by its text style's metrics), fixed (glyphs in controls).
+/// Text roles and glyphs. New York is the user's: a thought's name, their own
+/// words (Node.ownWords) and a live take's words; it also names places (a
+/// page's or a sheet's title) and says the one word Resurfacing. SF is Oryne's:
+/// labels, controls, meta, answers, summaries, a site's words. A text role is a
+/// font, its leading and its tracking together, set by .oceanText(_:)
+/// (OceanTextRole), so no call site sets one without the others.
+/// com.oryne.font.scale says how a role meets Dynamic Type: native (a system
+/// text style), curve (a size of ours, sized at each iOS text size from Apple's
+/// own ramp below, between two styles or in proportion to one), fixed.
+/// lineHeight is the extra leading between lines at the default size, scaled
+/// with the role's size: a target line height less the face's natural line
+/// (1.193 times the size on iOS, New York and SF alike), never leaving a line
+/// shorter than its text style's own. kind glyph is a plain Font (a symbol, or
+/// the +N badge). com.oryne.order lists chains that must never invert at any
+/// text size, and com.oryne.step names the ladder step a role must match in
+/// face, size and scaling: generate.py fails on either.
 extension OceanType {
-    /// The point size `pageTitle` is built from, for UIKit appearances.
-    static let pageTitleSize: CGFloat = 40
-    /// A tab's name, and the navigation bar's large title: the one place a page is
-    /// named.
-    static var pageTitle: Font { OceanFont.metrics(size: 40, weight: .regular, design: .serif, italic: false, relativeTo: .largeTitle) }
-    /// The point size `resurfacingTitle` is built from, for UIKit appearances.
-    static let resurfacingTitleSize: CGFloat = 32
-    /// The one lit thing on Tide: today's resurfacing thought. Also an onboarding
-    /// page's title.
-    static var resurfacingTitle: Font { OceanFont.metrics(size: 32, weight: .regular, design: .serif, italic: false, relativeTo: .title) }
-    /// A thought's title on its page, a current's name on its sheet, the question
-    /// an answer replies to, a page's one-line empty state.
-    static var subjectTitle: Font { Font.system(.title, design: .serif).weight(.regular) }
-    /// The point size `sectionLabel` is built from, for UIKit appearances.
-    static let sectionLabelSize: CGFloat = 21
-    /// A section's label, italic: Resurfacing, Drifted in, Today, Nearby, a
-    /// current's name in the Library's list.
-    static var sectionLabel: Font { OceanFont.metrics(size: 21, weight: .regular, design: .serif, italic: true, relativeTo: .title3) }
-    /// Live words laid on the water while a whisper is caught.
-    static var statement: Font { Font.system(.title2, design: .default).weight(.medium) }
+    /// A place's name: the Library's title, Ask's large title
+    /// (OceanType.applyNavigationTitleAppearance), each onboarding page's headline.
+    /// New York medium, the stage title's own size, so a place is named as
+    /// carefully as the thought on Tide (Malik, 2026-11-02: the system's face read
+    /// as plain).
+    static let pageTitle = OceanTextRole(
+        size: 34, weight: .medium, design: .serif, italic: false,
+        scale: .native(.largeTitle), leading: 0, tracking: 0,
+        sizes: [31, 32, 33, 34, 36, 38, 40, 44, 48, 52, 56, 60])
+    /// A sheet's name: Edit, Grow a branch, Move, Merge, Archived, a current's
+    /// sheet, the onboarding setup step. Two lines, four at accessibility sizes
+    /// (OceanSheetHeader).
+    static let sheetTitle = OceanTextRole(
+        size: 28, weight: .medium, design: .serif, italic: false,
+        scale: .native(.title), leading: 0, tracking: 0,
+        sizes: [25, 26, 27, 28, 30, 32, 34, 38, 43, 48, 53, 58])
+    /// A place's name in an inline navigation bar: Ask's title folded on scroll and
+    /// the share sheet, through OceanType.applyNavigationTitleAppearance; Settings
+    /// and What Oryne knows about you, through oceanInlineTitle. Fixed at 17, as
+    /// the system's inline titles are.
+    static let navigationTitle = OceanTextRole(
+        size: 17, weight: .medium, design: .serif, italic: false,
+        scale: .fixed, leading: 0, tracking: 0,
+        sizes: nil)
+    /// A thought's name where it is the subject: today's thought on Tide's stage
+    /// and a thought on its own page, up to 40 characters by TitleLength.weighted
+    /// (an East Asian wide or fullwidth character counts 2). Longer names step down
+    /// to thoughtTitleLong and thoughtTitleLongest rather than squeeze
+    /// (OceanType.thoughtTitle(for:)). The same values as pageTitle at the default
+    /// size, kept apart so retuning a place's title never moves the stage.
+    static let thoughtTitle = OceanTextRole(
+        size: 34, weight: .medium, design: .serif, italic: false,
+        scale: .native(.largeTitle), leading: 0, tracking: 0,
+        sizes: [31, 32, 33, 34, 36, 38, 40, 44, 48, 52, 56, 60])
+    /// The weighted lengths past which `thoughtTitle` steps down a size.
+    static let thoughtTitleSteps = (long: 40, longest: 80)
+    /// A thought's name as the subject, 41 to 80 weighted characters; the large
+    /// widget's title.
+    static let thoughtTitleLong = OceanTextRole(
+        size: 28, weight: .medium, design: .serif, italic: false,
+        scale: .native(.title), leading: 0, tracking: 0,
+        sizes: [25, 26, 27, 28, 30, 32, 34, 38, 43, 48, 53, 58])
+    /// A thought's name as the subject, over 80 weighted characters; the medium
+    /// widget's title. Sized between title2 and title1 at every text size, so it
+    /// never passes the 28 step or falls under the ladder's top line.
+    static let thoughtTitleLongest = OceanTextRole(
+        size: 24, weight: .medium, design: .serif, italic: false,
+        scale: .curve, leading: 0, tracking: 0,
+        sizes: [21, 22, 23, 24, 26, 28, 30, 35.33, 40.33, 45.33, 51, 56.67])
+    /// The word Resurfacing, italic, the one word Oryne says aloud: above today's
+    /// thought on Tide and in the widget header in the warm ink, on the Lock Screen
+    /// in the vibrant ink.
+    static let stageLabel = OceanTextRole(
+        size: 17, weight: .regular, design: .serif, italic: true,
+        scale: .native(.body), leading: 0, tracking: 0,
+        sizes: [14, 15, 16, 17, 19, 21, 23, 28, 33, 40, 47, 53])
+    /// The user's own words under a thought's name, on Tide's stage and on its
+    /// page, and a whisper's transcript, folded or full: never a summary. A 27.7 pt
+    /// line (1.46).
+    static let thoughtBody = OceanTextRole(
+        size: 19, weight: .regular, design: .serif, italic: false,
+        scale: .curve, leading: 5, tracking: 0,
+        sizes: [16, 17, 18, 19, 21, 23, 25, 30, 35.67, 42, 48.33, 54.33])
+    /// The words of a live take as they are heard: the user's own, so the serif
+    /// they will wear on Tide, with room between the lines to read a sentence as it
+    /// forms. Shown in a six-line window.
+    static let whisperWords = OceanTextRole(
+        size: 22, weight: .regular, design: .serif, italic: false,
+        scale: .native(.title2), leading: 8, tracking: 0,
+        sizes: [19, 20, 21, 22, 24, 26, 28, 34, 39, 44, 50, 56])
+    /// The user's own words as they type them, in the serif they will wear once
+    /// saved: the composer, the bar's parked draft, the listening note, the edit
+    /// sheet's title, words and note, a branch's words, the share sheet's note.
+    /// Oryne's prompt in an empty field stays SF body in mist, drawn over the field
+    /// (a TextField's own prompt would take the serif).
+    static let inputWords = OceanTextRole(
+        size: 17, weight: .regular, design: .serif, italic: false,
+        scale: .native(.body), leading: 4, tracking: 0,
+        sizes: [14, 15, 16, 17, 19, 21, 23, 28, 33, 40, 47, 53])
+    /// A thought's or a current's name on a tile, a row, a choice or a line:
+    /// Library cards and rows, Branches, a current's and Archived's rows, Move and
+    /// Merge choices, Tide's current tiles, Ask's sources, the branch parent, the
+    /// small and Lock Screen widgets. The user's names, so the serif; regular, so
+    /// the tiles stay quiet.
+    static let cardTitle = OceanTextRole(
+        size: 17, weight: .regular, design: .serif, italic: false,
+        scale: .native(.body), leading: 2, tracking: 0,
+        sizes: [14, 15, 16, 17, 19, 21, 23, 28, 33, 40, 47, 53])
+    /// The user's own words previewed on a card or a widget, on the stage's own
+    /// 1.46 line. Someone else's words there (a summary, a link's description) are
+    /// secondary.
+    static let cardWords = OceanTextRole(
+        size: 15, weight: .regular, design: .serif, italic: false,
+        scale: .native(.subheadline), leading: 4, tracking: 0,
+        sizes: [12, 13, 14, 15, 17, 19, 21, 25, 30, 36, 42, 49])
+    /// A current's name heading its rows in the Library, Adrift's, and the Archived
+    /// row's word (a place's name): the ladder's top size.
+    static let currentName = OceanTextRole(
+        size: 21, weight: .regular, design: .serif, italic: false,
+        scale: .curve, leading: 0, tracking: 0,
+        sizes: [18, 19, 20, 21, 23, 25, 27, 32.5, 38, 43.5, 49.5, 55.5])
+    /// The depth ladder, level 0: the newest line, just under the surface. Each
+    /// level down is smaller and dimmer (depthInk0 to depthInk4); every line is a
+    /// 44 pt row.
+    static let depth0 = OceanTextRole(
+        size: 21, weight: .regular, design: .serif, italic: false,
+        scale: .curve, leading: 0, tracking: 0,
+        sizes: [18, 19, 20, 21, 23, 25, 27, 32.5, 38, 43.5, 49.5, 55.5])
+    /// The depth ladder, level 1.
+    static let depth1 = OceanTextRole(
+        size: 19, weight: .regular, design: .serif, italic: false,
+        scale: .curve, leading: 0, tracking: 0,
+        sizes: [16, 17, 18, 19, 21, 23, 25, 30, 35.67, 42, 48.33, 54.33])
+    /// The depth ladder, level 2, where Nearby starts: a neighbour never outranks
+    /// the thought's own words.
+    static let depth2 = OceanTextRole(
+        size: 17, weight: .regular, design: .serif, italic: false,
+        scale: .native(.body), leading: 0, tracking: 0,
+        sizes: [14, 15, 16, 17, 19, 21, 23, 28, 33, 40, 47, 53])
+    /// The depth ladder, level 3; also a thought named under a current's name on
+    /// Tide's current tiles.
+    static let depth3 = OceanTextRole(
+        size: 15, weight: .regular, design: .serif, italic: false,
+        scale: .native(.subheadline), leading: 0, tracking: 0,
+        sizes: [12, 13, 14, 15, 17, 19, 21, 25, 30, 36, 42, 49])
+    /// The depth ladder, level 4: the oldest line shown, the one New York size
+    /// under 15 (a one-line title a person taps, at 5.3:1).
+    static let depth4 = OceanTextRole(
+        size: 14, weight: .regular, design: .serif, italic: false,
+        scale: .curve, leading: 0, tracking: 0,
+        sizes: [12, 12.5, 13, 14, 16, 18, 20, 24, 28.5, 34.5, 40, 46.5])
+    /// Oryne's one line, a step above body: Ask's question, the empty Tide's line,
+    /// the live take's Listening before its first word, Quick Capture's Catch a
+    /// thought, an empty widget's line. The take's own words are whisperWords.
+    static let statement = OceanTextRole(
+        size: 22, weight: .medium, design: .default, italic: false,
+        scale: .native(.title2), leading: 3, tracking: 0,
+        sizes: [19, 20, 21, 22, 24, 26, 28, 34, 39, 44, 50, 56])
+    /// Oryne's words read whole: a summary, a page's description, Ask's answer and
+    /// Beyond your Ocean, Ask's opening line and sample questions, an onboarding
+    /// paragraph, shared text. Also Oryne's prompts in fields, the tools you type
+    /// into (Ask, search, a theme, a link), the rows of the capture + panel, New
+    /// current. A 24.3 pt line (1.43).
+    static let body = OceanTextRole(
+        size: 17, weight: .regular, design: .default, italic: false,
+        scale: .native(.body), leading: 4, tracking: 0,
+        sizes: [14, 15, 16, 17, 19, 21, 23, 28, 33, 40, 47, 53])
+    /// Reading a step below: a preview cut at two to four lines (a card's snippet,
+    /// Tide's link description, a widget's summary excerpt, a merge suggestion), an
+    /// empty page's line, Ask's reading and status lines, a count trailing a name,
+    /// a widget's tagline, and every sentence someone must read to act: a failure,
+    /// a refusal, a privacy disclosure, a consequence, provenance. A 21.4 pt line
+    /// (1.43).
+    static let secondary = OceanTextRole(
+        size: 15, weight: .regular, design: .default, italic: false,
+        scale: .native(.subheadline), leading: 3.5, tracking: 0,
+        sizes: [12, 13, 14, 15, 17, 19, 21, 25, 30, 36, 42, 49])
+    /// A title in someone else's words on a tile: a link's page title, a plain
+    /// link's address; Quick Capture's Lock Screen line. A thought's name is
+    /// cardTitle.
+    static let tileTitle = OceanTextRole(
+        size: 16, weight: .medium, design: .default, italic: false,
+        scale: .native(.callout), leading: 2, tracking: 0,
+        sizes: [13, 14, 15, 16, 18, 20, 22, 26, 32, 38, 44, 51])
+    /// A quiet control's words: Secondary buttons and chips, quiet Links, the
+    /// toast's message, the focus chip, the transcript language menu, the
+    /// onboarding toggle, widget capsules.
+    static let control = OceanTextRole(
+        size: 15, weight: .medium, design: .default, italic: false,
+        scale: .native(.subheadline), leading: 2.5, tracking: 0,
+        sizes: [12, 13, 14, 15, 17, 19, 21, 25, 30, 36, 42, 49])
+    /// The main action's words: Primary buttons, accent Links (Undo in a toast,
+    /// Retry, Clear).
+    static let controlStrong = OceanTextRole(
+        size: 15, weight: .semibold, design: .default, italic: false,
+        scale: .native(.subheadline), leading: 2.5, tracking: 0,
+        sizes: [12, 13, 14, 15, 17, 19, 21, 25, 30, 36, 42, 49])
+    /// Every label over what it names: a section (Drifted in, Currents, Themes,
+    /// Branches, Nearby, a Library time section, Suggested merges, Try asking), a
+    /// block (Summary, From the page, Transcript, Drawn from, Beyond your Ocean,
+    /// Branching from), a field's name, a Settings header, a Lock Screen label.
+    /// Oryne's word: SF, a little tracked, mist, drawn by OceanSectionLabel. Italic
+    /// New York is kept for the one word Resurfacing (stageLabel).
+    static let sectionLabel = OceanTextRole(
+        size: 13, weight: .medium, design: .default, italic: false,
+        scale: .native(.footnote), leading: 2.5, tracking: 0.4,
+        sizes: [12, 12, 12, 13, 15, 17, 19, 23, 27, 33, 38, 44])
+    /// Quiet single lines: a meta line, a domain, a status inside a card, a
+    /// caption, quiet guidance under a field (a hint, the edited-transcript note,
+    /// Flows into), the composer's captions, a widget's meta line. The smallest
+    /// size a word is set in.
+    static let meta = OceanTextRole(
+        size: 13, weight: .regular, design: .default, italic: false,
+        scale: .native(.footnote), leading: 2.5, tracking: 0,
+        sizes: [12, 12, 12, 13, 15, 17, 19, 23, 27, 33, 38, 44])
     /// The name Oryne in a bar, tracked a little so a short name holds the bar.
-    static var wordmark: Font { Font.system(.headline, design: .default).weight(.medium) }
-    /// Tracking for `wordmark`.
-    static let wordmarkTracking: CGFloat = 2.5
-    /// A thought's title on a tile (card, row, current, link card, a choice in a
-    /// picker): lighter than a heading so the tiles stay quiet.
-    static var tileTitle: Font { Font.system(.callout, design: .default).weight(.medium) }
-    /// Running text in foam: a thought's words, an answer, a field's words, a line
-    /// that opens a thought. lineHeight here is the extra leading between lines.
-    static var body: Font { Font.system(.body, design: .default).weight(.regular) }
-    /// Extra leading between lines of `body`.
-    static let bodyLeading: CGFloat = 4
-    /// Reading text a step below the words: a snippet, a summary, what lies beyond
-    /// the Ocean, a count beside a label.
-    static var secondary: Font { Font.system(.subheadline, design: .default).weight(.regular) }
-    /// Extra leading between lines of `secondary`.
-    static let secondaryLeading: CGFloat = 3
-    /// The meta line under a title, a domain, a provenance note, a status line.
-    static var meta: Font { Font.system(.footnote, design: .default).weight(.regular) }
-    /// A quiet line under a field or a control: a notice, a hint, a caption in the
-    /// composer.
-    static var note: Font { Font.system(.caption, design: .default).weight(.regular) }
-    /// A label right above what it names: Summary, Transcript, Drawn from, a
-    /// field's name in the edit sheet.
-    static var eyebrow: Font { Font.system(.footnote, design: .default).weight(.semibold) }
-    /// A quiet control's words: Secondary buttons, the segmented switch, a toast's
-    /// message.
-    static var control: Font { Font.system(.subheadline, design: .default).weight(.medium) }
-    /// The main action's words: Primary buttons, Undo, a Link button.
-    static var controlStrong: Font { Font.system(.subheadline, design: .default).weight(.semibold) }
-    /// A count on a picture (+2).
+    static let wordmark = OceanTextRole(
+        size: 17, weight: .medium, design: .default, italic: false,
+        scale: .native(.headline), leading: 0, tracking: 2.5,
+        sizes: [14, 15, 16, 17, 19, 21, 23, 28, 33, 40, 47, 53])
+    /// The mark on the onboarding setup step, growing with the large title.
+    static let glyphHero = OceanTextRole(
+        size: 48, weight: .regular, design: .default, italic: false,
+        scale: .curve, leading: 0, tracking: 0,
+        sizes: [43.76, 45.18, 46.59, 48, 50.82, 53.65, 56.47, 62.12, 67.76, 73.41, 79.06, 84.71])
+    /// The +N count on a picture, and nothing else. Fixed, like the picture.
     static var badge: Font { Font.system(size: 11, weight: .bold, design: .default) }
-    /// A symbol in a control: outline variant, regular weight, in a 44 pt cell.
-    /// Fixed, like the system's own toolbar glyphs.
+    /// A symbol in a 44 pt cell: a tool, an Icon button, a field's leading glyph.
+    /// Outline variant, regular weight, fixed like the system's toolbar glyphs. A
+    /// glyph inside a line of words takes the line's text role instead.
     static var glyph: Font { Font.system(size: 17, weight: .regular, design: .default) }
-    /// The send arrow and the main action's glyph.
+    /// The send arrows.
     static var glyphStrong: Font { Font.system(size: 17, weight: .semibold, design: .default) }
-    /// A chevron in content: bare, the meta line's size.
+    /// A chevron or a mark that leads or ends a row in content, bare, in mist; the
+    /// composer tiles' glyphs.
     static var glyphDisclosure: Font { Font.system(.footnote, design: .default).weight(.semibold) }
     /// The kind glyph leading a meta line.
     static var glyphMeta: Font { Font.system(.caption2, design: .default).weight(.regular) }
-    /// A small ✕ inside a chip or a badge; a menu's chevron.
+    /// A ✕ or a chevron inside a control: a chip's ✕, a remove badge's ✕, a menu's
+    /// chevron, All currents' chevron.
     static var glyphSmall: Font { Font.system(.caption2, design: .default).weight(.semibold) }
     /// A symbol standing in for a picture: an empty link thumbnail, a widget's
-    /// drop.
+    /// drop, the watch's state glyphs.
     static var glyphLarge: Font { Font.system(.title3, design: .default).weight(.regular) }
-    /// The point size `glyphHero` is built from, for UIKit appearances.
-    static let glyphHeroSize: CGFloat = 48
-    /// The one glyph of an empty page.
-    static var glyphHero: Font { OceanFont.metrics(size: 48, weight: .regular, design: .default, italic: false, relativeTo: .largeTitle) }
+}
+
+// MARK: - Form: watch type
+
+/// The watch's own text roles, on watchOS's text styles, so the wrist keeps the
+/// phone's order: watchOS sizes its styles in another order than iOS, and the
+/// phone's roles there set notes above titles. fontSize is the 44 to 49 mm
+/// watch at its default size; 40 to 42 mm is a point smaller. Applied with
+/// .oceanText(_:), like the phone's.
+enum OceanWatchType {
+    /// A thought's name on the wrist: Today's, and a thought's on its page.
+    static let title = OceanTextRole(
+        size: 20, weight: .medium, design: .serif, italic: false,
+        scale: .native(.title3), leading: 0, tracking: 0,
+        sizes: nil)
+    /// A Recent row's name, and the user's own words on the wrist.
+    static let serif = OceanTextRole(
+        size: 17, weight: .regular, design: .serif, italic: false,
+        scale: .native(.body), leading: 3, tracking: 0,
+        sizes: nil)
+    /// A summary under its label; a notice or an instruction that is the screen's
+    /// whole message; a catch time standing in for a name.
+    static let body = OceanTextRole(
+        size: 17, weight: .regular, design: .default, italic: false,
+        scale: .native(.body), leading: 3, tracking: 0,
+        sizes: nil)
+    /// Caught, Undo, the complication's line, the play glyph.
+    static let strong = OceanTextRole(
+        size: 17, weight: .medium, design: .default, italic: false,
+        scale: .native(.body), leading: 0, tracking: 0,
+        sizes: nil)
+    /// A label on the wrist: Today, Summary.
+    static let label = OceanTextRole(
+        size: 14, weight: .medium, design: .default, italic: false,
+        scale: .native(.footnote), leading: 0, tracking: 0.4,
+        sizes: nil)
+    /// Status lines, a Recent row's meta, Waiting for iPhone, Continues on iPhone,
+    /// Getting audio, Listening, the player's time (with monospaced digits).
+    static let meta = OceanTextRole(
+        size: 14, weight: .regular, design: .default, italic: false,
+        scale: .native(.footnote), leading: 2, tracking: 0,
+        sizes: nil)
+    /// The recording timer, with monospaced digits at the call site.
+    static let timer = OceanTextRole(
+        size: 20, weight: .regular, design: .default, italic: false,
+        scale: .native(.title3), leading: 0, tracking: 0,
+        sizes: nil)
 }
 
 // MARK: - Material: color
 
 extension OceanTheme {
-    /// The deepest water; ink on an accent fill; the vignette.
+    /// The deepest water, where every page's water ends; ink on an accent fill.
     static let abyss = Color(.sRGB, red: 0.02, green: 0.02, blue: 0.03, opacity: 1)
+    /// The top of every page's water, where the light comes in: a near-black
+    /// touched warm.
+    static let waterTop = Color(.sRGB, red: 0.059, green: 0.051, blue: 0.051, opacity: 1)
+    /// The middle of every page's water, cooling as it deepens; below it the water
+    /// sinks to abyss.
+    static let waterMiddle = Color(.sRGB, red: 0.039, green: 0.043, blue: 0.059, opacity: 1)
     static let deep = Color(.sRGB, red: 0.05, green: 0.055, blue: 0.065, opacity: 1)
     static let mid = Color(.sRGB, red: 0.09, green: 0.095, blue: 0.11, opacity: 1)
-    /// The lit centre of the water; the watch's flat control disc.
+    /// The watch's flat control disc.
     static let current = Color(.sRGB, red: 0.15, green: 0.155, blue: 0.175, opacity: 1)
-    /// The brightest water; an empty page's glyph.
+    /// The brightest water.
     static let surface = Color(.sRGB, red: 0.24, green: 0.245, blue: 0.27, opacity: 1)
-    /// Titles, a control's words, the user's own words.
-    static let foam = Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0.92)
-    /// Running text a step below the words: snippets, summaries, the website's
-    /// reading tone.
-    static let text = Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0.66)
-    /// Placeholder and helper text inside an input: quieter than mist, but it
-    /// clears 4.5:1 over a field on the glass card (faint measured about 2.2:1).
-    static let hint = Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0.58)
-    /// Meta lines, section labels, a tool's glyph, a quiet control's glyph.
-    static let mist = Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0.5)
-    /// The quietest ink: a chevron in content, an Example mark, a note under a
-    /// field.
-    static let faint = Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0.26)
+    /// Titles, a control's words, the user's own typed words, Ask's question and
+    /// answer, shared text, a notice that is a screen's whole message. 100% with
+    /// Increase Contrast.
+    static let foam = OceanTheme.contrasting(Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0.92), increased: Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 1))
+    /// Reading a step below the words: summaries, a page's description, previews,
+    /// Ask's opening line and samples, onboarding paragraphs, and every sentence
+    /// someone must read (a failure, a refusal, a privacy disclosure, provenance, a
+    /// consequence). 80% with Increase Contrast.
+    static let text = OceanTheme.contrasting(Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0.66), increased: Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0.8))
+    /// The quiet ink: meta lines, labels, counts, prompts and placeholders, quiet
+    /// guidance, empty lines, status lines, quiet Links, tool, state and disclosure
+    /// glyphs, disabled words. 4.5:1 or more on every ground a word stands on (4.5
+    /// at the Reading light's brightest, 5.1 on a tile under it). 72% with Increase
+    /// Contrast.
+    static let mist = OceanTheme.contrasting(Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0.58), increased: Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0.72))
+    /// Never words and never a glyph that means something: the drawn grabber, the
+    /// segmented switch's dividers (about 2.2:1). 40% with Increase Contrast.
+    static let faint = OceanTheme.contrasting(Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0.26), increased: Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0.4))
     /// Ink on the accent fill (a Primary button's label, a badge's count).
     static let onAccent = Color(.sRGB, red: 0.02, green: 0.02, blue: 0.03, opacity: 1)
     /// Ink laid on a photograph: a remove badge's ✕.
     static let onPhoto = Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 1)
+    /// White standing in the warm light: today's title on Tide. Not cream: the
+    /// light tints it, the ink stays white. 12.7:1 at the brightest point under the
+    /// title.
+    static let stageInk = Color(.sRGB, red: 1, green: 0.97, blue: 0.93, opacity: 1)
+    /// The user's own words under today's title on Tide, a step below it. The
+    /// title's ink, 100%, with Increase Contrast.
+    static let stageWords = OceanTheme.contrasting(Color(.sRGB, red: 1, green: 0.97, blue: 0.93, opacity: 0.84), increased: Color(.sRGB, red: 1, green: 0.97, blue: 0.93, opacity: 1))
+    /// The depth ladder, level 0: white in the cool water. 14.7:1 on Tide.
+    static let depthInk0 = Color(.sRGB, red: 0.95, green: 0.96, blue: 1, opacity: 0.9)
+    /// The depth ladder, level 1. 10.6:1.
+    static let depthInk1 = Color(.sRGB, red: 0.95, green: 0.96, blue: 1, opacity: 0.76)
+    /// The depth ladder, level 2. 7.7:1.
+    static let depthInk2 = Color(.sRGB, red: 0.95, green: 0.96, blue: 1, opacity: 0.64)
+    /// The depth ladder, level 3. 6.1:1.
+    static let depthInk3 = Color(.sRGB, red: 0.95, green: 0.96, blue: 1, opacity: 0.56)
+    /// The depth ladder, level 4, the floor: every line a person can tap holds
+    /// 4.5:1 or more (5.3:1).
+    static let depthInk4 = Color(.sRGB, red: 0.95, green: 0.96, blue: 1, opacity: 0.52)
+    /// White in the cool light: a thought's title on its own page, a current's name
+    /// on its sheet.
+    static let coolInk = Color(.sRGB, red: 0.95, green: 0.96, blue: 1, opacity: 1)
+    /// The user's own words on their thought's page, a step below the title. The
+    /// title's ink, 100%, with Increase Contrast.
+    static let coolWords = OceanTheme.contrasting(Color(.sRGB, red: 0.95, green: 0.96, blue: 1, opacity: 0.84), increased: Color(.sRGB, red: 0.95, green: 0.96, blue: 1, opacity: 1))
     /// The one flat fill for tiles, fields and link cards. No border, no gradient.
-    static let fill = Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0.055)
+    /// 1.32:1 on deep: a tile reads as a thing (5.5% did not).
+    static let fill = Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0.11)
     /// A control in the content layer: a Secondary button, an attachment tile, a
     /// settings row's separator. A step brighter than a tile so it reads as a
     /// control.
-    static let raised = Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0.08)
+    static let raised = Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0.14)
     /// Added over a surface while it is pressed.
-    static let pressedLift = Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0.04)
+    static let pressedLift = Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0.06)
     /// The part of a control that is on: the segmented switch's thumb, a chosen
     /// chip.
-    static let selected = Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0.12)
-    /// The faint tint a glass disc takes when it is ready or listening; never a
-    /// solid light fill.
+    static let selected = Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0.19)
+    /// The faint tint on a Primary capsule's glass (Save, Grow, Continue). No disc
+    /// wears it: the discs are clear glass in every state, and the ring says ready
+    /// and listening.
     static let glassTint = Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0.18)
     /// A grouped form's row separator.
-    static let separator = Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0.08)
+    static let separator = Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0.14)
     /// The dim over a page while the capture overlay is up.
     static let scrim = Color(.sRGB, red: 0, green: 0, blue: 0, opacity: 0.24)
     /// The deep water as a tint on a toast's glass, so a message floating over a
@@ -259,9 +545,22 @@ extension OceanTheme {
     /// A switch's on state, #0770E8: a shade deeper and a touch more saturated than
     /// system blue, so on reads at a glance against the near-white knob.
     static let switchOn = Color(.sRGB, red: 0.027, green: 0.439, blue: 0.91, opacity: 1)
-    /// Whisper-warm white that sets the one lit thing apart by temperature rather
-    /// than saturation: the Resurfacing label, the lamp, Beyond your Ocean.
-    static let glowWarm = Color(.sRGB, red: 0.95, green: 0.93, blue: 0.88, opacity: 1)
+    /// The one warm ink: the word Resurfacing (10.6:1 in the Reading light on Tide;
+    /// in the widget header), and the ring while it listens and as the capture
+    /// toast's ring arrives. Never a glyph.
+    static let warm = Color(.sRGB, red: 1, green: 0.77, blue: 0.55, opacity: 1)
+    /// The Reading light on the three tabs: on Tide, the warm light that falls on
+    /// the thought that came back. Light only, drawn at an opacity in a gradient,
+    /// never as ink.
+    static let stageLight = Color(.sRGB, red: 1, green: 0.7, blue: 0.41, opacity: 1)
+    /// Where the light catches the listening ring, as it catches the icon's glass
+    /// rim.
+    static let warmGlint = Color(.sRGB, red: 1, green: 0.9, blue: 0.78, opacity: 1)
+    /// The icon's rim, sampled: the ring, the one shape Oryne owns (the capture
+    /// disc's rim and Ask's send once there is a question, the capture toast's
+    /// mark, the empty Tide), and the cool light of a page you reached for. 11.2:1
+    /// on deep.
+    static let ring = Color(.sRGB, red: 0.68, green: 0.78, blue: 0.92, opacity: 1)
 }
 
 // MARK: - Material: shadow
@@ -289,8 +588,8 @@ enum OceanShadow {
 /// the microphone's level bars and the sinking words of a caught whisper are
 /// art-directed and stay in their views.
 enum OceanMotion {
-    /// A control answering a finger: a press, a glyph swap, a tint change on the
-    /// disc.
+    /// A control answering a finger: a press, a glyph swap, the disc's ring
+    /// changing state.
     static let touch = Animation.easeOut(duration: 0.15)
     /// A quick state change: a filter on or off, a bar showing or hiding, the
     /// Reduce Motion stand-in for anything slower.

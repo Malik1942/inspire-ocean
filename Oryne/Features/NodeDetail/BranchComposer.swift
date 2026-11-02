@@ -33,18 +33,18 @@ struct BranchComposer: View {
                     }
                     // Where the branch grows from: a tile, as the thought is
                     // shown everywhere else.
-                    VStack(alignment: .leading, spacing: OceanSpacing.snug) {
-                        Text("Branching from").font(OceanType.eyebrow).foregroundStyle(OceanTheme.mist)
+                    VStack(alignment: .leading, spacing: OceanSpacing.afterLabel) {
+                        OceanSectionLabel("Branching from")
                         Text(parent.displayTitle)
-                            .font(OceanType.tileTitle).foregroundStyle(OceanTheme.foam)
-                            .lineLimit(2)
+                            .oceanText(OceanType.cardTitle).foregroundStyle(OceanTheme.foam)
+                            .oceanLineLimit(2)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(OceanSpacing.inset)
                     .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous)))
 
-                    VStack(alignment: .leading, spacing: OceanSpacing.gap) {
-                        sectionTitle(Text("Branch type"))
+                    VStack(alignment: .leading, spacing: OceanSpacing.afterLabel) {
+                        OceanSectionLabel("Branch type")
                         FlowLayout(spacing: OceanSpacing.gap) {
                             ForEach(BranchType.allCases) { bt in
                                 branchChip(bt)
@@ -52,14 +52,16 @@ struct BranchComposer: View {
                         }
                     }
 
-                    VStack(alignment: .leading, spacing: OceanSpacing.gap) {
-                        sectionTitle(Text(type.prompt))
-                        TranscriptEditor(text: $text, isEditable: true, minHeight: 140, maxHeight: 240, focus: $focused)
+                    VStack(alignment: .leading, spacing: OceanSpacing.afterLabel) {
+                        OceanSectionLabel(Text(type.prompt))
+                        TranscriptEditor(text: $text, isEditable: true, minLines: 5, maxLines: 9, focus: $focused)
                     }
 
-                    VStack(alignment: .leading, spacing: OceanSpacing.gap) {
-                        sectionTitle(Text("Link"))
-                        TextField("https://…", text: $linkText)
+                    VStack(alignment: .leading, spacing: OceanSpacing.afterLabel) {
+                        OceanSectionLabel("Link")
+                        // A tool field, so SF throughout; its prompt in mist,
+                        // not the system's dimmer placeholder.
+                        TextField("https://…", text: $linkText, prompt: Text("https://…").foregroundStyle(OceanTheme.mist))
                             .textFieldStyle(.plain)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
@@ -67,8 +69,8 @@ struct BranchComposer: View {
                             .oceanField()
                     }
 
-                    VStack(alignment: .leading, spacing: OceanSpacing.gap) {
-                        sectionTitle(Text("Image"))
+                    VStack(alignment: .leading, spacing: OceanSpacing.afterLabel) {
+                        OceanSectionLabel("Image")
                         if !imageDatas.isEmpty {
                             OceanPictureStrip(datas: imageDatas) { index in
                                 withAnimation(OceanMotion.standard) {
@@ -89,7 +91,7 @@ struct BranchComposer: View {
                             .buttonStyle(.oceanSecondary)
                         }
                         if let imageNotice {
-                            Text(imageNotice).font(OceanType.note).foregroundStyle(OceanTheme.faint)
+                            Text(imageNotice).oceanText(OceanType.secondary).foregroundStyle(OceanTheme.text)
                         }
                     }
                 }
@@ -124,13 +126,6 @@ struct BranchComposer: View {
                 }
             }
         }
-    }
-
-    /// A field's name: an eyebrow right above what it names, as in the
-    /// edit sheet.
-    private func sectionTitle(_ text: Text) -> some View {
-        text
-            .font(OceanType.eyebrow).foregroundStyle(OceanTheme.mist)
     }
 
     /// One branch type among several: a Secondary chip, selected when it

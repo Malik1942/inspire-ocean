@@ -55,16 +55,18 @@ struct OceanSurface<S: Shape>: View {
 
 /// The small ✕ in a picture's corner: a white glyph on a dark disc, so it
 /// reads on any photo, inside a 32 pt target. VoiceOver reaches it as its
-/// tile's named action.
+/// tile's named action. The disc is the picture's, so it never scales; its
+/// ✕ grows with the text only as far as it still fits the disc.
 struct OceanRemoveBadge: View {
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             Image(systemName: "xmark")
-                .font(OceanType.badge)
+                .font(OceanType.glyphSmall)
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .foregroundStyle(OceanTheme.onPhoto)
-                .frame(width: OceanSize.metaIcon + OceanSpacing.tight, height: OceanSize.metaIcon + OceanSpacing.tight)
+                .frame(width: OceanSize.glyphSlot, height: OceanSize.glyphSlot)
                 .background(OceanTheme.photoScrim, in: Circle())
                 .padding(OceanSpacing.tight)
                 .frame(width: OceanSize.removeTarget, height: OceanSize.removeTarget, alignment: .topTrailing)

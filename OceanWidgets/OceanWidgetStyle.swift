@@ -5,9 +5,11 @@ import ImageIO
 /// WidgetKit owns the outside margins and removes the still water for tinted
 /// and clear appearances. Controls wear the app's content surfaces.
 enum OceanWidgetStyle {
+    /// The app's water, darkening downward as on every page
+    /// (design/identity-2.1.md, R1).
     static var water: LinearGradient {
         LinearGradient(
-            colors: [OceanTheme.abyss, OceanTheme.deep, OceanTheme.mid],
+            colors: [OceanTheme.waterTop, OceanTheme.waterMiddle, OceanTheme.abyss],
             startPoint: .top,
             endPoint: .bottom
         )

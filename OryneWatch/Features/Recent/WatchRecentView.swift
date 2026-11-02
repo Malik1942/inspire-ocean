@@ -21,32 +21,35 @@ private struct RecentRow: View {
     let row: WristRow
 
     var body: some View {
-        VStack(alignment: .leading, spacing: OceanSpacing.tight) {
+        VStack(alignment: .leading, spacing: OceanSpacing.snug) {
             Group {
                 if let title = row.title {
                     Text(title)
+                        .oceanText(OceanWatchType.serif)
                 } else {
                     Text(row.caughtAt, style: .time)
+                        .oceanText(OceanWatchType.body)
                 }
             }
-            // The wrist's title role: the meta line's size in the serif.
-            .font(.system(.footnote, design: .serif))
             .foregroundStyle(OceanTheme.foam)
             .lineLimit(2)
-            HStack(spacing: OceanSpacing.tight) {
-                Text(row.caughtAt, format: .relative(presentation: .named))
-                if let duration = row.duration {
-                    Text(verbatim: "·")
-                    Text(verbatim: String(format: "%d:%02d", Int(duration) / 60, Int(duration) % 60))
-                }
-            }
-            .font(OceanType.note)
-            .foregroundStyle(OceanTheme.mist)
+            // One Text, so the age and the length wrap as one line at
+            // larger text sizes.
+            (Text(row.caughtAt, format: .relative(presentation: .named)) + Text(verbatim: durationSuffix))
+                .oceanText(OceanWatchType.meta)
+                .foregroundStyle(OceanTheme.mist)
             if row.isWaiting {
                 Text("Waiting for iPhone")
-                    .font(OceanType.note)
+                    .oceanText(OceanWatchType.meta)
                     .foregroundStyle(OceanTheme.mist)
             }
         }
+    }
+
+    /// The take's length after its age (" · 1:23"); empty for a thought the
+    /// watch holds no take for.
+    private var durationSuffix: String {
+        guard let duration = row.duration else { return "" }
+        return " · " + String(format: "%d:%02d", Int(duration) / 60, Int(duration) % 60)
     }
 }

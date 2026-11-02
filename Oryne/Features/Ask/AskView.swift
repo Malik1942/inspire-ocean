@@ -13,6 +13,8 @@ struct AskView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.oceanAI) private var ai
     @Environment(AppState.self) private var appState
+    @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     @Query(filter: #Predicate<Node> { !$0.isArchived }) private var nodes: [Node]
 
@@ -34,12 +36,16 @@ struct AskView: View {
 
     @State private var openedNode: Node?
 
+    /// A sample question's glyph slot grows with its words, so every line's
+    /// words start on one edge at any text size, as a source's do.
+    @ScaledMetric(relativeTo: .body) private var slot = OceanSize.glyphSlot
+
     private var messages: [ChatMessage] { conversation?.orderedMessages ?? [] }
 
     var body: some View {
         NavigationStack {
             ZStack {
-                PageBackground()
+                PageBackground(light: .warm)
                 transcript
                 ShoreGradient()
             }
@@ -64,8 +70,9 @@ struct AskView: View {
 
     // MARK: Transcript
 
-    /// The page reads like Tide: the title, then each question in New
-    /// York with its answer under it as plain text. No bubbles, no boxes.
+    /// The page reads like Tide: the title, then each question in
+    /// statement (SF) with its answer under it as plain text. No bubbles,
+    /// no boxes.
     private var transcript: some View {
         ScrollViewReader { proxy in
             ScrollView {
@@ -75,16 +82,25 @@ struct AskView: View {
                         messageView(message).id(message.id)
                     }
                     if let searchPhase { searchLine(searchPhase).id("searching") }
+                    // Where a resting answer settles: a section of clear
+                    // water under its last line, so it stands above the
+                    // shore's dim instead of in it.
+                    Color.clear
+                        .frame(height: OceanSpacing.section)
+                        .id("transcript.end")
                 }
+                // Under the large title (iPad) the words start on its edge; a
+                // phone in landscape shows an inline, centered title, so there
+                // the column centers as Tide's does.
+                .oceanReadableColumn(alignment: verticalSizeClass == .compact ? .center : .leading)
                 .padding(.horizontal, OceanSpacing.gutter)
-                // The large title leaves more room under it than the old
-                // title row did; the first line keeps its old distance.
-                .padding(.top, -OceanSpacing.snug)
-                .padding(.bottom, OceanSpacing.block)
+                // A titled page's first line stands a block under its
+                // title; the large title's bar already leaves about a snug.
+                .padding(.top, OceanSpacing.block - OceanSpacing.snug)
             }
             .scrollDismissesKeyboard(.interactively)
             .onChange(of: messages.count) { _, _ in
-                withAnimation { proxy.scrollTo(messages.last?.id, anchor: .bottom) }
+                withAnimation { proxy.scrollTo("transcript.end", anchor: .bottom) }
             }
             .onChange(of: searchPhase) { _, phase in
                 if phase != nil { withAnimation { proxy.scrollTo("searching", anchor: .bottom) } }
@@ -97,24 +113,25 @@ struct AskView: View {
         if message.role == .user {
             // The question is the heading of what follows it.
             Text(message.text)
-                .font(OceanType.subjectTitle)
+                .oceanText(OceanType.statement)
                 .foregroundStyle(OceanTheme.foam)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, message.id == messages.first?.id ? OceanSpacing.block : OceanSpacing.section)
+                .padding(.top, questionTop(message))
         } else {
             VStack(alignment: .leading, spacing: 0) {
                 Text(AnswerMarkdown.attributed(message.text))
-                    .font(OceanType.body)
-                    .lineSpacing(OceanType.bodyLeading)
+                    .oceanText(OceanType.body)
                     .foregroundStyle(OceanTheme.foam)
                     .fixedSize(horizontal: false, vertical: true)
                     .textSelection(.enabled)
 
                 if let note = provenanceNote(message) {
+                    // A sentence to read before trusting the answer, so it
+                    // is set as one, never as a quiet meta line.
                     Text(note)
-                        .font(OceanType.meta)
-                        .foregroundStyle(OceanTheme.mist)
+                        .oceanText(OceanType.secondary)
+                        .foregroundStyle(OceanTheme.text)
                         .padding(.top, OceanSpacing.gap)
                 }
                 // Found: the thoughts the answer drew from, each a line that
@@ -129,11 +146,31 @@ struct AskView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, OceanSpacing.inset)
+            .padding(.top, OceanSpacing.item)
         }
     }
 
-    /// Quiet provenance, only where silence would mislead: a cloud answer that
+    /// A question's distance from what stands above it. The first has
+    /// none: the transcript's top already places it. A later one stands a
+    /// section under the answer before it, measured to what you see, so an
+    /// answer that ends on its sources gives back its last row's slack.
+    private func questionTop(_ message: ChatMessage) -> CGFloat {
+        let messages = self.messages
+        guard let index = messages.firstIndex(where: { $0.id == message.id }), index > 0 else { return 0 }
+        return endsWithSources(messages[index - 1])
+            ? OceanSpacing.section - OceanType.cardTitle.rowSlack(at: typeSize)
+            : OceanSpacing.section
+    }
+
+    /// Whether an answer's last line is one of its sources, a 44 pt row that
+    /// already leaves its own slack under its words: it has sources, and no
+    /// note from beyond the Ocean follows them (the tests `messageView`
+    /// draws both by).
+    private func endsWithSources(_ message: ChatMessage) -> Bool {
+        message.role == .ocean && !message.referencedNodeIDs.isEmpty && (message.outwardText ?? "").isEmpty
+    }
+
+    /// Provenance, only where silence would mislead: a cloud answer that
     /// actually came from the device, or a reply with nothing nearby behind it.
     private func provenanceNote(_ message: ChatMessage) -> String? {
         switch message.provenanceRaw.flatMap(ResponseProvenance.init(rawValue:)) {
@@ -145,16 +182,13 @@ struct AskView: View {
         }
     }
 
-    /// Knowledge from beyond the user's notes, set apart by its warm label
-    /// alone: lit from the open sea, not their water.
+    /// Knowledge from beyond the user's notes, set apart by its label alone:
+    /// from the open sea, not their water.
     private func outwardView(_ text: String) -> some View {
-        VStack(alignment: .leading, spacing: OceanSpacing.gap) {
-            Label("Beyond your Ocean", systemImage: "sparkles")
-                .font(OceanType.eyebrow)
-                .foregroundStyle(OceanTheme.glowWarm)
+        VStack(alignment: .leading, spacing: OceanSpacing.afterLabel) {
+            OceanSectionLabel("Beyond your Ocean", systemImage: "sparkles")
             Text(AnswerMarkdown.attributed(text))
-                .font(OceanType.secondary)
-                .lineSpacing(OceanType.secondaryLeading)
+                .oceanText(OceanType.body)
                 .foregroundStyle(OceanTheme.text)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -162,10 +196,8 @@ struct AskView: View {
 
     private func sources(for message: ChatMessage) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Drawn from")
-                .font(OceanType.eyebrow)
-                .foregroundStyle(OceanTheme.mist)
-                .padding(.bottom, OceanSpacing.tight)
+            // Right under its label: each line's 44 pt row brings its own gap.
+            OceanSectionLabel("Drawn from")
             ForEach(sourceNodes(message), id: \.id) { node in
                 Button { openedNode = node } label: {
                     ThoughtLine(node: node, showsChevron: true)
@@ -178,17 +210,18 @@ struct AskView: View {
     /// The finding, made visible where the answer will land: the Ocean read
     /// under a breathing lamp, then the find named for a beat.
     private func searchLine(_ phase: SearchPhase) -> some View {
-        HStack(spacing: OceanSpacing.gap) {
+        HStack(spacing: OceanSpacing.snug) {
             switch phase {
             case .reading:
                 ThinkingText(text: String(localized: "Reading your Ocean…"))
 
             case .found(let count):
                 Image(systemName: "water.waves")
-                    .font(OceanType.meta)
+                    .oceanText(OceanType.secondary)
+                    .imageScale(.small)
                     .foregroundStyle(OceanTheme.mist)
                 Text(foundLabel(count))
-                    .font(OceanType.secondary)
+                    .oceanText(OceanType.secondary)
                     .foregroundStyle(OceanTheme.mist)
             }
         }
@@ -196,7 +229,9 @@ struct AskView: View {
         .background(alignment: .leading) {
             if case .reading = phase { ThinkingLamp().offset(x: -60) }
         }
-        .padding(.top, OceanSpacing.inset)
+        // An item under the question, less the line's own gap, so its
+        // words stand where the answer's first line will.
+        .padding(.top, OceanSpacing.item - OceanSpacing.gap)
         .animation(OceanMotion.lift, value: phase)
     }
 
@@ -213,17 +248,14 @@ struct AskView: View {
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Find a thought, or ask what a few of them mean together.")
-                .font(OceanType.body)
+                .oceanText(OceanType.body)
                 .foregroundStyle(OceanTheme.text)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, OceanSpacing.item)
 
-            Text("Try asking")
-                .font(OceanType.sectionLabel)
-                .foregroundStyle(OceanTheme.mist)
-                .padding(.leading, OceanSpacing.hairline)
+            // Right under its label: each question's 44 pt row brings its
+            // own gap.
+            OceanSectionLabel("Try asking")
                 .padding(.top, OceanSpacing.section)
-                .padding(.bottom, OceanSpacing.tight)
 
             ForEach(samplePrompts, id: \.self) { prompt in
                 Button {
@@ -231,18 +263,22 @@ struct AskView: View {
                     inputFocused = true
                 } label: {
                     // The same line as an answer's sources: a quiet glyph in
-                    // a fixed slot, the words a step below content.
-                    HStack(alignment: .firstTextBaseline, spacing: OceanSpacing.gap) {
+                    // a slot that grows with the words, the words a step
+                    // below content, a floor inside the 44 pt row so a line
+                    // that wraps never meets the next.
+                    HStack(alignment: .firstTextBaseline, spacing: OceanSpacing.snug) {
                         Image(systemName: "text.bubble")
-                            .font(OceanType.meta)
+                            .oceanText(OceanType.body)
+                            .imageScale(.small)
                             .foregroundStyle(OceanTheme.mist)
-                            .frame(width: OceanSize.glyphSlot)
+                            .frame(width: slot)
                         Text(prompt)
-                            .font(OceanType.body)
+                            .oceanText(OceanType.body)
                             .foregroundStyle(OceanTheme.text)
                             .multilineTextAlignment(.leading)
                         Spacer(minLength: 0)
                     }
+                    .padding(.vertical, OceanSpacing.gap)
                     .frame(minHeight: OceanControlSize.height)
                     .contentShape(Rectangle())
                 }
@@ -263,17 +299,18 @@ struct AskView: View {
 
     /// The capture bar's twin: the same capsule, material, height and place
     /// above the tab bar, the send disc where the capture disc sits. It grows
-    /// into a rounded rectangle with the same end radius past one line.
+    /// into a rounded rectangle with the same end radius past one line. Its
+    /// words stop at xxxLarge, as the capture bar's do.
     private var inputBar: some View {
         HStack(alignment: .bottom, spacing: OceanSpacing.item) {
-            TextField("Ask the Ocean", text: $input, axis: .vertical)
+            TextField("Ask the Ocean", text: $input, prompt: Text("Ask the Ocean").foregroundStyle(OceanTheme.mist), axis: .vertical)
                 .textFieldStyle(.plain)
-                .font(OceanType.body)
+                .oceanFieldText(OceanType.body)
                 .focused($inputFocused)
                 .foregroundStyle(OceanTheme.foam)
                 .tint(OceanTheme.accent)
                 .lineLimit(1...4)
-                .padding(.vertical, FastCaptureLayout.fieldVerticalInset)
+                .padding(.vertical, fieldVerticalInset)
 
             Button(action: send) {
                 Image(systemName: "arrow.up")
@@ -289,6 +326,18 @@ struct AskView: View {
         .background(OceanBarBackground(cornerRadius: FastCaptureLayout.barHeight / 2))
         .padding(.horizontal, OceanSpacing.gutter)
         .padding(.bottom, FastCaptureLayout.insetBarLift)
+        // The capture bar's cap: up to it the prompt reads whole beside the
+        // disc on every phone.
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+    }
+
+    /// The field's inset inside the bar: one line of body, as the field lays
+    /// it out, centred in the bar's height at the bar's capped text size
+    /// (the page's own `typeSize` sits outside the cap, so it is clamped
+    /// here), and a tight floor once the words outgrow it, so they never
+    /// touch the capsule as the bar grows.
+    private var fieldVerticalInset: CGFloat {
+        max(OceanSpacing.tight, (FastCaptureLayout.barHeight - OceanType.body.fieldLineHeight(at: min(typeSize, .xxxLarge))) / 2)
     }
 
     private var canSend: Bool { !input.trimmed.isEmpty && searchPhase == nil }
@@ -400,9 +449,9 @@ struct AskView: View {
 
 // MARK: - Thinking
 
-/// The Ocean reading: a warm light passes slowly through the words, the
-/// way light moves through water. No dots, no spinner. Still under Reduce
-/// Motion and Calm Accessibility Mode.
+/// The Ocean reading: a band of foam passes slowly through the mist words,
+/// the way light moves through water. No dots, no spinner. Still under
+/// Reduce Motion and Calm Accessibility Mode.
 private struct ThinkingText: View {
     let text: String
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -410,19 +459,19 @@ private struct ThinkingText: View {
 
     var body: some View {
         if reduceMotion || calm {
-            Text(text).font(OceanType.secondary).foregroundStyle(OceanTheme.mist)
+            Text(text).oceanText(OceanType.secondary).foregroundStyle(OceanTheme.mist)
         } else {
             TimelineView(.animation) { timeline in
                 let t = timeline.date.timeIntervalSinceReferenceDate
                 // One sweep every 1.8 s, left to right, a soft band.
                 let x = CGFloat((t.truncatingRemainder(dividingBy: 1.8)) / 1.8) * 1.6 - 0.3
                 Text(text)
-                    .font(OceanType.secondary)
+                    .oceanText(OceanType.secondary)
                     .foregroundStyle(OceanTheme.mist)
                     .overlay {
                         Text(text)
-                            .font(OceanType.secondary)
-                            .foregroundStyle(OceanTheme.glowWarm)
+                            .oceanText(OceanType.secondary)
+                            .foregroundStyle(OceanTheme.foam)
                             .mask(
                                 LinearGradient(
                                     stops: [
@@ -458,7 +507,7 @@ private struct ThinkingLamp: View {
 
     private func lamp(_ opacity: Double) -> some View {
         RadialGradient(
-            colors: [OceanTheme.glowWarm.opacity(opacity), OceanTheme.glowWarm.opacity(opacity * 0.35), .clear],
+            colors: [OceanTheme.stageLight.opacity(opacity), OceanTheme.stageLight.opacity(opacity * 0.35), .clear],
             center: .center, startRadius: 0, endRadius: 140
         )
         .frame(width: 320, height: 200)

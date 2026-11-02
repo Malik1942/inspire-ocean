@@ -78,6 +78,11 @@ extension ThoughtRemoval {
     }
 }
 
+/// How far the removal toast rises as it comes in: its own travel, apart
+/// from the capture toast's and from the spacing tokens, so retuning either
+/// never moves it.
+private let removalToastRise: CGFloat = 8 // art-directed: the toast's rise
+
 extension View {
     /// A thought's row in a list: swipe left for Archive and Delete, swipe
     /// all the way to delete, as in Notes: the system's own swipe and
@@ -110,9 +115,12 @@ extension View {
                 if let removal = removals.pending {
                     UndoToast(message: removal.message) { removals.undo() }
                         .id(removal.id)
-                        .transition(.opacity.combined(with: .offset(y: 8)))
+                        .transition(.opacity.combined(with: .offset(y: removalToastRise)))
                 }
             }
+            // The page's gutter, as the capture toast keeps: a toast that
+            // wraps at the largest sizes still stops at the margins.
+            .padding(.horizontal, OceanSpacing.gutter)
             .padding(.bottom, OceanSpacing.item)
             .animation(OceanMotion.lift, value: removals.pending?.id)
         }

@@ -25,17 +25,19 @@ struct ArchivedThoughtsView: View {
         NavigationStack {
             OceanFadeStack(path: $path) {
             List {
-                Text("Archived")
-                    .font(OceanType.subjectTitle)
-                    .foregroundStyle(OceanTheme.foam)
-                    .accessibilityAddTraits(.isHeader)
-                    .tileRow(top: OceanSpacing.sheetTop, bottom: OceanSpacing.block - OceanSpacing.item / 2)
+                // Opens as every sheet does, under the system's grabber:
+                // the header leaves its own grabber's room clear, so the
+                // name lands where every sheet's does.
+                OceanSheetHeader(title: Text("Archived"), drawsGrabber: false)
+                    .tileRow(top: OceanSpacing.gap, bottom: OceanSpacing.block - OceanSpacing.item / 2)
                 if shown.isEmpty {
+                    // Left-aligned where the first row would stand, a block
+                    // under the header.
                     Text("Nothing archived")
-                        .font(OceanType.secondary)
+                        .oceanText(OceanType.secondary)
                         .foregroundStyle(OceanTheme.mist)
-                        .frame(maxWidth: .infinity)
-                        .tileRow(top: OceanSpacing.block)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .tileRow(top: OceanSpacing.item / 2)
                 }
                 ForEach(shown) { node in
                     Button { path.append(node) } label: { NodeRow(node: node) }
@@ -63,7 +65,7 @@ struct ArchivedThoughtsView: View {
             .tileList()
             .contentMargins(.bottom, OceanSpacing.section, for: .scrollContent)
             .thoughtRemovalToast(removals)
-            .background(OceanBackground())
+            .background(PageBackground(light: .faint))
             // A pull-up sheet: no bar and no close, the grabber is its top
             // edge and it swipes away. A pushed thought brings its own bar.
             .toolbar(.hidden, for: .navigationBar)

@@ -52,6 +52,25 @@ enum OceanTheme {
     }
 }
 
+extension OceanTheme {
+    /// An ink that steps up when the person turns on Increase Contrast: the
+    /// generated inks (foam, text, mist, faint, stageWords, coolWords) take
+    /// their brighter value wherever they are drawn, not only the depth
+    /// ladder. On iOS it is a dynamic color the environment resolves;
+    /// elsewhere it is `normal`.
+    static func contrasting(_ normal: Color, increased: Color) -> Color {
+        #if os(iOS)
+        let normal = UIColor(normal)
+        let increased = UIColor(increased)
+        return Color(uiColor: UIColor { traits in
+            traits.accessibilityContrast == .high ? increased : normal
+        })
+        #else
+        return normal
+        #endif
+    }
+}
+
 // MARK: - OceanBackground
 
 /// The deep, spatial ocean background used across the app.
@@ -60,7 +79,11 @@ enum OceanTheme {
 /// that flows organically — no discrete "blobs". The four corners are pinned to
 /// the screen edges; the edge mid-points slide *along* their edge and the centre
 /// roams gently, so the lit region drifts like light filtering through water.
-/// A depth vignette darkens the edges for a sense of space.
+///
+/// The water darkens downward, as on every page (design/identity-2.1.md,
+/// R1): a near-black touched warm at the top where the light comes in,
+/// cooling through the middle, sinking to abyss. No bright middle and no
+/// vignette; a page's light lies over it (`PageBackground`, `StageLight`).
 ///
 /// `TimelineView(.animation)` runs uncapped, so ProMotion devices update at
 /// their full refresh rate (60/120 Hz) and the flow is silky.
@@ -74,12 +97,11 @@ struct OceanBackground: View {
     @Environment(\.calmAccessibility) private var calm
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// 3×3 colour grid — near-monochrome, lit toward the upper-centre, sinking
-    /// to abyssal dark at the lower corners.
+    /// 3×3 colour grid: one row per depth, top to bottom.
     private let colors: [Color] = [
-        OceanTheme.deep,  OceanTheme.mid,     OceanTheme.deep,
-        OceanTheme.mid,   OceanTheme.current, OceanTheme.mid,
-        OceanTheme.abyss, OceanTheme.deep,    OceanTheme.abyss
+        OceanTheme.waterTop,    OceanTheme.waterTop,    OceanTheme.waterTop,
+        OceanTheme.waterMiddle, OceanTheme.waterMiddle, OceanTheme.waterMiddle,
+        OceanTheme.abyss,       OceanTheme.abyss,       OceanTheme.abyss
     ]
 
     var body: some View {
@@ -90,17 +112,6 @@ struct OceanBackground: View {
             let t = timeline.date.timeIntervalSinceReferenceDate
             MeshGradient(width: 3, height: 3, points: points(t), colors: colors)
                 .ignoresSafeArea()
-                .overlay {
-                    // Depth vignette — darkens the edges, holds focus centrally.
-                    // Art-directed: the water's own light, not a token.
-                    RadialGradient(
-                        colors: [.clear, OceanTheme.abyss.opacity(0.55)],
-                        center: .center,
-                        startRadius: 90,
-                        endRadius: 560
-                    )
-                    .ignoresSafeArea()
-                }
         }
     }
 

@@ -25,7 +25,7 @@ struct OryneApp: App {
         #endif
         container = Persistence.shared
 
-        OceanType.applyLargeTitleAppearance()
+        OceanType.applyNavigationTitleAppearance()
         #if DEBUG
         if ProcessInfo.processInfo.environment["OCEAN_SCREENSHOT_SEED"] == "1" {
             FastCapturePreferences.defaults.set(true, forKey: FastCapturePreferenceKeys.onboardingCompleted)

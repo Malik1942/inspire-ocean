@@ -137,6 +137,7 @@ targets:
       - path: Oryne/DesignSystem/OceanTheme.swift
       - path: Oryne/DesignSystem/OceanTokens.swift
       - path: Oryne/DesignSystem/OceanType.swift
+      - path: Oryne/DesignSystem/OceanTextRole.swift
       - path: Oryne/DesignSystem/OceanMaterial.swift
     settings:
       base:
@@ -176,6 +177,7 @@ targets:
       - path: Oryne/DesignSystem/OceanTheme.swift
       - path: Oryne/DesignSystem/OceanTokens.swift
       - path: Oryne/DesignSystem/OceanType.swift
+      - path: Oryne/DesignSystem/OceanTextRole.swift
       - path: Oryne/DesignSystem/OceanMaterial.swift
     settings:
       base:
@@ -207,6 +209,7 @@ targets:
       - path: Oryne/DesignSystem/OceanTheme.swift
       - path: Oryne/DesignSystem/OceanTokens.swift
       - path: Oryne/DesignSystem/OceanType.swift
+      - path: Oryne/DesignSystem/OceanTextRole.swift
       - path: Oryne/DesignSystem/OceanMaterial.swift
     dependencies:
       - target: OryneWatchWidgets
@@ -267,6 +270,7 @@ targets:
       - path: Oryne/DesignSystem/OceanTheme.swift
       - path: Oryne/DesignSystem/OceanTokens.swift
       - path: Oryne/DesignSystem/OceanType.swift
+      - path: Oryne/DesignSystem/OceanTextRole.swift
       - path: Oryne/DesignSystem/OceanMaterial.swift
     settings:
       base:

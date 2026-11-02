@@ -52,23 +52,6 @@
         }
       }
     },
-    "Catch a\nthought": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Catch a\nthought"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "记一条\n灵感"
-          }
-        }
-      }
-    },
     "Before it disappears": {
       "extractionState": "manual",
       "localizations": {
