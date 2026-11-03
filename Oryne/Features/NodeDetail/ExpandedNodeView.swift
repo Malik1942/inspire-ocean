@@ -92,8 +92,8 @@ struct NodeDetailContent: View {
             .padding(.top, OceanSpacing.gap)
             .padding(.bottom, OceanSpacing.section)
         }
-        // You reached for this thought: the cool light, the ring's color.
-        .background(PageBackground(light: .cool))
+        // A thought you opened: the Reading light, a step softer than a tab's.
+        .background(PageBackground(light: .soft))
         // A thought is a page to read: pushed, it hides the tab bar (the
         // capture bar steps away with it); the back gesture returns.
         .toolbar(isSheetRoot ? .automatic : .hidden, for: .tabBar)
@@ -347,7 +347,7 @@ struct NodeDetailContent: View {
             NodeMeta(node: node, detail: metaDetail)
             Text(node.displayTitle)
                 .oceanText(OceanType.thoughtTitle(for: node.displayTitle))
-                .foregroundStyle(OceanTheme.coolInk)
+                .foregroundStyle(OceanTheme.stageInk)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, OceanSpacing.gap)
@@ -363,7 +363,7 @@ struct NodeDetailContent: View {
             if showsWords {
                 Text(node.text)
                     .oceanText(OceanType.thoughtBody)
-                    .foregroundStyle(OceanTheme.coolWords)
+                    .foregroundStyle(OceanTheme.stageWords)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, OceanSpacing.item)
@@ -519,7 +519,7 @@ struct NodeDetailContent: View {
                     VStack(alignment: .leading, spacing: OceanSpacing.inset) {
                         Text(transcription)
                             .oceanText(OceanType.thoughtBody)
-                            .foregroundStyle(OceanTheme.coolWords)
+                            .foregroundStyle(OceanTheme.stageWords)
                             .lineLimit(transcriptOpen ? nil : 3)
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -543,7 +543,7 @@ struct NodeDetailContent: View {
                 } else {
                     Text(transcription)
                         .oceanText(OceanType.thoughtBody)
-                        .foregroundStyle(OceanTheme.coolWords)
+                        .foregroundStyle(OceanTheme.stageWords)
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .contentShape(Rectangle())

@@ -114,7 +114,7 @@ struct LibraryView: View {
     var body: some View {
         NavigationStack(path: $path) {
             ZStack {
-                PageBackground(light: .warm)
+                PageBackground(light: .full)
                 switch segment {
                 case .recent: grid
                 case .currents: currents

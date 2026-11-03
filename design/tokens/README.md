@@ -240,9 +240,9 @@ or a role on the retired `metrics` scale, stops the generator too.
 | Group | Swift | Roles |
 |---|---|---|
 | color.water | `OceanTheme` | abyss, deep, mid, current, surface; waterTop and waterMiddle, which with abyss are every page's water, darkening downward |
-| color.ink | `OceanTheme` | foam 92%, text 66%, mist 58%, faint 26%, onAccent, onPhoto; stageInk and stageWords (white in the warm light), coolInk and coolWords (white in the cool light), depthInk0 to depthInk4 (the ladder, 90 to 52%, each at 4.5:1 or more) |
+| color.ink | `OceanTheme` | foam 92%, text 66%, mist 58%, faint 26%, onAccent, onPhoto; stageInk and stageWords (white in the warm light, on every phone page), coolInk and coolWords (white on the watch, where no lamp falls), depthInk0 to depthInk4 (the ladder, 90 to 52%, each at 4.5:1 or more) |
 | color.surface | `OceanTheme` | fill 11%, raised 14%, pressedLift 6%, selected 19%, glassTint 18%, separator, scrim, photoScrim |
-| color.accent | `OceanTheme` | accent, switchOn, warm (the one warm ink), stageLight (the Reading light), warmGlint (where the light catches the listening ring), ring (the icon's rim: the ring and the cool light) |
+| color.accent | `OceanTheme` | accent, switchOn, warm (the one warm ink), stageLight (the Reading light), warmGlint (where the light catches the listening ring), ring (the icon's rim: the ring, a mark and never a light) |
 | shadow | `OceanShadow` | tile, control, inset, bar, text (`.oceanShadow(_:)`) |
 
 Inks for words. foam sets titles where no light ink applies, a control's
@@ -325,8 +325,8 @@ crossfade; the back tool and the sheet's pull-down are the ways out.
 Marked `// art-directed` in code; the lint skips those lines.
 
 - Each page's light: Tide's Reading light (`StageLight`) and its
-  choreography when a thought rests (`OceanFieldView`), the cool and faint
-  lights (`PageBackground`), the light behind each onboarding page and
+  choreography when a thought rests (`OceanFieldView`), how much of it
+  reaches an opened page and Archived (`PageBackground`), the light behind each onboarding page and
   Ask's reading line.
 - The picture stage's bleed (`ResurfacingPicture`): its blur, darkening and
   fade, and the scrim that grows with a light picture; the depth ladder's
@@ -393,7 +393,8 @@ The direction in `design/identity-2.1.md`, built from its Round 4 frames
   sheet titles are New York medium: in SF they read as plain (Malik).
 - Light: the three tabs stand in Tide's warm Reading light (Malik: Ask and
   the Library take the same glow); a thought or a current you opened stands
-  in the cool light. `glowWarm` is retired; `warm` is the one warm ink.
+  in the same light a step softer, Archived in a trace of it. The cool light
+  is retired (Malik, 2026-11-03): one lamp, depth is how much of it reaches. `glowWarm` is retired; `warm` is the one warm ink.
 - The water darkens downward on every page (`waterTop`, `waterMiddle`,
   `abyss`): no bright middle, no vignette.
 - Tide is a stage over a water column: no large title, the stage

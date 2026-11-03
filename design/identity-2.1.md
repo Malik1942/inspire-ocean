@@ -22,10 +22,16 @@ first look at the build:
 - **The column keeps its label** (Drifted in, in SF) and shows a small
   picture at the end of any line that has one. The ladder is the one in
   "The depth ladder" below; Nearby starts at level 2.
-- **The warm light is on all three tabs.** Ask and the Library take Tide's
-  Reading light ("the same warm glow as the tide"). A thought or a current
-  you open stands in the cool light; Archived in the faint one. This
-  replaces R2's "cool light in the depth" for the tabs.
+- **One lamp, the warm Reading light, on every page.** Ask and the Library
+  take Tide's light ("the same warm glow as the tide"). A thought or a
+  current you open stands in the same light a step softer (`PageBackground`
+  `.soft`, 70%), Archived in a trace of it (30%), and their titles and words
+  take the warm light's white (`stageInk`, `stageWords`). This retires R2's
+  cool light (Malik, 2026-11-03): those pages are sheets over a warm tab, so
+  the cool light met the warm one at the sheet's edge and the two read as
+  different rooms, a third temperature beside every warm picture. Depth is
+  now how much of the lamp reaches a page, never another color of light.
+  The ring stays blue: a mark, not a light.
 - **New water on every page**: near-black touched warm at the top, cooling
   through the middle, abyss at the bottom; no bright middle, no vignette.
 - **Page and sheet titles are New York medium** (34 and 28). SF read as plain
@@ -140,6 +146,9 @@ A thought you open stands in a cool light, the ring's color: you went to
 it. The Library has no stage light at all: it is the depth. Warmth lives
 in the light, never in the words. The only warm ink in the app is the
 word "Resurfacing" and the ring while it listens.
+*(As built, 2026-11-03: the cool light is retired. Every page stands in
+the warm light; depth is how much of it reaches the page. See "As built"
+above.)*
 
 **R3. One mark: the ring.** The icon's ring is the only shape Oryne owns.
 It appears in exactly three places: the capture disc, the toast that
@@ -199,7 +208,8 @@ the oldest goes dark. Choreography under Motion.
 
 ### The thought page
 
-- **Cool light** from the top center (`light/cool`, an ellipse 90% of
+- *(Retired 2026-11-03: the page stands in the Reading light at 70%, see
+  "As built".)* **Cool light** from the top center (`light/cool`, an ellipse 90% of
   the width by 40% of the height, 16% at the top, 5% at 55%, gone at
   88%) over a sheet whose water darkens to `abyss`.
 - The meta line stays where 2.0 has it, above the title. (The

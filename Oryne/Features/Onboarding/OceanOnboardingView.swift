@@ -155,11 +155,12 @@ private struct OceanOnboardingPageView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        // One light in the water behind the words, as on the pages: warm
-        // only on the page about a thought coming back, the ring's cool
-        // light on the others (design/identity-2.1.md, R2). Art-directed.
+        // One light in the water behind the words, the app's one lamp as
+        // on the pages: strongest on the page about a thought coming back,
+        // a trace on the others, never a second color of light
+        // (design/identity-2.1.md, As built). Art-directed.
         .background(alignment: .center) {
-            let light = page.visual == .resurface ? OceanTheme.stageLight : OceanTheme.ring
+            let light = OceanTheme.stageLight
             RadialGradient(
                 colors: [light.opacity(page.visual == .resurface ? 0.14 : 0.06),
                          light.opacity(0.02), .clear],
