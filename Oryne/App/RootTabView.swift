@@ -234,9 +234,6 @@ enum FastCaptureLayout {
     /// and the field in the overlay sit on the same line (the disc's edge,
     /// less a gap, so the first letter clears the capsule's curve).
     static let fieldLeading: CGFloat = endRadius - OceanSpacing.gap
-    /// The field's vertical inset inside a bar, so one line of body type
-    /// centres in the bar's height.
-    static let fieldVerticalInset: CGFloat = (barHeight - 22) / 2
     /// The capsule's end radius, kept when the container grows taller.
     static let endRadius: CGFloat = barHeight / 2
     /// The open composer's corners: fixed and continuous, so a tall card

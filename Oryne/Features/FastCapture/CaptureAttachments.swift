@@ -26,9 +26,11 @@ struct CaptureImage: Identifiable {
     }
 }
 
-/// What rides on the composer's card above the words: its pictures in the
-/// order picked, a quiet tile in the place of each one still loading, and
-/// the link sensed in the words. Tiles 64 pt high whose corners sit
+/// What rides on the composer's card above the words: a whisper taken back
+/// (Undo, or a save the store refused), its pictures in the order picked, a
+/// quiet tile in the place of each one still loading, and the link sensed in
+/// the words. A whisper with no words would otherwise ride along unseen and
+/// keep the disc on Send while the field looks empty. Tiles 64 pt high whose corners sit
 /// concentric with the card's, each with its own ✕ (to VoiceOver, one
 /// element with a named action). The row scrolls sideways once it is
 /// wider than the card.
@@ -45,6 +47,10 @@ struct CaptureAttachments: View {
     var onRemoveLink: (String) -> Void = { _ in }
     /// A loading tile's ✕: lets go of the pictures still on their way.
     var onCancelLoading: () -> Void = {}
+    /// The length of a whisper riding along, when there is one.
+    var whisper: TimeInterval? = nil
+    /// The whisper tile's ✕: lets the recording go.
+    var onRemoveWhisper: () -> Void = {}
 
     static let tileSize: CGFloat = OceanSize.pictureTile
     /// The card's corner less its inset, so the tiles sit concentric.
@@ -62,6 +68,10 @@ struct CaptureAttachments: View {
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: OceanSpacing.gap) {
+                if let whisper {
+                    whisperTile(whisper)
+                        .transition(.opacity)
+                }
                 ForEach(Array(slots.enumerated()), id: \.element.id) { index, slot in
                     switch slot {
                     case .picture(let image):
@@ -121,6 +131,35 @@ struct CaptureAttachments: View {
             .accessibilityAction(named: Text("Cancel"), onCancelLoading)
     }
 
+    /// A whisper riding along: its length under the waveform glyph, on the
+    /// link tile's quiet fill. Its ✕ lets the recording go.
+    private func whisperTile(_ seconds: TimeInterval) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Image(systemName: "waveform")
+                .font(OceanType.glyphDisclosure)
+                .foregroundStyle(OceanTheme.mist)
+                .accessibilityHidden(true)
+            Spacer(minLength: 0)
+            Text(verbatim: AudioDurations.format(seconds))
+                .oceanText(OceanType.meta)
+                .foregroundStyle(OceanTheme.foam)
+                .lineLimit(1)
+                .accessibilityHidden(true)
+        }
+        .padding(OceanSpacing.gap)
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+        .frame(width: Self.tileSize, height: Self.tileSize, alignment: .leading)
+        .background(OceanTheme.raised, in: tileShape)
+        .overlay(alignment: .topTrailing) {
+            OceanRemoveBadge(action: onRemoveWhisper)
+        }
+        .contentShape(.accessibility, tileShape)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Whisper"))
+        .accessibilityValue(Text(verbatim: AudioDurations.format(seconds)))
+        .accessibilityAction(named: Text("Remove whisper"), onRemoveWhisper)
+    }
+
     /// The sensed link: its site's name under the link glyph, on the quiet
     /// fill of a content control. Its ✕ leaves the link in the words as
     /// text, never attached.
@@ -133,7 +172,7 @@ struct CaptureAttachments: View {
             Spacer(minLength: 0)
             // Read once, as the tile's value.
             Text(verbatim: link.host)
-                .font(OceanType.meta)
+                .oceanText(OceanType.meta)
                 .foregroundStyle(OceanTheme.foam)
                 .lineLimit(1)
                 .accessibilityHidden(true)

@@ -8,16 +8,19 @@ import WidgetKit
 /// decision 5). The Ocean is the whole water; this is its surface, and the
 /// Library is the depth.
 ///
-/// Three sections with one grammar: a quiet label, then content. Only the
-/// Resurfacing section is lit, by one lamp in the water, and its label is
-/// the page's only warm color. Text sits directly on the water; cards are
-/// fills without borders; the type is the system's throughout.
+/// Today's thought stands on a stage (design/identity-2.1.md, Round 4): in
+/// the Reading light from the top of the screen, or, when it has a picture,
+/// on the picture itself, whose color carries down into the water. Below
+/// it the column: the newest thoughts on the depth ladder, sinking by age,
+/// with no dates. Then the currents. The page names itself only in the tab
+/// bar; its first line is the thought that came back.
 struct OceanFieldView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var context
     @Environment(\.oceanAI) private var ai
     @Environment(\.calmAccessibility) private var calm
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var typeSize
     @Query(filter: #Predicate<Node> { !$0.isArchived }, sort: \Node.createdAt, order: .reverse)
     private var nodes: [Node]
 
@@ -39,14 +42,25 @@ struct OceanFieldView: View {
     /// The thought being let go stays on screen until it has gone under;
     /// resting it re-picks today's thought at once.
     @State private var goingUnder: Node?
-    /// A thought a card's menu asked to delete, waiting on the alert.
+    /// A thought a line's menu asked to delete, waiting on the alert.
     @State private var pendingDelete: Node?
+    /// The status bar and the navigation bar's height: a picture stage
+    /// reaches up under both to the screen's top edge.
+    @State private var topInset: CGFloat = 0
+    /// The page's height under the bars, as it stands without the keyboard:
+    /// a short page (landscape) gets a shorter picture stage.
+    @State private var pageHeight: CGFloat = 0
 
     private var stilled: Bool { calm || reduceMotion }
 
     private static let newestLimit = 5
     private static let currentLimit = 4
-    private static let currentTileHeight: CGFloat = 72
+    /// Where Nearby enters the depth ladder: two levels down, so a
+    /// neighbour never outranks today's thought.
+    private static let nearbyLevel = 2
+    /// How far today's thought sinks as it is let go: the motion's own
+    /// travel, so it keeps its distance whatever the spacing tokens become.
+    private static let restSink: CGFloat = 4 // art-directed: the let-go sink
 
     private enum OceanSheet: Identifiable {
         case thought(Node)
@@ -82,39 +96,64 @@ struct OceanFieldView: View {
     // MARK: Body
 
     var body: some View {
+        let shown = goingUnder ?? resurfacing
+        let onPicture = shown.map(hasStagePicture) ?? false
         NavigationStack {
             ZStack {
-                PageBackground(lampLift: lampLift, lampDim: lampDim)
+                OceanBackground()
+                // A picture is its own light; the Reading light falls on a
+                // thought without one, and on the empty page.
+                if !onPicture {
+                    StageLight(lift: lampLift, dim: lampDim)
+                        .transition(.opacity)
+                }
                 if nodes.isEmpty {
                     emptyState
                 } else {
                     ScrollView {
-                        VStack(alignment: .leading, spacing: OceanSpacing.section) {
-                            if let shown = goingUnder ?? resurfacing {
+                        // Sections a page's section apart, measured between
+                        // what you see; each text block in the reading column.
+                        VStack(alignment: .leading, spacing: 0) {
+                            if let shown {
                                 // One thought goes under, then the next comes
                                 // up: never both on screen at once.
                                 resurfacingSection(shown)
                                     .opacity(lettingGo ? 0 : 1)
-                                    .offset(y: stilled || !lettingGo ? 0 : OceanSpacing.tight)
+                                    .offset(y: stilled || !lettingGo ? 0 : Self.restSink)
                             }
                             newestSection
-                            if !currents.isEmpty { currentsSection }
+                                .oceanReadableColumn()
+                                .padding(.top, shown == nil ? 0 : newestTop)
+                            if !currents.isEmpty {
+                                currentsSection
+                                    .oceanReadableColumn()
+                                    .padding(.top, currentsTop)
+                            }
                         }
                         .padding(.horizontal, OceanSpacing.gutter)
-                        // Under the large title, the first label keeps the
-                        // distance it had from the old title row.
-                        .padding(.top, OceanSpacing.block + OceanSpacing.snug)
+                        // A picture starts at the screen's top edge; a title
+                        // starts just under the bar's gear.
+                        .padding(.top, onPicture ? 0 : OceanSpacing.gap)
                         .padding(.bottom, FastCaptureLayout.contentClearance)
                     }
                     .modifier(CaptureComposerEdge())
                 }
                 ShoreGradient()
             }
-            // The system's large title, in New York (`applyLargeTitleAppearance`),
-            // folds into the bar as the page scrolls; the gear stays pinned
-            // in the bar's own glass.
+            .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.top } action: { topInset = $0 }
+            // Read past the keyboard's inset, so the keys never shorten the
+            // stage; only a short page does.
+            .background {
+                Color.clear
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { pageHeight = $0 }
+                    .ignoresSafeArea(.keyboard)
+            }
+            // No large title: the tab bar already says Tide, and the page's
+            // first line is today's thought. The title stays for the system
+            // (VoiceOver, the app switcher); the gear stays in the bar's glass.
             .navigationTitle(OceanTab.homeTitle)
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(removing: .title)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showSettings = true } label: { Image(systemName: "gearshape") }
@@ -167,27 +206,47 @@ struct OceanFieldView: View {
     // MARK: Resurfacing
 
     private func resurfacingSection(_ node: Node) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            sectionLabel("Resurfacing", warm: true)
-                .padding(.bottom, OceanSpacing.gap)
-
+        let picture = stagePicture(node)
+        let words = node.ownWords
+        // At accessibility sizes the head no longer fits on the picture: it
+        // stands right below it, on the bleed's held scrim, and the stage
+        // keeps its height.
+        let headBelow = picture != nil && typeSize.isAccessibilitySize
+        // The head stands on the picture at its foot, and the caption's own
+        // bottom inset parts the title from what follows.
+        let captioned = picture != nil && !headBelow
+        return VStack(alignment: .leading, spacing: 0) {
             Button { open(node) } label: {
-                VStack(alignment: .leading, spacing: OceanSpacing.gap) {
-                    Text(node.displayTitle)
-                        .font(OceanType.resurfacingTitle)
-                        .foregroundStyle(OceanTheme.foam)
-                        .lineLimit(3)
-                        .multilineTextAlignment(.leading)
-                    if !node.snippet.isEmpty, node.snippet != node.displayTitle {
-                        Text(node.snippet)
-                            .font(OceanType.secondary)
-                            .foregroundStyle(OceanTheme.text)
-                            .lineSpacing(OceanType.secondaryLeading)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.leading)
+                VStack(alignment: .leading, spacing: 0) {
+                    if let picture {
+                        ResurfacingPicture(image: picture.image, data: picture.data, id: node.id,
+                                           height: stageHeight(picture.height), topInset: topInset, holdsScrim: headBelow) {
+                            if !headBelow { stageHead(node, onPicture: true) }
+                        }
+                        if headBelow {
+                            stageHead(node, onPicture: true)
+                                .oceanReadableColumn()
+                                .padding(.top, OceanSpacing.gap)
+                        }
+                    } else {
+                        stageHead(node, onPicture: false)
+                            .oceanReadableColumn()
                     }
-                    NodeMeta(node: node, detail: whisperLength(node), showsCurrent: false)
-                        .padding(.top, OceanSpacing.hairline)
+                    if let words {
+                        Text(words)
+                            .oceanText(OceanType.thoughtBody)
+                            .foregroundStyle(picture == nil ? OceanTheme.stageWords : OceanTheme.foam)
+                            .oceanLineLimit(picture == nil ? 4 : 3, accessibility: picture == nil ? 6 : 4)
+                            .multilineTextAlignment(.leading)
+                            .oceanReadableColumn()
+                            .padding(.top, captioned ? 0 : OceanSpacing.item)
+                            .accessibilityIdentifier("tide.stage.words")
+                    }
+                    if let domain = node.linkDomain {
+                        linkSource(node, domain: domain, showsAbout: words == nil, onPicture: picture != nil)
+                            .oceanReadableColumn()
+                            .padding(.top, words == nil && captioned ? 0 : OceanSpacing.item)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
@@ -195,21 +254,11 @@ struct OceanFieldView: View {
             .buttonStyle(.plain)
             .accessibilityHint("Opens the thought.")
 
-            if let data = node.imageDatas.first ?? node.linkImageData, let ui = UIImage(data: data) {
-                Image(uiImage: ui)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(maxWidth: .infinity)
-                    .frame(height: OceanSize.hero)
-                    .clipShape(RoundedRectangle(cornerRadius: OceanRadius.media, style: .continuous))
-                    .padding(.top, OceanSpacing.inset)
-                    .onTapGesture { open(node) }
-            }
-
-            HStack(spacing: OceanSpacing.gap) {
+            // Wraps onto a second line at accessibility sizes rather than
+            // running off the page.
+            FlowLayout(spacing: OceanSpacing.gap) {
                 Button(nearbyOpen ? "Nearby" : "Nearby") { toggleNearby(node) }
-                    .buttonStyle(.oceanSecondary)
-                    .opacity(nearbyOpen ? 1 : 0.9)
+                    .buttonStyle(.oceanSecondary(selected: nearbyOpen))
                 if !Resurfacing.Rest.restedToday || goingUnder != nil {
                     Button("Let it rest") { rest(node) }
                         .buttonStyle(.oceanSecondary)
@@ -218,132 +267,213 @@ struct OceanFieldView: View {
                     PlayWhisperButton(data: data)
                 }
             }
+            .oceanReadableColumn()
             .padding(.top, OceanSpacing.inset)
 
             if nearbyOpen {
-                VStack(alignment: .leading, spacing: 0) {
+                Group {
                     if nearby.isEmpty {
                         Text("Nothing drifts nearby yet.")
-                            .font(OceanType.secondary)
+                            .oceanText(OceanType.secondary)
                             .foregroundStyle(OceanTheme.mist)
                             .padding(.vertical, OceanSpacing.gap)
                     } else {
-                        ForEach(nearby) { near in
-                            Button { open(near) } label: { ThoughtLine(node: near) }
-                                .buttonStyle(.plain)
-                        }
+                        DepthList(nodes: nearby, startLevel: Self.nearbyLevel, open: open)
                     }
                 }
+                .oceanReadableColumn()
                 .padding(.top, OceanSpacing.gap)
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
     }
 
-    private func whisperLength(_ node: Node) -> String? {
-        guard node.kind == .voice, let data = node.audioData,
-              let seconds = AudioDurations.seconds(for: data, id: node.id) else { return nil }
-        return AudioDurations.format(seconds)
+    /// The label and the title, the same on a picture and in the light. A
+    /// title steps down by its weighted length (TitleLength: 34, 28, 24 pt
+    /// at 40 and 80, a Chinese character counting 2) rather than squeezing
+    /// to fit.
+    private func stageHead(_ node: Node, onPicture: Bool) -> some View {
+        let title = node.displayTitle
+        let role = OceanType.thoughtTitle(for: title)
+        return VStack(alignment: .leading, spacing: OceanSpacing.gap) {
+            Text("Resurfacing")
+                .oceanText(OceanType.stageLabel)
+                .foregroundStyle(OceanTheme.warm)
+                .padding(.leading, OceanSpacing.hairline)
+            Text(title)
+                .oceanText(role)
+                // White in the warm light; plain white on a picture, where
+                // no warm light falls.
+                .foregroundStyle(onPicture ? OceanTheme.onPhoto : OceanTheme.stageInk)
+                .oceanLineLimit(onPicture ? 3 : 4, accessibility: nil)
+                .multilineTextAlignment(.leading)
+                .accessibilityIdentifier("tide.stage.title")
+        }
     }
 
-    // MARK: Drifted in
-
-    private var newestSection: some View {
-        VStack(alignment: .leading, spacing: OceanSpacing.afterLabel) {
-            sectionLabel("Drifted in")
-            MasonryColumns(items: newest, columns: 2, spacing: OceanSpacing.item,
-                           estimatedHeight: estimatedCardHeight) { node in
-                Button { open(node) } label: { GlanceCard(node: node) }
-                    .buttonStyle(.plain)
-                    // The Library's long-press menu: a card half the page
-                    // wide has no room for a swipe.
-                    .contextMenu {
-                        Button { archive(node) } label: {
-                            Label("Archive", systemImage: "archivebox")
-                        }
-                        Button(role: .destructive) { pendingDelete = node } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                    }
-                    .accessibilityActions {
-                        Button("Delete") { pendingDelete = node }
-                        Button("Archive") { archive(node) }
-                    }
+    /// Where a link points, and what the page says about itself: the site's
+    /// words, so the system's face, never the serif (only when the thought
+    /// has no words of the user's). On a picture the domain takes the
+    /// reading ink, which holds on the bleed where mist would not.
+    private func linkSource(_ node: Node, domain: String, showsAbout: Bool, onPicture: Bool) -> some View {
+        VStack(alignment: .leading, spacing: OceanSpacing.snug) {
+            HStack(spacing: OceanSpacing.snug) {
+                Image(systemName: "link")
+                Text(domain)
+            }
+            .oceanText(OceanType.meta)
+            .foregroundStyle(onPicture ? OceanTheme.text : OceanTheme.mist)
+            if showsAbout, let about = node.linkSummary ?? node.linkDescription, !about.isEmpty {
+                Text(about)
+                    .oceanText(OceanType.secondary)
+                    .foregroundStyle(OceanTheme.text)
+                    .oceanLineLimit(2, accessibility: 3)
+                    .multilineTextAlignment(.leading)
             }
         }
     }
 
-    private func estimatedCardHeight(_ node: Node) -> CGFloat {
-        let banner: CGFloat = node.hasImages || node.linkImageData != nil ? OceanSize.banner : 0
-        return 92 + banner + (node.displayTitle.count > 22 ? 22 : 0)
+    /// The picture a thought stands on: its own first picture, or a link's
+    /// image, which is wider than it is tall and gets a shorter stage.
+    private func stagePicture(_ node: Node) -> (image: UIImage, data: Data, height: CGFloat)? {
+        if let data = node.imageDatas.first, let image = UIImage(data: data) {
+            return (image, data, OceanSize.stage)
+        }
+        if let data = node.linkImageData, let image = UIImage(data: data) {
+            return (image, data, OceanSize.stageLink)
+        }
+        return nil
+    }
+
+    /// Whether a thought stands on a picture, without loading the pictures
+    /// attached to it.
+    private func hasStagePicture(_ node: Node) -> Bool {
+        node.hasImages || node.linkImageData != nil
+    }
+
+    /// The stage's height from the screen's top edge: the picture's own, or
+    /// less on a short page (landscape, a small window), so the caption's
+    /// foot clears the capture bar while the page rests. A phone in
+    /// portrait always has the room.
+    private func stageHeight(_ full: CGFloat) -> CGFloat {
+        guard pageHeight > 0 else { return full }
+        let clear = topInset + pageHeight - FastCaptureLayout.contentClearance
+        return min(full, max(clear, full / 2)) // art-directed: a short page keeps half the stage at least
+    }
+
+    // MARK: Drifted in
+
+    /// "Drifted in" stands a section below the stage, measured between what
+    /// you see: below the actions, or, with Nearby open, below its last
+    /// line's words, whose 44 pt row (or the empty line's padding) leaves
+    /// some of the 40 under them already.
+    private var newestTop: CGFloat {
+        guard nearbyOpen else { return OceanSpacing.section }
+        guard !nearby.isEmpty else { return OceanSpacing.section - OceanSpacing.gap }
+        let deepest = DepthList.role(atLevel: Self.nearbyLevel + nearby.count - 1)
+        return OceanSpacing.section - deepest.rowSlack(at: typeSize)
+    }
+
+    /// The column: the newest thoughts on the depth ladder. A new one enters
+    /// just under the surface and every older one steps a level deeper. The
+    /// lines sit right under the label: each 44 pt row's own slack is the gap.
+    private var newestSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            OceanSectionLabel("Drifted in")
+            DepthList(nodes: newest, open: open, archive: archive, delete: { pendingDelete = $0 })
+                .animation(stilled ? OceanMotion.quick : OceanMotion.standard, value: newest.map(\.id))
+                .accessibilityIdentifier("tide.column")
+        }
     }
 
     // MARK: Currents
 
+    /// Currents stands a section below the column, measured between what
+    /// you see: the last line's 44 pt row and the label's row (it carries a
+    /// 44 pt Link) each leave their slack, which comes off the 40.
+    private var currentsTop: CGFloat {
+        let lines = newest.count
+        let lastLine = lines == 0 ? 0 : DepthList.role(atLevel: lines - 1).rowSlack(at: typeSize)
+        return OceanSpacing.section - lastLine - OceanType.sectionLabel.rowSlack(at: typeSize, floor: OceanSpacing.tight)
+    }
+
+    /// The moving currents as tiles, two to a row and one at accessibility
+    /// sizes, right under the label's row, whose slack is the gap.
     private var currentsSection: some View {
-        VStack(alignment: .leading, spacing: OceanSpacing.afterLabel) {
-            HStack(alignment: .firstTextBaseline) {
-                sectionLabel("Currents")
-                Spacer()
+        let shown = Array(currents.prefix(Self.currentLimit))
+        let perRow = typeSize.isAccessibilitySize ? 1 : 2
+        let rows = stride(from: 0, to: shown.count, by: perRow).map { Array(shown[$0..<min($0 + perRow, shown.count)]) }
+        return VStack(alignment: .leading, spacing: 0) {
+            OceanSectionLabel("Currents") {
                 // Every current is in the Library, under Currents.
                 Button {
                     appState.showAllCurrents()
                 } label: {
                     // A quiet accessory to the section label, never louder
                     // than it: a Link in the label's mist.
-                    HStack(spacing: OceanSpacing.tight) {
+                    HStack(spacing: OceanSpacing.snug) {
                         Text("All currents")
                         Image(systemName: "chevron.right").font(OceanType.glyphSmall)
                     }
                 }
                 .buttonStyle(.oceanLink(.quiet))
             }
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: OceanSpacing.item), GridItem(.flexible(), spacing: OceanSpacing.item)], spacing: OceanSpacing.item) {
-                ForEach(currents.prefix(Self.currentLimit)) { group in
-                    Button { sheet = .stream(theme: group.key) } label: {
-                        VStack(alignment: .leading, spacing: OceanSpacing.snug) {
-                            Text(group.label)
-                                .font(OceanType.tileTitle)
-                                .foregroundStyle(OceanTheme.foam)
-                                .lineLimit(1)
-                            Text(group.newest?.displayTitle ?? "")
-                                .font(OceanType.meta)
-                                .foregroundStyle(OceanTheme.mist)
-                                .lineLimit(1)
+            Grid(alignment: .topLeading, horizontalSpacing: OceanSpacing.item, verticalSpacing: OceanSpacing.item) {
+                ForEach(rows.indices, id: \.self) { row in
+                    GridRow {
+                        ForEach(rows[row]) { group in
+                            Button { sheet = .stream(theme: group.key) } label: {
+                                VStack(alignment: .leading, spacing: OceanSpacing.snug) {
+                                    Text(group.label)
+                                        .oceanText(OceanType.cardTitle)
+                                        .foregroundStyle(OceanTheme.foam)
+                                        .oceanLineLimit(1)
+                                    Text(group.newest?.displayTitle ?? "")
+                                        .oceanText(OceanType.depth3)
+                                        .foregroundStyle(OceanTheme.text)
+                                        .oceanLineLimit(1)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(OceanSpacing.inset)
+                                // Tiles in a row share a height: the tallest
+                                // one's, never a fixed one the words outgrow.
+                                .frame(maxHeight: .infinity, alignment: .topLeading)
+                                .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous)))
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(OceanSpacing.inset)
-                        // Two lines and the inset: every current tile the same height.
-                        .frame(height: Self.currentTileHeight)
-                        .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous)))
+                        // A short row keeps both columns, so a lone tile
+                        // stays a tile wide rather than the row's width.
+                        if rows[row].count < perRow {
+                            Color.clear.gridCellUnsizedAxes(.vertical)
+                        }
                     }
-                    .buttonStyle(.plain)
                 }
             }
         }
     }
 
-    private func sectionLabel(_ key: LocalizedStringKey, warm: Bool = false) -> some View {
-        Text(key)
-            .font(OceanType.sectionLabel)
-            .foregroundStyle(warm ? OceanTheme.glowWarm : OceanTheme.mist)
-            .padding(.leading, OceanSpacing.hairline)
-    }
-
     // MARK: Empty state
 
+    /// An empty stage with the light already on, standing at the stage's own
+    /// place, top-leading under the bar, where the first thought will come
+    /// back: the ring, then the line and its note.
     private var emptyState: some View {
-        VStack(spacing: OceanSpacing.item) {
-            Image(systemName: "water.waves")
-                .font(OceanType.glyphHero)
-                .foregroundStyle(OceanTheme.surface)
+        VStack(alignment: .leading, spacing: 0) {
+            OceanRing(size: OceanSize.ringHero)
             Text("The Ocean is still")
-                .font(OceanType.subjectTitle)
+                .oceanText(OceanType.statement)
                 .foregroundStyle(OceanTheme.foam)
+                .padding(.top, OceanSpacing.inset)
             Text("Capture a thought and watch it drift in.")
-                .font(OceanType.secondary)
+                .oceanText(OceanType.secondary)
                 .foregroundStyle(OceanTheme.mist)
+                .padding(.top, OceanSpacing.gap)
         }
+        .oceanReadableColumn()
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.horizontal, OceanSpacing.gutter)
+        .padding(.top, OceanSpacing.gap)
     }
 
     // MARK: Interaction
@@ -426,53 +556,6 @@ struct OceanFieldView: View {
         appState.pendingFocusNodeID = nil
         guard let node = nodes.first(where: { $0.id == id }) else { return }
         open(node)
-    }
-}
-
-// MARK: - Glance card
-
-/// A thought at a glance: what it is, not what it says. Title and one meta
-/// line; an image thought shows its picture above. A fill, no border.
-private struct GlanceCard: View {
-    let node: Node
-
-    var body: some View {
-        if node.modelContext == nil {
-            Color.clear.frame(width: 0, height: 0)
-        } else {
-            VStack(alignment: .leading, spacing: 0) {
-                // Full-bleed at the top, as in the Library: the card's corner
-                // rounds the picture.
-                if let data = node.imageDatas.first ?? node.linkImageData, let ui = UIImage(data: data) {
-                    Color.clear
-                        .frame(height: OceanSize.banner)
-                        .frame(maxWidth: .infinity)
-                        .overlay { Image(uiImage: ui).resizable().scaledToFill() }
-                        .clipped()
-                }
-                VStack(alignment: .leading, spacing: OceanSpacing.snug) {
-                    Text(node.displayTitle)
-                        .font(OceanType.tileTitle)
-                        .foregroundStyle(OceanTheme.foam)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-                        .fixedSize(horizontal: false, vertical: true)
-                    NodeMeta(node: node, detail: duration ?? node.linkDomain, showsCurrent: false)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(OceanSpacing.inset)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .clipShape(RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous))
-            .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous)))
-            .contentShape(RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous))
-        }
-    }
-
-    private var duration: String? {
-        guard node.kind == .voice, let data = node.audioData,
-              let seconds = AudioDurations.seconds(for: data, id: node.id) else { return nil }
-        return AudioDurations.format(seconds)
     }
 }
 

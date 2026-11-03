@@ -23,7 +23,7 @@ import OSLog
 struct MasonryColumns<Item: Identifiable, Cell: View>: View {
     let items: [Item]
     var columns: Int
-    var spacing: CGFloat = 12
+    var spacing: CGFloat = OceanSpacing.item
     let estimatedHeight: (Item) -> CGFloat
     /// Handoff 2 focus ordering. Items with a non-nil rank are pulled to the top
     /// of their column, ordered by ascending rank (0 = the focused anchor); nil

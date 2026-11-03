@@ -46,10 +46,10 @@ struct CatchComplicationView: View {
         case .accessoryRectangular:
             HStack(spacing: OceanSpacing.snug) {
                 Image(systemName: "waveform")
-                    .font(OceanType.glyph)
                 Text("Catch a whisper")
-                    .font(OceanType.tileTitle)
             }
+            .oceanText(OceanWatchType.strong)
+            .lineLimit(2)
             .frame(maxWidth: .infinity, alignment: .leading)
         case .accessoryCorner:
             Image(systemName: "waveform")

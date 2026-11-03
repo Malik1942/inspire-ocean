@@ -57,6 +57,9 @@ struct OceanSettingsView: View {
                     Toggle("Haptics", isOn: $captureHaptics)
                 } header: {
                     Text("Capture")
+                        .oceanText(OceanType.sectionLabel)
+                        .foregroundStyle(OceanTheme.mist)
+                        .textCase(nil)
                 }
                 .listRowBackground(OceanTheme.fill)
 
@@ -93,6 +96,9 @@ struct OceanSettingsView: View {
                     }
                 } header: {
                     Text("Your Ocean")
+                        .oceanText(OceanType.sectionLabel)
+                        .foregroundStyle(OceanTheme.mist)
+                        .textCase(nil)
                 }
                 .listRowBackground(OceanTheme.fill)
             }
@@ -101,8 +107,7 @@ struct OceanSettingsView: View {
             .listRowSeparatorTint(OceanTheme.separator)
             .scrollContentBackground(.hidden)
             .background(OceanBackground(animated: false))
-            .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
+            .oceanInlineTitle("Settings")
             .toolbarBackground(.hidden, for: .navigationBar)
             // A built archive reflects the toggle at build time; changing it
             // invalidates the archive so the user rebuilds with the new choice.
@@ -160,7 +165,7 @@ struct OceanSettingsView: View {
             Button("Export the Ocean") { buildExport() }
                 .disabled(realNodes.isEmpty)
         case .building:
-            HStack(spacing: OceanSpacing.gap) {
+            HStack(spacing: OceanSpacing.snug) {
                 ProgressView().controlSize(.small)
                 Text("Packing your Ocean…")
                     .foregroundStyle(OceanTheme.mist)
@@ -180,10 +185,10 @@ struct OceanSettingsView: View {
         case .failed:
             HStack {
                 Text("Could not pack the archive.")
-                    .foregroundStyle(OceanTheme.mist)
+                    .foregroundStyle(OceanTheme.text)
                 Spacer()
                 Button("Try again") { buildExport() }
-                    .buttonStyle(.oceanLink)
+                    .buttonStyle(.borderless)
             }
         }
     }

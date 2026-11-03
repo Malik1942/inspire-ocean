@@ -95,6 +95,11 @@ struct FastCaptureSessionView: View {
     /// The caught words sinking into the water: an ease-in, so they gather
     /// speed as they go under. Art-directed (see design/tokens/README.md).
     private static let sink = Animation.easeIn(duration: 0.3) // art-directed
+    /// How far the caught words sink as they go under. A motion distance,
+    /// so its own value: a retune of the spacing ladder never moves it.
+    private static let wordsSink: CGFloat = 24 // art-directed
+    /// How far the toast rises into place, for the same reason.
+    private static let toastRise: CGFloat = 8 // art-directed
 
     var body: some View {
         GeometryReader { geo in
@@ -140,7 +145,7 @@ struct FastCaptureSessionView: View {
                     )
                     // The words sink: capture's own choreography, not a token.
                     .opacity(phase == .settling && settled ? 0 : 1)
-                    .offset(y: phase == .settling && settled ? OceanSpacing.block : 0)
+                    .offset(y: phase == .settling && settled ? Self.wordsSink : 0)
                     .animation(Self.sink, value: settled)
                     if listening {
                         listeningRow
@@ -151,7 +156,7 @@ struct FastCaptureSessionView: View {
                         CaptureToast(onUndo: undoCapture)
                         Spacer(minLength: 0)
                     }
-                    .transition(.opacity.combined(with: .offset(y: OceanSpacing.gap)))
+                    .transition(.opacity.combined(with: .offset(y: Self.toastRise)))
                 }
             }
             .padding(.horizontal, OceanSpacing.gutter)
@@ -303,6 +308,19 @@ struct FastCaptureSessionView: View {
 
     private var backdrop: some View {
         OceanTheme.scrim.opacity(asSheet || phase == .linger ? 0 : 1)
+            // While a take is live the water goes quiet behind its words:
+            // deepest at the bar, gone by the middle of the screen, so the
+            // page never reads through what is being said.
+            .overlay {
+                if !asSheet, phase == .listening || phase == .settling {
+                    LinearGradient(stops: [
+                        .init(color: OceanTheme.abyss.opacity(0.9), location: 0), // art-directed: the quiet water
+                        .init(color: OceanTheme.abyss.opacity(0.62), location: 0.38), // art-directed
+                        .init(color: .clear, location: 0.72)
+                    ], startPoint: .bottom, endPoint: .top)
+                    .transition(.opacity)
+                }
+            }
             .ignoresSafeArea()
             .contentShape(Rectangle())
             .onTapGesture {
@@ -336,13 +354,15 @@ struct FastCaptureSessionView: View {
         VStack(alignment: .leading, spacing: cardInset) {
             // What rides along sits above the words, only while the card
             // is open, so the fold still lands on the bar's one line.
-            if cardShown, !pictures.slots.isEmpty || links.sensed != nil {
+            if cardShown, !pictures.slots.isEmpty || links.sensed != nil || heldWhisper != nil {
                 CaptureAttachments(
                     slots: pictures.slots,
                     link: links.sensed,
                     onRemoveImage: { pictures.remove($0) },
                     onRemoveLink: { links.dismiss($0, in: text) },
-                    onCancelLoading: { pictures.cancelLoading() }
+                    onCancelLoading: { pictures.cancelLoading() },
+                    whisper: heldWhisper,
+                    onRemoveWhisper: discardHeldTake
                 )
                 .transition(.opacity)
             }
@@ -390,22 +410,24 @@ struct FastCaptureSessionView: View {
         TextField(
             "What are you noticing?",
             text: $text,
-            prompt: Text("What are you noticing?").foregroundStyle(OceanTheme.hint),
+            prompt: Text(verbatim: ""),
             axis: .vertical
         )
         .textFieldStyle(.plain)
-        .font(OceanType.body)
+        .oceanFieldText(OceanType.inputWords)
         .lineLimit(cardShown ? 1...6 : 1...1)
-        .lineSpacing(OceanSpacing.hairline)
         .focused($textFocused)
         .foregroundStyle(OceanTheme.foam)
         .tint(OceanTheme.accent)
         .submitLabel(.return)
+        // The question is Oryne's, in its own face over the user's serif.
+        .oceanPrompt("What are you noticing?", when: text.isEmpty)
         // Folded, the card reads exactly as the bar does: its question, or
         // the first line of the words, cut with an ellipsis.
         .opacity(cardShown ? 1 : 0)
         .overlay(alignment: .topLeading) {
-            CaptureBarWords(draft: hasDraft ? ParkedCapture(text: text, images: pictures.images, heldDraft: heldDraft).line : nil)
+            let folded = hasDraft ? ParkedCapture(text: text, images: pictures.images, heldDraft: heldDraft) : nil
+            CaptureBarWords(draft: folded?.line, glyph: folded?.glyph)
                 .opacity(cardShown ? 0 : 1)
                 .accessibilityHidden(true)
         }
@@ -416,6 +438,9 @@ struct FastCaptureSessionView: View {
         .padding(.leading, cardShown ? 0 : FastCaptureLayout.fieldLeading - FastCaptureLayout.discInset)
         .padding(.trailing, cardShown ? 0 : FastCaptureLayout.buttonSize + OceanSpacing.gap)
         .frame(maxWidth: .infinity, minHeight: cardShown ? nil : FastCaptureLayout.buttonSize, alignment: .leading)
+        // The bar's cap: up to it one line of the words fits the disc's
+        // 44 pt row, so the fold lands on the bar at every text size.
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         .accessibilityIdentifier("composer.field")
     }
 
@@ -437,7 +462,9 @@ struct FastCaptureSessionView: View {
             Spacer(minLength: 0)
             overlayDisc(inComposer: true, send: canRelease ? saveTyped : nil, waiting: pictures.sendWaiting)
         }
-        .frame(minHeight: FastCaptureLayout.buttonSize)
+        // Folded, the row is the disc's own 44 whatever the hidden captions
+        // hold, so the fold lands on the bar at every text size.
+        .frame(minHeight: FastCaptureLayout.buttonSize, maxHeight: cardShown ? nil : FastCaptureLayout.buttonSize)
     }
 
     /// The card's +, the send disc's twin: it swaps the keyboard for the
@@ -455,27 +482,34 @@ struct FastCaptureSessionView: View {
         }
         .buttonStyle(.oceanIcon(size: cardShown ? OceanControlSize.compact : FastCaptureLayout.buttonSize))
         .disabled(pictures.room == 0)
-        .opacity(pictures.room == 0 ? 0.4 : 1)
+        .opacity(pictures.room == 0 ? 0.4 : 1) // art-directed: a glyph's disabled dim, never words
         .accessibilityLabel(attachPanelShown ? Text("Show keyboard") : Text("Add image"))
         .accessibilityIdentifier("composer.attach")
     }
 
     /// A refusal, and the current a thought added from a stream flows
-    /// into: in the action row before the disc, inside the card.
+    /// into: in the action row before the disc, inside the card. The
+    /// refusal is read to act, so it takes the reading size and ink; where
+    /// the thought flows is quiet guidance. Both stop growing at the card's
+    /// cap, so a caption never outgrows the words. They keep their lines as
+    /// the card folds, so a fading refusal never re-wraps.
     private var composerCaptions: some View {
         VStack(alignment: .leading, spacing: OceanSpacing.hairline) {
             if let message {
                 Text(message)
-                    .font(OceanType.note)
-                    .foregroundStyle(OceanTheme.mist)
+                    .oceanText(OceanType.secondary)
+                    .foregroundStyle(OceanTheme.text)
+                    .lineLimit(3)
             }
             if let anchor = request.anchorThemeKey {
                 Text(String(localized: "Flows into “\(OceanLayoutEngine.displayLabel(for: anchor))”"))
-                    .font(OceanType.note)
-                    .foregroundStyle(OceanTheme.faint)
+                    .oceanText(OceanType.meta)
+                    .foregroundStyle(OceanTheme.mist)
             }
         }
         .lineLimit(2)
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private var cardShown: Bool { cardOpen || stilled }
@@ -593,20 +627,26 @@ struct FastCaptureSessionView: View {
             .accessibilityIdentifier(inComposer ? "composer.action" : "capture.overlayDisc")
     }
 
+    /// What the listening capsule says on the bar's own line, at the bar's
+    /// own size, so nothing shrinks when a take starts: the words typed
+    /// before it, and, when no live words are coming, that they will follow.
     private var listeningNotes: some View {
         VStack(alignment: .leading, spacing: OceanSpacing.hairline) {
             if !text.trimmed.isEmpty {
                 Text(text)
-                    .font(OceanType.meta)
-                    .foregroundStyle(OceanTheme.mist)
+                    .oceanText(OceanType.inputWords)
+                    .foregroundStyle(OceanTheme.foam)
                     .lineLimit(1)
             }
             if wordsDelayed {
                 Text("Words will follow.")
-                    .font(OceanType.meta)
-                    .foregroundStyle(OceanTheme.hint)
+                    .oceanText(OceanType.body)
+                    .foregroundStyle(OceanTheme.mist)
+                    .lineLimit(1)
             }
         }
+        // Capped where the bar's words are, so the note stays the bar's size.
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 
     /// No live words are coming for this take (recognition preparing or
@@ -692,6 +732,21 @@ struct FastCaptureSessionView: View {
 
     /// Something to release: what the card holds, or pictures on their way.
     private var canRelease: Bool { hasDraft || pictures.isLoading }
+
+    /// The length of the whisper riding along with the card, when one does.
+    private var heldWhisper: TimeInterval? {
+        guard let data = heldDraft?.audioData else { return nil }
+        return AudioDurations.seconds(for: data, id: nil) ?? 0
+    }
+
+    /// The whisper tile's ✕: the recording goes, and with nothing else on
+    /// the card the disc whispers again.
+    private func discardHeldTake() {
+        if let url = heldDraft?.audioTempURL {
+            try? FileManager.default.removeItem(at: url)
+        }
+        withAnimation(OceanMotion.quick) { heldDraft = nil }
+    }
 
     /// What the card holds now, which open water parks in the bar.
     private var hasDraft: Bool {

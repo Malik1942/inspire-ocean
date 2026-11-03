@@ -114,50 +114,57 @@ struct NodeEditSheet: View {
 
     // MARK: Sections
 
+    /// The title is the user's words, so it is set in New York as typed;
+    /// the field's own prompt would take that face too, so Oryne's prompt
+    /// is drawn over the empty field in SF instead (its key stays the
+    /// field's VoiceOver label).
     private var titleSection: some View {
-        VStack(alignment: .leading, spacing: OceanSpacing.gap) {
-            sectionTitle("Title")
-            TextField("A few words it goes by", text: $titleDraft)
+        VStack(alignment: .leading, spacing: OceanSpacing.afterLabel) {
+            OceanSectionLabel("Title")
+            TextField("A few words it goes by", text: $titleDraft, prompt: Text(verbatim: ""))
                 .textFieldStyle(.plain)
-                .oceanField()
+                .oceanPrompt("A few words it goes by", when: titleDraft.isEmpty)
+                .oceanField(OceanType.inputWords)
         }
     }
 
     private var bodySection: some View {
-        VStack(alignment: .leading, spacing: OceanSpacing.gap) {
-            sectionTitle(isVoice ? "Transcript" : "Thought")
+        VStack(alignment: .leading, spacing: OceanSpacing.afterLabel) {
+            OceanSectionLabel(isVoice ? "Transcript" : "Thought")
             TranscriptEditor(
                 text: $bodyDraft,
                 isEditable: true,
                 placeholder: isVoice ? "What was said" : "What drifted by",
-                minHeight: 120,
-                maxHeight: 240,
+                minLines: 5,
+                maxLines: 9,
                 focus: $bodyFocused
             )
             if transcriptDiverged {
                 Label("Edited transcript: the original words stay yours.", systemImage: "waveform")
-                    .font(OceanType.note).foregroundStyle(OceanTheme.faint)
+                    .labelStyle(OceanControlLabelStyle())
+                    .oceanText(OceanType.meta).foregroundStyle(OceanTheme.mist)
             }
         }
     }
 
     private var noteSection: some View {
-        VStack(alignment: .leading, spacing: OceanSpacing.gap) {
-            sectionTitle("Note")
+        VStack(alignment: .leading, spacing: OceanSpacing.afterLabel) {
+            OceanSectionLabel("Note")
             TranscriptEditor(
                 text: $noteDraft,
                 isEditable: true,
-                minHeight: 60,
-                maxHeight: 120
+                minLines: 2,
+                maxLines: 4
             )
         }
     }
 
     /// Quiet, not a player row: the recording is provenance, the transcript
-    /// is the thought.
+    /// is the thought. The buttons wrap onto a second line at the larger
+    /// text sizes rather than squeeze their words.
     private func audioSection(_ data: Data) -> some View {
         VStack(alignment: .leading, spacing: OceanSpacing.gap) {
-            HStack(spacing: OceanSpacing.gap) {
+            FlowLayout(spacing: OceanSpacing.gap) {
                 ListenChip(data: data)
 
                 Button {
@@ -188,11 +195,11 @@ struct NodeEditSheet: View {
 
             if retranscribeFailed {
                 Text("Couldn't hear it again. Your words stay as they are.")
-                    .font(OceanType.note).foregroundStyle(OceanTheme.faint)
+                    .oceanText(OceanType.secondary).foregroundStyle(OceanTheme.text)
             }
 
             Text("Original audio is temporarily preserved to improve understanding.")
-                .font(OceanType.note).foregroundStyle(OceanTheme.faint)
+                .oceanText(OceanType.secondary).foregroundStyle(OceanTheme.text)
         }
         .alert(
             "Replace your edited words?",
@@ -211,8 +218,8 @@ struct NodeEditSheet: View {
     /// like capture), so Cancel is a true no-op. Pre-populated from the node's
     /// existing image.
     private var imageSection: some View {
-        VStack(alignment: .leading, spacing: OceanSpacing.gap) {
-            sectionTitle("Images")
+        VStack(alignment: .leading, spacing: OceanSpacing.afterLabel) {
+            OceanSectionLabel("Images")
             if !imageDrafts.isEmpty {
                 OceanPictureStrip(datas: imageDrafts) { index in
                     withAnimation(OceanMotion.standard) {
@@ -234,7 +241,7 @@ struct NodeEditSheet: View {
                 .buttonStyle(.oceanSecondary)
             }
             if let imageNotice {
-                Text(imageNotice).font(OceanType.note).foregroundStyle(OceanTheme.faint)
+                Text(imageNotice).oceanText(OceanType.secondary).foregroundStyle(OceanTheme.text)
             }
         }
         .onChange(of: photoItems) { _, newItems in
@@ -260,14 +267,16 @@ struct NodeEditSheet: View {
     /// Enrichment only fires on Save (against the committed node) — never from
     /// inside the draft.
     private var linkSection: some View {
-        VStack(alignment: .leading, spacing: OceanSpacing.gap) {
-            sectionTitle("Link")
+        VStack(alignment: .leading, spacing: OceanSpacing.afterLabel) {
+            OceanSectionLabel("Link")
             if node.linkURLString != nil, normalizedLinkDraft == originalLink, !originalLink.isEmpty {
                 // The committed link, untouched — show it as the rich card it is,
                 // with a control to drift it off the thought.
                 LinkCard(node: node, onRemove: { withAnimation { linkDraft = "" } })
             } else {
-                TextField("https://…", text: $linkDraft)
+                // A tool field, so SF throughout; its prompt in mist, not the
+                // system's dimmer placeholder.
+                TextField("https://…", text: $linkDraft, prompt: Text("https://…").foregroundStyle(OceanTheme.mist))
                     .textFieldStyle(.plain)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
@@ -275,15 +284,15 @@ struct NodeEditSheet: View {
                     .oceanField()
                 if !normalizedLinkDraft.isEmpty, normalizedLinkDraft != originalLink {
                     Text("Saved links are read and summarized on-device for context.")
-                        .font(OceanType.note).foregroundStyle(OceanTheme.faint)
+                        .oceanText(OceanType.secondary).foregroundStyle(OceanTheme.text)
                 }
             }
         }
     }
 
     private var themesSection: some View {
-        VStack(alignment: .leading, spacing: OceanSpacing.gap) {
-            sectionTitle("Themes")
+        VStack(alignment: .leading, spacing: OceanSpacing.afterLabel) {
+            OceanSectionLabel("Themes")
             if !themesDraft.isEmpty {
                 FlowLayout(spacing: OceanSpacing.gap) {
                     ForEach(themesDraft, id: \.self) { theme in
@@ -295,7 +304,7 @@ struct NodeEditSheet: View {
 
             if let themeInputNotice {
                 Text(themeInputNotice)
-                    .font(OceanType.note).foregroundStyle(OceanTheme.faint)
+                    .oceanText(OceanType.secondary).foregroundStyle(OceanTheme.text)
             }
 
             if themesDraft != originalThemes {
@@ -340,13 +349,6 @@ struct NodeEditSheet: View {
         .accessibilityLabel("Remove theme \(theme)")
     }
 
-    /// A field's name: an eyebrow right above what it names, as on a
-    /// thought's page.
-    private func sectionTitle(_ text: LocalizedStringKey) -> some View {
-        Text(text)
-            .font(OceanType.eyebrow).foregroundStyle(OceanTheme.mist)
-    }
-
     // MARK: Actions
 
     private func loadDrafts() {
@@ -380,7 +382,7 @@ struct NodeEditSheet: View {
         guard !raw.isEmpty else { return }
         let tidied = SemanticThemes.tidyThemeList(raw)
         guard !tidied.isEmpty else {
-            themeInputNotice = "Themes are a few short words. Try something briefer."
+            themeInputNotice = String(localized: "Themes are a few short words. Try something briefer.")
             return
         }
         themeInputNotice = nil

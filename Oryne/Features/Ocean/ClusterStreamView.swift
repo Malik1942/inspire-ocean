@@ -57,7 +57,7 @@ struct ClusterStreamView: View {
             OceanFadeStack(path: $path) {
             List {
                 header
-                    .tileRow(top: Self.titleTop, bottom: OceanSpacing.block - OceanSpacing.item / 2)
+                    .tileRow(top: OceanSpacing.gap, bottom: OceanSpacing.block - OceanSpacing.item / 2)
                 ForEach(members) { node in
                     if selecting {
                         // No swipes while picking.
@@ -94,7 +94,7 @@ struct ClusterStreamView: View {
             .tileList()
             .contentMargins(.bottom, OceanSpacing.section, for: .scrollContent)
             .thoughtRemovalToast(removals)
-            .background(OceanBackground())
+            .background(PageBackground(light: .cool))
             // Nothing in the bar: the sheet's grabber is its top edge, and a
             // pushed thought brings its own bar with the back button.
             .toolbar(.hidden, for: .navigationBar)
@@ -147,9 +147,6 @@ struct ClusterStreamView: View {
         }
     }
 
-    /// From the sheet's top edge to the current's name, clear of the grabber.
-    private static let titleTop: CGFloat = OceanSpacing.sheetTop
-
     /// The current's name in New York with its + on the same line, a tool
     /// like a page's (the capture opens into this current); under it,
     /// Summarize as the one quiet verb: the whole stream goes to Ask as
@@ -157,9 +154,13 @@ struct ClusterStreamView: View {
     /// current (Adrift has no name of its own to change, and nothing is
     /// added into it: its membership is having no current). While picking
     /// thoughts, Done takes the verb's place.
+    ///
+    /// It opens as every sheet does (OceanSheetHeader), under the system's
+    /// grabber: the header leaves its own grabber's room clear, so the name
+    /// lands where every sheet's does.
     private var header: some View {
         VStack(alignment: .leading, spacing: OceanSpacing.inset) {
-            HStack(alignment: .center, spacing: OceanSpacing.item) {
+            OceanSheetHeader(drawsGrabber: false) {
                 if isAdrift {
                     titleText
                 } else {
@@ -170,6 +171,7 @@ struct ClusterStreamView: View {
                     .buttonStyle(.plain)
                     .accessibilityHint("Renames this current.")
                 }
+            } action: {
                 if !isAdrift, !selecting {
                     Button { showCapture = true } label: {
                         Image(systemName: "plus")
@@ -178,7 +180,6 @@ struct ClusterStreamView: View {
                     .accessibilityLabel("Add a thought")
                 }
             }
-            .frame(minHeight: OceanControlSize.height)
             if selecting {
                 Button("Done") {
                     withAnimation(OceanMotion.quick) {
@@ -200,10 +201,12 @@ struct ClusterStreamView: View {
         }
     }
 
+    /// A sheet's name, in the cool light it stands in: coolInk, or mist for
+    /// Adrift, which is no place of its own.
     private var titleText: some View {
         Text(title)
-            .font(OceanType.subjectTitle)
-            .foregroundStyle(isAdrift ? OceanTheme.mist : OceanTheme.foam)
+            .oceanText(OceanType.sheetTitle)
+            .foregroundStyle(isAdrift ? OceanTheme.mist : OceanTheme.coolInk)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())

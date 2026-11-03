@@ -406,6 +406,18 @@ extension Node {
         return String(source.prefix(140))
     }
 
+    /// The user's own words: what they wrote, or for a whisper what they
+    /// said. Never a summary, a link's description, its address or a
+    /// picture's reading, which are not theirs: only these are set in the
+    /// serif (design/identity-2.1.md, R4). Nil when there are none, or when
+    /// they are only the title again.
+    var ownWords: String? {
+        let words = (text.isEmpty ? transcription ?? "" : text)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !words.isEmpty, words != displayTitle, words != linkURLString else { return nil }
+        return words
+    }
+
     /// The raw content used to interpret a concise title from. For a link, that
     /// is what enrichment learned about it (title + summary/description); for
     /// a picture, what the device read off it; a bare URL only as a last resort.

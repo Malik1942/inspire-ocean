@@ -5,6 +5,9 @@ struct NodeRow: View {
     let node: Node
     /// Off inside a current, where every row shares it.
     var showsCurrent = true
+    /// Adrift's rows: the title one ink quieter, never an opacity, so it
+    /// still holds its contrast.
+    var quiet = false
 
     /// The picture at the trailing edge, decoded once. Until the node's
     /// images have been looked at, an image thought holds the picture's
@@ -43,9 +46,9 @@ struct NodeRow: View {
         HStack(spacing: OceanSpacing.item) {
             VStack(alignment: .leading, spacing: OceanSpacing.snug) {
                 Text(node.displayTitle)
-                    .font(OceanType.tileTitle)
-                    .foregroundStyle(OceanTheme.foam)
-                    .lineLimit(2)
+                    .oceanText(OceanType.cardTitle)
+                    .foregroundStyle(quiet ? OceanTheme.text : OceanTheme.foam)
+                    .oceanLineLimit(2)
                     .multilineTextAlignment(.leading)
                 NodeMeta(node: node, detail: node.linkDomain ?? length, siteIcon: siteIcon, showsCurrent: showsCurrent)
             }

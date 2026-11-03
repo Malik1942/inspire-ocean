@@ -81,7 +81,9 @@ untrue — by words *or by omission*? Then no.
   position. The drift exists so the space feels alive; every fact it implies
   is reachable through a tap, a label, or the Library.
 - Presence comes from lifted glass bodies and soft depth shadows — never
-  halos, luminous cores, or hard rims.
+  halos, luminous cores, or hard rims. The one rim is the ring, the icon's
+  own mark, on the capture disc and its twin, Ask's send: a line, never a
+  glow (Malik, 2026-11-02, the 2.1 branding).
 - All ambient motion shares one off-switch: the system Reduce Motion setting
   and Calm Accessibility Mode still the water completely. A stilled Ocean is
   the same Ocean.

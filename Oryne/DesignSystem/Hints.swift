@@ -33,11 +33,11 @@ struct AmbientHint: View {
         ZStack(alignment: .leading) {
             if visible {
                 Text(hint.message)
-                    .font(OceanType.note)
+                    .oceanText(OceanType.meta)
                     .foregroundStyle(OceanTheme.mist)
                     .padding(.horizontal, OceanSpacing.insetCompact)
                     .padding(.vertical, OceanSpacing.snug)
-                    .background(OceanTheme.fill, in: Capsule())
+                    .background(OceanTheme.fill, in: RoundedRectangle(cornerRadius: OceanRadius.field, style: .continuous))
                     .transition(.opacity)
             }
         }

@@ -30,12 +30,10 @@ struct OceanOnboardingView: View {
                         ForEach(Array(pages.enumerated()), id: \.offset) { index, page in
                             OceanOnboardingPageView(page: page)
                                 .tag(index)
-                                .padding(.horizontal, OceanSpacing.gutter)
                         }
 
                         FastCaptureSetupPage(onTestCapture: completeAndTest)
                             .tag(pages.count)
-                            .padding(.horizontal, OceanSpacing.gutter)
                     }
                     .tabViewStyle(.page(indexDisplayMode: .always))
 
@@ -53,9 +51,8 @@ struct OceanOnboardingView: View {
                 // trailing letterspace so it sits optically centered.
                 ToolbarItem(placement: .principal) {
                     Text("Oryne")
-                        .font(OceanType.wordmark)
-                        .tracking(OceanType.wordmarkTracking)
-                        .padding(.leading, OceanType.wordmarkTracking)
+                        .oceanText(OceanType.wordmark)
+                        .padding(.leading, OceanType.wordmark.tracking) // art-directed
                         .foregroundStyle(OceanTheme.foam)
                         .accessibilityAddTraits(.isHeader)
                 }
@@ -74,7 +71,7 @@ struct OceanOnboardingView: View {
     /// Back as a tool, and the one main action of the whole flow as Primary,
     /// filling the rest of the row.
     private var controls: some View {
-        HStack(spacing: OceanSpacing.item) {
+        HStack(spacing: OceanSpacing.gap) {
             if page > 0 {
                 Button {
                     withAnimation(OceanMotion.lift) { page -= 1 }
@@ -140,30 +137,32 @@ private struct OceanOnboardingPageView: View {
     let page: OceanOnboardingPage
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Spacer(minLength: OceanSpacing.block)
-            Text(page.title)
-                .font(OceanType.resurfacingTitle)
-                .foregroundStyle(OceanTheme.foam)
-                .multilineTextAlignment(.leading)
-                .fixedSize(horizontal: false, vertical: true)
-            Text(page.text)
-                .font(OceanType.secondary)
-                .lineSpacing(OceanType.secondaryLeading)
-                .foregroundStyle(OceanTheme.text)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, OceanSpacing.item)
-            Spacer(minLength: OceanSpacing.section)
+        OceanOnboardingScroll {
+            VStack(alignment: .leading, spacing: 0) {
+                Spacer(minLength: OceanSpacing.block)
+                Text(page.title)
+                    .oceanText(OceanType.pageTitle)
+                    .foregroundStyle(OceanTheme.foam)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isHeader)
+                Text(page.text)
+                    .oceanText(OceanType.body)
+                    .foregroundStyle(OceanTheme.text)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, OceanSpacing.item)
+                Spacer(minLength: OceanSpacing.section)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, OceanSpacing.tight)
-        // The same light Tide gives its resurfacing thought: one lamp in
-        // the water behind the words, warmest on the page about returning.
-        // Art-directed, like Tide's lamp.
+        // One light in the water behind the words, as on the pages: warm
+        // only on the page about a thought coming back, the ring's cool
+        // light on the others (design/identity-2.1.md, R2). Art-directed.
         .background(alignment: .center) {
+            let light = page.visual == .resurface ? OceanTheme.stageLight : OceanTheme.ring
             RadialGradient(
-                colors: [OceanTheme.glowWarm.opacity(page.visual == .resurface ? 0.12 : 0.06),
-                         OceanTheme.glowWarm.opacity(0.02), .clear],
+                colors: [light.opacity(page.visual == .resurface ? 0.14 : 0.06),
+                         light.opacity(0.02), .clear],
                 center: .center, startRadius: 0, endRadius: 240
             )
             .frame(width: 520, height: 400)
@@ -192,66 +191,102 @@ private struct FastCaptureSetupPage: View {
     ) private var autoScreenshot = true
 
     var body: some View {
-        VStack {
-            Spacer(minLength: OceanSpacing.item)
-
-            VStack(spacing: OceanSpacing.inset) {
-                Image(systemName: "bolt.circle.fill")
-                    .font(OceanType.glyphHero)
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(OceanTheme.accent)
-
-                VStack(spacing: OceanSpacing.gap) {
-                    Text("Set up Fast Capture.")
-                        .font(OceanType.subjectTitle)
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(OceanTheme.foam)
-
-                    Text("How a capture from the Action Button, Control Center or the widget should open.")
-                        .font(OceanType.secondary)
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(OceanTheme.mist)
-                }
+        OceanOnboardingScroll {
+            VStack {
+                Spacer(minLength: OceanSpacing.item)
 
                 VStack(alignment: .leading, spacing: OceanSpacing.inset) {
-                    Picker("Opens with", selection: $inputPreferenceRaw) {
-                        ForEach(FastCaptureInputPreference.allCases) { preference in
-                            Label(preference.label, systemImage: preference.symbol)
-                                .tag(preference.rawValue)
-                        }
-                    }
-                    .pickerStyle(.segmented)
+                    Image(systemName: "bolt.circle.fill")
+                        .oceanText(OceanType.glyphHero)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(OceanTheme.accent)
 
-                    Toggle(isOn: $autoScreenshot) {
-                        Label("Screenshot + voice", systemImage: "photo.on.rectangle")
-                            .font(OceanType.control)
+                    VStack(alignment: .leading, spacing: OceanSpacing.item) {
+                        Text("Set up Fast Capture.")
+                            .oceanText(OceanType.sheetTitle)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
                             .foregroundStyle(OceanTheme.foam)
+                            .accessibilityAddTraits(.isHeader)
+
+                        Text("How a capture from the Action Button, Control Center or the widget should open.")
+                            .oceanText(OceanType.body)
+                            .multilineTextAlignment(.leading)
+                            .foregroundStyle(OceanTheme.text)
                     }
-                    .toggleStyle(.oceanSwitch)
 
-                    Text("The Action Button and Camera Control shortcuts live in Settings, under the gear on any tab.")
-                        .font(OceanType.note)
-                        .foregroundStyle(OceanTheme.faint)
-                        .fixedSize(horizontal: false, vertical: true)
+                    VStack(alignment: .leading, spacing: OceanSpacing.inset) {
+                        VStack(alignment: .leading, spacing: OceanSpacing.afterLabel) {
+                            OceanSectionLabel("Opens with")
+                            Picker("Opens with", selection: $inputPreferenceRaw) {
+                                ForEach(FastCaptureInputPreference.allCases) { preference in
+                                    Text(preference.label)
+                                        .tag(preference.rawValue)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                        }
 
-                    // The handoff: the concrete tour lives in the Ocean
-                    // itself, as the seeded Introduction current.
-                    Text("Tide opens with a short introduction current. Read it, then let it drift out.")
-                        .font(OceanType.note)
-                        .foregroundStyle(OceanTheme.mist)
-                        .fixedSize(horizontal: false, vertical: true)
+                        Toggle(isOn: $autoScreenshot) {
+                            Label("Screenshot + voice", systemImage: "photo.on.rectangle")
+                                .labelStyle(OceanControlLabelStyle())
+                                .oceanText(OceanType.control)
+                                .foregroundStyle(OceanTheme.foam)
+                        }
+                        .toggleStyle(.oceanSwitch)
+
+                        Text("The Action Button and Camera Control shortcuts live in Settings, under the gear on any tab.")
+                            .oceanText(OceanType.meta)
+                            .foregroundStyle(OceanTheme.mist)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        // The handoff: the concrete tour lives in the Ocean
+                        // itself, as the seeded Introduction current.
+                        Text("Tide opens with a short introduction current. Read it, then let it drift out.")
+                            .oceanText(OceanType.meta)
+                            .foregroundStyle(OceanTheme.mist)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    Button(action: onTestCapture) {
+                        Label("Try a first capture", systemImage: "mic.circle")
+                    }
+                    .buttonStyle(.oceanSecondary)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(OceanSpacing.inset)
+                .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous)))
 
-                Button(action: onTestCapture) {
-                    Label("Try a first capture", systemImage: "mic.circle")
-                }
-                .buttonStyle(.oceanSecondary)
+                Spacer(minLength: OceanSpacing.section)
             }
-            .frame(maxWidth: .infinity)
-            .padding(OceanSpacing.inset)
-            .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous)))
+        }
+    }
+}
 
-            Spacer(minLength: OceanSpacing.section)
+// MARK: - Page frame
+
+/// A page of the flow, composed in its own height while its words fit and
+/// scrolling once they outgrow it (the larger accessibility sizes) instead
+/// of clipping. The content is framed at least the page's height, which
+/// proposes that height to it, so its spacers share the free water exactly
+/// as on a page that cannot scroll. The reading column and the gutter sit
+/// inside the scroll, so a tile's shadow is never cut at the scroll's edge.
+private struct OceanOnboardingScroll<Content: View>: View {
+    private let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        GeometryReader { proxy in
+            ScrollView {
+                content
+                    .oceanReadableColumn()
+                    .padding(.horizontal, OceanSpacing.gutter)
+                    .frame(minHeight: proxy.size.height)
+            }
+            .scrollBounceBehavior(.basedOnSize)
         }
     }
 }

@@ -18,6 +18,9 @@ final class ShareViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .clear
+        // The sheet's bar names its place in New York, as the app's do. An
+        // appearance reaches only bars made after it is set.
+        OceanType.applyNavigationTitleAppearance()
         loadPayload { [weak self] payload in
             self?.present(payload: payload)
         }

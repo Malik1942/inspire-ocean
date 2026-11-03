@@ -34,6 +34,7 @@ struct NodeDetailContent: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openThought) private var openThought
     @Environment(\.popThought) private var popThought
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     @Query(filter: #Predicate<Node> { !$0.isArchived }) private var allNodes: [Node]
 
@@ -83,14 +84,16 @@ struct NodeDetailContent: View {
                 subject
                 if !node.themes.isEmpty { themesSection.padding(.top, OceanSpacing.section) }
                 if !children.isEmpty { branchesSection.padding(.top, OceanSpacing.section) }
-                relatedSection.padding(.top, OceanSpacing.section)
-                actions.padding(.top, OceanSpacing.section)
+                relatedSection.padding(.top, nearbyTop)
+                actions.padding(.top, actionsTop)
             }
+            .oceanReadableColumn()
             .padding(.horizontal, OceanSpacing.gutter)
             .padding(.top, OceanSpacing.gap)
             .padding(.bottom, OceanSpacing.section)
         }
-        .background(OceanBackground())
+        // You reached for this thought: the cool light, the ring's color.
+        .background(PageBackground(light: .cool))
         // A thought is a page to read: pushed, it hides the tab bar (the
         // capture bar steps away with it); the back gesture returns.
         .toolbar(isSheetRoot ? .automatic : .hidden, for: .tabBar)
@@ -209,6 +212,8 @@ struct NodeDetailContent: View {
     /// switch to the other pass when one was kept, re-transcribe in a chosen
     /// language while the recording exists, translate on demand. A user with
     /// one language sees one item. Language names are endonyms, not chrome.
+    /// It wears the quiet Link, a way on beside the label that is never
+    /// louder than it.
     @ViewBuilder
     private func transcriptMenu(_ data: Data?) -> some View {
         let transcription = node.transcription ?? ""
@@ -243,7 +248,7 @@ struct NodeDetailContent: View {
                 }
             }
         } label: {
-            HStack(spacing: OceanSpacing.tight) {
+            HStack(spacing: OceanSpacing.snug) {
                 if retranscribing {
                     ProgressView().controlSize(.mini)
                 } else if let name = Self.languageName(node.transcriptLocale) {
@@ -253,11 +258,9 @@ struct NodeDetailContent: View {
                 }
                 Image(systemName: "chevron.down").font(OceanType.glyphSmall)
             }
-            .font(OceanType.eyebrow)
-            .foregroundStyle(OceanTheme.mist)
-            .frame(minHeight: OceanControlSize.height)
-            .contentShape(Rectangle())
         }
+        .menuStyle(.button)
+        .buttonStyle(.oceanLink(.quiet))
         .disabled(retranscribing)
         .accessibilityLabel("Transcript language")
         .translationPresentation(isPresented: $showTranslation, text: transcription)
@@ -333,7 +336,9 @@ struct NodeDetailContent: View {
     /// The thought itself, in one order for every kind: what it shows (its
     /// picture, or its link when there is no picture), what it is and when,
     /// its title, its words, then the device's reading and the transcript.
-    /// Text on the water; only the picture and the link are framed.
+    /// Text on the water; only the picture and the link are framed. The
+    /// title steps down by its length (34, 28, 24 pt) as it does on Tide's
+    /// stage, so a long name wraps at a size that still reads as one.
     private var subject: some View {
         VStack(alignment: .leading, spacing: 0) {
             if node.hasImages || node.linkURL != nil {
@@ -341,8 +346,8 @@ struct NodeDetailContent: View {
             }
             NodeMeta(node: node, detail: metaDetail)
             Text(node.displayTitle)
-                .font(OceanType.subjectTitle)
-                .foregroundStyle(OceanTheme.foam)
+                .oceanText(OceanType.thoughtTitle(for: node.displayTitle))
+                .foregroundStyle(OceanTheme.coolInk)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, OceanSpacing.gap)
@@ -351,14 +356,14 @@ struct NodeDetailContent: View {
                 // sheet as the toolbar pencil.
                 .onTapGesture { edit(focusingBody: false) }
                 .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier("thought.title")
                 // The words are the way to edit; no separate pencil.
                 .accessibilityHint("Tap to edit this thought.")
                 .accessibilityAction(named: Text("Edit")) { edit(focusingBody: false) }
             if showsWords {
                 Text(node.text)
-                    .font(OceanType.body)
-                    .lineSpacing(OceanType.bodyLeading)
-                    .foregroundStyle(OceanTheme.foam)
+                    .oceanText(OceanType.thoughtBody)
+                    .foregroundStyle(OceanTheme.coolWords)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, OceanSpacing.item)
@@ -432,10 +437,11 @@ struct NodeDetailContent: View {
         return parts.joined(separator: " · ")
     }
 
-    /// The user's own words, unless they already are the title.
+    /// The user's own words, unless they already are the title or are only
+    /// the link's address, which belongs to the link card, not to the serif.
     private var showsWords: Bool {
         let words = node.text.trimmed
-        return !words.isEmpty && words != node.displayTitle.trimmed
+        return !words.isEmpty && words != node.displayTitle.trimmed && words != node.linkURLString?.trimmed
     }
 
     private func edit(focusingBody: Bool) {
@@ -464,13 +470,13 @@ struct NodeDetailContent: View {
     @ViewBuilder
     private var readingBlock: some View {
         if let reading {
-            VStack(alignment: .leading, spacing: OceanSpacing.gap) {
+            VStack(alignment: .leading, spacing: OceanSpacing.afterLabel) {
                 switch reading {
                 case .summary(let text):
-                    eyebrow("Summary", systemImage: "sparkles")
+                    OceanSectionLabel("Summary", systemImage: "sparkles")
                     readingText(text)
                 case .page(let text):
-                    eyebrow("From the page", systemImage: "doc.text")
+                    OceanSectionLabel("From the page", systemImage: "doc.text")
                     readingText(text)
                 }
             }
@@ -481,35 +487,37 @@ struct NodeDetailContent: View {
 
     private func readingText(_ text: String) -> some View {
         Text(text)
-            .font(OceanType.body)
-            .lineSpacing(OceanType.bodyLeading)
+            .oceanText(OceanType.body)
             .foregroundStyle(OceanTheme.text)
             .fixedSize(horizontal: false, vertical: true)
     }
 
     /// A whisper's words with its controls on the label's line: listen, and
     /// the language menu. Under a summary they fold to three lines; without
-    /// one they are the thought's words, in full.
+    /// one they are the thought's words, in full. They sit `afterLabel`
+    /// under Listen's capsule; once the recording has expired the language
+    /// menu, a Link with no surface, holds the row alone, and its 44 pt row
+    /// is the gap.
     @ViewBuilder
     private var transcriptBlock: some View {
         if let transcription = node.transcription, !transcription.isEmpty {
-            VStack(alignment: .leading, spacing: OceanSpacing.gap) {
-                HStack(spacing: OceanSpacing.item) {
-                    eyebrow("Transcript", systemImage: "waveform")
-                    Spacer(minLength: OceanSpacing.gap)
-                    if let data = node.audioData, !data.isEmpty {
-                        ListenChip(data: data)
+            VStack(alignment: .leading, spacing: (node.audioData?.isEmpty == false) ? OceanSpacing.afterLabel : 0) {
+                OceanSectionLabel("Transcript", systemImage: "waveform") {
+                    HStack(spacing: OceanSpacing.gap) {
+                        if let data = node.audioData, !data.isEmpty {
+                            ListenChip(data: data)
+                        }
+                        transcriptMenu(node.audioData)
                     }
-                    transcriptMenu(node.audioData)
                 }
                 if node.summary?.isEmpty == false {
                     // Under a summary the words fold to three lines that fade
-                    // out, with a plain button to read the rest.
+                    // out, with a plain button to read the rest. Three at
+                    // every text size: it is the fold, not a preview.
                     VStack(alignment: .leading, spacing: OceanSpacing.inset) {
                         Text(transcription)
-                            .font(OceanType.body)
-                            .lineSpacing(OceanType.bodyLeading)
-                            .foregroundStyle(OceanTheme.text)
+                            .oceanText(OceanType.thoughtBody)
+                            .foregroundStyle(OceanTheme.coolWords)
                             .lineLimit(transcriptOpen ? nil : 3)
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -532,9 +540,8 @@ struct NodeDetailContent: View {
                     }
                 } else {
                     Text(transcription)
-                        .font(OceanType.body)
-                        .lineSpacing(OceanType.bodyLeading)
-                        .foregroundStyle(OceanTheme.foam)
+                        .oceanText(OceanType.thoughtBody)
+                        .foregroundStyle(OceanTheme.coolWords)
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .contentShape(Rectangle())
@@ -543,24 +550,24 @@ struct NodeDetailContent: View {
             }
             .padding(.top, OceanSpacing.block)
         } else if node.kind == .voice {
-            VStack(alignment: .leading, spacing: OceanSpacing.snug) {
-                HStack(spacing: OceanSpacing.item) {
-                    // Honest about state: "transcribing" only while a pass
-                    // can plausibly still be running; after that the words
-                    // are simply missing and the recovery is one tap away.
-                    eyebrow(node.createdAt.timeIntervalSinceNow > -120
-                            ? LocalizedStringKey("Transcribing…")
-                            : LocalizedStringKey("No words yet"),
-                            systemImage: "waveform")
-                    Spacer(minLength: OceanSpacing.gap)
-                    if let data = node.audioData, !data.isEmpty {
-                        ListenChip(data: data)
-                        transcriptMenu(data)
+            VStack(alignment: .leading, spacing: OceanSpacing.afterLabel) {
+                // Honest about state: "transcribing" only while a pass
+                // can plausibly still be running; after that the words
+                // are simply missing and the recovery is one tap away.
+                OceanSectionLabel(node.createdAt.timeIntervalSinceNow > -120
+                                  ? LocalizedStringKey("Transcribing…")
+                                  : LocalizedStringKey("No words yet"),
+                                  systemImage: "waveform") {
+                    HStack(spacing: OceanSpacing.gap) {
+                        if let data = node.audioData, !data.isEmpty {
+                            ListenChip(data: data)
+                            transcriptMenu(data)
+                        }
                     }
                 }
                 if node.createdAt.timeIntervalSinceNow <= -120 {
                     Text("Tap to type the words or re-transcribe.")
-                        .font(OceanType.meta)
+                        .oceanText(OceanType.secondary)
                         .foregroundStyle(OceanTheme.mist)
                         .contentShape(Rectangle())
                         .onTapGesture { edit(focusingBody: true) }
@@ -570,18 +577,12 @@ struct NodeDetailContent: View {
         }
     }
 
-    private func eyebrow(_ text: LocalizedStringKey, systemImage: String) -> some View {
-        Label(text, systemImage: systemImage)
-            .font(OceanType.eyebrow)
-            .foregroundStyle(OceanTheme.mist)
-    }
-
     // MARK: Sections
 
     /// Each theme is a way in: tap it to see every thought that carries it.
     private var themesSection: some View {
-        VStack(alignment: .leading, spacing: OceanSpacing.item) {
-            sectionTitle("Themes")
+        VStack(alignment: .leading, spacing: OceanSpacing.afterLabel) {
+            OceanSectionLabel("Themes")
             FlowLayout(spacing: OceanSpacing.gap) {
                 ForEach(node.themes, id: \.self) { theme in
                     Button { themeStream = StreamSelection(theme: ThoughtReading.slug(theme)) } label: {
@@ -598,74 +599,105 @@ struct NodeDetailContent: View {
     }
 
     private var branchesSection: some View {
-        VStack(alignment: .leading, spacing: OceanSpacing.item) {
-            sectionTitle("Branches")
-            ForEach(children) { child in
-                Button { openThought(child) } label: {
-                    NodeRow(node: child)
+        VStack(alignment: .leading, spacing: 0) {
+            OceanSectionLabel("Branches")
+            VStack(alignment: .leading, spacing: OceanSpacing.item) {
+                ForEach(children) { child in
+                    Button { openThought(child) } label: {
+                        NodeRow(node: child)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
+            .padding(.top, OceanSpacing.afterLabel)
         }
     }
 
+    /// Where Nearby enters the depth ladder: two levels down, so a
+    /// neighbour never outranks this thought's own words.
+    private static let nearbyLevel = 2
+
+    /// The neighbours Nearby shows: three lines, so the deepest still
+    /// reads. Summarize reads every neighbour found, the fourth too.
+    private var nearbyLines: [Node] { Array(related.prefix(3)) }
+
+    /// Sections stand `section` apart, measured between what you see. With
+    /// lines, Nearby's label shares Summarize's 44 pt row and both sit on
+    /// its foot, so what the row leaves above Summarize's words comes off
+    /// the 40 (never less than the Link's own floor); without them the
+    /// label is the first thing you see.
+    private var nearbyTop: CGFloat {
+        guard !related.isEmpty else { return OceanSpacing.section }
+        let aboveWords = OceanControlSize.height - OceanSpacing.tight - OceanType.control.lineHeight(at: typeSize)
+        return OceanSpacing.section - max(OceanSpacing.tight, aboveWords)
+    }
+
+    /// The actions stand `section` below the deepest line's words: its 44
+    /// pt row leaves some of that space under them already.
+    private var actionsTop: CGFloat {
+        guard !related.isEmpty else { return OceanSpacing.section }
+        let deepest = DepthList.role(atLevel: Self.nearbyLevel + nearbyLines.count - 1)
+        return OceanSpacing.section - deepest.rowSlack(at: typeSize)
+    }
+
+    /// With lines, the ladder sits right under the label's row: each line's
+    /// own 44 pt row is the gap. The empty line sits `afterLabel` below.
     private var relatedSection: some View {
-        VStack(alignment: .leading, spacing: OceanSpacing.item) {
-            HStack(alignment: .center) {
-                sectionTitle("Nearby")
-                Spacer(minLength: OceanSpacing.gap)
+        VStack(alignment: .leading, spacing: related.isEmpty ? OceanSpacing.afterLabel : 0) {
+            OceanSectionLabel("Nearby") {
                 // Read this thought and its neighbours together, in Ask.
                 if !related.isEmpty {
                     Button {
                         appState.summarize([node.id] + related.map(\.id), title: node.displayTitle)
                         dismiss()
                     } label: {
+                        // The Link's 44 pt rises above its words instead of
+                        // hanging below them, so they sit on the row's foot,
+                        // right over the first line, and Nearby, on their
+                        // baseline, comes down with them.
                         Label("Summarize", systemImage: "text.line.first.and.arrowtriangle.forward")
+                            .frame(minHeight: OceanControlSize.height - 2 * OceanSpacing.tight, alignment: .bottom)
                     }
-                    .buttonStyle(.oceanSecondary)
+                    .buttonStyle(.oceanLink(.quiet))
                 }
             }
             if related.isEmpty {
                 Text("Nothing drifts nearby yet.")
-                    .font(OceanType.secondary).foregroundStyle(OceanTheme.mist)
+                    .oceanText(OceanType.secondary)
+                    .foregroundStyle(OceanTheme.mist)
             } else {
-                ForEach(related) { other in
-                    Button { openThought(other) } label: {
-                        NodeRow(node: other)
-                    }
-                    .buttonStyle(.plain)
-                }
+                DepthList(nodes: nearbyLines, startLevel: Self.nearbyLevel, open: { openThought($0) })
             }
         }
     }
 
     /// Two quiet actions. Nothing on a thought's page is the main action;
     /// the thought is. Primary is kept for Release, Keep and Ask's send.
+    /// Side by side while both fit their words; one above the other when
+    /// they do not, at the larger text sizes.
     private var actions: some View {
-        HStack(spacing: OceanSpacing.item) {
-            Button { showBranchComposer = true } label: {
-                Label("Grow a branch", systemImage: "arrow.triangle.branch")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.oceanSecondary)
-
-            Button {
-                appState.ask("About “\(node.displayTitle)”: ")
-                dismiss()
-            } label: {
-                Label("Ask Ocean", systemImage: "quote.bubble")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.oceanSecondary)
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: OceanSpacing.gap) { actionButtons }
+            VStack(spacing: OceanSpacing.gap) { actionButtons }
         }
     }
 
-    /// Section labels as on Tide: New York italic, mist.
-    private func sectionTitle(_ text: LocalizedStringKey) -> some View {
-        Text(text)
-            .font(OceanType.sectionLabel)
-            .foregroundStyle(OceanTheme.mist)
-            .padding(.leading, OceanSpacing.hairline)
+    @ViewBuilder
+    private var actionButtons: some View {
+        Button { showBranchComposer = true } label: {
+            Label("Grow a branch", systemImage: "arrow.triangle.branch")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.oceanSecondary)
+
+        Button {
+            appState.ask(String(localized: "About “\(node.displayTitle)”: "))
+            dismiss()
+        } label: {
+            Label("Ask Ocean", systemImage: "quote.bubble")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.oceanSecondary)
     }
 }
 

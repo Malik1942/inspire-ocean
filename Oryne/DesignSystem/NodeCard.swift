@@ -5,7 +5,9 @@ import SwiftUI
 /// content-forward grid form: a full-bleed picture or link preview, the
 /// title, its words, and the meta line (a link's domain leads it). Title
 /// and words stop at two lines each, so the title leads and a screen holds
-/// more whole cards. The same anatomy and type as Tide's cards; no tag
+/// more whole cards. The title is the user's name for the thought and their
+/// own words are theirs, so both wear the serif; a summary or a site's
+/// words wear the system's face (design/identity-2.1.md, R4). No tag
 /// capsules.
 struct NodeCard: View {
     let node: Node
@@ -15,7 +17,7 @@ struct NodeCard: View {
     var glow: Double = 0
 
     /// The focused anchor in a "Show related" reorder. It reads as a steady
-    /// `accent` edge (cool, constant), distinct from the warm decaying `glow` of
+    /// `accent` edge (constant), distinct from the decaying ring-colored `glow` of
     /// its related cards, so the anchor is the source, not the strongest match.
     var isAnchor: Bool = false
 
@@ -71,21 +73,26 @@ struct NodeCard: View {
 
             VStack(alignment: .leading, spacing: OceanSpacing.snug) {
                 Text(node.displayTitle)
-                    .font(OceanType.tileTitle)
+                    .oceanText(OceanType.cardTitle)
                     .foregroundStyle(OceanTheme.foam)
-                    .lineLimit(2)
+                    .oceanLineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
 
-                if !node.snippet.isEmpty, node.snippet != node.displayTitle {
-                    Text(node.snippet)
-                        .font(OceanType.secondary)
+                if let words = node.ownWords {
+                    Text(words)
+                        .oceanText(OceanType.cardWords)
                         .foregroundStyle(OceanTheme.text)
-                        .lineLimit(2)
+                        .oceanLineLimit(2, accessibility: 3)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else if !node.snippet.isEmpty, node.snippet != node.displayTitle {
+                    Text(node.snippet)
+                        .oceanText(OceanType.secondary)
+                        .foregroundStyle(OceanTheme.text)
+                        .oceanLineLimit(2, accessibility: 3)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
                 footer
-                    .padding(.top, OceanSpacing.tight)
             }
             .padding(OceanSpacing.inset)
         }
@@ -102,7 +109,7 @@ struct NodeCard: View {
                     .strokeBorder(OceanTheme.accent, lineWidth: 1.5)
             } else if glow > 0 {
                 RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous)
-                    .strokeBorder(OceanTheme.glowWarm.opacity(glow), lineWidth: 1)
+                    .strokeBorder(OceanTheme.ring.opacity(glow), lineWidth: 1)
             }
         }
         // One cheap shadow, no stacked blur, free when neither is set, and
@@ -153,13 +160,14 @@ struct NodeCard: View {
         NodeMeta(node: node, detail: node.linkDomain, showsCurrent: false)
     }
 
-    /// The edge shadow colour: steady accent for the anchor, warm-decaying for a
-    /// related card, and clear otherwise. Opacities stay low on purpose: on the
-    /// abyss background a wide warm bloom reads as smeared light, so the halo is
-    /// kept just strong enough to lift the edge off the dark.
+    /// The edge shadow colour: steady accent for the anchor, the ring's cool color
+    /// decaying for a related card (you reached for these), and clear otherwise.
+    /// Opacities stay low on purpose: on the abyss background a wide bloom reads
+    /// as smeared light, so the halo is kept just strong enough to lift the edge
+    /// off the dark.
     private var edgeShadow: Color {
         if isAnchor { return OceanTheme.accent.opacity(0.25) }
-        if glow > 0 { return OceanTheme.glowWarm.opacity(glow * 0.22) }
+        if glow > 0 { return OceanTheme.ring.opacity(glow * 0.22) }
         return .clear
     }
 

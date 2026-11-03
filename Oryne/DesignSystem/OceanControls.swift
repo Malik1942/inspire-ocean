@@ -8,11 +8,10 @@ import SwiftUI
 /// changes one facet and leaves the other two alone:
 ///
 /// - Primary: a 44 pt capsule (form), Liquid Glass with the faint white
-///   tint and foam words (material), the touch motion: the same glass as
-///   the disc when it is ready, never a solid light fill. Save, Grow,
-///   Continue, the send arrow.
+///   tint and foam words (material), the touch motion; never a solid light
+///   fill. Save, Grow, Continue.
 /// - Secondary: the same capsule, the raised matte fill with foam words
-///   (material). Chips, Undo, Summarize, Close. `selected` swaps the fill
+///   (material). Chips, Close. `selected` swaps the fill
 ///   for the selected one and nothing else.
 /// - Icon: a 44 pt circle (form), Liquid Glass with a foam glyph
 ///   (material). Page chrome only: the gear, a close, the +.
@@ -58,10 +57,6 @@ extension View {
     }
 }
 
-/// The one main action: the Icon style's glass in a capsule, with the
-/// faint tint the capture disc takes when it is ready (Malik, 2026-10-18:
-/// no solid light fills for active states). Disabled, it is plain glass
-/// with mist words.
 /// A control's words beside its glyph: a snug gap, the glyph first, both
 /// in the control's own font. Every button style applies it, so a Label
 /// in a button never falls back to the system's wide spacing.
@@ -74,15 +69,19 @@ struct OceanControlLabelStyle: LabelStyle {
     }
 }
 
+/// The one main action: the Icon style's glass in a capsule, with a faint
+/// white tint (Malik, 2026-10-18: no solid light fills for active states).
+/// Disabled, it is plain glass with mist words.
 struct OceanPrimaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .labelStyle(OceanControlLabelStyle())
-            .font(OceanType.controlStrong)
+            .oceanText(OceanType.controlStrong)
             .foregroundStyle(isEnabled ? OceanTheme.foam : OceanTheme.mist)
             .padding(.horizontal, OceanSpacing.controlInset)
+            .padding(.vertical, OceanSpacing.tight)
             .frame(minHeight: OceanControlSize.height)
             .oceanGlass(in: Capsule(), tint: isEnabled ? OceanTheme.glassTint : nil)
             .opacity(configuration.isPressed ? 0.85 : 1)
@@ -98,13 +97,15 @@ struct OceanPrimaryButtonStyle: ButtonStyle {
 /// among several (a branch type, a chip that is on).
 struct OceanSecondaryButtonStyle: ButtonStyle {
     var selected = false
+    @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .labelStyle(OceanControlLabelStyle())
-            .font(OceanType.control)
-            .foregroundStyle(OceanTheme.foam)
+            .oceanText(OceanType.control)
+            .foregroundStyle(isEnabled ? OceanTheme.foam : OceanTheme.mist)
             .padding(.horizontal, OceanSpacing.controlInset)
+            .padding(.vertical, OceanSpacing.tight)
             .frame(minHeight: OceanControlSize.height)
             .background(OceanSurface(shape: Capsule(), raised: true, selected: selected, pressed: configuration.isPressed))
             .contentShape(Capsule())
@@ -131,10 +132,11 @@ struct OceanIconButtonStyle: ButtonStyle {
     }
 }
 
-/// Primary in its icon form, the send and release arrow: a 44 pt glass
-/// circle that stays glass. Ready, it takes a faint white tint and a
-/// bright arrow, as the capture disc does while listening; never a solid
-/// light disc that would be the brightest thing on screen.
+/// Primary in its icon form: a 44 pt glass circle that stays glass.
+/// Ready, it takes the faint white tint and a bright arrow; never a solid
+/// light disc that would be the brightest thing on screen. Nothing wears
+/// it now: Ask's send is `OceanSendDiscStyle`, clear glass with the ring,
+/// as the capture disc is.
 struct OceanPrimaryIconButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 
@@ -153,6 +155,9 @@ struct OceanPrimaryIconButtonStyle: ButtonStyle {
 /// message, Retry under a link, Clear in a chip. Accent by default; `quiet`
 /// for a way on that sits beside a section label and must never be louder
 /// than it. Always a 44 pt target.
+///
+/// A Menu that is a quiet way on (the transcript's language) wears it
+/// through `.menuStyle(.button).buttonStyle(.oceanLink(.quiet))`.
 struct OceanLinkButtonStyle: ButtonStyle {
     enum Tone { case accent, quiet }
     var tone: Tone = .accent
@@ -161,8 +166,9 @@ struct OceanLinkButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .labelStyle(OceanControlLabelStyle())
-            .font(tone == .accent ? OceanType.controlStrong : OceanType.control)
-            .foregroundStyle(!isEnabled ? OceanTheme.faint : tone == .accent ? OceanTheme.accent : OceanTheme.mist)
+            .oceanText(tone == .accent ? OceanType.controlStrong : OceanType.control)
+            .foregroundStyle(!isEnabled ? OceanTheme.mist : tone == .accent ? OceanTheme.accent : OceanTheme.mist)
+            .padding(.vertical, OceanSpacing.tight)
             .frame(minWidth: OceanControlSize.height, minHeight: OceanControlSize.height)
             .contentShape(Rectangle())
             .opacity(configuration.isPressed ? 0.6 : 1)
@@ -220,9 +226,11 @@ struct SettingsGearButton: View {
     }
 }
 
-/// The send disc in Ask's bar, the twin of the capture disc: 44 pt glass.
-/// Plain with a mist arrow while there is nothing to send; a faint white
-/// tint and a bright arrow once there is.
+/// The send disc in Ask's bar, the twin of the capture disc: 44 pt clear
+/// glass with the same ring (`OceanDiscRing`). Plain glass and a mist arrow
+/// while there is nothing to ask, since a disc that can do nothing wears no
+/// mark; the ring draws in, firm, with a bright arrow once there is. Never a
+/// grey fill (Malik, 2026-11-02).
 struct OceanSendDiscStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 
@@ -231,7 +239,8 @@ struct OceanSendDiscStyle: ButtonStyle {
             .font(OceanType.glyphStrong)
             .foregroundStyle(isEnabled ? OceanTheme.foam : OceanTheme.mist)
             .frame(width: OceanControlSize.height, height: OceanControlSize.height)
-            .oceanGlass(in: Circle(), tint: isEnabled ? OceanTheme.glassTint : nil)
+            .oceanGlass(in: Circle())
+            .overlay { OceanDiscRing(ready: isEnabled, showsAtRest: false, size: OceanControlSize.height) }
             .opacity(configuration.isPressed ? 0.85 : 1)
             .contentShape(Circle())
             .animation(OceanMotion.touch, value: isEnabled)
@@ -286,15 +295,18 @@ struct OceanSearchField: View {
     }
 
     private var field: some View {
-        HStack(spacing: OceanSpacing.gap) {
+        HStack(spacing: OceanSpacing.snug) {
             Image(systemName: "magnifyingglass")
                 .font(OceanType.glyph)
                 .foregroundStyle(OceanTheme.mist)
+            // The words' own floor, so they never touch the capsule as they
+            // grow; on the field alone, so the 44 pt clear never adds to it.
             TextField(text: $text) {
-                Text(prompt).foregroundStyle(OceanTheme.hint)
+                Text(prompt).foregroundStyle(OceanTheme.mist)
             }
-            .font(OceanType.body)
+            .oceanText(OceanType.body)
             .foregroundStyle(OceanTheme.foam)
+            .padding(.vertical, OceanSpacing.tight)
             .tint(OceanTheme.accent)
             .submitLabel(.search)
             .autocorrectionDisabled()
@@ -314,34 +326,76 @@ struct OceanSearchField: View {
         }
         .padding(.leading, OceanSpacing.inset)
         .padding(.trailing, text.isEmpty ? OceanSpacing.inset : OceanSpacing.snug)
-        .frame(height: OceanControlSize.height)
+        .frame(minHeight: OceanControlSize.height)
     }
 }
 
-/// Every page stands on the same water and the same light: the still
-/// ocean and one warm lamp high on the left. The lamp is a radial light
-/// across the whole screen, so it has no edge to show. Art-directed: the
-/// lamp's reach and warmth are the page's own, not tokens.
+/// Every page stands on the same water, lit from above (design/identity-2.1.md).
+/// The three tabs stand in the warm Reading light (`StageLight`): Tide, Ask
+/// and the Library are one place, lit the same way (Malik, 2026-11-02). A
+/// page you reached for, a thought or a current you opened, stands in a cool
+/// light from above, the ring's color. Archived has only a faint cool surface
+/// far above. Each light is a gradient across the whole width with no edge to
+/// show. Art-directed: a light's reach and strength are the page's own.
 struct PageBackground: View {
-    var lampLift: Double = 0
-    var lampDim: Double = 1
+    enum Light {
+        /// A tab: the Reading light, Tide's own.
+        case warm
+        /// A page you opened: a thought, a current.
+        case cool
+        /// Archived, under the depth.
+        case faint
+        case none
+    }
+
+    let light: Light
 
     var body: some View {
         ZStack {
             OceanBackground()
+            if light == .warm { StageLight() }
             GeometryReader { geo in
-                RadialGradient(
-                    colors: [OceanTheme.glowWarm.opacity((0.11 + lampLift) * lampDim),
-                             OceanTheme.glowWarm.opacity((0.04 + lampLift * 0.4) * lampDim),
-                             .clear],
-                    center: UnitPoint(x: 0.4, y: 0.3),
-                    startRadius: 0,
-                    endRadius: geo.size.height * 0.36
-                )
+                switch light {
+                case .cool:
+                    // An ellipse 90% as wide as the screen and 40% as tall,
+                    // centered on the top edge.
+                    EllipticalGradient(
+                        stops: [.init(color: OceanTheme.ring.opacity(0.16), location: 0), // art-directed: the light
+                                .init(color: OceanTheme.ring.opacity(0.05), location: 0.55), // art-directed: the light
+                                .init(color: .clear, location: 0.88)],
+                        center: .top, startRadiusFraction: 0, endRadiusFraction: 0.9
+                    )
+                    .frame(width: geo.size.width, height: geo.size.height * 0.4 / 0.9)
+                case .faint:
+                    EllipticalGradient(
+                        stops: [.init(color: OceanTheme.ring.opacity(0.07), location: 0), // art-directed: the light
+                                .init(color: .clear, location: 0.85)],
+                        center: .top, startRadiusFraction: 0, endRadiusFraction: 1
+                    )
+                    .frame(width: geo.size.width, height: geo.size.height * 0.22)
+                case .warm, .none:
+                    Color.clear
+                }
             }
             .ignoresSafeArea()
             .allowsHitTesting(false)
         }
+    }
+}
+
+/// The ring, the one shape Oryne owns: the icon's rim at any size, one line
+/// of the icon's own weight, no fill, no glow (design/identity-2.1.md, R3).
+/// It marks the capture toast and the empty Tide; the discs draw it through
+/// OceanDiscRing.
+struct OceanRing: View {
+    var size: CGFloat
+    var color: Color = OceanTheme.ring
+
+    var body: some View {
+        Circle()
+            .strokeBorder(color, lineWidth: OceanSize.ringStroke)
+            .frame(width: size, height: size)
+            .accessibilityHidden(true)
     }
 }
 
@@ -352,22 +406,27 @@ struct ThoughtLine: View {
     let node: Node
     var showsChevron = false
 
+    /// The kind glyph's slot grows with the title, so every line's words
+    /// start on one edge at any text size.
+    @ScaledMetric(relativeTo: .body) private var slot = OceanSize.glyphSlot
+
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: OceanSpacing.gap) {
+        HStack(alignment: .firstTextBaseline, spacing: OceanSpacing.snug) {
             Image(systemName: node.kind.symbol)
-                .font(OceanType.meta)
+                .oceanText(OceanType.cardTitle)
+                .imageScale(.small)
                 .foregroundStyle(OceanTheme.mist)
-                .frame(width: OceanSize.glyphSlot)
+                .frame(width: slot)
             Text(node.displayTitle)
-                .font(OceanType.body)
+                .oceanText(OceanType.cardTitle)
                 .foregroundStyle(OceanTheme.foam)
-                .lineLimit(2)
+                .oceanLineLimit(2)
                 .multilineTextAlignment(.leading)
             Spacer(minLength: OceanSpacing.gap)
             if showsChevron {
                 Image(systemName: "chevron.right")
                     .font(OceanType.glyphDisclosure)
-                    .foregroundStyle(OceanTheme.faint)
+                    .foregroundStyle(OceanTheme.mist)
             }
         }
         .padding(.vertical, OceanSpacing.gap)
@@ -376,41 +435,58 @@ struct ThoughtLine: View {
     }
 }
 
-/// The one toast: what happened, and the way back. A capsule in the bar's
-/// own material, floating over the page for the whole undo window. The
-/// capture toast and the removal toast are this one view.
+/// The one toast: what happened, and the way back. The bar's own material,
+/// floating over the page for the whole undo window: a capsule at one line,
+/// keeping its round ends as a long message takes a second line (a third at
+/// accessibility sizes). The capture toast and the removal toast are this
+/// one view.
 struct OceanToast: View {
     /// Already localized: VoiceOver announces the same words.
     let message: String
     let actionTitle: LocalizedStringKey
     var actionAccessibilityLabel: LocalizedStringKey? = nil
+    /// The ring before the words, in this color: the capture toast's mark,
+    /// the thought that just went into the water.
+    var ring: Color? = nil
     var action: () -> Void
 
     var body: some View {
         HStack(spacing: OceanSpacing.inset) {
-            Text(message)
-                .font(OceanType.control)
-                .foregroundStyle(OceanTheme.foam)
-                .lineLimit(1)
+            HStack(spacing: OceanSpacing.snug) {
+                if let ring {
+                    OceanRing(size: OceanSize.metaIcon, color: ring)
+                }
+                Text(message)
+                    .oceanText(OceanType.control)
+                    .foregroundStyle(OceanTheme.foam)
+                    .oceanLineLimit(2, accessibility: 3)
+            }
+            // The words' floor, so a second line never touches the edge;
+            // one line stays inside Undo's 44 pt and the toast's 48.
+            .padding(.vertical, OceanSpacing.tight)
             Button(actionTitle, action: action)
                 .buttonStyle(.oceanLink)
                 .accessibilityLabel(actionAccessibilityLabel ?? actionTitle)
         }
         .padding(.leading, OceanSpacing.controlInset)
         .padding(.trailing, OceanSpacing.gap)
-        .frame(height: OceanControlSize.toast)
-        .background(OceanBarBackground(dense: true))
+        .frame(minHeight: OceanControlSize.toast)
+        .background(OceanBarBackground(cornerRadius: OceanControlSize.toast / 2, dense: true))
         .accessibilityElement(children: .contain)
     }
 }
 
 /// A text field in the content layer: the tile fill in the field's corner,
-/// body type in foam, the compact inset, a control's height. The same
-/// surface whether it holds one line or an editor.
+/// its words in foam, the compact inset, a control's height. The same
+/// surface whether it holds one line or an editor. `role` is what the words
+/// are set in: inputWords where the user types their own words (a title, a
+/// note), body for a tool you type into (a link's address).
 struct OceanFieldSurface: ViewModifier {
+    var role: OceanTextRole = OceanType.body
+
     func body(content: Content) -> some View {
         content
-            .font(OceanType.body)
+            .oceanText(role)
             .foregroundStyle(OceanTheme.foam)
             .tint(OceanTheme.accent)
             .padding(.vertical, OceanSpacing.gap)
@@ -421,7 +497,48 @@ struct OceanFieldSurface: ViewModifier {
 }
 
 extension View {
-    func oceanField() -> some View { modifier(OceanFieldSurface()) }
+    func oceanField(_ role: OceanTextRole = OceanType.body) -> some View { modifier(OceanFieldSurface(role: role)) }
+
+    /// Oryne's prompt over an empty field that holds the user's words.
+    /// A TextField's own prompt takes the field's font, so a New York field
+    /// would set Oryne's words in the user's face; instead the field passes
+    /// an empty prompt (its title stays the VoiceOver label) and this draws
+    /// the same key in SF body, mist, where the first typed word lands. It
+    /// takes no touches and VoiceOver skips it.
+    func oceanPrompt(_ prompt: LocalizedStringKey, when visible: Bool) -> some View {
+        overlay(alignment: .topLeading) {
+            if visible {
+                Text(prompt)
+                    .oceanText(OceanType.body)
+                    .foregroundStyle(OceanTheme.mist)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
+        }
+    }
+
+    /// The reading column (`OceanSize.readableWidth`, growing with body):
+    /// centered where the window is wider, its words still left-aligned.
+    /// Phones in portrait never reach it, so there it changes nothing.
+    /// `alignment: .leading` keeps the column on the leading edge instead,
+    /// for a page named by the system's large title, which stands on the
+    /// bar's leading margin: its words then start under its name (Ask, on
+    /// iPad; a phone in landscape shows an inline title, so Ask centers
+    /// there).
+    func oceanReadableColumn(alignment: HorizontalAlignment = .center) -> some View {
+        modifier(OceanReadableColumn(alignment: alignment))
+    }
+}
+
+private struct OceanReadableColumn: ViewModifier {
+    let alignment: HorizontalAlignment
+    @ScaledMetric(relativeTo: .body) private var width = OceanSize.readableWidth
+
+    func body(content: Content) -> some View {
+        content
+            .frame(maxWidth: width, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: Alignment(horizontal: alignment, vertical: .center))
+    }
 }
 
 /// A strip of pictures on a draft (the edit sheet, a branch): each a
@@ -455,37 +572,71 @@ struct OceanPictureStrip: View {
 
 /// How a sheet opens, in the grammar of a tab's large title: the
 /// grabber that says the sheet can be pulled away (every sheet's way out),
-/// then the subject in New York with the sheet's one action on the same
-/// line as Primary, ending on the gutter. No close and no cancel: a sheet
+/// then its name, Oryne's word, in New York, with the sheet's one
+/// action on the same line as Primary, ending on the gutter. No close and no cancel: a sheet
 /// is pulled down, and what it held unsaved goes with it.
 ///
 /// The grabber is drawn here, not asked of the system, so every sheet
-/// opens the same way.
-struct OceanSheetHeader<Action: View>: View {
-    let title: Text
-    @ViewBuilder var action: Action
+/// opens the same way. A sheet that keeps the system's indicator (Archived,
+/// a current's sheet) passes `drawsGrabber: false`: the grabber's 5 pt stay,
+/// clear, so its title lands where every other sheet's does. The name takes
+/// two lines (four at accessibility sizes), and there the action moves
+/// under it.
+struct OceanSheetHeader<Title: View, Action: View>: View {
+    var drawsGrabber: Bool
+    let title: Title
+    let action: Action
+
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    init(drawsGrabber: Bool = true, @ViewBuilder title: () -> Title, @ViewBuilder action: () -> Action) {
+        self.drawsGrabber = drawsGrabber
+        self.title = title()
+        self.action = action()
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: OceanSpacing.item) {
-            OceanSheetGrabber()
-            HStack(alignment: .center, spacing: OceanSpacing.item) {
-                title
-                    .font(OceanType.subjectTitle)
-                    .foregroundStyle(OceanTheme.foam)
-                    .lineLimit(1)
-                    .accessibilityAddTraits(.isHeader)
-                Spacer(minLength: 0)
-                action
+            if drawsGrabber {
+                OceanSheetGrabber()
+            } else {
+                OceanSheetGrabber().hidden()
             }
-            .frame(minHeight: OceanControlSize.height)
+            if typeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: OceanSpacing.item) {
+                    name
+                    action
+                }
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: OceanSpacing.item) {
+                    name
+                    Spacer(minLength: 0)
+                    action
+                }
+                .frame(minHeight: OceanControlSize.height)
+            }
         }
+    }
+
+    private var name: some View {
+        title
+            .oceanText(OceanType.sheetTitle)
+            .oceanLineLimit(2)
+            .accessibilityAddTraits(.isHeader)
     }
 }
 
-extension OceanSheetHeader where Action == EmptyView {
+extension OceanSheetHeader where Title == Text {
+    /// A sheet named in words, in foam.
+    init(title: Text, drawsGrabber: Bool = true, @ViewBuilder action: () -> Action) {
+        self.init(drawsGrabber: drawsGrabber, title: { title.foregroundStyle(OceanTheme.foam) }, action: action)
+    }
+}
+
+extension OceanSheetHeader where Title == Text, Action == EmptyView {
     /// A sheet with no action of its own (a picker: tapping a choice is the action).
-    init(title: Text) {
-        self.init(title: title) { EmptyView() }
+    init(title: Text, drawsGrabber: Bool = true) {
+        self.init(title: title, drawsGrabber: drawsGrabber) { EmptyView() }
     }
 }
 
@@ -511,14 +662,14 @@ struct OceanAddField: View {
     var onAdd: () -> Void
 
     var body: some View {
-        HStack(spacing: OceanSpacing.gap) {
+        HStack(spacing: OceanSpacing.snug) {
             Image(systemName: "plus")
                 .font(OceanType.glyph)
                 .foregroundStyle(OceanTheme.mist)
             TextField(text: $text) {
-                Text(prompt).foregroundStyle(OceanTheme.hint)
+                Text(prompt).foregroundStyle(OceanTheme.mist)
             }
-            .font(OceanType.body)
+            .oceanText(OceanType.body)
             .foregroundStyle(OceanTheme.foam)
             .tint(OceanTheme.accent)
             .textInputAutocapitalization(.never)
@@ -526,7 +677,8 @@ struct OceanAddField: View {
             .onSubmit(onAdd)
         }
         .padding(.horizontal, OceanSpacing.inset)
-        .frame(height: OceanControlSize.height)
+        .padding(.vertical, OceanSpacing.tight)
+        .frame(minHeight: OceanControlSize.height)
         .background(OceanSurface(shape: Capsule()))
     }
 }

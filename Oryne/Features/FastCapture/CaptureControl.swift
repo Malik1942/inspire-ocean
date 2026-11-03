@@ -102,4 +102,11 @@ struct ParkedCapture {
         if heldDraft?.audioData != nil { return String(localized: "Whisper") }
         return images.count > 1 ? String(localized: "\(images.count) images") : String(localized: "Image")
     }
+
+    /// The glyph before the line when it names what rides along rather than
+    /// quoting the words: a whisper reads as a recording, never as typing.
+    var glyph: String? {
+        guard text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        return heldDraft?.audioData != nil ? "waveform" : "photo"
+    }
 }

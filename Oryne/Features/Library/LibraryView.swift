@@ -16,6 +16,7 @@ struct LibraryView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.oceanAI) private var ai
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var typeSize
     @Query(sort: \Node.createdAt, order: .reverse) private var allNodes: [Node]
 
     @State private var search = ""
@@ -70,6 +71,18 @@ struct LibraryView: View {
     /// Scroll target at the top of the grid, so engage/clear can steer there.
     private static let gridTopID = "library.grid.top"
 
+    /// How far below its place a card surfacing at a column's top starts:
+    /// the card's own travel, never a spacing role, so retuning the page's
+    /// spacing never moves it.
+    private static let surfaceRise: CGFloat = 24 // art-directed
+
+    /// The masonry's columns: the stored density, or one column at
+    /// accessibility sizes, where two would leave each card a word a line.
+    /// The stored preference is untouched.
+    private var gridColumns: Int {
+        typeSize.isAccessibilitySize ? 1 : columns
+    }
+
     enum Segment: String { case recent, currents }
 
     /// What the page can show: thoughts not archived, of the filter's kind,
@@ -101,7 +114,7 @@ struct LibraryView: View {
     var body: some View {
         NavigationStack(path: $path) {
             ZStack {
-                PageBackground()
+                PageBackground(light: .warm)
                 switch segment {
                 case .recent: grid
                 case .currents: currents
@@ -289,8 +302,13 @@ struct LibraryView: View {
     private var grid: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: OceanSpacing.inset) {
+                // No stack spacing: each relationship sets its own space,
+                // measured to what you see. The header stands a block above
+                // the first group, time sections a group apart, each label
+                // its gap above its cards.
+                LazyVStack(alignment: .leading, spacing: 0) {
                     header
+                        .padding(.bottom, OceanSpacing.block)
                         .id(Self.gridTopID)
                     let shown = filtered
                     if shown.isEmpty {
@@ -298,13 +316,16 @@ struct LibraryView: View {
                     }
                     if !search.trimmed.isEmpty, shown.count >= 2 {
                         summarizeLine(shown)
+                            .padding(.bottom, OceanSpacing.block)
                     }
                     if focusedAnchorID == nil {
                         // Unfocused: the Today / Previous 7 Days / Earlier
                         // sections, one masonry each.
-                        ForEach(timeSections(shown), id: \.title) { section in
-                            sectionHeader(section.title)
-                            MasonryColumns(items: section.nodes, columns: columns, spacing: OceanSpacing.item,
+                        ForEach(Array(timeSections(shown).enumerated()), id: \.element.title) { index, section in
+                            OceanSectionLabel(Text(section.title))
+                                .padding(.top, index == 0 ? 0 : OceanSpacing.group)
+                                .padding(.bottom, OceanSpacing.afterLabel)
+                            MasonryColumns(items: section.nodes, columns: gridColumns, spacing: OceanSpacing.item,
                                            estimatedHeight: estimatedCardHeight,
                                            frontRank: focusFrontRank) { node in
                                 cell(node)
@@ -314,7 +335,7 @@ struct LibraryView: View {
                         // Focused (sections dropped): one masonry over the
                         // newest-first order, pulling the anchor and related
                         // cards to the top of their columns.
-                        MasonryColumns(items: shown, columns: columns, spacing: OceanSpacing.item,
+                        MasonryColumns(items: shown, columns: gridColumns, spacing: OceanSpacing.item,
                                        estimatedHeight: estimatedCardHeight,
                                        frontRank: focusFrontRank) { node in
                             cell(node)
@@ -357,7 +378,7 @@ struct LibraryView: View {
             let shown = filtered
             if !search.trimmed.isEmpty, shown.count >= 2 {
                 summarizeLine(shown)
-                    .padding(.top, OceanSpacing.inset)
+                    .padding(.top, OceanSpacing.block)
             }
         }
         .modifier(CaptureComposerEdge())
@@ -371,7 +392,7 @@ struct LibraryView: View {
     private func summarizeLine(_ shown: [Node]) -> some View {
         HStack(spacing: OceanSpacing.gap) {
             Text("\(shown.count) thoughts")
-                .font(OceanType.meta)
+                .oceanText(OceanType.meta)
                 .foregroundStyle(OceanTheme.mist)
             Spacer(minLength: 0)
             Button {
@@ -388,7 +409,9 @@ struct LibraryView: View {
     /// The page's bar, pinned on the line where Tide's gear sits: the tools
     /// at rest; while searching, the field and its ✕. The group's glass
     /// grows into the field and the ✕ separates from it, so opening and
-    /// closing is one shape changing on one spring.
+    /// closing is one shape changing on one spring. The bar keeps its 44 pt,
+    /// like the system's toolbars, so the searched words stop growing at
+    /// the first accessibility size, where one line still fits it.
     private var topBar: some View {
         SearchGlassContainer {
             HStack(spacing: OceanSpacing.item) {
@@ -413,6 +436,7 @@ struct LibraryView: View {
         .frame(height: OceanControlSize.height)
         .padding(.horizontal, OceanSpacing.gutter)
         .padding(.bottom, OceanSpacing.gap)
+        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
     }
 
     /// Opening and closing share one spring, the floating layer's, so the
@@ -461,21 +485,27 @@ struct LibraryView: View {
 
     private var focusChip: some View {
         let title = focusedAnchor?.displayTitle ?? ""
-        // The floating layer's own glass (the bars' material), 44 pt, with
-        // Clear as a Link beside the words, as Undo sits in a toast.
-        return HStack(spacing: OceanSpacing.gap) {
+        // The floating layer's own glass (the bars' material), 44 pt at
+        // least, with Clear as a Link beside the words, as Undo sits in a
+        // toast. The glyph takes the words' role, so it grows with them; a
+        // second line at accessibility sizes keeps the one-line chip's ends.
+        return HStack(spacing: OceanSpacing.snug) {
             Image(systemName: "point.3.connected.trianglepath.dotted")
-                .font(OceanType.meta).foregroundStyle(OceanTheme.glowWarm)
-            Text("Related to \"\(title)\"")
-                .font(OceanType.control).foregroundStyle(OceanTheme.foam)
-                .lineLimit(1).truncationMode(.tail)
+                .oceanText(OceanType.control).imageScale(.small)
+                .foregroundStyle(OceanTheme.ring)
+            Text("Related to “\(title)”")
+                .oceanText(OceanType.control).foregroundStyle(OceanTheme.foam)
+                .oceanLineLimit(1).truncationMode(.tail)
+                // The words' floor, so a second line at accessibility sizes
+                // never touches the glass; one line stays inside Clear's 44 pt.
+                .padding(.vertical, OceanSpacing.tight)
             Spacer(minLength: OceanSpacing.tight)
             Button("Clear") { clearFocus() }
                 .buttonStyle(.oceanLink)
         }
         .padding(.leading, OceanSpacing.inset).padding(.trailing, OceanSpacing.gap)
-        .frame(height: OceanControlSize.height)
-        .background(OceanBarBackground())
+        .frame(minHeight: OceanControlSize.height)
+        .background(OceanBarBackground(cornerRadius: OceanControlSize.height / 2))
         .padding(.horizontal, OceanSpacing.gutter).padding(.bottom, OceanSpacing.snug)
         .transition(.move(edge: .top).combined(with: .opacity))
     }
@@ -578,30 +608,44 @@ struct LibraryView: View {
     /// column assignment depends on it, so being roughly right is enough. It
     /// deliberately avoids walking the images relationship for every node (the
     /// kind is the hint for a banner), because this runs over the whole set.
+    ///
+    /// A card at the default text size: its inset around one title line, a
+    /// snug gap and the meta line (78 pt); a title past about 24 characters
+    /// takes a second line, and the words up to two lines after a snug gap,
+    /// about 22 pt a line (cardTitle's and cardWords' pitch); a banner adds
+    /// its height.
     private func estimatedCardHeight(_ node: Node) -> CGFloat {
-        var height: CGFloat = 92
+        let line: CGFloat = 22
+        var height: CGFloat = 78
+        let title = node.displayTitle
+        if title.count > 24 { height += line }
+        let preview = node.snippet
+        if !preview.isEmpty, preview != title {
+            height += OceanSpacing.snug + CGFloat(min(2, (preview.count + 23) / 24)) * line
+        }
         if node.kind == .image || node.linkImageData != nil { height += OceanSize.banner }
-        if !node.snippet.isEmpty { height += CGFloat(min(2, node.snippet.count / 24)) * 20 }
         return height
     }
 
     // MARK: Header
 
-    /// The page's title in New York, as Tide's sits under its bar, and,
+    /// The page's title in New York, where Ask's large title stands, and,
     /// while a filter is on, the filter as a chip that clears it. The title
     /// folds away while searching, so the results start under the field.
     private var header: some View {
         VStack(alignment: .leading, spacing: OceanSpacing.inset) {
             if !searching {
                 Text("Library")
-                    .font(OceanType.pageTitle)
+                    .oceanText(OceanType.pageTitle)
                     .foregroundStyle(OceanTheme.foam)
-                    .lineLimit(1)
+                    .oceanLineLimit(1)
                     .accessibilityAddTraits(.isHeader)
-                    // Where the system's large title stands on Tide and Ask,
-                    // and as far from the first section.
-                    .padding(.top, OceanSpacing.hairline)
-                    .padding(.bottom, OceanSpacing.snug)
+                    .accessibilityIdentifier("library.title")
+                    // On the baseline of Ask's large title (measured: the
+                    // same 152 pt on an iPhone 17 Pro), and as far from the
+                    // first section as before.
+                    .padding(.top, OceanSpacing.snug)
+                    .padding(.bottom, OceanSpacing.hairline)
                     // It rises into the bar as the page rises after it,
                     // so the two never overlap.
                     .transition(.move(edge: .top).combined(with: .opacity))
@@ -666,16 +710,6 @@ struct LibraryView: View {
         .transition(.opacity)
     }
 
-    /// Time sections wear Tide's labels: New York italic, mist.
-    private func sectionHeader(_ title: String) -> some View {
-        Text(title)
-            .font(OceanType.sectionLabel)
-            .foregroundStyle(OceanTheme.mist)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.leading, OceanSpacing.hairline)
-            .padding(.top, OceanSpacing.item)
-    }
-
     /// A grid cell: the card, a tap that opens the thought as a sheet, and
     /// Show related, Archive and Delete in a context menu. Delete still routes through `pendingDelete` and the
     /// confirmation dialog.
@@ -689,7 +723,7 @@ struct LibraryView: View {
         .buttonStyle(.plain)
         // Visible cards glide in place on a focus reorder (in-column, stable id);
         // cards realizing fresh at a column top surface from the deep.
-        .transition(.opacity.combined(with: .offset(y: OceanSpacing.block)).combined(with: .scale(scale: 0.96)))
+        .transition(.opacity.combined(with: .offset(y: Self.surfaceRise)).combined(with: .scale(scale: 0.96)))
         .contextMenu {
             if node.id == focusedAnchorID {
                 Button { clearFocus() } label: {
@@ -718,15 +752,15 @@ struct LibraryView: View {
 
     /// Nothing to show. With a filter on, it says what the filter left out
     /// and offers to take it off; otherwise the Ocean is empty, or the search
-    /// found nothing.
+    /// found nothing. Left-aligned at the gutter, where the first thought
+    /// would stand: a block under the header, which the page puts above it.
     @ViewBuilder
     private var emptyState: some View {
         let searching = !search.trimmed.isEmpty
-        VStack(spacing: OceanSpacing.inset) {
+        VStack(alignment: .leading, spacing: OceanSpacing.inset) {
             Text(emptyMessage(searching: searching))
-                .font(OceanType.secondary)
+                .oceanText(OceanType.secondary)
                 .foregroundStyle(OceanTheme.mist)
-                .multilineTextAlignment(.center)
             if kind != .all {
                 Button("Clear filter") {
                     withAnimation(OceanMotion.quick) { kind = .all }
@@ -734,8 +768,7 @@ struct LibraryView: View {
                 .buttonStyle(.oceanSecondary)
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.top, OceanSpacing.block)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func emptyMessage(searching: Bool) -> LocalizedStringKey {

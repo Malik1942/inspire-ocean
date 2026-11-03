@@ -13,10 +13,11 @@
       "16": { "$type": "dimension", "$value": { "value": 16, "unit": "px" } },
       "20": { "$type": "dimension", "$value": { "value": 20, "unit": "px" } },
       "24": { "$type": "dimension", "$value": { "value": 24, "unit": "px" } },
+      "32": { "$type": "dimension", "$value": { "value": 32, "unit": "px" } },
       "40": { "$type": "dimension", "$value": { "value": 40, "unit": "px" } }
     },
     "water": {
-      "$description": "The near-monochrome water, lit toward the upper centre.",
+      "$description": "The near-monochrome water.",
       "abyss": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.02, 0.02, 0.03], "alpha": 1 } },
       "deep": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.05, 0.055, 0.065], "alpha": 1 } },
       "mid": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.09, 0.095, 0.11], "alpha": 1 } },
@@ -26,13 +27,20 @@
     "white": {
       "$description": "White at the opacities the app draws with (names are percent, 55 = 5.5%). Ink and surfaces are white over the water; brightness carries hierarchy.",
       "92": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.92 } },
+      "80": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.80 } },
+      "72": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.72 } },
       "66": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.66 } },
       "58": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.58 } },
       "50": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.50 } },
+      "40": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.40 } },
       "26": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.26 } },
+      "19": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.19 } },
       "18": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.18 } },
+      "14": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.14 } },
       "12": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.12 } },
+      "11": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.11 } },
       "8": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.08 } },
+      "6": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.06 } },
       "55": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.055 } },
       "4": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.04 } },
       "100": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 1 } }
@@ -57,19 +65,19 @@
     "$description": "Facet one: where things sit and how big they are. Space, corners, sizes and type.",
 
     "space": {
-      "$description": "One ladder on 4 pt, used by role. Things that belong together sit tight; groups sit far apart. The contrast between the two is the hierarchy.",
-      "hairline": { "$type": "dimension", "$value": "{primitive.space.2}", "$description": "An optical nudge: a section label's lead-in over the gutter, a badge's vertical breath." },
-      "tight": { "$type": "dimension", "$value": "{primitive.space.4}", "$description": "Inside a control: a segmented switch's padding around its parts, a tool group's end padding, a title's breath above its footer." },
-      "snug": { "$type": "dimension", "$value": "{primitive.space.6}", "$description": "A title and its meta line inside a tile; a glyph and the words beside it in a meta line." },
-      "gap": { "$type": "dimension", "$value": "{primitive.space.8}", "$description": "Buttons or chips in a row; a label above its field; a glyph beside a control's words." },
-      "item": { "$type": "dimension", "$value": "{primitive.space.12}", "$description": "Tiles apart in a list or a grid; things apart inside a row (a picture and its words)." },
-      "insetCompact": { "$type": "dimension", "$value": "{form.space.item}", "$description": "Inside a compact card or a field: the link card, a text field, the composer's card." },
-      "inset": { "$type": "dimension", "$value": "{primitive.space.16}", "$description": "Inside a tile, on every side; a floating capsule's end inset." },
-      "afterLabel": { "$type": "dimension", "$value": "{form.space.inset}", "$description": "From a section label down to its content." },
+      "$description": "One ladder on 4 pt, used by role and measured between what you see. Things that belong together sit tight; groups sit far apart. The contrast between the two is the hierarchy.",
+      "hairline": { "$type": "dimension", "$value": "{primitive.space.2}", "$description": "An optical nudge: a label's 2 pt lead-in over the gutter (OceanSectionLabel), a badge's vertical breath." },
+      "tight": { "$type": "dimension", "$value": "{primitive.space.4}", "$description": "Inside a control: the segmented switch's padding around its parts; a capsule's or a Link's vertical floor inside its 44 pt minimum, so wrapped words never touch its edge." },
+      "snug": { "$type": "dimension", "$value": "{primitive.space.6}", "$description": "Inside a tile, a title to its meta line or words; a line to its meta line; a glyph to the words beside it, everywhere." },
+      "gap": { "$type": "dimension", "$value": "{primitive.space.8}", "$description": "Buttons or chips in a row; the vertical floor inside a 44 pt line row; a page's first line under the bar; pictures in a strip; words to their actions inside a card; inside a 64 pt attachment tile." },
+      "item": { "$type": "dimension", "$value": "{primitive.space.12}", "$description": "Tiles apart in a list or a grid; a title to its words on a page, a stage or a sheet; a title beside its own action; tools on the floating layer." },
+      "insetCompact": { "$type": "dimension", "$value": "{form.space.item}", "$description": "Inside a compact card or a field: the link card, a text field, the composer's card, the + panel." },
+      "inset": { "$type": "dimension", "$value": "{primitive.space.16}", "$description": "Inside a tile, on every side; words to their actions on a page or a sheet; a mark to its headline; a floating capsule's end inset." },
+      "afterLabel": { "$type": "dimension", "$value": "{form.space.gap}", "$description": "From a label down to what it names, measured to what you see: a tile's or a field's edge, a paragraph's first line. A list of 44 pt rows sits right under its label instead (0): each row's own slack is the gap." },
       "controlInset": { "$type": "dimension", "$value": "{form.space.inset}", "$description": "A capsule button's horizontal inset, Primary and Secondary alike, the same as a tile's; a toast's leading inset." },
-      "block": { "$type": "dimension", "$value": "{primitive.space.24}", "$description": "Blocks inside one section: a title block, a summary, a transcript; media above the meta line." },
-      "section": { "$type": "dimension", "$value": "{primitive.space.40}", "$description": "Between sections, on every page." },
-      "sheetTop": { "$type": "dimension", "$value": "{form.space.section}", "$description": "A pull-up sheet's title under the sheet's edge: a section's air past the grabber." },
+      "block": { "$type": "dimension", "$value": "{primitive.space.24}", "$description": "Blocks inside one section (a summary, a transcript); a header to its first group, on pages and sheets; groups in a sheet." },
+      "group": { "$type": "dimension", "$value": "{primitive.space.32}", "$description": "Groups inside one list: the Library's time sections, its currents and the Archived row. Tighter than a page's sections, so a list reads as one." },
+      "section": { "$type": "dimension", "$value": "{primitive.space.40}", "$description": "Between a page's sections (Tide, a thought's page, Ask), measured between what you see: where a 44 pt row starts or ends a section, its slack comes off the 40 (OceanTextRole.rowSlack)." },
       "gutterCompact": { "$type": "dimension", "$value": "{primitive.space.16}", "$description": "The page margin on standard iPhones: the system's own layout margin, where a navigation bar puts its back button." },
       "gutterWide": { "$type": "dimension", "$value": "{primitive.space.20}", "$description": "The page margin on wide phones (414 pt and up) and iPad." },
       "gutterBreakpoint": { "$type": "dimension", "$value": { "value": 414, "unit": "px" }, "$description": "Window width from which the wide gutter applies (measured 2026-10-22: 16 at 402 pt, 20 at 420 and 440)." }
@@ -87,57 +95,219 @@
 
     "size": {
       "$description": "Fixed sizes of things that are not controls.",
-      "metaIcon": { "$type": "dimension", "$value": { "value": 14, "unit": "px" }, "$description": "The kind glyph's slot and a site icon in a meta line." },
-      "glyphSlot": { "$type": "dimension", "$value": { "value": 18, "unit": "px" }, "$description": "A glyph's fixed slot beside a line of text (a source line, a sample question), so the words start on one edge; also the dark disc under a remove badge's ✕." },
+      "metaIcon": { "$type": "dimension", "$value": { "value": 14, "unit": "px" }, "$description": "The kind glyph's slot and a site's icon in a meta line (scaled with the line at the call site, @ScaledMetric relative to caption2); the toast's ring, which never scales." },
+      "glyphSlot": { "$type": "dimension", "$value": { "value": 18, "unit": "px" }, "$description": "A glyph's slot beside a line of text (a source line, a sample question), scaled with the line at the call site so the words start on one edge; the remove badge's dark disc." },
       "grabberWidth": { "$type": "dimension", "$value": { "value": 36, "unit": "px" }, "$description": "A sheet's grabber, the system's own proportions, drawn by OceanSheetHeader." },
       "grabberHeight": { "$type": "dimension", "$value": { "value": 5, "unit": "px" } },
       "removeTarget": { "$type": "dimension", "$value": { "value": 32, "unit": "px" }, "$description": "The touch target of a remove badge in a picture's corner, and of the search field's clear." },
       "thumbnail": { "$type": "dimension", "$value": { "value": 44, "unit": "px" }, "$description": "A row's trailing picture: a control's height, so it fits the row's two lines." },
       "pictureTile": { "$type": "dimension", "$value": { "value": 64, "unit": "px" }, "$description": "A picture on a draft or in a strip: the composer's tiles, the edit sheet's pictures, a link card's thumbnail." },
       "banner": { "$type": "dimension", "$value": { "value": 120, "unit": "px" }, "$description": "A card's full-bleed picture at the top." },
-      "hero": { "$type": "dimension", "$value": { "value": 160, "unit": "px" }, "$description": "The resurfacing thought's picture on Tide." }
+      "hero": { "$type": "dimension", "$value": { "value": 200, "unit": "px" }, "$description": "The tallest a shared picture's preview stands in the share sheet." },
+      "stage": { "$type": "dimension", "$value": { "value": 360, "unit": "px" }, "$description": "Tide's stage when today's thought has a picture: the picture's height from the top edge of the screen, under the status bar." },
+      "stageLink": { "$type": "dimension", "$value": { "value": 300, "unit": "px" }, "$description": "The same stage for a link's image, which is wider than it is tall." },
+      "depthThumb": { "$type": "dimension", "$value": { "value": 36, "unit": "px" }, "$description": "The small picture at the end of a line on the depth ladder." },
+      "readableWidth": { "$type": "dimension", "$value": { "value": 560, "unit": "px" }, "$description": "The reading column at the default text size, scaled with body (@ScaledMetric): about 70 characters of SF 17 or New York 19. On iPad and in landscape the column is centered and the gutter is its least margin; on iPad, under the system's large title (Ask), it keeps to the leading gutter so the words start under the page's name. Phones in portrait never reach it." },
+      "ringHero": { "$type": "dimension", "$value": { "value": 48, "unit": "px" }, "$description": "The ring on the empty Tide, where the first thought will come back." },
+      "ringStroke": { "$type": "dimension", "$value": { "value": 1.5, "unit": "px" }, "$description": "The ring's line, the icon's own weight, at every size." },
+      "ringHairline": { "$type": "dimension", "$value": { "value": 1, "unit": "px" }, "$description": "The capture disc's ring at rest: a hairline in the ring's own blue, there when looked for." },
+      "ringStrokeListening": { "$type": "dimension", "$value": { "value": 2, "unit": "px" }, "$description": "The capture disc's ring while it listens, wide enough for its two lights to read." }
     },
 
     "control": {
       "$description": "Every control is 44 pt tall, the system's own. Floating bars are 56.",
-      "height": { "$type": "dimension", "$value": { "value": 44, "unit": "px" }, "$description": "A button, a field, a tool cell, the capture disc, a segmented switch." },
+      "height": { "$type": "dimension", "$value": { "value": 44, "unit": "px" }, "$description": "A button's, a field's, a tool cell's, the capture disc's and a line row's minimum: the system's 44." },
       "compact": { "$type": "dimension", "$value": { "value": 36, "unit": "px" }, "$description": "A disc inside a field (the composer's + and its disc), as Messages sizes its own: smaller than a page tool, inside a 44 pt target." },
       "bar": { "$type": "dimension", "$value": { "value": 56, "unit": "px" }, "$description": "The capture bar and Ask's bar: a capsule whose end radius is half of this." },
-      "toast": { "$type": "dimension", "$value": { "value": 48, "unit": "px" }, "$description": "A toast: the bar's material, a step shorter than the bar." },
-      "discInset": { "$type": "dimension", "$value": "{form.space.snug}", "$description": "The disc's inset inside the bar on every side, so disc and capsule end are concentric." }
+      "toast": { "$type": "dimension", "$value": { "value": 48, "unit": "px" }, "$description": "A toast's height at one line: the bar's material, a step shorter than the bar. A minimum: a two-line toast grows." },
+      "discInset": { "$type": "dimension", "$value": "{primitive.space.6}", "$description": "The disc's inset inside the bar on every side, so disc and capsule end are concentric. Its own primitive, so the folded composer's 6 + 44 + 6 never follows a retune of snug." }
     },
 
     "type": {
-      "$description": "New York, Apple's serif, names what a page is about and wears the italic section labels. SF does everything else, on one scale. com.oryne.font.scale says how a role meets Dynamic Type: native (a system text style), metrics (a fixed size scaled by its text style's metrics), fixed (glyphs in controls).",
+      "$description": "Text roles and glyphs. New York is the user's: a thought's name, their own words (Node.ownWords) and a live take's words; it also names places (a page's or a sheet's title) and says the one word Resurfacing. SF is Oryne's: labels, controls, meta, answers, summaries, a site's words. A text role is a font, its leading and its tracking together, set by .oceanText(_:) (OceanTextRole), so no call site sets one without the others. com.oryne.font.scale says how a role meets Dynamic Type: native (a system text style), curve (a size of ours, sized at each iOS text size from Apple's own ramp below, between two styles or in proportion to one), fixed. lineHeight is the extra leading between lines at the default size, scaled with the role's size: a target line height less the face's natural line (1.193 times the size on iOS, New York and SF alike), never leaving a line shorter than its text style's own. kind glyph is a plain Font (a symbol, or the +N badge). com.oryne.order lists chains that must never invert at any text size, and com.oryne.step names the ladder step a role must match in face, size and scaling: generate.py fails on either.",
+      "$extensions": {
+        "com.oryne.dynamicType": {
+          "sizes": ["xSmall", "small", "medium", "large", "xLarge", "xxLarge", "xxxLarge", "accessibility1", "accessibility2", "accessibility3", "accessibility4", "accessibility5"],
+          "ios": {
+            "largeTitle": [31, 32, 33, 34, 36, 38, 40, 44, 48, 52, 56, 60],
+            "title1": [25, 26, 27, 28, 30, 32, 34, 38, 43, 48, 53, 58],
+            "title2": [19, 20, 21, 22, 24, 26, 28, 34, 39, 44, 50, 56],
+            "title3": [17, 18, 19, 20, 22, 24, 26, 31, 37, 43, 49, 55],
+            "headline": [14, 15, 16, 17, 19, 21, 23, 28, 33, 40, 47, 53],
+            "body": [14, 15, 16, 17, 19, 21, 23, 28, 33, 40, 47, 53],
+            "callout": [13, 14, 15, 16, 18, 20, 22, 26, 32, 38, 44, 51],
+            "subheadline": [12, 13, 14, 15, 17, 19, 21, 25, 30, 36, 42, 49],
+            "footnote": [12, 12, 12, 13, 15, 17, 19, 23, 27, 33, 38, 44],
+            "caption": [11, 11, 11, 12, 14, 16, 18, 22, 26, 32, 37, 43],
+            "caption2": [11, 11, 11, 11, 13, 15, 17, 20, 24, 29, 34, 40]
+          }
+        },
+        "com.oryne.order": [
+          ["thoughtTitle", "thoughtTitleLong", "thoughtTitleLongest", "depth0", "depth1", "depth2", "depth3", "depth4"],
+          ["thoughtTitleLongest", "thoughtBody", "depth2"],
+          ["whisperWords", "thoughtBody"],
+          ["pageTitle", "sheetTitle", "statement", "body", "secondary", "meta"],
+          ["currentName", "cardTitle", "cardWords"]
+        ]
+      },
       "pageTitle": {
         "$type": "typography",
-        "$value": { "fontFamily": "New York", "fontSize": { "value": 40, "unit": "px" }, "fontWeight": 400 },
-        "$description": "A tab's name, and the navigation bar's large title: the one place a page is named.",
-        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "metrics", "textStyle": "largeTitle" } }
+        "$value": { "fontFamily": "New York", "fontSize": { "value": 34, "unit": "px" }, "fontWeight": 500 },
+        "$description": "A place's name: the Library's title, Ask's large title (OceanType.applyNavigationTitleAppearance), each onboarding page's headline. New York medium, the stage title's own size, so a place is named as carefully as the thought on Tide (Malik, 2026-11-02: the system's face read as plain).",
+        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "native", "textStyle": "largeTitle" } }
       },
-      "resurfacingTitle": {
+      "sheetTitle": {
         "$type": "typography",
-        "$value": { "fontFamily": "New York", "fontSize": { "value": 32, "unit": "px" }, "fontWeight": 400 },
-        "$description": "The one lit thing on Tide: today's resurfacing thought. Also an onboarding page's title.",
-        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "metrics", "textStyle": "title1" } }
-      },
-      "subjectTitle": {
-        "$type": "typography",
-        "$value": { "fontFamily": "New York", "fontSize": { "value": 28, "unit": "px" }, "fontWeight": 400 },
-        "$description": "A thought's title on its page, a current's name on its sheet, the question an answer replies to, a page's one-line empty state.",
+        "$value": { "fontFamily": "New York", "fontSize": { "value": 28, "unit": "px" }, "fontWeight": 500 },
+        "$description": "A sheet's name: Edit, Grow a branch, Move, Merge, Archived, a current's sheet, the onboarding setup step. Two lines, four at accessibility sizes (OceanSheetHeader).",
         "$extensions": { "com.oryne.font": { "design": "serif", "scale": "native", "textStyle": "title1" } }
       },
-      "sectionLabel": {
+      "navigationTitle": {
+        "$type": "typography",
+        "$value": { "fontFamily": "New York", "fontSize": { "value": 17, "unit": "px" }, "fontWeight": 500 },
+        "$description": "A place's name in an inline navigation bar: Ask's title folded on scroll and the share sheet, through OceanType.applyNavigationTitleAppearance; Settings and What Oryne knows about you, through oceanInlineTitle. Fixed at 17, as the system's inline titles are.",
+        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "fixed" } }
+      },
+      "thoughtTitle": {
+        "$type": "typography",
+        "$value": { "fontFamily": "New York", "fontSize": { "value": 34, "unit": "px" }, "fontWeight": 500 },
+        "$description": "A thought's name where it is the subject: today's thought on Tide's stage and a thought on its own page, up to 40 characters by TitleLength.weighted (an East Asian wide or fullwidth character counts 2). Longer names step down to thoughtTitleLong and thoughtTitleLongest rather than squeeze (OceanType.thoughtTitle(for:)). The same values as pageTitle at the default size, kept apart so retuning a place's title never moves the stage.",
+        "$extensions": {
+          "com.oryne.font": { "design": "serif", "scale": "native", "textStyle": "largeTitle" },
+          "com.oryne.steps": { "long": 40, "longest": 80 }
+        }
+      },
+      "thoughtTitleLong": {
+        "$type": "typography",
+        "$value": { "fontFamily": "New York", "fontSize": { "value": 28, "unit": "px" }, "fontWeight": 500 },
+        "$description": "A thought's name as the subject, 41 to 80 weighted characters; the large widget's title.",
+        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "native", "textStyle": "title1" } }
+      },
+      "thoughtTitleLongest": {
+        "$type": "typography",
+        "$value": { "fontFamily": "New York", "fontSize": { "value": 24, "unit": "px" }, "fontWeight": 500 },
+        "$description": "A thought's name as the subject, over 80 weighted characters; the medium widget's title. Sized between title2 and title1 at every text size, so it never passes the 28 step or falls under the ladder's top line.",
+        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "curve", "between": ["title2", "title1"] } }
+      },
+      "stageLabel": {
+        "$type": "typography",
+        "$value": { "fontFamily": "New York", "fontSize": { "value": 17, "unit": "px" }, "fontWeight": 400 },
+        "$description": "The word Resurfacing, italic, the one word Oryne says aloud: above today's thought on Tide and in the widget header in the warm ink, on the Lock Screen in the vibrant ink.",
+        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "native", "textStyle": "body", "italic": true } }
+      },
+      "thoughtBody": {
+        "$type": "typography",
+        "$value": { "fontFamily": "New York", "fontSize": { "value": 19, "unit": "px" }, "fontWeight": 400, "lineHeight": { "value": 5, "unit": "px" } },
+        "$description": "The user's own words under a thought's name, on Tide's stage and on its page, and a whisper's transcript, folded or full: never a summary. A 27.7 pt line (1.46).",
+        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "curve", "between": ["body", "title3"], "step": "depth1" } }
+      },
+      "whisperWords": {
+        "$type": "typography",
+        "$value": { "fontFamily": "New York", "fontSize": { "value": 22, "unit": "px" }, "fontWeight": 400, "lineHeight": { "value": 8, "unit": "px" } },
+        "$description": "The words of a live take as they are heard: the user's own, so the serif they will wear on Tide, with room between the lines to read a sentence as it forms. Shown in a six-line window.",
+        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "native", "textStyle": "title2" } }
+      },
+      "inputWords": {
+        "$type": "typography",
+        "$value": { "fontFamily": "New York", "fontSize": { "value": 17, "unit": "px" }, "fontWeight": 400, "lineHeight": { "value": 4, "unit": "px" } },
+        "$description": "The user's own words as they type them, in the serif they will wear once saved: the composer, the bar's parked draft, the listening note, the edit sheet's title, words and note, a branch's words, the share sheet's note. Oryne's prompt in an empty field stays SF body in mist, drawn over the field (a TextField's own prompt would take the serif).",
+        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "native", "textStyle": "body", "step": "depth2" } }
+      },
+      "cardTitle": {
+        "$type": "typography",
+        "$value": { "fontFamily": "New York", "fontSize": { "value": 17, "unit": "px" }, "fontWeight": 400, "lineHeight": { "value": 2, "unit": "px" } },
+        "$description": "A thought's or a current's name on a tile, a row, a choice or a line: Library cards and rows, Branches, a current's and Archived's rows, Move and Merge choices, Tide's current tiles, Ask's sources, the branch parent, the small and Lock Screen widgets. The user's names, so the serif; regular, so the tiles stay quiet.",
+        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "native", "textStyle": "body", "step": "depth2" } }
+      },
+      "cardWords": {
+        "$type": "typography",
+        "$value": { "fontFamily": "New York", "fontSize": { "value": 15, "unit": "px" }, "fontWeight": 400, "lineHeight": { "value": 4, "unit": "px" } },
+        "$description": "The user's own words previewed on a card or a widget, on the stage's own 1.46 line. Someone else's words there (a summary, a link's description) are secondary.",
+        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "native", "textStyle": "subheadline", "step": "depth3" } }
+      },
+      "currentName": {
         "$type": "typography",
         "$value": { "fontFamily": "New York", "fontSize": { "value": 21, "unit": "px" }, "fontWeight": 400 },
-        "$description": "A section's label, italic: Resurfacing, Drifted in, Today, Nearby, a current's name in the Library's list.",
-        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "metrics", "textStyle": "title3", "italic": true } }
+        "$description": "A current's name heading its rows in the Library, Adrift's, and the Archived row's word (a place's name): the ladder's top size.",
+        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "curve", "between": ["title3", "title2"], "step": "depth0" } }
+      },
+      "depth0": {
+        "$type": "typography",
+        "$value": { "fontFamily": "New York", "fontSize": { "value": 21, "unit": "px" }, "fontWeight": 400 },
+        "$description": "The depth ladder, level 0: the newest line, just under the surface. Each level down is smaller and dimmer (depthInk0 to depthInk4); every line is a 44 pt row.",
+        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "curve", "between": ["title3", "title2"] } }
+      },
+      "depth1": {
+        "$type": "typography",
+        "$value": { "fontFamily": "New York", "fontSize": { "value": 19, "unit": "px" }, "fontWeight": 400 },
+        "$description": "The depth ladder, level 1.",
+        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "curve", "between": ["body", "title3"] } }
+      },
+      "depth2": {
+        "$type": "typography",
+        "$value": { "fontFamily": "New York", "fontSize": { "value": 17, "unit": "px" }, "fontWeight": 400 },
+        "$description": "The depth ladder, level 2, where Nearby starts: a neighbour never outranks the thought's own words.",
+        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "native", "textStyle": "body" } }
+      },
+      "depth3": {
+        "$type": "typography",
+        "$value": { "fontFamily": "New York", "fontSize": { "value": 15, "unit": "px" }, "fontWeight": 400 },
+        "$description": "The depth ladder, level 3; also a thought named under a current's name on Tide's current tiles.",
+        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "native", "textStyle": "subheadline" } }
+      },
+      "depth4": {
+        "$type": "typography",
+        "$value": { "fontFamily": "New York", "fontSize": { "value": 14, "unit": "px" }, "fontWeight": 400 },
+        "$description": "The depth ladder, level 4: the oldest line shown, the one New York size under 15 (a one-line title a person taps, at 5.3:1).",
+        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "curve", "between": ["footnote", "subheadline"] } }
       },
       "statement": {
         "$type": "typography",
-        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 22, "unit": "px" }, "fontWeight": 500 },
-        "$description": "Live words laid on the water while a whisper is caught.",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 22, "unit": "px" }, "fontWeight": 500, "lineHeight": { "value": 3, "unit": "px" } },
+        "$description": "Oryne's one line, a step above body: Ask's question, the empty Tide's line, the live take's Listening before its first word, Quick Capture's Catch a thought, an empty widget's line. The take's own words are whisperWords.",
         "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "title2" } }
+      },
+      "body": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 17, "unit": "px" }, "fontWeight": 400, "lineHeight": { "value": 4, "unit": "px" } },
+        "$description": "Oryne's words read whole: a summary, a page's description, Ask's answer and Beyond your Ocean, Ask's opening line and sample questions, an onboarding paragraph, shared text. Also Oryne's prompts in fields, the tools you type into (Ask, search, a theme, a link), the rows of the capture + panel, New current. A 24.3 pt line (1.43).",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "body" } }
+      },
+      "secondary": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 15, "unit": "px" }, "fontWeight": 400, "lineHeight": { "value": 3.5, "unit": "px" } },
+        "$description": "Reading a step below: a preview cut at two to four lines (a card's snippet, Tide's link description, a widget's summary excerpt, a merge suggestion), an empty page's line, Ask's reading and status lines, a count trailing a name, a widget's tagline, and every sentence someone must read to act: a failure, a refusal, a privacy disclosure, a consequence, provenance. A 21.4 pt line (1.43).",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "subheadline" } }
+      },
+      "tileTitle": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 16, "unit": "px" }, "fontWeight": 500, "lineHeight": { "value": 2, "unit": "px" } },
+        "$description": "A title in someone else's words on a tile: a link's page title, a plain link's address; Quick Capture's Lock Screen line. A thought's name is cardTitle.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "callout" } }
+      },
+      "control": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 15, "unit": "px" }, "fontWeight": 500, "lineHeight": { "value": 2.5, "unit": "px" } },
+        "$description": "A quiet control's words: Secondary buttons and chips, quiet Links, the toast's message, the focus chip, the transcript language menu, the onboarding toggle, widget capsules.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "subheadline" } }
+      },
+      "controlStrong": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 15, "unit": "px" }, "fontWeight": 600, "lineHeight": { "value": 2.5, "unit": "px" } },
+        "$description": "The main action's words: Primary buttons, accent Links (Undo in a toast, Retry, Clear).",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "subheadline" } }
+      },
+      "sectionLabel": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 13, "unit": "px" }, "fontWeight": 500, "letterSpacing": { "value": 0.4, "unit": "px" }, "lineHeight": { "value": 2.5, "unit": "px" } },
+        "$description": "Every label over what it names: a section (Drifted in, Currents, Themes, Branches, Nearby, a Library time section, Suggested merges, Try asking), a block (Summary, From the page, Transcript, Drawn from, Beyond your Ocean, Branching from), a field's name, a Settings header, a Lock Screen label. Oryne's word: SF, a little tracked, mist, drawn by OceanSectionLabel. Italic New York is kept for the one word Resurfacing (stageLabel).",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "footnote" } }
+      },
+      "meta": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 13, "unit": "px" }, "fontWeight": 400, "lineHeight": { "value": 2.5, "unit": "px" } },
+        "$description": "Quiet single lines: a meta line, a domain, a status inside a card, a caption, quiet guidance under a field (a hint, the edited-transcript note, Flows into), the composer's captions, a widget's meta line. The smallest size a word is set in.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "footnote" } }
       },
       "wordmark": {
         "$type": "typography",
@@ -145,101 +315,98 @@
         "$description": "The name Oryne in a bar, tracked a little so a short name holds the bar.",
         "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "headline" } }
       },
-      "tileTitle": {
+      "glyphHero": {
         "$type": "typography",
-        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 16, "unit": "px" }, "fontWeight": 500 },
-        "$description": "A thought's title on a tile (card, row, current, link card, a choice in a picker): lighter than a heading so the tiles stay quiet.",
-        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "callout" } }
-      },
-      "body": {
-        "$type": "typography",
-        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 17, "unit": "px" }, "fontWeight": 400, "lineHeight": { "value": 4, "unit": "px" } },
-        "$description": "Running text in foam: a thought's words, an answer, a field's words, a line that opens a thought. lineHeight here is the extra leading between lines.",
-        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "body" } }
-      },
-      "secondary": {
-        "$type": "typography",
-        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 15, "unit": "px" }, "fontWeight": 400, "lineHeight": { "value": 3, "unit": "px" } },
-        "$description": "Reading text a step below the words: a snippet, a summary, what lies beyond the Ocean, a count beside a label.",
-        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "subheadline" } }
-      },
-      "meta": {
-        "$type": "typography",
-        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 13, "unit": "px" }, "fontWeight": 400 },
-        "$description": "The meta line under a title, a domain, a provenance note, a status line.",
-        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "footnote" } }
-      },
-      "note": {
-        "$type": "typography",
-        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 12, "unit": "px" }, "fontWeight": 400 },
-        "$description": "A quiet line under a field or a control: a notice, a hint, a caption in the composer.",
-        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "caption" } }
-      },
-      "eyebrow": {
-        "$type": "typography",
-        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 13, "unit": "px" }, "fontWeight": 600 },
-        "$description": "A label right above what it names: Summary, Transcript, Drawn from, a field's name in the edit sheet.",
-        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "footnote" } }
-      },
-      "control": {
-        "$type": "typography",
-        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 15, "unit": "px" }, "fontWeight": 500 },
-        "$description": "A quiet control's words: Secondary buttons, the segmented switch, a toast's message.",
-        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "subheadline" } }
-      },
-      "controlStrong": {
-        "$type": "typography",
-        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 15, "unit": "px" }, "fontWeight": 600 },
-        "$description": "The main action's words: Primary buttons, Undo, a Link button.",
-        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "subheadline" } }
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 48, "unit": "px" }, "fontWeight": 400 },
+        "$description": "The mark on the onboarding setup step, growing with the large title.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "curve", "relativeTo": "largeTitle" } }
       },
       "badge": {
         "$type": "typography",
         "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 11, "unit": "px" }, "fontWeight": 700 },
-        "$description": "A count on a picture (+2).",
-        "$extensions": { "com.oryne.font": { "design": "default", "scale": "fixed" } }
+        "$description": "The +N count on a picture, and nothing else. Fixed, like the picture.",
+        "$extensions": { "com.oryne.font": { "kind": "glyph", "design": "default", "scale": "fixed" } }
       },
       "glyph": {
         "$type": "typography",
         "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 17, "unit": "px" }, "fontWeight": 400 },
-        "$description": "A symbol in a control: outline variant, regular weight, in a 44 pt cell. Fixed, like the system's own toolbar glyphs.",
-        "$extensions": { "com.oryne.font": { "design": "default", "scale": "fixed" } }
+        "$description": "A symbol in a 44 pt cell: a tool, an Icon button, a field's leading glyph. Outline variant, regular weight, fixed like the system's toolbar glyphs. A glyph inside a line of words takes the line's text role instead.",
+        "$extensions": { "com.oryne.font": { "kind": "glyph", "design": "default", "scale": "fixed" } }
       },
       "glyphStrong": {
         "$type": "typography",
         "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 17, "unit": "px" }, "fontWeight": 600 },
-        "$description": "The send arrow and the main action's glyph.",
-        "$extensions": { "com.oryne.font": { "design": "default", "scale": "fixed" } }
+        "$description": "The send arrows.",
+        "$extensions": { "com.oryne.font": { "kind": "glyph", "design": "default", "scale": "fixed" } }
       },
       "glyphDisclosure": {
         "$type": "typography",
         "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 13, "unit": "px" }, "fontWeight": 600 },
-        "$description": "A chevron in content: bare, the meta line's size.",
-        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "footnote" } }
+        "$description": "A chevron or a mark that leads or ends a row in content, bare, in mist; the composer tiles' glyphs.",
+        "$extensions": { "com.oryne.font": { "kind": "glyph", "design": "default", "scale": "native", "textStyle": "footnote" } }
       },
       "glyphMeta": {
         "$type": "typography",
         "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 11, "unit": "px" }, "fontWeight": 400 },
         "$description": "The kind glyph leading a meta line.",
-        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "caption2" } }
+        "$extensions": { "com.oryne.font": { "kind": "glyph", "design": "default", "scale": "native", "textStyle": "caption2" } }
       },
       "glyphSmall": {
         "$type": "typography",
         "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 11, "unit": "px" }, "fontWeight": 600 },
-        "$description": "A small ✕ inside a chip or a badge; a menu's chevron.",
-        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "caption2" } }
+        "$description": "A ✕ or a chevron inside a control: a chip's ✕, a remove badge's ✕, a menu's chevron, All currents' chevron.",
+        "$extensions": { "com.oryne.font": { "kind": "glyph", "design": "default", "scale": "native", "textStyle": "caption2" } }
       },
       "glyphLarge": {
         "$type": "typography",
         "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 20, "unit": "px" }, "fontWeight": 400 },
-        "$description": "A symbol standing in for a picture: an empty link thumbnail, a widget's drop.",
-        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "title3" } }
-      },
-      "glyphHero": {
+        "$description": "A symbol standing in for a picture: an empty link thumbnail, a widget's drop, the watch's state glyphs.",
+        "$extensions": { "com.oryne.font": { "kind": "glyph", "design": "default", "scale": "native", "textStyle": "title3" } }
+      }
+    },
+    "watchType": {
+      "$description": "The watch's own text roles, on watchOS's text styles, so the wrist keeps the phone's order: watchOS sizes its styles in another order than iOS, and the phone's roles there set notes above titles. fontSize is the 44 to 49 mm watch at its default size; 40 to 42 mm is a point smaller. Applied with .oceanText(_:), like the phone's.",
+      "title": {
         "$type": "typography",
-        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 48, "unit": "px" }, "fontWeight": 400 },
-        "$description": "The one glyph of an empty page.",
-        "$extensions": { "com.oryne.font": { "design": "default", "scale": "metrics", "textStyle": "largeTitle" } }
+        "$value": { "fontFamily": "New York", "fontSize": { "value": 20, "unit": "px" }, "fontWeight": 500 },
+        "$description": "A thought's name on the wrist: Today's, and a thought's on its page.",
+        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "native", "textStyle": "title3" } }
+      },
+      "serif": {
+        "$type": "typography",
+        "$value": { "fontFamily": "New York", "fontSize": { "value": 17, "unit": "px" }, "fontWeight": 400, "lineHeight": { "value": 3, "unit": "px" } },
+        "$description": "A Recent row's name, and the user's own words on the wrist.",
+        "$extensions": { "com.oryne.font": { "design": "serif", "scale": "native", "textStyle": "body" } }
+      },
+      "body": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 17, "unit": "px" }, "fontWeight": 400, "lineHeight": { "value": 3, "unit": "px" } },
+        "$description": "A summary under its label; a notice or an instruction that is the screen's whole message; a catch time standing in for a name.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "body" } }
+      },
+      "strong": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 17, "unit": "px" }, "fontWeight": 500 },
+        "$description": "Caught, Undo, the complication's line, the play glyph.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "body" } }
+      },
+      "label": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 14, "unit": "px" }, "fontWeight": 500, "letterSpacing": { "value": 0.4, "unit": "px" } },
+        "$description": "A label on the wrist: Today, Summary.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "footnote" } }
+      },
+      "meta": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 14, "unit": "px" }, "fontWeight": 400, "lineHeight": { "value": 2, "unit": "px" } },
+        "$description": "Status lines, a Recent row's meta, Waiting for iPhone, Continues on iPhone, Getting audio, Listening, the player's time (with monospaced digits).",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "footnote" } }
+      },
+      "timer": {
+        "$type": "typography",
+        "$value": { "fontFamily": "SF Pro", "fontSize": { "value": 20, "unit": "px" }, "fontWeight": 400 },
+        "$description": "The recording timer, with monospaced digits at the call site.",
+        "$extensions": { "com.oryne.font": { "design": "default", "scale": "native", "textStyle": "title3" } }
       }
     }
   },
@@ -249,27 +416,37 @@
 
     "color": {
       "water": {
-        "abyss": { "$type": "color", "$value": "{primitive.water.abyss}", "$description": "The deepest water; ink on an accent fill; the vignette." },
+        "abyss": { "$type": "color", "$value": "{primitive.water.abyss}", "$description": "The deepest water, where every page's water ends; ink on an accent fill." },
+        "waterTop": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.059, 0.051, 0.051], "alpha": 1 }, "$description": "The top of every page's water, where the light comes in: a near-black touched warm." },
+        "waterMiddle": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.039, 0.043, 0.059], "alpha": 1 }, "$description": "The middle of every page's water, cooling as it deepens; below it the water sinks to abyss." },
         "deep": { "$type": "color", "$value": "{primitive.water.deep}" },
         "mid": { "$type": "color", "$value": "{primitive.water.mid}" },
-        "current": { "$type": "color", "$value": "{primitive.water.current}", "$description": "The lit centre of the water; the watch's flat control disc." },
-        "surface": { "$type": "color", "$value": "{primitive.water.surface}", "$description": "The brightest water; an empty page's glyph." }
+        "current": { "$type": "color", "$value": "{primitive.water.current}", "$description": "The watch's flat control disc." },
+        "surface": { "$type": "color", "$value": "{primitive.water.surface}", "$description": "The brightest water." }
       },
       "ink": {
-        "foam": { "$type": "color", "$value": "{primitive.white.92}", "$description": "Titles, a control's words, the user's own words." },
-        "text": { "$type": "color", "$value": "{primitive.white.66}", "$description": "Running text a step below the words: snippets, summaries, the website's reading tone." },
-        "hint": { "$type": "color", "$value": "{primitive.white.58}", "$description": "Placeholder and helper text inside an input: quieter than mist, but it clears 4.5:1 over a field on the glass card (faint measured about 2.2:1)." },
-        "mist": { "$type": "color", "$value": "{primitive.white.50}", "$description": "Meta lines, section labels, a tool's glyph, a quiet control's glyph." },
-        "faint": { "$type": "color", "$value": "{primitive.white.26}", "$description": "The quietest ink: a chevron in content, an Example mark, a note under a field." },
+        "foam": { "$type": "color", "$value": "{primitive.white.92}", "$description": "Titles, a control's words, the user's own typed words, Ask's question and answer, shared text, a notice that is a screen's whole message. 100% with Increase Contrast.", "$extensions": { "com.oryne.contrast": "{primitive.white.100}" } },
+        "text": { "$type": "color", "$value": "{primitive.white.66}", "$description": "Reading a step below the words: summaries, a page's description, previews, Ask's opening line and samples, onboarding paragraphs, and every sentence someone must read (a failure, a refusal, a privacy disclosure, provenance, a consequence). 80% with Increase Contrast.", "$extensions": { "com.oryne.contrast": "{primitive.white.80}" } },
+        "mist": { "$type": "color", "$value": "{primitive.white.58}", "$description": "The quiet ink: meta lines, labels, counts, prompts and placeholders, quiet guidance, empty lines, status lines, quiet Links, tool, state and disclosure glyphs, disabled words. 4.5:1 or more on every ground a word stands on (4.5 at the Reading light's brightest, 5.1 on a tile under it). 72% with Increase Contrast.", "$extensions": { "com.oryne.contrast": "{primitive.white.72}" } },
+        "faint": { "$type": "color", "$value": "{primitive.white.26}", "$description": "Never words and never a glyph that means something: the drawn grabber, the segmented switch's dividers (about 2.2:1). 40% with Increase Contrast.", "$extensions": { "com.oryne.contrast": "{primitive.white.40}" } },
         "onAccent": { "$type": "color", "$value": "{primitive.water.abyss}", "$description": "Ink on the accent fill (a Primary button's label, a badge's count)." },
-        "onPhoto": { "$type": "color", "$value": "{primitive.white.100}", "$description": "Ink laid on a photograph: a remove badge's ✕." }
+        "onPhoto": { "$type": "color", "$value": "{primitive.white.100}", "$description": "Ink laid on a photograph: a remove badge's ✕." },
+        "stageInk": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 0.97, 0.93], "alpha": 1 }, "$description": "White standing in the warm light: today's title on Tide. Not cream: the light tints it, the ink stays white. 12.7:1 at the brightest point under the title." },
+        "stageWords": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 0.97, 0.93], "alpha": 0.84 }, "$description": "The user's own words under today's title on Tide, a step below it. The title's ink, 100%, with Increase Contrast.", "$extensions": { "com.oryne.contrast": "{material.color.ink.stageInk}" } },
+        "depthInk0": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.95, 0.96, 1], "alpha": 0.9 }, "$description": "The depth ladder, level 0: white in the cool water. 14.7:1 on Tide." },
+        "depthInk1": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.95, 0.96, 1], "alpha": 0.76 }, "$description": "The depth ladder, level 1. 10.6:1." },
+        "depthInk2": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.95, 0.96, 1], "alpha": 0.64 }, "$description": "The depth ladder, level 2. 7.7:1." },
+        "depthInk3": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.95, 0.96, 1], "alpha": 0.56 }, "$description": "The depth ladder, level 3. 6.1:1." },
+        "depthInk4": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.95, 0.96, 1], "alpha": 0.52 }, "$description": "The depth ladder, level 4, the floor: every line a person can tap holds 4.5:1 or more (5.3:1)." },
+        "coolInk": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.95, 0.96, 1], "alpha": 1 }, "$description": "White in the cool light: a thought's title on its own page, a current's name on its sheet." },
+        "coolWords": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.95, 0.96, 1], "alpha": 0.84 }, "$description": "The user's own words on their thought's page, a step below the title. The title's ink, 100%, with Increase Contrast.", "$extensions": { "com.oryne.contrast": "{material.color.ink.coolInk}" } }
       },
       "surface": {
-        "fill": { "$type": "color", "$value": "{primitive.white.55}", "$description": "The one flat fill for tiles, fields and link cards. No border, no gradient." },
-        "raised": { "$type": "color", "$value": "{primitive.white.8}", "$description": "A control in the content layer: a Secondary button, an attachment tile, a settings row's separator. A step brighter than a tile so it reads as a control." },
-        "pressedLift": { "$type": "color", "$value": "{primitive.white.4}", "$description": "Added over a surface while it is pressed." },
-        "selected": { "$type": "color", "$value": "{primitive.white.12}", "$description": "The part of a control that is on: the segmented switch's thumb, a chosen chip." },
-        "glassTint": { "$type": "color", "$value": "{primitive.white.18}", "$description": "The faint tint a glass disc takes when it is ready or listening; never a solid light fill." },
+        "fill": { "$type": "color", "$value": "{primitive.white.11}", "$description": "The one flat fill for tiles, fields and link cards. No border, no gradient. 1.32:1 on deep: a tile reads as a thing (5.5% did not)." },
+        "raised": { "$type": "color", "$value": "{primitive.white.14}", "$description": "A control in the content layer: a Secondary button, an attachment tile, a settings row's separator. A step brighter than a tile so it reads as a control." },
+        "pressedLift": { "$type": "color", "$value": "{primitive.white.6}", "$description": "Added over a surface while it is pressed." },
+        "selected": { "$type": "color", "$value": "{primitive.white.19}", "$description": "The part of a control that is on: the segmented switch's thumb, a chosen chip." },
+        "glassTint": { "$type": "color", "$value": "{primitive.white.18}", "$description": "The faint tint on a Primary capsule's glass (Save, Grow, Continue). No disc wears it: the discs are clear glass in every state, and the ring says ready and listening." },
         "separator": { "$type": "color", "$value": "{material.color.surface.raised}", "$description": "A grouped form's row separator." },
         "scrim": { "$type": "color", "$value": "{primitive.black.24}", "$description": "The dim over a page while the capture overlay is up." },
         "toastTint": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.05, 0.055, 0.065], "alpha": 0.85 }, "$description": "The deep water as a tint on a toast's glass, so a message floating over a page reads at once while the material stays glass." },
@@ -278,7 +455,10 @@
       "accent": {
         "accent": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.82, 0.84, 0.88], "alpha": 1 }, "$description": "Soft near-white for interactive accents, kept monochrome: the tint, a Primary fill, the capture glyph, a Link button." },
         "switchOn": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.027, 0.439, 0.910], "alpha": 1 }, "$description": "A switch's on state, #0770E8: a shade deeper and a touch more saturated than system blue, so on reads at a glance against the near-white knob." },
-        "glowWarm": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.95, 0.93, 0.88], "alpha": 1 }, "$description": "Whisper-warm white that sets the one lit thing apart by temperature rather than saturation: the Resurfacing label, the lamp, Beyond your Ocean." }
+        "warm": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 0.77, 0.55], "alpha": 1 }, "$description": "The one warm ink: the word Resurfacing (10.6:1 in the Reading light on Tide; in the widget header), and the ring while it listens and as the capture toast's ring arrives. Never a glyph." },
+        "stageLight": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 0.7, 0.41], "alpha": 1 }, "$description": "The Reading light on the three tabs: on Tide, the warm light that falls on the thought that came back. Light only, drawn at an opacity in a gradient, never as ink." },
+        "warmGlint": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [1, 0.9, 0.78], "alpha": 1 }, "$description": "Where the light catches the listening ring, as it catches the icon's glass rim." },
+        "ring": { "$type": "color", "$value": { "colorSpace": "srgb", "components": [0.68, 0.78, 0.92], "alpha": 1 }, "$description": "The icon's rim, sampled: the ring, the one shape Oryne owns (the capture disc's rim and Ask's send once there is a question, the capture toast's mark, the empty Tide), and the cool light of a page you reached for. 11.2:1 on deep." }
       }
     },
 
@@ -294,7 +474,7 @@
 
   "motion": {
     "$description": "Facet three: how things change. Motion is atmosphere, never information; every fact it implies is reachable through a tap, a label, or the Library. Five motions cover every state change; the lamp's slow choreography on Tide, the microphone's level bars and the sinking words of a caught whisper are art-directed and stay in their views.",
-    "touch": { "$type": "transition", "$value": { "duration": "{primitive.duration.150}", "delay": { "value": 0, "unit": "ms" }, "timingFunction": [0, 0, 0.58, 1] }, "$description": "A control answering a finger: a press, a glyph swap, a tint change on the disc.", "$extensions": { "com.oryne.curve": "easeOut" } },
+    "touch": { "$type": "transition", "$value": { "duration": "{primitive.duration.150}", "delay": { "value": 0, "unit": "ms" }, "timingFunction": [0, 0, 0.58, 1] }, "$description": "A control answering a finger: a press, a glyph swap, the disc's ring changing state.", "$extensions": { "com.oryne.curve": "easeOut" } },
     "quick": { "$type": "transition", "$value": { "duration": "{primitive.duration.180}", "delay": { "value": 0, "unit": "ms" }, "timingFunction": [0, 0, 0.58, 1] }, "$description": "A quick state change: a filter on or off, a bar showing or hiding, the Reduce Motion stand-in for anything slower.", "$extensions": { "com.oryne.curve": "easeOut" } },
     "standard": { "$type": "transition", "$value": { "duration": "{primitive.duration.350}", "delay": { "value": 0, "unit": "ms" }, "timingFunction": [0.25, 0.1, 0.25, 1] }, "$description": "The standard settle: layout, folding, a section opening, a scroll to the top.", "$extensions": { "com.oryne.curve": "smooth" } },
     "lift": { "$type": "transition", "$value": { "duration": { "value": 360, "unit": "ms" }, "delay": { "value": 0, "unit": "ms" }, "timingFunction": [0.25, 0.1, 0.25, 1] }, "$description": "Something floating in or out over the page: a toast, the capture overlay's phases, a reorder, a page turn.", "$extensions": { "com.oryne.curve": "spring", "com.oryne.spring": { "response": 0.36, "dampingFraction": 0.86 } } },

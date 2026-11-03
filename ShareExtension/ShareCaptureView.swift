@@ -9,33 +9,58 @@ struct ShareCaptureView: View {
     let onCancel: () -> Void
 
     @State private var note: String = ""
+    @State private var width: CGFloat = 0
     @FocusState private var focused: Bool
+
+    /// The app's page margin (OceanSpacing.gutter), taken from this sheet's
+    /// own width: an extension cannot reach the app's windows.
+    private var gutter: CGFloat {
+        width >= OceanSpacing.gutterBreakpoint ? OceanSpacing.gutterWide : OceanSpacing.gutterCompact
+    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: OceanSpacing.block) {
                     preview
-                    VStack(alignment: .leading, spacing: OceanSpacing.gap) {
+                    VStack(alignment: .leading, spacing: OceanSpacing.afterLabel) {
+                        // The app's section label (OceanSectionLabel), which
+                        // the extension does not compile.
                         Text("Add a note")
-                            .font(OceanType.eyebrow)
+                            .oceanText(OceanType.sectionLabel)
                             .foregroundStyle(OceanTheme.mist)
-                        TextField("Why does this matter?", text: $note, axis: .vertical)
+                            .padding(.leading, OceanSpacing.hairline)
+                            .accessibilityAddTraits(.isHeader)
+                        TextField("Why does this matter?", text: $note, prompt: Text(verbatim: ""), axis: .vertical)
                             .textFieldStyle(.plain)
                             .focused($focused)
                             .lineLimit(2...6)
-                            .font(OceanType.body)
+                            .oceanFieldText(OceanType.inputWords)
                             .foregroundStyle(OceanTheme.foam)
                             .tint(OceanTheme.accent)
+                            // The app's oceanPrompt, inline: the note is the
+                            // user's words in New York, so its own prompt
+                            // would set Oryne's question in the serif.
+                            .overlay(alignment: .topLeading) {
+                                if note.isEmpty {
+                                    Text("Why does this matter?")
+                                        .oceanText(OceanType.body)
+                                        .foregroundStyle(OceanTheme.mist)
+                                        .allowsHitTesting(false)
+                                        .accessibilityHidden(true)
+                                }
+                            }
                             .padding(.vertical, OceanSpacing.gap)
                             .padding(.horizontal, OceanSpacing.insetCompact)
                             .frame(minHeight: OceanControlSize.height)
                             .background(OceanTheme.fill, in: RoundedRectangle(cornerRadius: OceanRadius.field, style: .continuous))
                     }
                 }
-                .padding(.horizontal, OceanSpacing.gutterCompact)
-                .padding(.vertical, OceanSpacing.inset)
+                .padding(.horizontal, gutter)
+                .padding(.top, OceanSpacing.gap)
+                .padding(.bottom, OceanSpacing.section)
             }
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
             .background(OceanBackground())
             .navigationTitle("Drift into Ocean")
             .navigationBarTitleDisplayMode(.inline)
@@ -44,7 +69,7 @@ struct ShareCaptureView: View {
                     Button("Cancel", action: onCancel)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { onSave(note) }.fontWeight(.semibold)
+                    Button("Save") { onSave(note) }
                 }
             }
         }
@@ -57,19 +82,19 @@ struct ShareCaptureView: View {
         if let data = payload.imageData, let ui = UIImage(data: data) {
             Image(uiImage: ui)
                 .resizable().scaledToFit()
-                .frame(maxHeight: OceanSize.hero + OceanSpacing.section)
+                .frame(maxHeight: OceanSize.hero)
                 .clipShape(RoundedRectangle(cornerRadius: OceanRadius.media, style: .continuous))
         }
         if let url = payload.urlString {
             Label(url, systemImage: "link")
-                .font(OceanType.meta)
-                .foregroundStyle(OceanTheme.mist)
+                .oceanText(OceanType.secondary)
+                .foregroundStyle(OceanTheme.text)
                 .lineLimit(2)
+                .truncationMode(.middle)
         }
         if let text = payload.text, !text.isEmpty {
             Text(text)
-                .font(OceanType.body)
-                .lineSpacing(OceanType.bodyLeading)
+                .oceanText(OceanType.body)
                 .foregroundStyle(OceanTheme.foam)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(OceanSpacing.inset)

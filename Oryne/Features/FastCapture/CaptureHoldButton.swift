@@ -1,17 +1,21 @@
 import SwiftUI
 
-/// The capture disc: a flat matte circle, 44 pt, with the waveform glyph.
-/// Tap to start a whisper and tap its Stop to keep it, as in Voice Memos
-/// and every AI app's dictation; or hold to whisper and lift to keep it.
-/// While a take is live the glyph itself carries the state: bars that move
-/// with the microphone under a finger, a Stop square for a tapped take. No
-/// glow, no ring, no highlight (Philosophy §4). Every instance drives the
-/// shared `CaptureControl`, so the bar's disc and the overlay's disc are
-/// one control.
+/// The capture disc: a glass circle, 44 pt, with the waveform glyph, and
+/// the ring for its rim: the icon's own mark, the one rim in the app
+/// (design/identity-2.1.md, R3; Malik, 2026-11-02, the 2.1 branding). At rest
+/// the ring is a blue hairline, there when looked for; while a take is live
+/// the app's warm light and the ring's blue drift slowly round it
+/// (`OceanDiscRing`, shared with Ask's send). Tap to start a whisper and
+/// tap its Stop to keep it, as in Voice Memos and every AI app's dictation;
+/// or hold to whisper and lift to keep it. The ring carries whether it
+/// listens; the glyph carries the rest: bars that move with the microphone
+/// under a finger, a Stop square for a tapped take. No glow, no halo
+/// (Philosophy §4). Every instance drives the shared `CaptureControl`, so the
+/// bar's disc and the overlay's disc are one control.
 ///
 /// In the open composer the disc is the card's one trailing action: it
 /// whispers while the field is empty, and once there are words it is the
-/// send, in place. Only the glyph (replaced, not moved) and the tint change.
+/// send, in place. Only the glyph (replaced, not moved) and the ring change.
 /// A send that waits for pictures still loading shows the loading tiles'
 /// spinner in the arrow's place until they are in.
 struct CaptureHoldButton: View {
@@ -25,7 +29,7 @@ struct CaptureHoldButton: View {
     /// The disc in the open composer, where VoiceOver calls it Whisper.
     var inComposer = false
     /// The composer's release, once there is something to release: a tap
-    /// sends, and the disc wears the send's tint and arrow. No hold then.
+    /// sends, and the disc wears the send's ring and arrow. No hold then.
     var send: (() -> Void)? = nil
     /// The send was tapped while pictures are still loading: it goes once
     /// they are in.
@@ -45,11 +49,14 @@ struct CaptureHoldButton: View {
 
     var body: some View {
         ZStack {
-            // Glass, like every control; a lighter tint while listening,
-            // and the send's own (OceanPrimaryIconButtonStyle) when ready.
+            // Clear glass in every state, never a grey fill (Malik,
+            // 2026-11-02): ready and listening are said by the ring.
             Color.clear
                 .frame(width: size, height: size)
-                .oceanGlass(in: Circle(), tint: listening || sends ? OceanTheme.glassTint : nil, interactive: false)
+                .oceanGlass(in: Circle(), interactive: false)
+                .opacity(isPressed ? 0.75 : 1)
+
+            OceanDiscRing(listening: listening, ready: sends, level: control.level, size: size)
                 .opacity(isPressed ? 0.75 : 1)
 
             glyph
@@ -89,7 +96,7 @@ struct CaptureHoldButton: View {
     private var glyph: some View {
         if listening && locked {
             Image(systemName: "stop.fill")
-                .font(.system(size: size * 0.32, weight: .medium))
+                .font(.system(size: size * 0.32, weight: .medium)) // art-directed: scales with the disc
                 .foregroundStyle(OceanTheme.foam)
                 .transition(.opacity)
         } else if listening {
@@ -105,7 +112,7 @@ struct CaptureHoldButton: View {
             // arrow where it stands. The arrow is the send's strong glyph;
             // the waveform and Stop scale with the disc (art-directed).
             Image(systemName: sends ? "arrow.up" : "waveform")
-                .font(sends ? OceanType.glyphStrong : .system(size: size * 0.4, weight: .regular))
+                .font(sends ? OceanType.glyphStrong : .system(size: size * 0.4, weight: .regular)) // art-directed: scales with the disc
                 .foregroundStyle(sends ? OceanTheme.foam : OceanTheme.accent)
                 .contentTransition(.symbolEffect(.replace))
                 .transition(.opacity)
@@ -113,6 +120,11 @@ struct CaptureHoldButton: View {
     }
 
     // MARK: Gesture
+
+    /// How far past the disc a finger may slide and still send. A touch
+    /// distance, so its own value: a retune of the spacing ladder never
+    /// moves it.
+    private static let touchReach: CGFloat = 16 // art-directed
 
     /// One DragGesture carries tap, hold and stop, so a press can still
     /// become a hold after it begins.
@@ -125,7 +137,7 @@ struct CaptureHoldButton: View {
                 // The send, like a button, lets go without firing when the
                 // finger slides well off the disc first.
                 let side = max(size, target)
-                let reach = CGRect(x: 0, y: 0, width: side, height: side).insetBy(dx: -OceanSpacing.inset, dy: -OceanSpacing.inset)
+                let reach = CGRect(x: 0, y: 0, width: side, height: side).insetBy(dx: -Self.touchReach, dy: -Self.touchReach)
                 end(inside: reach.contains(value.location))
             }
     }

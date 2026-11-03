@@ -40,7 +40,7 @@ struct WatchCaptureView: View {
                 .accessibilityLabel(Text("Catch a whisper"))
             statusLine
         }
-        .padding(.horizontal)
+        .scenePadding(.horizontal)
     }
 
     @ViewBuilder private var statusLine: some View {
@@ -58,7 +58,7 @@ struct WatchCaptureView: View {
         VStack(spacing: OceanSpacing.gap) {
             if !luminanceReduced {
                 Text("Listening…")
-                    .font(OceanType.note)
+                    .oceanText(OceanWatchType.meta)
                     .foregroundStyle(OceanTheme.mist)
                 WatchWaveform(level: model.recorder.level)
                     .frame(height: 22)
@@ -69,8 +69,9 @@ struct WatchCaptureView: View {
                 .accessibilityLabel(Text("Stop and catch"))
                 .opacity(luminanceReduced ? 0 : 1)     // Always On dims to the timer alone
             Text(Self.timeString(model.recorder.elapsed))
-                .font(.system(.title3, design: .monospaced))
-                .foregroundStyle(OceanTheme.foam.opacity(luminanceReduced ? 0.6 : 1))
+                .monospacedDigit()
+                .oceanText(OceanWatchType.timer)
+                .foregroundStyle(OceanTheme.foam.opacity(luminanceReduced ? 0.6 : 1)) // art-directed: Always On dims the timer
         }
     }
 
@@ -82,11 +83,11 @@ struct WatchCaptureView: View {
                 .font(OceanType.glyphLarge)
                 .foregroundStyle(OceanTheme.accent)
             Text("Caught")
-                .font(OceanType.tileTitle)
+                .oceanText(OceanWatchType.strong)
                 .foregroundStyle(OceanTheme.foam)
             Button { model.undo() } label: {
                 Text("Undo")
-                    .font(OceanType.control)
+                    .oceanText(OceanWatchType.strong)
                     .foregroundStyle(OceanTheme.foam)
                     .padding(.horizontal, OceanSpacing.controlInset)
                     .frame(minHeight: OceanControlSize.height)
@@ -106,11 +107,11 @@ struct WatchCaptureView: View {
                 .font(OceanType.glyphLarge)
                 .foregroundStyle(OceanTheme.mist)
             Text("Allow the microphone for Oryne in Settings on your watch.")
-                .font(OceanType.meta)
-                .foregroundStyle(OceanTheme.text)
+                .oceanText(OceanWatchType.body)
+                .foregroundStyle(OceanTheme.foam)
                 .multilineTextAlignment(.center)
         }
-        .padding(.horizontal)
+        .scenePadding(.horizontal)
     }
 
     private var failed: some View {
@@ -120,13 +121,13 @@ struct WatchCaptureView: View {
                     .font(OceanType.glyphLarge)
                     .foregroundStyle(OceanTheme.mist)
                 Text("Couldn't start. Tap to try again.")
-                    .font(OceanType.meta)
+                    .oceanText(OceanWatchType.body)
                     .foregroundStyle(OceanTheme.foam)
                     .multilineTextAlignment(.center)
             }
         }
         .buttonStyle(.plain)
-        .padding(.horizontal)
+        .scenePadding(.horizontal)
     }
 
     /// Stays until tapped: a failure never fades on its own. The whole
@@ -134,10 +135,10 @@ struct WatchCaptureView: View {
     private var nothingCaught: some View {
         Button { model.dismissNotice() } label: {
             Text("Nothing was caught")
-                .font(OceanType.meta)
+                .oceanText(OceanWatchType.body)
                 .foregroundStyle(OceanTheme.foam)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal)
+                .scenePadding(.horizontal)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .contentShape(Rectangle())
         }
@@ -148,7 +149,7 @@ struct WatchCaptureView: View {
 
     private func caption(_ text: Text) -> some View {
         text
-            .font(OceanType.note)
+            .oceanText(OceanWatchType.meta)
             .foregroundStyle(OceanTheme.mist)
             .multilineTextAlignment(.center)
     }
@@ -158,8 +159,8 @@ struct WatchCaptureView: View {
         ZStack {
             Circle().fill(OceanTheme.current)
             Image(systemName: symbol)
-                // Scales with the disc, as the phone's does (art-directed).
-                .font(.system(size: Self.discSize * 0.34, weight: .semibold))
+                // Scales with the disc, as the phone's does.
+                .font(.system(size: Self.discSize * 0.34, weight: .semibold)) // art-directed
                 .foregroundStyle(OceanTheme.foam)
         }
         .frame(width: Self.discSize, height: Self.discSize)

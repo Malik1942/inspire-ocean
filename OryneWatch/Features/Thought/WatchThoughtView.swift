@@ -13,18 +13,18 @@ struct WatchThoughtView: View {
     }
 
     var body: some View {
-        VStack(spacing: OceanSpacing.tight) {
+        VStack(spacing: OceanSpacing.gap) {
             ScrollView {
                 VStack(alignment: .leading, spacing: OceanSpacing.gap) {
                     if let title = model.row.title {
                         Text(title)
-                            .font(.system(.headline, design: .serif))
+                            .oceanText(OceanWatchType.title)
                             .foregroundStyle(OceanTheme.foam)
                     }
                     reading
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal)
+                .scenePadding(.horizontal)
             }
             if model.audio == .phoneAway || model.audio == .failed {
                 // The failure is the control: it stays until tapped, and
@@ -56,21 +56,23 @@ struct WatchThoughtView: View {
     @ViewBuilder private var reading: some View {
         if let reading = model.row.reading {
             if model.row.readingIsSummary {
+                // Nearer the words it names than the title above.
                 Label("Summary", systemImage: "sparkles")
-                    .font(OceanType.eyebrow)
+                    .oceanText(OceanWatchType.label)
                     .foregroundStyle(OceanTheme.mist)
+                    .padding(.top, OceanSpacing.tight)
             }
             Text(reading)
-                .font(OceanType.body)
-                .foregroundStyle(OceanTheme.text)
+                .oceanText(model.row.readingIsSummary ? OceanWatchType.body : OceanWatchType.serif)
+                .foregroundStyle(model.row.readingIsSummary ? OceanTheme.text : OceanTheme.coolWords)
             if model.row.continues {
                 Text("Continues on iPhone")
-                    .font(OceanType.note)
+                    .oceanText(OceanWatchType.meta)
                     .foregroundStyle(OceanTheme.mist)
             }
         } else if model.row.isVoice && !model.row.hasTranscript {
             Text("Not transcribed yet")
-                .font(OceanType.meta)
+                .oceanText(OceanWatchType.meta)
                 .foregroundStyle(OceanTheme.mist)
         }
     }
@@ -86,33 +88,34 @@ struct WatchThoughtView: View {
                     Text("Couldn't get the audio")
                 }
             }
-            .font(OceanType.meta)
+            .oceanText(OceanWatchType.body)
             .foregroundStyle(OceanTheme.foam)
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(.plain)
-        .padding(.horizontal)
+        .scenePadding(.horizontal)
     }
 
     private var playControl: some View {
         HStack(spacing: OceanSpacing.gap) {
             if model.audio == .fetching {
                 Text("Getting audio…")
-                    .font(OceanType.note)
+                    .oceanText(OceanWatchType.meta)
                     .foregroundStyle(OceanTheme.mist)
             } else {
                 Button { Task { await model.togglePlay() } } label: {
                     Image(systemName: model.isPlaying ? "pause.fill" : "play.fill")
-                        .font(OceanType.control)
+                        .oceanText(OceanWatchType.strong)
                         .foregroundStyle(OceanTheme.foam)
-                        .frame(width: 44, height: 32)
+                        .frame(width: OceanControlSize.height, height: OceanControlSize.height)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(model.isPlaying ? Text("Pause") : Text("Play"))
                 if model.isPlayerOnThis {
                     Text(verbatim: "\(Self.time(model.player.elapsed)) / \(Self.time(model.player.duration))")
-                        .font(.system(.footnote, design: .monospaced))
+                        .monospacedDigit()
+                        .oceanText(OceanWatchType.meta)
                         .foregroundStyle(OceanTheme.mist)
                 }
             }

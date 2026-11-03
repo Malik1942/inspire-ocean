@@ -31,7 +31,7 @@ struct MemoryRecordsView: View {
             if records.isEmpty {
                 Section {
                     Text("Nothing yet.")
-                        .font(OceanType.secondary)
+                        .oceanText(OceanType.secondary)
                         .foregroundStyle(OceanTheme.mist)
                 }
                 .listRowBackground(OceanTheme.fill)
@@ -51,7 +51,7 @@ struct MemoryRecordsView: View {
                                 Spacer(minLength: 0)
                                 if record.userEdited {
                                     Image(systemName: "pencil")
-                                        .font(OceanType.glyphMeta)
+                                        .font(OceanType.glyphDisclosure)
                                         .foregroundStyle(OceanTheme.mist)
                                         .accessibilityLabel("Edited by you")
                                 }
@@ -70,6 +70,9 @@ struct MemoryRecordsView: View {
                     }
                 } header: {
                     Label(group.kind.label, systemImage: group.kind.symbol)
+                        .oceanText(OceanType.sectionLabel)
+                        .foregroundStyle(OceanTheme.mist)
+                        .textCase(nil)
                 }
                 .listRowBackground(OceanTheme.fill)
             }
@@ -99,8 +102,7 @@ struct MemoryRecordsView: View {
         .listRowSeparatorTint(OceanTheme.separator)
         .scrollContentBackground(.hidden)
         .background(OceanBackground(animated: false))
-        .navigationTitle("What Oryne knows about you")
-        .navigationBarTitleDisplayMode(.inline)
+        .oceanInlineTitle("What Oryne knows about you")
         .toolbarBackground(.hidden, for: .navigationBar)
         .alert("In your words", isPresented: Binding(get: { editing != nil }, set: { if !$0 { editing = nil } })) {
             TextField("Text", text: $draft)
