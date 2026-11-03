@@ -1,0 +1,104 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Add an inspiration to ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Add an inspiration to ${applicationName}",
+              "Add to ${applicationName}",
+              "Capture a thought in ${applicationName}",
+              "New drift in ${applicationName}"
+            ]
+          }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "在${applicationName}中记录灵感",
+              "添加到${applicationName}",
+              "在${applicationName}中捕捉一条灵感",
+              "在${applicationName}中记一条新灵感"
+            ]
+          }
+        }
+      }
+    },
+    "Capture this screen in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Capture this screen in ${applicationName}",
+              "Start Context Capture in ${applicationName}"
+            ]
+          }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "用${applicationName}捕捉当前屏幕",
+              "在${applicationName}中开始情境捕捉"
+            ]
+          }
+        }
+      }
+    },
+    "Save this to ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Save this to ${applicationName}",
+              "Save a screenshot to ${applicationName}"
+            ]
+          }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "把这个保存到${applicationName}",
+              "把截图保存到${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Start Fast Capture in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Start Fast Capture in ${applicationName}",
+              "Fast Capture in ${applicationName}",
+              "Catch this in ${applicationName}"
+            ]
+          }
+        },
+        "zh-Hans" : {
+          "stringSet" : {
+            "state" : "needs_review",
+            "values" : [
+              "在${applicationName}中开始快速捕捉",
+              "用${applicationName}快速捕捉",
+              "用${applicationName}记下这个"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.1"
+}
