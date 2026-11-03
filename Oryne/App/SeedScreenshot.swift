@@ -28,7 +28,7 @@ enum SeedScreenshot {
             text: "The orange does not end. It cools into violet before the horizon eats it. Sample this before picking any dusk palette.",
             themes: [light, "visual study"],
             at: days(18),
-            image: sunsetStudy()
+            image: picture("sunset-study", orDraw: sunsetStudy)
         )
         insert(
             context,
@@ -37,7 +37,7 @@ enum SeedScreenshot {
             text: "Streetlights coming on while the sky is still warm. Same sunset gradient, just in the city: peach on brick, then slate.",
             themes: [light, "visual study"],
             at: days(16),
-            image: goldenHour()
+            image: picture("golden-hour", orDraw: goldenHour)
         )
         insert(
             context,
@@ -54,7 +54,7 @@ enum SeedScreenshot {
             text: "The wall goes peach then slate as the sun drops. Worth sampling before I pick the app background.",
             themes: [light, "interior"],
             at: days(9),
-            image: windowDusk()
+            image: picture("desk-at-6pm", orDraw: windowDusk)
         )
 
         // Product / reading / everyday — realistic captures, different meaning.
@@ -67,7 +67,7 @@ enum SeedScreenshot {
             linkDescription: "Guidance and best practices for designing great app experiences.",
             themes: ["user experience", "interface design"],
             at: days(20),
-            image: higPreview()
+            image: picture("cover-interface", orDraw: higPreview)
         )
         insert(
             context,
@@ -86,7 +86,7 @@ enum SeedScreenshot {
             linkDescription: "Notes on attention, collecting, and slow software.",
             themes: ["reading", "collecting"],
             at: days(19),
-            image: arenaPreview()
+            image: picture("cover-collecting", orDraw: arenaPreview)
         )
         insert(
             context,
@@ -169,6 +169,21 @@ enum SeedScreenshot {
         node.createdAt = at
         node.updatedAt = at
         context.insert(node)
+    }
+
+    // MARK: Pictures
+
+    /// The seed's photographs and link covers, generated for the marketing
+    /// and portfolio screens (prompts in design/screenshot-seed/README.md).
+    /// They are read from the checkout this build came from, which a
+    /// simulator can reach, so they never ship in the app. Anywhere else
+    /// (a device, a moved checkout) the drawn banner stands in.
+    private static func picture(_ name: String, orDraw drawn: () -> Data) -> Data {
+        // This file sits at Oryne/App/, two folders below the checkout.
+        let checkout = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let file = checkout.appending(path: "design/screenshot-seed/\(name).jpg")
+        return (try? Data(contentsOf: file)) ?? drawn()
     }
 
     // MARK: Tiny generated banners — enough to read as a photo or a link card.

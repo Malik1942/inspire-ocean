@@ -424,11 +424,13 @@ struct NodeDetailContent: View {
             .accessibilityAddTraits(.isButton)
     }
 
-    /// The meta line's lead on a thought's own page: the kind by name, a
-    /// whisper's length, a branch's kind.
+    /// The meta line's lead on a thought's own page: the kind by name, what
+    /// the reading filed it as, a whisper's length, a branch's kind. A
+    /// category that only names the kind again (a link filed as a link)
+    /// is left out, so the line never says the same word twice.
     private var metaDetail: String {
         var parts = [node.kind.label]
-        if let category = node.category { parts.append(category.label) }
+        if let category = node.category, category.label != node.kind.label { parts.append(category.label) }
         if node.kind == .voice, let data = node.audioData,
            let seconds = AudioDurations.seconds(for: data, id: node.id) {
             parts.append(AudioDurations.format(seconds))
