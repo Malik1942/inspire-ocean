@@ -94,7 +94,7 @@ struct ClusterStreamView: View {
             .tileList()
             .contentMargins(.bottom, OceanSpacing.section, for: .scrollContent)
             .thoughtRemovalToast(removals)
-            .background(PageBackground(light: .cool))
+            .background(PageBackground(light: .soft))
             // Nothing in the bar: the sheet's grabber is its top edge, and a
             // pushed thought brings its own bar with the back button.
             .toolbar(.hidden, for: .navigationBar)
@@ -201,12 +201,12 @@ struct ClusterStreamView: View {
         }
     }
 
-    /// A sheet's name, in the cool light it stands in: coolInk, or mist for
+    /// A sheet's name, white in the Reading light it stands in, or mist for
     /// Adrift, which is no place of its own.
     private var titleText: some View {
         Text(title)
             .oceanText(OceanType.sheetTitle)
-            .foregroundStyle(isAdrift ? OceanTheme.mist : OceanTheme.coolInk)
+            .foregroundStyle(isAdrift ? OceanTheme.mist : OceanTheme.stageInk)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())

@@ -330,19 +330,21 @@ struct OceanSearchField: View {
     }
 }
 
-/// Every page stands on the same water, lit from above (design/identity-2.1.md).
-/// The three tabs stand in the warm Reading light (`StageLight`): Tide, Ask
-/// and the Library are one place, lit the same way (Malik, 2026-11-02). A
-/// page you reached for, a thought or a current you opened, stands in a cool
-/// light from above, the ring's color. Archived has only a faint cool surface
-/// far above. Each light is a gradient across the whole width with no edge to
-/// show. Art-directed: a light's reach and strength are the page's own.
+/// Every page stands on the same water under one lamp, the warm Reading
+/// light (`StageLight`; design/identity-2.1.md). How much of it reaches a
+/// page says how deep the page is: the three tabs stand in all of it, a
+/// thought or a current you opened in a step less, Archived in a trace. One
+/// temperature everywhere (Malik, 2026-11-03): a sheet rises over a tab, so
+/// a second, cool light met the tab's warm one at the sheet's edge and read
+/// as two rooms. The light keeps the lamp's place in every page, so it
+/// carries on across a sheet's top edge. Art-directed: how much reaches a
+/// page is the page's own.
 struct PageBackground: View {
     enum Light {
-        /// A tab: the Reading light, Tide's own.
-        case warm
-        /// A page you opened: a thought, a current.
-        case cool
+        /// A tab: the whole Reading light, Tide's own.
+        case full
+        /// A page you opened over a tab: a thought, a current.
+        case soft
         /// Archived, under the depth.
         case faint
         case none
@@ -353,32 +355,12 @@ struct PageBackground: View {
     var body: some View {
         ZStack {
             OceanBackground()
-            if light == .warm { StageLight() }
-            GeometryReader { geo in
-                switch light {
-                case .cool:
-                    // An ellipse 90% as wide as the screen and 40% as tall,
-                    // centered on the top edge.
-                    EllipticalGradient(
-                        stops: [.init(color: OceanTheme.ring.opacity(0.16), location: 0), // art-directed: the light
-                                .init(color: OceanTheme.ring.opacity(0.05), location: 0.55), // art-directed: the light
-                                .init(color: .clear, location: 0.88)],
-                        center: .top, startRadiusFraction: 0, endRadiusFraction: 0.9
-                    )
-                    .frame(width: geo.size.width, height: geo.size.height * 0.4 / 0.9)
-                case .faint:
-                    EllipticalGradient(
-                        stops: [.init(color: OceanTheme.ring.opacity(0.07), location: 0), // art-directed: the light
-                                .init(color: .clear, location: 0.85)],
-                        center: .top, startRadiusFraction: 0, endRadiusFraction: 1
-                    )
-                    .frame(width: geo.size.width, height: geo.size.height * 0.22)
-                case .warm, .none:
-                    Color.clear
-                }
+            switch light {
+            case .full: StageLight()
+            case .soft: StageLight(dim: 0.7) // art-directed: the light
+            case .faint: StageLight(dim: 0.3) // art-directed: the light
+            case .none: EmptyView()
             }
-            .ignoresSafeArea()
-            .allowsHitTesting(false)
         }
     }
 }

@@ -490,12 +490,13 @@ extension OceanTheme {
     static let onAccent = Color(.sRGB, red: 0.02, green: 0.02, blue: 0.03, opacity: 1)
     /// Ink laid on a photograph: a remove badge's ✕.
     static let onPhoto = Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 1)
-    /// White standing in the warm light: today's title on Tide. Not cream: the
-    /// light tints it, the ink stays white. 12.7:1 at the brightest point under the
-    /// title.
+    /// White standing in the warm light: today's title on Tide, a thought's title
+    /// on its own page, a current's name on its sheet. Not cream: the light tints
+    /// it, the ink stays white. 12.7:1 at the brightest point under the title.
     static let stageInk = Color(.sRGB, red: 1, green: 0.97, blue: 0.93, opacity: 1)
-    /// The user's own words under today's title on Tide, a step below it. The
-    /// title's ink, 100%, with Increase Contrast.
+    /// The user's own words in the warm light, a step below the title: under
+    /// today's title on Tide, and on their thought's page. The title's ink, 100%,
+    /// with Increase Contrast.
     static let stageWords = OceanTheme.contrasting(Color(.sRGB, red: 1, green: 0.97, blue: 0.93, opacity: 0.84), increased: Color(.sRGB, red: 1, green: 0.97, blue: 0.93, opacity: 1))
     /// The depth ladder, level 0: white in the cool water. 14.7:1 on Tide.
     static let depthInk0 = Color(.sRGB, red: 0.95, green: 0.96, blue: 1, opacity: 0.9)
@@ -508,11 +509,12 @@ extension OceanTheme {
     /// The depth ladder, level 4, the floor: every line a person can tap holds
     /// 4.5:1 or more (5.3:1).
     static let depthInk4 = Color(.sRGB, red: 0.95, green: 0.96, blue: 1, opacity: 0.52)
-    /// White in the cool light: a thought's title on its own page, a current's name
-    /// on its sheet.
+    /// White on the watch, where no lamp falls: what coolWords steps up to with
+    /// Increase Contrast. The phone's pages all stand in the warm light and take
+    /// stageInk.
     static let coolInk = Color(.sRGB, red: 0.95, green: 0.96, blue: 1, opacity: 1)
-    /// The user's own words on their thought's page, a step below the title. The
-    /// title's ink, 100%, with Increase Contrast.
+    /// The user's own words on the watch, a step below white. coolInk, 100%, with
+    /// Increase Contrast.
     static let coolWords = OceanTheme.contrasting(Color(.sRGB, red: 0.95, green: 0.96, blue: 1, opacity: 0.84), increased: Color(.sRGB, red: 0.95, green: 0.96, blue: 1, opacity: 1))
     /// The one flat fill for tiles, fields and link cards. No border, no gradient.
     /// 1.32:1 on deep: a tile reads as a thing (5.5% did not).
@@ -558,8 +560,7 @@ extension OceanTheme {
     static let warmGlint = Color(.sRGB, red: 1, green: 0.9, blue: 0.78, opacity: 1)
     /// The icon's rim, sampled: the ring, the one shape Oryne owns (the capture
     /// disc's rim and Ask's send once there is a question, the capture toast's
-    /// mark, the empty Tide), and the cool light of a page you reached for. 11.2:1
-    /// on deep.
+    /// mark, the empty Tide). A mark, never a light. 11.2:1 on deep.
     static let ring = Color(.sRGB, red: 0.68, green: 0.78, blue: 0.92, opacity: 1)
 }
 

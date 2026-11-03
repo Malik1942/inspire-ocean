@@ -45,7 +45,7 @@ struct AskView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                PageBackground(light: .warm)
+                PageBackground(light: .full)
                 transcript
                 ShoreGradient()
             }
