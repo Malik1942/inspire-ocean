@@ -156,24 +156,33 @@ struct ResurfacingPicture<Caption: View>: View {
         .allowsHitTesting(false)
     }
 
-    /// The abyss behind the caption on a light picture: clear above 30% of
-    /// the stage, as dark as the picture needs from 45% down to its foot. A
-    /// caption that stands higher (a long title at a larger text size, a
-    /// shorter stage) takes both stops up with its top, so none of its
-    /// words stands above the dark.
+    /// The abyss behind the caption on a light picture: rising from the
+    /// stage's top to as dark as the picture needs where the caption's top
+    /// stands, and holding to its foot, so none of its words stands above
+    /// the dark and the picture keeps its light everywhere above them.
     @ViewBuilder
     private var captionScrim: some View {
         let strength = Self.captionStrength(foot?.captionGray)
         if strength > 0 {
-            let fade: CGFloat = 0.15 // art-directed: the caption scrim
-            let full = min(0.45, max(fade, 1 - standing / height)) // art-directed: the caption scrim
-            LinearGradient(stops: [
-                .init(color: OceanTheme.abyss.opacity(0), location: full - fade), // art-directed: the caption scrim
-                .init(color: OceanTheme.abyss.opacity(strength), location: full), // art-directed: the caption scrim
-                .init(color: OceanTheme.abyss.opacity(strength), location: 1)
-            ], startPoint: .top, endPoint: .bottom)
-            .allowsHitTesting(false)
+            let full = max(0.15, 1 - standing / height) // art-directed: the caption scrim
+            LinearGradient(stops: Self.captionStops(strength: strength, full: full), startPoint: .top, endPoint: .bottom)
+                .allowsHitTesting(false)
         }
+    }
+
+    /// The caption scrim's rise, eased at both ends over the whole stage
+    /// above `full`: a straight ramp over 15% of the stage, up to 62% dark
+    /// on a near-white picture, read as a hard edge across it rather than
+    /// the water rising. The ease lingers near clear at the top, so the
+    /// picture's light holds there (Malik, 2026-11-03).
+    private static func captionStops(strength: CGFloat, full: CGFloat) -> [Gradient.Stop] {
+        let steps = 12
+        let rise = (0...steps).map { step -> Gradient.Stop in
+            let t = CGFloat(step) / CGFloat(steps)
+            let eased = pow(t * t * (3 - 2 * t), 1.6) // art-directed: the caption scrim's rise
+            return .init(color: OceanTheme.abyss.opacity(strength * eased), location: full * t)
+        }
+        return rise + [.init(color: OceanTheme.abyss.opacity(strength), location: 1)]
     }
 
     /// The abyss carried on below the stage, under the words: the caption's
