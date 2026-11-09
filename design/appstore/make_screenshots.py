@@ -8,7 +8,7 @@ tide.png, capture.png, fast-capture.png, current.png, ask.png, library.png,
 detail.png. Output is 1320x2868 (the 6.9-inch size App Store Connect asks for).
 
 The last shot, 08-watch, needs no capture from <screens-dir>: it shows the
-watch app's own screen (design/appstore/2.0/watch/en/03-in-your-ocean.png) as a
+watch app's own screen (design/appstore/2.2/watch/en/03-in-your-ocean.png) as a
 clean rounded display, with no frame, on the same background and caption.
 
 usage: python3 design/appstore/make_screenshots.py --ipad <ipad-screens-dir> <out-dir>
@@ -28,7 +28,7 @@ the phone's top half sit inside both.
 import sys
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parents[2]
 FRAME = ROOT / "website/assets/img/phone-frame.webp"
@@ -44,7 +44,7 @@ LINE_GAP = 1.16
 # Order is the listing's order: the first screen sells the app.
 SHOTS = [
     ("tide", "Catch ideas before", "they drift away."),
-    ("capture", "Tap to type.", "Hold to speak."),
+    ("capture", "Tap to type.", "Tap the disc to speak."),
     ("fast-capture", "One press.", "Already listening."),
     ("current", "Your ideas", "organize themselves."),
     ("ask", "Ask your ideas", "anything."),
@@ -54,7 +54,7 @@ SHOTS = [
 
 # The wrist shot follows the seven above (08). Its screen is the watch app's
 # own capture, committed beside it, not a phone capture from <screens-dir>.
-WATCH_SCREEN = ROOT / "design/appstore/2.0/watch/en/03-in-your-ocean.png"
+WATCH_SCREEN = ROOT / "design/appstore/2.2/watch/en/03-in-your-ocean.png"
 WATCH_WIDTH = 1000                # a little under the phone frame's width
 WATCH_RADIUS = 0.20               # corner radius as a share of the display's width
 # The watch app's own background is the same abyss as this canvas, so with no
@@ -72,7 +72,7 @@ IPAD_RADIUS = 0.035               # iPad Pro's display corner, as a share of its
 IPAD_CAPTION_SIZE = 132
 
 HERO_SIZE = (5244, 2950)
-HERO_SHOT = ROOT / "design/appstore/2.0/01-tide.png"
+HERO_SHOT = ROOT / "design/appstore/2.2/01-tide.png"
 HERO_PHONE_WIDTH = 1240
 HERO_PHONE_TOP = 1330
 # On iPhone the header shows only about x 1150 to 4090 and y 0 to 1900, with the
@@ -97,6 +97,13 @@ def phone(screen: Image.Image) -> Image.Image:
     inner = (w - 2 * left, h - 2 * top)
     body = Image.new("RGBA", frame.size, (0, 0, 0, 0))
     body.paste(screen.convert("RGB").resize(inner, Image.LANCZOS), (left, top))
+    # The screen is a rectangle and the frame's corners are round, so a bright
+    # picture would show past them. Clear whatever lies outside the frame's
+    # silhouette, grown a little so the cut ends under the opaque rim.
+    silhouette = frame.getchannel("A").point(lambda a: 255 if a >= 128 else 0)
+    ImageDraw.floodfill(silhouette, (0, 0), 128)
+    outside = silhouette.point(lambda v: 255 if v == 128 else 0).filter(ImageFilter.MaxFilter(11))
+    body.paste((0, 0, 0, 0), mask=outside)
     body.alpha_composite(frame)
     scale = FRAME_WIDTH / w
     return body.resize((FRAME_WIDTH, round(h * scale)), Image.LANCZOS)

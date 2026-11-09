@@ -62,21 +62,10 @@ final class LiveTranscriber {
     private var taskGeneration = 0
     private(set) var currentURL: URL?
 
-    /// Finished segments of the take. On-device recognition resets its
-    /// hypothesis after a silence gap — the partials that follow carry only
-    /// the new utterance — so every closed segment is banked here, out of
-    /// the recognizer's reach.
-    private var committedSegments: [String] = []
-    /// The live hypothesis for the current segment. Volatile by design:
-    /// partials legitimately rewrite it wholesale (words included), so it is
-    /// only trusted once a commit trigger in `handle` banks it.
-    private var currentHypothesis = ""
-    /// The last committed segment came from a segment-final (metadata)
-    /// result. endAudio()'s final usually re-delivers that same segment
-    /// improved — punctuation, corrected words — so the final must replace
-    /// the segment, not append a near-duplicate. Cleared the moment new
-    /// words arrive: from then on the final describes the new segment.
-    private var lastSegmentReplaceableByFinal = false
+    /// The take's words, banked segment by segment: on-device recognition
+    /// resets its hypothesis after a silence gap, so every closed segment is
+    /// kept out of the recognizer's reach (`TranscriptSegments`).
+    private var segments = TranscriptSegments()
     /// Consecutive mid-take restarts with no result in between. The cap
     /// turns a genuinely broken recognizer into recording-only instead of a
     /// restart loop.
@@ -289,7 +278,7 @@ final class LiveTranscriber {
     /// (empty when recognition was unavailable). The file at `currentURL`
     /// holds the finished audio.
     func stop() async -> (audioURL: URL?, transcript: String) {
-        guard isRecording else { return (currentURL, composedTranscript) }
+        guard isRecording else { return (currentURL, segments.text) }
 
         removeInterruptionObservers()
         engine.inputNode.removeTap(onBus: 0)
@@ -322,7 +311,7 @@ final class LiveTranscriber {
         }
         teardownRecognition()
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-        return (currentURL, composedTranscript)
+        return (currentURL, segments.text)
     }
 
     /// Stops and deletes the recording — nothing entered the Ocean.
@@ -337,7 +326,7 @@ final class LiveTranscriber {
     // MARK: Recognition plumbing
 
     /// The commit-trigger state machine. Partials legitimately rewrite the
-    /// current hypothesis wholesale, so it is banked into `committedSegments`
+    /// current hypothesis wholesale, so it is banked into `segments`
     /// only on the explicit end-of-segment signals:
     ///
     /// - segment-final (`speechRecognitionMetadata`): on-device recognition
@@ -362,74 +351,33 @@ final class LiveTranscriber {
             let lowConfidence = Self.isLowConfidence(result.bestTranscription)
             if result.isFinal {
                 if lowConfidence {
-                    currentHypothesis = ""
+                    segments.dropHypothesis()
                 } else if text.isEmpty {
                     // The final pass can return an empty hypothesis for faint
                     // audio — never let it erase words the partials already
                     // heard. The task is over, so bank them now.
-                    commitCurrentHypothesis()
+                    segments.commitHypothesis()
                 } else {
-                    commitFinal(text)
+                    segments.commitFinal(text)
                 }
                 if isRecording { restartRecognition() } else { resolveFinal() }
             } else if result.speechRecognitionMetadata != nil {
-                if lowConfidence { currentHypothesis = "" } else { commitSegment(text) }
-            } else if !text.isEmpty {
-                currentHypothesis = text
-                // New words after a segment commit: the eventual final now
-                // describes this segment, not the committed one.
-                lastSegmentReplaceableByFinal = false
+                if lowConfidence { segments.dropHypothesis() } else { segments.commitSegment(text) }
+            } else {
+                segments.hypothesize(text)
             }
-            if isRecording { partial = composedTranscript }
+            if isRecording { partial = segments.text }
         }
         if error != nil {
             if isRecording {
                 // The dead task's words won't be re-delivered — bank them
                 // before the replacement task's partials can overwrite.
-                commitCurrentHypothesis()
+                segments.commitHypothesis()
                 restartRecognition()
             } else {
                 resolveFinal()
             }
         }
-    }
-
-    /// Segment-final: on-device recognition endpointed on a silence. Bank the
-    /// segment so the restarted-from-empty partials that follow can't wipe it.
-    @MainActor
-    private func commitSegment(_ text: String) {
-        let segment = text.isEmpty ? currentHypothesis : text
-        guard !segment.isEmpty else { return }
-        committedSegments.append(segment)
-        currentHypothesis = ""
-        // endAudio()'s final usually re-delivers this same segment improved
-        // (punctuation, corrected words) — it must replace, not append.
-        lastSegmentReplaceableByFinal = true
-    }
-
-    /// A task's non-empty final result: it either re-delivers the last
-    /// metadata-committed segment improved (replace it) or closes the segment
-    /// the partials were still drafting (append it).
-    @MainActor
-    private func commitFinal(_ text: String) {
-        if lastSegmentReplaceableByFinal, !committedSegments.isEmpty {
-            committedSegments[committedSegments.count - 1] = text
-        } else {
-            committedSegments.append(text)
-        }
-        currentHypothesis = ""
-        lastSegmentReplaceableByFinal = false
-    }
-
-    /// Banks the live hypothesis as-is, for task ends that deliver no final
-    /// text (errors, empty finals).
-    @MainActor
-    private func commitCurrentHypothesis() {
-        guard !currentHypothesis.isEmpty else { return }
-        committedSegments.append(currentHypothesis)
-        currentHypothesis = ""
-        // A replacement task never heard this audio; its final must append.
-        lastSegmentReplaceableByFinal = false
     }
 
     /// The recognizer ended its task mid-take (isFinal after a long pause, or
@@ -484,49 +432,7 @@ final class LiveTranscriber {
     }
 
     private func resetTranscript() {
-        committedSegments = []
-        currentHypothesis = ""
-        lastSegmentReplaceableByFinal = false
-    }
-
-    /// Committed segments ⧺ the live hypothesis — the transcript as it
-    /// stands right now; what `partial` mirrors and `stop()` returns.
-    private var composedTranscript: String {
-        var segments = committedSegments
-        if !currentHypothesis.isEmpty { segments.append(currentHypothesis) }
-        return Self.joined(segments)
-    }
-
-    /// Segments join with a single space, except across a CJK boundary:
-    /// 中文 reads wrong with spaces injected between characters.
-    private static func joined(_ segments: [String]) -> String {
-        segments.reduce(into: "") { joined, raw in
-            let segment = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !segment.isEmpty else { return }
-            if joined.isEmpty {
-                joined = segment
-            } else if isCJK(joined.last), isCJK(segment.first) {
-                joined += segment
-            } else {
-                joined += " " + segment
-            }
-        }
-    }
-
-    /// CJK ideographs and full-width punctuation — the scripts written
-    /// without inter-word spaces that this app ships (zh).
-    private static func isCJK(_ character: Character?) -> Bool {
-        guard let scalar = character?.unicodeScalars.first else { return false }
-        switch scalar.value {
-        case 0x3000...0x303F,   // CJK symbols and punctuation (。、「」)
-             0x3400...0x4DBF,   // CJK extension A
-             0x4E00...0x9FFF,   // CJK unified ideographs
-             0xF900...0xFAFF,   // CJK compatibility ideographs
-             0xFF00...0xFF65:   // full-width forms (，！？)
-            return true
-        default:
-            return false
-        }
+        segments = TranscriptSegments()
     }
 
     @MainActor
@@ -559,8 +465,8 @@ final class LiveTranscriber {
     @MainActor
     private func modernVolatile(_ text: String) {
         guard isRecording else { return }
-        currentHypothesis = text
-        partial = composedTranscript
+        segments.hypothesize(text)
+        partial = segments.text
     }
 
     /// A finalized analyzer result: the segment is settled. SpeechAnalyzer
@@ -570,9 +476,8 @@ final class LiveTranscriber {
     private func modernFinal(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        committedSegments.append(trimmed)
-        currentHypothesis = ""
-        partial = composedTranscript
+        segments.commitSegment(trimmed)
+        partial = segments.text
     }
 
     /// Below this mean segment confidence, a confidence-bearing legacy result is
