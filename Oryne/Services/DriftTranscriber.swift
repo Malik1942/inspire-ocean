@@ -95,15 +95,23 @@ final class DriftTranscriber {
 
     /// A single locale's pass over the file, packaged with the signals the
     /// scorer needs. `nil` only when the recognizer for `locale` is
-    /// unavailable or the task errors — an empty-but-successful result comes
-    /// back as a candidate with an empty transcript so the scorer can judge it.
+    /// unavailable or the task errors before hearing anything — an
+    /// empty-but-successful result comes back as a candidate with an empty
+    /// transcript so the scorer can judge it.
+    ///
+    /// On-device recognition resets after every pause, and the final result
+    /// describes only the last segment: the words are banked segment by
+    /// segment (`TranscriptSegments`), the same way the live take banks them,
+    /// or a whisper of several paragraphs comes back as its last sentence.
     private func recognize(url: URL, locale: Locale, duration: TimeInterval, vocabulary: [String]) async -> TranscriptCandidate? {
         guard let recognizer = SFSpeechRecognizer(locale: locale), recognizer.isAvailable else {
             return nil
         }
 
         let request = SFSpeechURLRecognitionRequest(url: url)
-        request.shouldReportPartialResults = false
+        // Partials keep the segment in progress, so an error mid-segment
+        // still leaves its words to bank.
+        request.shouldReportPartialResults = true
         if !vocabulary.isEmpty { request.contextualStrings = vocabulary }
         if recognizer.supportsOnDeviceRecognition {
             request.requiresOnDeviceRecognition = true
@@ -111,27 +119,38 @@ final class DriftTranscriber {
 
         return await withCheckedContinuation { continuation in
             var finished = false
+            var words = TranscriptSegments()
             recognizer.recognitionTask(with: request) { result, error in
-                if let error {
-                    if !finished { finished = true; continuation.resume(returning: nil) }
-                    _ = error
-                    return
-                }
-                guard let result, result.isFinal else { return }
-                if !finished {
-                    finished = true
+                guard !finished else { return }
+                if let result {
                     let best = result.bestTranscription
-                    let segments = best.segments
-                    let averageConfidence = segments.isEmpty
-                        ? 0
-                        : segments.map { Double($0.confidence) }.reduce(0, +) / Double(segments.count)
-                    continuation.resume(returning: TranscriptCandidate(
-                        locale: locale,
-                        transcript: best.formattedString,
-                        averageConfidence: averageConfidence,
-                        audioDuration: duration
-                    ))
+                    let text = best.formattedString
+                    let confidences = best.segments.map(\.confidence)
+                    if result.isFinal {
+                        // An empty final never erases words already heard.
+                        if text.isEmpty { words.commitHypothesis() } else { words.commitFinal(text, confidences: confidences) }
+                    } else if result.speechRecognitionMetadata != nil {
+                        words.commitSegment(text, confidences: confidences)
+                    } else {
+                        words.hypothesize(text)
+                    }
                 }
+                guard result?.isFinal == true || error != nil else { return }
+                finished = true
+                if error != nil {
+                    // The task died; what it heard before dying still counts.
+                    words.commitHypothesis()
+                    guard !words.text.isEmpty else {
+                        continuation.resume(returning: nil)
+                        return
+                    }
+                }
+                continuation.resume(returning: TranscriptCandidate(
+                    locale: locale,
+                    transcript: words.text,
+                    averageConfidence: words.averageConfidence,
+                    audioDuration: duration
+                ))
             }
         }
     }
