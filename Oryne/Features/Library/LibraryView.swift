@@ -17,6 +17,8 @@ struct LibraryView: View {
     @Environment(\.oceanAI) private var ai
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.isBigScreen) private var isBigScreen
+    @Environment(CaptureControl.self) private var control
     @Query(sort: \Node.createdAt, order: .reverse) private var allNodes: [Node]
 
     @State private var search = ""
@@ -48,6 +50,9 @@ struct LibraryView: View {
     @State private var path = NavigationPath()
     /// A thought opened from the Library: it rises, as from Tide.
     @State private var openedNode: Node?
+    /// A current opened beside the page on a split iPhone Duo. Elsewhere
+    /// Currents opens it as its own sheet.
+    @State private var openedStream: StreamSelection?
     /// The way back from a row swiped away in Currents.
     @State private var removals = ThoughtRemovals()
     /// Bumped to bring the page back to its top (Tide's "All currents").
@@ -76,11 +81,46 @@ struct LibraryView: View {
     /// spacing never moves it.
     private static let surfaceRise: CGFloat = 24 // art-directed
 
+    /// The grid's width inside the gutters, read for the columns a big
+    /// screen holds.
+    @State private var gridWidth: CGFloat = 0
+
+    /// The narrowest a card stands when a big screen adds columns.
+    private static let cardLeast: CGFloat = 240
+
+    /// The page's size, and whether the screen folds down it (iPhone Duo).
+    @State private var pageSize: CGSize = .zero
+    @State private var folds = false
+
+    /// iPhone Duo's inner display, turned: its two halves read as two
+    /// screens, so a thought or a current opens on the trailing one and the
+    /// page keeps to the leading one while it is open.
+    private var opensBeside: Bool {
+        isBigScreen && folds && BigScreen.splits(pageSize)
+    }
+
+    /// While something is open beside it, how far the page stops short of
+    /// its trailing edge: half the page, as Tide's halves stand.
+    private var besideOpened: CGFloat {
+        guard opensBeside, openedNode != nil || openedStream != nil else { return 0 }
+        return pageSize.width / 2
+    }
+
+    /// The tab bar stands upright beside the page (iPhone Duo): the page's
+    /// tools join the system's own column there, under the status bar as
+    /// Tide's gear does, instead of floating on the title's line.
+    private var toolsInNav: Bool { control.tabBarEdge == .side }
+
     /// The masonry's columns: the stored density, or one column at
     /// accessibility sizes, where two would leave each card a word a line.
-    /// The stored preference is untouched.
+    /// A big screen adds as many as fit with every card at least
+    /// `cardLeast` wide (three on iPhone Duo's inner display turned, four
+    /// on an 11 inch iPad turned). The stored preference is untouched.
     private var gridColumns: Int {
-        typeSize.isAccessibilitySize ? 1 : columns
+        guard !typeSize.isAccessibilitySize else { return 1 }
+        guard isBigScreen, gridWidth > 0 else { return columns }
+        let fit = Int((gridWidth + OceanSpacing.item) / (Self.cardLeast + OceanSpacing.item))
+        return max(columns, fit)
     }
 
     enum Segment: String { case recent, currents }
@@ -115,11 +155,19 @@ struct LibraryView: View {
         NavigationStack(path: $path) {
             ZStack {
                 PageBackground(light: .full)
-                switch segment {
-                case .recent: grid
-                case .currents: currents
+                Group {
+                    switch segment {
+                    case .recent: grid
+                    case .currents: currents
+                    }
                 }
+                .padding(.trailing, besideOpened)
                 ShoreGradient()
+            }
+            .background {
+                Color.clear
+                    .onGeometryChange(for: CGSize.self) { $0.size } action: { pageSize = $0 }
+                    .onGeometryChange(for: Bool.self) { BigScreen.folds(in: $0) } action: { folds = $0 }
             }
             // A tap in open space folds the search keyboard, as open water
             // does in the capture overlay. Cards and buttons keep their taps.
@@ -128,9 +176,21 @@ struct LibraryView: View {
             .modifier(TopBar { topBar })
             .navigationTitle("Library")
             // The page draws its own bar, so the tools and the search field
-            // can be one shape that changes (Tide keeps the system's).
-            .toolbar(.hidden, for: .navigationBar)
-            .sheet(item: $openedNode) { ExpandedNodeView(node: $0) }
+            // can be one shape that changes (Tide keeps the system's). Beside
+            // an upright tab bar the system's column holds the tools instead,
+            // and the page's title stays its own.
+            .toolbar(toolsInNav ? .automatic : .hidden, for: .navigationBar)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(removing: .title)
+            .toolbar {
+                if toolsInNav { navTools }
+            }
+            // On a split iPhone Duo it stands beside the page instead (the
+            // pane below); a sheet everywhere else.
+            .sheet(item: Binding(get: { opensBeside ? nil : openedNode },
+                                 set: { if !opensBeside || $0 != nil { openedNode = $0 } })) {
+                ExpandedNodeView(node: $0)
+            }
             // The system alert, as on a thought's page.
             .alert(
                 "Delete this thought?",
@@ -169,6 +229,32 @@ struct LibraryView: View {
             .task { await engageScreenshotRelatedIfNeeded() }
             #endif
         }
+        // On a split iPhone Duo a thought or a current stands in the
+        // trailing half while the page keeps to the leading one: two
+        // screens, not a sheet over both. One at a time: opening one puts
+        // the other away.
+        .overlay(alignment: .trailing) {
+            Group {
+                if opensBeside, let opened = openedNode {
+                    ExpandedNodeView(node: opened)
+                        .id(opened.id)
+                        .environment(\.closePane) { openedNode = nil }
+                        .environment(\.paneSide, .trailing)
+                        .frame(width: pageSize.width / 2)
+                        .transition(.opacity)
+                } else if opensBeside, let stream = openedStream {
+                    ClusterStreamView(theme: stream.theme)
+                        .id(stream.id)
+                        .environment(\.closePane) { openedStream = nil }
+                        .environment(\.paneSide, .trailing)
+                        .frame(width: pageSize.width / 2)
+                        .transition(.opacity)
+                }
+            }
+            .animation(OceanMotion.standard, value: opensBeside ? openedNode?.id.uuidString ?? openedStream?.id : nil)
+        }
+        .onChange(of: openedNode?.id) { _, id in if id != nil { openedStream = nil } }
+        .onChange(of: opensBeside) { _, beside in if !beside { openedStream = nil } }
         .settlesThoughtRemovals(removals)
     }
 
@@ -342,6 +428,7 @@ struct LibraryView: View {
                         }
                     }
                 }
+                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { gridWidth = $0 }
                 .padding(.horizontal, OceanSpacing.gutter)
                 .padding(.bottom, OceanSpacing.gap)
                 .padding(.bottom, FastCaptureLayout.pageClearance)
@@ -370,6 +457,10 @@ struct LibraryView: View {
 
     private var currents: some View {
         LibraryCurrents(nodes: allNodes, search: search, kind: kind, open: { openedNode = $0 },
+                        openStream: opensBeside ? { (theme: String) in
+                            openedNode = nil
+                            openedStream = StreamSelection(theme: theme)
+                        } : nil,
                         removals: removals, topRequest: topRequest) {
             header
         } empty: {
@@ -411,8 +502,19 @@ struct LibraryView: View {
     /// grows into the field and the ✕ separates from it, so opening and
     /// closing is one shape changing on one spring. The bar keeps its 44 pt,
     /// like the system's toolbars, so the searched words stop growing at
-    /// the first accessibility size, where one line still fits it.
+    /// the first accessibility size, where one line still fits it. With the
+    /// tools in the system's column (`toolsInNav`) the bar is only the
+    /// field, while searching.
+    @ViewBuilder
     private var topBar: some View {
+        if toolsInNav && !searching {
+            EmptyView()
+        } else {
+            searchBar
+        }
+    }
+
+    private var searchBar: some View {
         SearchGlassContainer {
             HStack(spacing: OceanSpacing.item) {
                 if searching {
@@ -690,6 +792,57 @@ struct LibraryView: View {
         .fixedSize()
     }
 
+    /// The same tools as the system's own items, for the column beside an
+    /// upright tab bar: search, how the page is arranged (a glyph cell for
+    /// each), then the filter.
+    @ToolbarContentBuilder
+    private var navTools: some ToolbarContent {
+        ToolbarItemGroup(placement: .topBarTrailing) {
+            Button(action: startSearch) {
+                Label("Search", systemImage: "magnifyingglass")
+            }
+            arrangement(.recent, title: "Recent", systemImage: "square.grid.2x2")
+            arrangement(.currents, title: "Currents", systemImage: "water.waves")
+            Menu {
+                Picker("Kind", selection: $kind.animation(OceanMotion.quick)) {
+                    ForEach(LibraryKind.allCases) { option in
+                        Label(option.label, systemImage: option.symbol).tag(option)
+                    }
+                }
+            } label: {
+                Label("Filter", systemImage: "line.3.horizontal.decrease")
+            }
+            .accessibilityIdentifier("library.filter")
+        }
+        .standingUpright()
+    }
+
+    /// One arrangement as a glyph cell in the system's column, lit as the
+    /// page's own switch lights its cells: the thumb's quiet fill behind a
+    /// foam glyph, mist when off, never the system toggle's solid fill.
+    private func arrangement(_ value: Segment, title: LocalizedStringKey, systemImage: String) -> some View {
+        let on = segment == value
+        return Button {
+            withAnimation(reduceMotion ? OceanMotion.quick : OceanMotion.standard) { segment = value }
+        } label: {
+            Image(systemName: systemImage)
+                .font(OceanType.glyph)
+                .foregroundStyle(on ? OceanTheme.foam : OceanTheme.mist)
+                .frame(width: OceanControlSize.height, height: OceanControlSize.height)
+                .background {
+                    if on {
+                        Capsule()
+                            .fill(OceanTheme.selected)
+                            .padding(OceanSpacing.tight)
+                    }
+                }
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
     /// The filter that is on, under the search where the eye already is;
     /// tapping it takes it off.
     private var filterChip: some View {
@@ -829,6 +982,19 @@ private struct SearchGlassContainer<Content: View>: View {
             GlassEffectContainer { content }
         } else {
             content
+        }
+    }
+}
+
+private extension ToolbarContent {
+    /// Items the system's upright column may hold: its own controls stand
+    /// there by default, a custom glyph cell only when it says it can.
+    @ToolbarContentBuilder
+    func standingUpright() -> some ToolbarContent {
+        if #available(iOS 27.1, *) {
+            axisBehavior(.verticalPreferred)
+        } else {
+            self
         }
     }
 }

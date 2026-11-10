@@ -41,7 +41,12 @@ struct CurrentGroup: Identifiable {
 /// row opens its thought, and swiping it left archives or deletes it.
 /// Adrift comes last, then Archived, the way Recently Deleted closes Notes'
 /// folders. Searching or filtering lists every match under its current,
-/// without counts. No cards around currents, no expanding in place.
+/// without counts. No expanding in place.
+///
+/// On a phone they are rows across the page, no card around a current. A
+/// big screen (iPad, iPhone Duo's inner display) has the room for cards in
+/// columns instead (Malik, 2026-11-10): each current one card, its name,
+/// count and › on top, its newest thoughts as lines under them.
 ///
 /// The page's header (the filter chip while one is on) is the list's first
 /// row, so it scrolls with the currents the way it scrolls with Recent's grid.
@@ -53,6 +58,9 @@ struct LibraryCurrents<Header: View, Empty: View, Lead: View>: View {
     let kind: LibraryKind
     /// Opens a thought (as a sheet over the Library).
     let open: (Node) -> Void
+    /// Opens a whole current beside the page (a split iPhone Duo); nil opens
+    /// it as this list's own sheet.
+    var openStream: ((String) -> Void)? = nil
     /// The way back from a swiped delete or archive, the page's own.
     let removals: ThoughtRemovals
     /// Changes when the list should go back to its top.
@@ -65,9 +73,12 @@ struct LibraryCurrents<Header: View, Empty: View, Lead: View>: View {
 
     @Environment(\.modelContext) private var context
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.isBigScreen) private var isBigScreen
     @Query private var currentRows: [Current]
 
     @State private var stream: StreamSelection?
+    /// The cards' width inside the gutters, read for how many columns fit.
+    @State private var cardsWidth: CGFloat = 0
     @State private var showsArchived = false
 
     /// Rename and merge, from a current's context menu.
@@ -82,6 +93,9 @@ struct LibraryCurrents<Header: View, Empty: View, Lead: View>: View {
     /// Newest thoughts previewed under each current's name.
     private static var previewCount: Int { 2 }
     private static var topID: String { "library.currents.top" }
+    /// The narrowest a current's card stands, as a Recent card does on a
+    /// big screen.
+    private static var cardLeast: CGFloat { 240 }
 
     /// From the header to the first current's name: a block to the name's
     /// words, as Recent's first time section stands, less the slack its
@@ -99,10 +113,18 @@ struct LibraryCurrents<Header: View, Empty: View, Lead: View>: View {
 
     /// One current as the list shows it: a preview (its newest two and its
     /// count), or, while searching or filtering, every match.
-    private struct Entry {
+    private struct Entry: Identifiable {
         let group: CurrentGroup
         let rows: [Node]
         let isPreview: Bool
+        var id: String { group.id }
+    }
+
+    /// The cards' columns: as many as fit `cardLeast` wide, one at
+    /// accessibility sizes.
+    private var cardColumns: Int {
+        guard !typeSize.isAccessibilitySize, cardsWidth > 0 else { return 1 }
+        return max(1, Int((cardsWidth + OceanSpacing.item) / (Self.cardLeast + OceanSpacing.item)))
     }
 
     private var query: String { search.trimmed }
@@ -115,27 +137,33 @@ struct LibraryCurrents<Header: View, Empty: View, Lead: View>: View {
         let suggestions = narrowing ? [] : mergeSuggestions(among: live)
         let archived = narrowing ? 0 : nodes.filter { $0.isArchived && !(removals.pending?.deletes($0) ?? false) }.count
         ScrollViewReader { proxy in
-            List {
-                header
-                    .id(Self.topID)
-                    .tileRow(top: 0, bottom: 0)
-                if entries.isEmpty {
-                    empty.tileRow(top: OceanSpacing.block, bottom: 0)
-                }
-                lead.tileRow(top: 0, bottom: 0)
-                if !suggestions.isEmpty {
-                    suggestionsCard(suggestions)
-                        .tileRow(top: OceanSpacing.block)
-                }
-                ForEach(entries, id: \.group.id) { entry in
-                    current(entry, isFirst: suggestions.isEmpty && entry.group.id == entries.first?.group.id)
-                }
-                if archived > 0 {
-                    archivedLine(count: archived)
-                        .tileRow(top: groupTop)
+            Group {
+                if isBigScreen {
+                    cards(entries, suggestions: suggestions, archived: archived)
+                } else {
+                    List {
+                        header
+                            .id(Self.topID)
+                            .tileRow(top: 0, bottom: 0)
+                        if entries.isEmpty {
+                            empty.tileRow(top: OceanSpacing.block, bottom: 0)
+                        }
+                        lead.tileRow(top: 0, bottom: 0)
+                        if !suggestions.isEmpty {
+                            suggestionsCard(suggestions)
+                                .tileRow(top: OceanSpacing.block)
+                        }
+                        ForEach(entries, id: \.group.id) { entry in
+                            current(entry, isFirst: suggestions.isEmpty && entry.group.id == entries.first?.group.id)
+                        }
+                        if archived > 0 {
+                            archivedLine(count: archived)
+                                .tileRow(top: groupTop)
+                        }
+                    }
+                    .tileList()
                 }
             }
-            .tileList()
             .contentMargins(.bottom, FastCaptureLayout.pageClearance + OceanSpacing.gap, for: .scrollContent)
             .scrollDismissesKeyboard(.immediately)
             .onChange(of: topRequest) { _, _ in
@@ -198,7 +226,28 @@ struct LibraryCurrents<Header: View, Empty: View, Lead: View>: View {
     private func current(_ entry: Entry, isFirst: Bool) -> some View {
         let group = entry.group
         let shown = entry.isPreview ? Array(entry.rows.prefix(Self.previewCount)) : entry.rows
-        Button { stream = StreamSelection(theme: group.key) } label: {
+        name(entry)
+            .tileRow(top: isFirst ? firstTop : groupTop, bottom: 0)
+
+        ForEach(shown) { node in
+            Button { open(node) } label: { NodeRow(node: node, showsCurrent: false, quiet: group.isAdrift) }
+                .buttonStyle(.plain)
+                .thoughtSwipeActions(node, removals: removals)
+                .tileRow(top: node.id == shown.first?.id ? 0 : OceanSpacing.item / 2)
+        }
+    }
+
+    /// Opens the whole current: beside the page where it splits, else as
+    /// this list's sheet.
+    private func openCurrent(_ key: String) {
+        if let openStream { openStream(key) } else { stream = StreamSelection(theme: key) }
+    }
+
+    /// A current's name with its count and ›, opening the whole current; its
+    /// context menu renames or merges it. A row of the list, or a card's top.
+    private func name(_ entry: Entry) -> some View {
+        let group = entry.group
+        return Button { openCurrent(group.key) } label: {
             HStack(alignment: .firstTextBaseline, spacing: OceanSpacing.gap) {
                 Text(group.label)
                     .oceanText(OceanType.currentName)
@@ -237,14 +286,98 @@ struct LibraryCurrents<Header: View, Empty: View, Lead: View>: View {
                 } label: { Label("Merge into…", systemImage: "arrow.triangle.merge") }
             }
         }
-        .tileRow(top: isFirst ? firstTop : groupTop, bottom: 0)
+    }
 
-        ForEach(shown) { node in
-            Button { open(node) } label: { NodeRow(node: node, showsCurrent: false, quiet: group.isAdrift) }
-                .buttonStyle(.plain)
-                .thoughtSwipeActions(node, removals: removals)
-                .tileRow(top: node.id == shown.first?.id ? 0 : OceanSpacing.item / 2)
+    // MARK: Cards
+
+    /// The currents as cards in columns, a big screen's way: the header, the
+    /// summary while searching and the suggested merges across the top as in
+    /// the list, the cards a block under them, Archived a group below.
+    private func cards(_ entries: [Entry], suggestions: [CurrentRegistry.MergeSuggestion], archived: Int) -> some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+                header
+                    .id(Self.topID)
+                if entries.isEmpty {
+                    empty.padding(.top, OceanSpacing.block)
+                }
+                lead
+                if !suggestions.isEmpty {
+                    suggestionsCard(suggestions)
+                        .padding(.top, OceanSpacing.block)
+                }
+                MasonryColumns(items: entries, columns: cardColumns, spacing: OceanSpacing.item,
+                               estimatedHeight: estimatedCardHeight) { entry in
+                    card(entry)
+                }
+                .padding(.top, OceanSpacing.block)
+                if archived > 0 {
+                    archivedLine(count: archived)
+                        .padding(.top, OceanSpacing.group - OceanType.currentName.rowSlack(at: typeSize))
+                }
+            }
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { cardsWidth = $0 }
+            .padding(.horizontal, OceanSpacing.gutter)
         }
+    }
+
+    /// One current's card: its name row on top, then its thoughts as lines,
+    /// no card inside the card. A line opens its thought; a long press
+    /// archives or deletes it, as a row's swipe does in the list.
+    private func card(_ entry: Entry) -> some View {
+        let group = entry.group
+        let shown = entry.isPreview ? Array(entry.rows.prefix(Self.previewCount)) : entry.rows
+        return VStack(alignment: .leading, spacing: 0) {
+            name(entry)
+            ForEach(shown) { node in
+                Button { open(node) } label: { line(node, quiet: group.isAdrift) }
+                    .buttonStyle(.plain)
+                    .contextMenu {
+                        Button { removals.archive(node) } label: {
+                            Label("Archive", systemImage: "archivebox")
+                        }
+                        Button(role: .destructive) { removals.delete(node) } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
+                    .accessibilityActions {
+                        Button("Delete") { removals.delete(node) }
+                        Button("Archive") { removals.archive(node) }
+                    }
+            }
+        }
+        .padding(.horizontal, OceanSpacing.inset)
+        .padding(.vertical, OceanSpacing.gap)
+        .background(OceanSurface(shape: RoundedRectangle(cornerRadius: OceanRadius.card, style: .continuous)))
+    }
+
+    /// A thought inside a current's card: its title and its meta line, as a
+    /// row says them, without the row's own tile.
+    @ViewBuilder
+    private func line(_ node: Node, quiet: Bool) -> some View {
+        // A just-deleted thought can linger a pass before the query drops
+        // it; its detached attributes would fault (NodeRow does the same).
+        if node.modelContext != nil {
+            VStack(alignment: .leading, spacing: OceanSpacing.snug) {
+                Text(node.displayTitle)
+                    .oceanText(OceanType.cardTitle)
+                    .foregroundStyle(quiet ? OceanTheme.text : OceanTheme.foam)
+                    .oceanLineLimit(2)
+                    .multilineTextAlignment(.leading)
+                NodeMeta(node: node, detail: node.linkDomain,
+                         siteIcon: node.linkDomain.flatMap { SiteIcons.shared.icon(for: $0) }, showsCurrent: false)
+            }
+            .padding(.vertical, OceanSpacing.gap)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+    }
+
+    /// A card's height before it is measured, for balancing the columns: the
+    /// name's row, then a line per thought shown.
+    private func estimatedCardHeight(_ entry: Entry) -> CGFloat {
+        let lines = entry.isPreview ? min(entry.rows.count, Self.previewCount) : entry.rows.count
+        return OceanControlSize.height + 2 * OceanSpacing.gap + CGFloat(lines) * 64 // the line's two text rows and its padding
     }
 
     /// The archive's way in, closing the list a group after the last

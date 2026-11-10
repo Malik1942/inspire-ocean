@@ -15,6 +15,7 @@ struct AskView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.isBigScreen) private var isBigScreen
 
     @Query(filter: #Predicate<Node> { !$0.isArchived }) private var nodes: [Node]
 
@@ -39,6 +40,8 @@ struct AskView: View {
     /// A sample question's glyph slot grows with its words, so every line's
     /// words start on one edge at any text size, as a source's do.
     @ScaledMetric(relativeTo: .body) private var slot = OceanSize.glyphSlot
+    /// The reading column's width, which the bar keeps on a big screen.
+    @ScaledMetric(relativeTo: .body) private var readable = OceanSize.readableWidth
 
     private var messages: [ChatMessage] { conversation?.orderedMessages ?? [] }
 
@@ -324,6 +327,10 @@ struct AskView: View {
         .padding(.trailing, FastCaptureLayout.discInset)
         .frame(minHeight: FastCaptureLayout.barHeight)
         .background(OceanBarBackground(cornerRadius: FastCaptureLayout.barHeight / 2))
+        // On a big screen the bar keeps to the answers' column and its
+        // leading edge, under the page's large title.
+        .frame(maxWidth: isBigScreen ? readable : .infinity)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, OceanSpacing.gutter)
         .padding(.bottom, FastCaptureLayout.insetBarLift)
         // The capture bar's cap: up to it the prompt reads whole beside the

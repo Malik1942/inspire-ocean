@@ -18,7 +18,6 @@ struct FastCaptureSessionView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.calmAccessibility) private var calm
-    @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(CaptureControl.self) private var control
 
     let request: FastCaptureRequest
@@ -128,6 +127,7 @@ struct FastCaptureSessionView: View {
                     }
                 )
                 .frame(height: panelHeight)
+                .modifier(CaptureBarColumn(control: control, applies: !asSheet))
                 .padding(.horizontal, OceanSpacing.gutter)
                 .transition(stilled ? .opacity : .move(edge: .bottom).combined(with: .opacity))
             }
@@ -159,6 +159,7 @@ struct FastCaptureSessionView: View {
                     .transition(.opacity.combined(with: .offset(y: Self.toastRise)))
                 }
             }
+            .modifier(CaptureBarColumn(control: control, applies: !asSheet))
             .padding(.horizontal, OceanSpacing.gutter)
             .padding(.bottom, bottomPadding(keyboardUp: keyboardUp) + missed)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -272,12 +273,10 @@ struct FastCaptureSessionView: View {
         }
         .onChange(of: attachPanelShown) { _, shown in
             // The tab bar steps away under the panel, as under the keys, only
-            // where it sits at the bottom (any iPhone, or a compact iPad
-            // window), and always comes back. A composer in a sheet leaves
-            // the page behind it alone.
-            let barAtBottom = UIDevice.current.userInterfaceIdiom == .phone || sizeClass == .compact
+            // where it sits at the foot of the window, and always comes back.
+            // A composer in a sheet leaves the page behind it alone.
             if ownsControl, !asSheet {
-                withAnimation(motion) { control.attachPanelOpen = shown && barAtBottom }
+                withAnimation(motion) { control.attachPanelOpen = shown && control.tabBarEdge == .foot }
             }
         }
         // Back from the camera or All Photos, picked or not, the words
@@ -676,11 +675,11 @@ struct FastCaptureSessionView: View {
         if phase == .linger {
             if asSheet { return OceanSpacing.block }
             // Above the bar on Tide; in the bar's own spot where there is none.
-            return FastCaptureLayout.tabBarClearance
+            return FastCaptureLayout.restClearance(control.tabBarEdge)
                 + (control.barOnTab ? FastCaptureLayout.barHeight + FastCaptureLayout.barGap : 0)
         }
         if attachPanelShown { return panelHeight + FastCaptureLayout.barGap }
-        return asSheet || keyboardUp ? FastCaptureLayout.barGap : FastCaptureLayout.tabBarClearance
+        return asSheet || keyboardUp ? FastCaptureLayout.barGap : FastCaptureLayout.restClearance(control.tabBarEdge)
     }
 
     /// The panel stands where the keys stood, so the card stays put when +

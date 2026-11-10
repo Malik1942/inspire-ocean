@@ -21,6 +21,8 @@ struct OceanFieldView: View {
     @Environment(\.calmAccessibility) private var calm
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.isBigScreen) private var isBigScreen
+    @Environment(CaptureControl.self) private var control
     @Query(filter: #Predicate<Node> { !$0.isArchived }, sort: \Node.createdAt, order: .reverse)
     private var nodes: [Node]
 
@@ -50,6 +52,18 @@ struct OceanFieldView: View {
     /// The page's height under the bars, as it stands without the keyboard:
     /// a short page (landscape) gets a shorter picture stage.
     @State private var pageHeight: CGFloat = 0
+    /// The page's width, beside its height: a big screen turned wider than
+    /// tall splits Tide in two.
+    @State private var pageWidth: CGFloat = 0
+    /// The screen folds down the page (iPhone Duo).
+    @State private var folds = false
+    /// The half a thought or a current opens on while the page is split:
+    /// the other one from where it was tapped.
+    @State private var sheetSide: BigScreen.Side = .trailing
+    /// What stands under today's picture, its words and its actions, read
+    /// off their layout: split, the picture reaches down to meet them.
+    @State private var stageWords: CGFloat = 0
+    @State private var stageActions: CGFloat = 0
 
     private var stilled: Bool { calm || reduceMotion }
 
@@ -98,6 +112,7 @@ struct OceanFieldView: View {
     var body: some View {
         let shown = goingUnder ?? resurfacing
         let onPicture = shown.map(hasStagePicture) ?? false
+        let split = splits && shown != nil
         NavigationStack {
             ZStack {
                 OceanBackground()
@@ -109,26 +124,38 @@ struct OceanFieldView: View {
                 }
                 if nodes.isEmpty {
                     emptyState
+                } else if let shown, split {
+                    // Split, the page is two halves, even, each its own
+                    // scroll: today's thought the leading one's hero, top to
+                    // foot, and the depth with the capture bar the trailing
+                    // one's.
+                    HStack(spacing: 0) {
+                        ScrollView {
+                            stage(shown, beside: true)
+                                .padding(.horizontal, OceanSpacing.gutter)
+                                .padding(.top, onPicture ? 0 : OceanSpacing.gap)
+                                .padding(.bottom, heroFoot)
+                        }
+                        .frame(width: pageWidth / 2)
+                        ScrollView {
+                            // The column starts where a title would, under
+                            // the gear.
+                            depth(below: nil)
+                                .frame(maxWidth: .infinity, alignment: .topLeading)
+                                .padding(.horizontal, OceanSpacing.gutter)
+                                .padding(.top, OceanSpacing.gap)
+                                .padding(.bottom, FastCaptureLayout.contentClearance)
+                        }
+                        .modifier(CaptureComposerEdge())
+                        .frame(width: pageWidth / 2)
+                    }
                 } else {
                     ScrollView {
                         // Sections a page's section apart, measured between
                         // what you see; each text block in the reading column.
                         VStack(alignment: .leading, spacing: 0) {
-                            if let shown {
-                                // One thought goes under, then the next comes
-                                // up: never both on screen at once.
-                                resurfacingSection(shown)
-                                    .opacity(lettingGo ? 0 : 1)
-                                    .offset(y: stilled || !lettingGo ? 0 : Self.restSink)
-                            }
-                            newestSection
-                                .oceanReadableColumn()
-                                .padding(.top, shown == nil ? 0 : newestTop)
-                            if !currents.isEmpty {
-                                currentsSection
-                                    .oceanReadableColumn()
-                                    .padding(.top, currentsTop)
-                            }
+                            if let shown { stage(shown, beside: false) }
+                            depth(below: shown)
                         }
                         .padding(.horizontal, OceanSpacing.gutter)
                         // A picture starts at the screen's top edge; a title
@@ -138,7 +165,11 @@ struct OceanFieldView: View {
                     }
                     .modifier(CaptureComposerEdge())
                 }
+                // Split, the shore stands only under the capture bar's half:
+                // the hero runs to the screen's foot.
                 ShoreGradient()
+                    .frame(width: split ? pageWidth / 2 : nil)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
             }
             .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.top } action: { topInset = $0 }
             // Read past the keyboard's inset, so the keys never shorten the
@@ -146,8 +177,13 @@ struct OceanFieldView: View {
             .background {
                 Color.clear
                     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { pageHeight = $0 }
+                    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { pageWidth = $0 }
+                    .onGeometryChange(for: Bool.self) { BigScreen.folds(in: $0) } action: { folds = $0 }
                     .ignoresSafeArea(.keyboard)
             }
+            // The capture bar and its composer keep to the trailing half once
+            // the page splits.
+            .onChange(of: split, initial: true) { _, split in control.tideSplits = split }
             // No large title: the tab bar already says Tide, and the page's
             // first line is today's thought. The title stays for the system
             // (VoiceOver, the app switcher); the gear stays in the bar's glass.
@@ -175,11 +211,11 @@ struct OceanFieldView: View {
                 widgetReloaded = true
                 WidgetCenter.shared.reloadTimelines(ofKind: Resurfacing.widgetKind)
             }
-            .sheet(item: $sheet) { item in
-                switch item {
-                case .thought(let node): ExpandedNodeView(node: node)
-                case .stream(let theme): ClusterStreamView(theme: theme)
-                }
+            // On a split iPhone Duo it stands beside the page instead (the
+            // pane below); a sheet everywhere else.
+            .sheet(item: Binding(get: { besidePane ? nil : sheet },
+                                 set: { if !besidePane || $0 != nil { sheet = $0 } })) { item in
+                sheetPage(item)
             }
             .sheet(isPresented: $showSettings) { OceanSettingsView() }
             // The system alert, as on a thought's page and in the Library.
@@ -201,11 +237,87 @@ struct OceanFieldView: View {
             .onChange(of: sheet?.id) { _, _ in updateOceanSheetPresence() }
             .onChange(of: showSettings) { _, _ in updateOceanSheetPresence() }
         }
+        // On a split iPhone Duo what was opened stands in the other half: a
+        // second screen, not a sheet over both. The half it was opened from
+        // stays as it was.
+        .overlay(alignment: sheetSide == .leading ? .leading : .trailing) {
+            Group {
+                if besidePane, let opened = sheet {
+                    sheetPage(opened)
+                        .id(opened.id)
+                        .environment(\.closePane) { sheet = nil }
+                        .environment(\.paneSide, sheetSide)
+                        .frame(width: pageWidth / 2)
+                        .transition(.opacity)
+                }
+            }
+            .animation(OceanMotion.standard, value: besidePane ? sheet?.id : nil)
+        }
+        // The capture bar steps aside only for a half opened over its own.
+        .onChange(of: besidePane && sheet != nil && sheetSide == .trailing, initial: true) { _, open in
+            control.paneOpen = open
+        }
+    }
+
+    /// A thought or a current, as a sheet or as the half beside the page.
+    @ViewBuilder
+    private func sheetPage(_ item: OceanSheet) -> some View {
+        switch item {
+        case .thought(let node): ExpandedNodeView(node: node)
+        case .stream(let theme): ClusterStreamView(theme: theme)
+        }
+    }
+
+    // MARK: Layout
+
+    /// Tide splits in two, today's thought beside the depth, on a big screen
+    /// turned wider than tall (`BigScreen.splits`): the inner display of
+    /// iPhone Duo, an iPad on its side.
+    private var splits: Bool {
+        isBigScreen && BigScreen.splits(CGSize(width: pageWidth, height: pageHeight))
+    }
+
+    /// A split page on iPhone Duo: what is opened stands in the other half
+    /// instead of a sheet. Read live, so a sheet's binding asks it as it is
+    /// now, not as it was when the page last drew.
+    private var besidePane: Bool {
+        splits && (goingUnder ?? resurfacing) != nil && folds
+    }
+
+    /// Under the hero's actions, split: their row stands level with the
+    /// capture bar across the page, centered on it.
+    private var heroFoot: CGFloat {
+        let row = max(0, stageActions - OceanSpacing.inset)
+        return FastCaptureLayout.restClearance(control.tabBarEdge)
+            + max(0, (FastCaptureLayout.barHeight - row) / 2)
+    }
+
+    /// Today's thought on its stage. One thought goes under, then the next
+    /// comes up: never both on screen at once.
+    private func stage(_ node: Node, beside: Bool) -> some View {
+        resurfacingSection(node, beside: beside)
+            .opacity(lettingGo ? 0 : 1)
+            .offset(y: stilled || !lettingGo ? 0 : Self.restSink)
+    }
+
+    /// The depth: the newest thoughts, then the currents, under today's
+    /// thought, or beside it when there is none above (`shown` nil).
+    private func depth(below shown: Node?) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            newestSection
+                .oceanReadableColumn()
+                .padding(.top, shown == nil ? 0 : newestTop)
+            if !currents.isEmpty {
+                currentsSection
+                    .oceanReadableColumn()
+                    .padding(.top, currentsTop)
+            }
+        }
     }
 
     // MARK: Resurfacing
 
-    private func resurfacingSection(_ node: Node) -> some View {
+    private func resurfacingSection(_ node: Node, beside: Bool) -> some View {
         let picture = stagePicture(node)
         let words = node.ownWords
         // At accessibility sizes the head no longer fits on the picture: it
@@ -220,33 +332,37 @@ struct OceanFieldView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     if let picture {
                         ResurfacingPicture(image: picture.image, data: picture.data, id: node.id,
-                                           height: stageHeight(picture.height), topInset: topInset, holdsScrim: headBelow) {
+                                           height: beside ? heroHeight(picture.height) : stageHeight(picture.height),
+                                           topInset: topInset, holdsScrim: headBelow, dissolvesTrailing: beside) {
                             if !headBelow { stageHead(node, onPicture: true) }
-                        }
-                        if headBelow {
-                            stageHead(node, onPicture: true)
-                                .oceanReadableColumn()
-                                .padding(.top, OceanSpacing.gap)
                         }
                     } else {
                         stageHead(node, onPicture: false)
                             .oceanReadableColumn()
                     }
-                    if let words {
-                        Text(words)
-                            .oceanText(OceanType.thoughtBody)
-                            .foregroundStyle(picture == nil ? OceanTheme.stageWords : OceanTheme.foam)
-                            .oceanLineLimit(picture == nil ? 4 : 3, accessibility: picture == nil ? 6 : 4)
-                            .multilineTextAlignment(.leading)
-                            .oceanReadableColumn()
-                            .padding(.top, captioned ? 0 : OceanSpacing.item)
-                            .accessibilityIdentifier("tide.stage.words")
+                    VStack(alignment: .leading, spacing: 0) {
+                        if headBelow {
+                            stageHead(node, onPicture: true)
+                                .oceanReadableColumn()
+                                .padding(.top, OceanSpacing.gap)
+                        }
+                        if let words {
+                            Text(words)
+                                .oceanText(OceanType.thoughtBody)
+                                .foregroundStyle(picture == nil ? OceanTheme.stageWords : OceanTheme.foam)
+                                .oceanLineLimit(picture == nil ? 4 : 3, accessibility: picture == nil ? 6 : 4)
+                                .multilineTextAlignment(.leading)
+                                .oceanReadableColumn()
+                                .padding(.top, captioned ? 0 : OceanSpacing.item)
+                                .accessibilityIdentifier("tide.stage.words")
+                        }
+                        if let domain = node.linkDomain {
+                            linkSource(node, domain: domain, showsAbout: words == nil, onPicture: picture != nil)
+                                .oceanReadableColumn()
+                                .padding(.top, words == nil && captioned ? 0 : OceanSpacing.item)
+                        }
                     }
-                    if let domain = node.linkDomain {
-                        linkSource(node, domain: domain, showsAbout: words == nil, onPicture: picture != nil)
-                            .oceanReadableColumn()
-                            .padding(.top, words == nil && captioned ? 0 : OceanSpacing.item)
-                    }
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { stageWords = $0 }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
@@ -269,6 +385,7 @@ struct OceanFieldView: View {
             }
             .oceanReadableColumn()
             .padding(.top, OceanSpacing.inset)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { stageActions = $0 }
 
             if nearbyOpen {
                 Group {
@@ -278,7 +395,7 @@ struct OceanFieldView: View {
                             .foregroundStyle(OceanTheme.mist)
                             .padding(.vertical, OceanSpacing.gap)
                     } else {
-                        DepthList(nodes: nearby, startLevel: Self.nearbyLevel, open: open)
+                        DepthList(nodes: nearby, startLevel: Self.nearbyLevel, open: { open($0) })
                     }
                 }
                 .oceanReadableColumn()
@@ -361,6 +478,16 @@ struct OceanFieldView: View {
         return min(full, max(clear, full / 2)) // art-directed: a short page keeps half the stage at least
     }
 
+    /// Split, the stage is its half's hero: the picture reaches down until
+    /// its words and actions end at the half's foot (`heroFoot`), however
+    /// tall the page. A page too short for that keeps half the stage, as
+    /// `stageHeight` does.
+    private func heroHeight(_ full: CGFloat) -> CGFloat {
+        guard pageHeight > 0 else { return full }
+        let reach = topInset + pageHeight - stageWords - stageActions - heroFoot
+        return max(reach, full / 2) // art-directed: a short page keeps half the stage at least
+    }
+
     // MARK: Drifted in
 
     /// "Drifted in" stands a section below the stage, measured between what
@@ -380,7 +507,7 @@ struct OceanFieldView: View {
     private var newestSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             OceanSectionLabel("Drifted in")
-            DepthList(nodes: newest, open: open, archive: archive, delete: { pendingDelete = $0 })
+            DepthList(nodes: newest, open: { open($0, on: .leading) }, archive: archive, delete: { pendingDelete = $0 })
                 .animation(stilled ? OceanMotion.quick : OceanMotion.standard, value: newest.map(\.id))
                 .accessibilityIdentifier("tide.column")
         }
@@ -422,7 +549,10 @@ struct OceanFieldView: View {
                 ForEach(rows.indices, id: \.self) { row in
                     GridRow {
                         ForEach(rows[row]) { group in
-                            Button { sheet = .stream(theme: group.key) } label: {
+                            Button {
+                                sheetSide = .leading
+                                sheet = .stream(theme: group.key)
+                            } label: {
                                 VStack(alignment: .leading, spacing: OceanSpacing.snug) {
                                     Text(group.label)
                                         .oceanText(OceanType.cardTitle)
@@ -531,8 +661,11 @@ struct OceanFieldView: View {
     }
 
     /// Opens a thought; meeting today's resurfaced fragment rests it, so the
-    /// rhythm moves on to another memory tomorrow.
-    private func open(_ node: Node) {
+    /// rhythm moves on to another memory tomorrow. On a split iPhone Duo it
+    /// opens on `side`: the half across from the one it was tapped in (the
+    /// stage and Nearby lead, the depth beside them trails).
+    private func open(_ node: Node, on side: BigScreen.Side = .trailing) {
+        sheetSide = side
         if node.id == resurfacing?.id {
             Resurfacing.markMet(node, context: context)
             // Seeded examples are a tour, not the promise paying off.

@@ -34,6 +34,7 @@ struct NodeDetailContent: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openThought) private var openThought
     @Environment(\.popThought) private var popThought
+    @Environment(\.closePane) private var closePane
     @Environment(\.dynamicTypeSize) private var typeSize
 
     @Query(filter: #Predicate<Node> { !$0.isArchived }) private var allNodes: [Node]
@@ -72,7 +73,7 @@ struct NodeDetailContent: View {
         // Reading any \Node attribute on the detached object faults (see
         // NodeRow), so render nothing and leave.
         if node.modelContext == nil {
-            Color.clear.onAppear { dismiss() }
+            Color.clear.onAppear { leave() }
         } else {
             page
         }
@@ -107,6 +108,13 @@ struct NodeDetailContent: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(action: popThought) { Image(systemName: "chevron.left") }
                         .accessibilityLabel("Back")
+                }
+            } else if let closePane {
+                // Beside a split page there is no grabber to pull: the half
+                // has a close of its own, where a back would be.
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(action: closePane) { Image(systemName: "xmark") }
+                        .accessibilityLabel("Close")
                 }
             }
             // One group in the system's own glass: move, share, delete.
@@ -174,7 +182,7 @@ struct NodeDetailContent: View {
         // A summary or a question opens in Ask: a thought shown as a sheet
         // steps out of the way so the answer is what you see.
         .onChange(of: appState.selectedTab) { _, tab in
-            if isSheetRoot, tab == .ask { dismiss() }
+            if isSheetRoot, tab == .ask { leave() }
         }
         .fullScreenCover(isPresented: $showImageViewer) {
             ImageViewer(datas: node.imageDatas, index: $viewerIndex)
@@ -203,7 +211,13 @@ struct NodeDetailContent: View {
     /// purely cosmetic.
     private func deleteNode() {
         context.deleteNodeSafely(node)
-        dismiss()
+        leave()
+    }
+
+    /// Leaves this page: closes the half it stands in beside a split page,
+    /// or dismisses the sheet (pops, if pushed).
+    private func leave() {
+        if let closePane { closePane() } else { dismiss() }
     }
 
     // MARK: Re-transcribe (BRIEF decision 8)
@@ -651,7 +665,7 @@ struct NodeDetailContent: View {
                 if !related.isEmpty {
                     Button {
                         appState.summarize([node.id] + related.map(\.id), title: node.displayTitle)
-                        dismiss()
+                        leave()
                     } label: {
                         // The Link's 44 pt rises above its words instead of
                         // hanging below them, so they sit on the row's foot,
@@ -694,7 +708,7 @@ struct NodeDetailContent: View {
 
         Button {
             appState.ask(String(localized: "About “\(node.displayTitle)”: "))
-            dismiss()
+            leave()
         } label: {
             Label("Ask Ocean", systemImage: "quote.bubble")
                 .frame(maxWidth: .infinity)

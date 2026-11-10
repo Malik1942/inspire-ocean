@@ -25,6 +25,9 @@ struct RootTabView: View {
     /// Another field has the keyboard (Library's search, a sheet's field):
     /// the capture bar steps aside rather than ride on top of it.
     @State private var keyboardUp = false
+    /// The window's bottom safe-area inset, outside the TabView: what a
+    /// tab's own inset is measured against to find its tab bar.
+    @State private var rootBottomInset: CGFloat?
     /// When the app last became active; the rating ask waits 10 s past it.
     @State private var activeSince = Date.now
 
@@ -52,19 +55,26 @@ struct RootTabView: View {
     var body: some View {
         TabView(selection: $appState.selectedTab) {
             OceanFieldView()
+                .background(TabBarEdgeReader(rootBottomInset: rootBottomInset, control: control))
                 .toolbar(tabBarVisibility, for: .tabBar)
                 .tabItem { tabLabel(OceanTab.homeTitle, systemImage: "water.waves") }
                 .tag(OceanTab.ocean)
 
             AskView()
+                .background(TabBarEdgeReader(rootBottomInset: rootBottomInset, control: control))
                 .toolbar(tabBarVisibility, for: .tabBar)
                 .tabItem { tabLabel("Ask", systemImage: "bubble.left") }
                 .tag(OceanTab.ask)
 
             LibraryView()
+                .background(TabBarEdgeReader(rootBottomInset: rootBottomInset, control: control))
                 .toolbar(tabBarVisibility, for: .tabBar)
                 .tabItem { tabLabel("Library", systemImage: "rectangle.stack") }
                 .tag(OceanTab.library)
+        }
+        .background {
+            Color.clear
+                .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.bottom } action: { rootBottomInset = $0 }
         }
         .environment(appState)
         .environment(control)
@@ -96,6 +106,7 @@ struct RootTabView: View {
         .modifier(CaptureBarPlacement(
             show: appState.selectedTab == .ocean
                 && !keyboardUp
+                && !control.paneOpen
                 && (appState.fastCaptureRequest == nil || control.toastShowing),
             keepsTouch: control.isHeld,
             control: control
@@ -220,6 +231,39 @@ struct RootTabView: View {
     }
 }
 
+/// Tells the capture layout which edge of the window holds the tab bar.
+///
+/// `tabBarPlacement` alone cannot: on iPhone Duo's closed display the tab bar
+/// stands upright beside the page and the placement still reads `.bottomBar`.
+/// The safe area gives it away. A bar at the foot lifts its tab's bottom inset
+/// above the window's; a bar along one side does not, and insets the two sides
+/// unevenly. Anything less clear (a tab bar hidden under a pushed page, the
+/// keys up) reads as the foot, the layout every other iPhone has. Read in each
+/// tab, as only the selected one lays out, and from a view inside the tab: a
+/// modifier on the tab's content sees no placement.
+private struct TabBarEdgeReader: View {
+    let rootBottomInset: CGFloat?
+    let control: CaptureControl
+
+    @Environment(\.tabBarPlacement) private var placement
+    @State private var insets: EdgeInsets?
+
+    private var edge: CaptureControl.TabBarEdge? {
+        guard let placement, let insets, let rootBottomInset else { return nil }
+        guard placement == .bottomBar else { return .elsewhere }
+        let alongOneSide = insets.bottom <= rootBottomInset && insets.leading != insets.trailing
+        return alongOneSide ? .side : .foot
+    }
+
+    var body: some View {
+        Color.clear
+            .onGeometryChange(for: EdgeInsets.self) { $0.safeAreaInsets } action: { insets = $0 }
+            .onChange(of: edge, initial: true) { _, edge in
+                if let edge { control.tabBarEdge = edge }
+            }
+    }
+}
+
 /// Shared capture geometry, derived from the tokens: the bar is a 56 pt
 /// capsule, the disc 44 pt, inset 6 on every side so disc and capsule end
 /// are concentric, one item gap above the tab bar. The overlay's disc is
@@ -246,6 +290,12 @@ enum FastCaptureLayout {
     static let tabBarHeight: CGFloat = 49
     /// The tab bar plus the gap under the bar.
     static let tabBarClearance: CGFloat = tabBarHeight + barGap
+    /// Where the bar and the open composer rest above the window's bottom
+    /// inset. With the tab bar along the side the foot is free, so there is
+    /// only the gap: the line Ask's bar keeps, so neither moves between tabs.
+    static func restClearance(_ edge: CaptureControl.TabBarEdge) -> CGFloat {
+        edge == .side ? barGap : tabBarClearance
+    }
     /// What scrolling content under the bar leaves clear: bar, gap, and a
     /// breath above it.
     static let contentClearance: CGFloat = tabBarClearance + barHeight + OceanSpacing.inset
