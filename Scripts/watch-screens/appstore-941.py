@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Captures the eight App Store watch screenshots with the clock at a real 9:41.
+"""Captures the fourteen App Store watch screenshots with the clock at a real 9:41.
 
 The watch simulator shows the Mac's time and `simctl status_bar` can't
 override it on watchOS. Carousel draws that clock, so this sets TZ in the
@@ -33,10 +33,16 @@ SHOTS = [  # (language, name, demo environment, seconds before the screenshot)
     ("en", "02-caught", {"ORYNE_WATCH_STAGE": "caught"}, 2.5),
     ("en", "03-in-your-ocean", {"ORYNE_WATCH_DEMO": "inOcean"}, 3.0),
     ("en", "04-waiting", {"ORYNE_WATCH_DEMO": "waiting"}, 3.0),
+    ("en", "05-today", {"ORYNE_WATCH_DEMO": "today", "ORYNE_WATCH_PAGE": "today"}, 7.0),
+    ("en", "06-recent", {"ORYNE_WATCH_DEMO": "recent", "ORYNE_WATCH_PAGE": "recent"}, 7.0),
+    ("en", "07-thought", {"ORYNE_WATCH_DEMO": "today", "ORYNE_WATCH_PAGE": "thought"}, 7.0),
     ("zh-Hans", "01-recording", {"ORYNE_WATCH_STAGE": "recording"}, 4.5),
     ("zh-Hans", "02-caught", {"ORYNE_WATCH_STAGE": "caught"}, 2.5),
     ("zh-Hans", "03-in-your-ocean", {"ORYNE_WATCH_DEMO": "inOcean", "ORYNE_WATCH_DEMO_TITLE": ZH_TITLE}, 3.0),
     ("zh-Hans", "04-waiting", {"ORYNE_WATCH_DEMO": "waiting", "ORYNE_WATCH_DEMO_TITLE": ZH_TITLE}, 3.0),
+    ("zh-Hans", "05-today", {"ORYNE_WATCH_DEMO": "today", "ORYNE_WATCH_PAGE": "today", "ORYNE_WATCH_DEMO_TITLE": ZH_TITLE}, 7.0),
+    ("zh-Hans", "06-recent", {"ORYNE_WATCH_DEMO": "recent", "ORYNE_WATCH_PAGE": "recent", "ORYNE_WATCH_DEMO_TITLE": ZH_TITLE}, 7.0),
+    ("zh-Hans", "07-thought", {"ORYNE_WATCH_DEMO": "today", "ORYNE_WATCH_PAGE": "thought", "ORYNE_WATCH_DEMO_TITLE": ZH_TITLE}, 7.0),
 ]
 
 
