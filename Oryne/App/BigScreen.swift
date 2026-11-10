@@ -49,5 +49,8 @@ enum BigScreen {
     /// it was opened from.
     enum Side {
         case leading, trailing
+
+        /// The other half, where what this one opens stands.
+        var across: Side { self == .leading ? .trailing : .leading }
     }
 }

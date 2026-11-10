@@ -60,6 +60,8 @@ struct OceanFieldView: View {
     /// The half a thought or a current opens on while the page is split:
     /// the other one from where it was tapped.
     @State private var sheetSide: BigScreen.Side = .trailing
+    /// What that half opens in turn, each across from where it was tapped.
+    @State private var besides = BesidePages()
     /// What stands under today's picture, its words and its actions, read
     /// off their layout: split, the picture reaches down to meet them.
     @State private var stageWords: CGFloat = 0
@@ -247,14 +249,19 @@ struct OceanFieldView: View {
                         .id(opened.id)
                         .environment(\.closePane) { sheet = nil }
                         .environment(\.paneSide, sheetSide)
+                        .environment(\.openBeside, besides.opener(depth: 0, on: sheetSide))
                         .frame(width: pageWidth / 2)
                         .transition(.opacity)
                 }
             }
             .animation(OceanMotion.standard, value: besidePane ? sheet?.id : nil)
         }
+        .besidePages(besides, half: pageWidth / 2)
+        // What the half opened goes with it.
+        .onChange(of: besidePane ? sheet?.id : nil) { _, _ in besides.closeAll() }
         // The capture bar steps aside only for a half opened over its own.
-        .onChange(of: besidePane && sheet != nil && sheetSide == .trailing, initial: true) { _, open in
+        .onChange(of: besidePane && sheet != nil && sheetSide == .trailing || besides.covers(.trailing),
+                  initial: true) { _, open in
             control.paneOpen = open
         }
     }

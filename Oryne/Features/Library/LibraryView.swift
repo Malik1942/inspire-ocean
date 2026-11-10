@@ -91,6 +91,9 @@ struct LibraryView: View {
     /// The page's size, and whether the screen folds down it (iPhone Duo).
     @State private var pageSize: CGSize = .zero
     @State private var folds = false
+    /// What the opened half opens in turn, each across from where it was
+    /// tapped.
+    @State private var besides = BesidePages()
 
     /// iPhone Duo's inner display, turned: its two halves read as two
     /// screens, so a thought or a current opens on the trailing one and the
@@ -240,6 +243,7 @@ struct LibraryView: View {
                         .id(opened.id)
                         .environment(\.closePane) { openedNode = nil }
                         .environment(\.paneSide, .trailing)
+                        .environment(\.openBeside, besides.opener(depth: 0, on: .trailing))
                         .frame(width: pageSize.width / 2)
                         .transition(.opacity)
                 } else if opensBeside, let stream = openedStream {
@@ -247,11 +251,17 @@ struct LibraryView: View {
                         .id(stream.id)
                         .environment(\.closePane) { openedStream = nil }
                         .environment(\.paneSide, .trailing)
+                        .environment(\.openBeside, besides.opener(depth: 0, on: .trailing))
                         .frame(width: pageSize.width / 2)
                         .transition(.opacity)
                 }
             }
             .animation(OceanMotion.standard, value: opensBeside ? openedNode?.id.uuidString ?? openedStream?.id : nil)
+        }
+        .besidePages(besides, half: pageSize.width / 2)
+        // What the half opened goes with it.
+        .onChange(of: opensBeside ? openedNode?.id.uuidString ?? openedStream?.id : nil) { _, _ in
+            besides.closeAll()
         }
         .onChange(of: openedNode?.id) { _, id in if id != nil { openedStream = nil } }
         .onChange(of: opensBeside) { _, beside in if !beside { openedStream = nil } }

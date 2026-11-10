@@ -123,7 +123,7 @@ struct ClusterStreamView: View {
                     if let currentRow { CurrentRegistry.rename(currentRow, to: newName, context: context) }
                 }
             }
-            .sheet(isPresented: $moving, onDismiss: { selecting = false; selected = [] }) {
+            .besideSheet(isPresented: $moving, onDismiss: { selecting = false; selected = [] }) {
                 MoveToCurrentSheet(nodes: selectedNodes)
             }
             }
@@ -138,8 +138,9 @@ struct ClusterStreamView: View {
         }
         // The one capture surface, opened into this current: the saved node
         // is anchored here (CaptureSession.release), so the live @Query drops
-        // it at the top of this stream on save. Sheet-over-sheet, fine on 17+.
-        .sheet(isPresented: $showCapture) {
+        // it at the top of this stream on save. Sheet-over-sheet, fine on 17+;
+        // beside a split page, the other half.
+        .besideSheet(isPresented: $showCapture) {
             FastCaptureSessionView(
                 request: FastCaptureRequest(
                     source: .inApp,

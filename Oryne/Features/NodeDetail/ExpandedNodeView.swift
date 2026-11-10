@@ -149,13 +149,14 @@ struct NodeDetailContent: View {
         } message: {
             Text("This drifts out of the Ocean for good.")
         }
-        .sheet(isPresented: $showBranchComposer) {
+        // Beside a split page these stand in the other half instead.
+        .besideSheet(isPresented: $showBranchComposer) {
             BranchComposer(parent: node)
         }
-        .sheet(isPresented: $showEditSheet) {
+        .besideSheet(isPresented: $showEditSheet) {
             NodeEditSheet(node: node, focusBodyOnAppear: editFocusesBody)
         }
-        .sheet(isPresented: $showMovePicker) {
+        .besideSheet(isPresented: $showMovePicker) {
             MoveToCurrentSheet(node: node)
         }
         // Words the user has touched are never overwritten by a re-transcribe
@@ -609,7 +610,7 @@ struct NodeDetailContent: View {
                 }
             }
         }
-        .sheet(item: $themeStream) { selection in
+        .besideSheet(item: $themeStream) { selection in
             ClusterStreamView(theme: selection.theme)
         }
     }

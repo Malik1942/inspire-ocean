@@ -14,6 +14,7 @@ struct MoveToCurrentSheet: View {
 
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.closePane) private var closePane
 
     @Query(filter: #Predicate<Node> { !$0.isArchived }, sort: \Node.createdAt)
     private var allNodes: [Node]
@@ -84,9 +85,18 @@ struct MoveToCurrentSheet: View {
     private var list: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
+                // Beside a split page there is no grabber to pull: the half
+                // has a close of its own.
                 OceanSheetHeader(
-                    title: nodes.count == 1 ? Text("Move to a current") : Text("Move \(nodes.count) to a current")
-                )
+                    title: nodes.count == 1 ? Text("Move to a current") : Text("Move \(nodes.count) to a current"),
+                    drawsGrabber: closePane == nil
+                ) {
+                    if let closePane {
+                        Button(action: closePane) { Image(systemName: "xmark") }
+                            .buttonStyle(.oceanIcon)
+                            .accessibilityLabel("Close")
+                    }
+                }
                 Text("It will stay where you put it.")
                     .oceanText(OceanType.meta)
                     .foregroundStyle(OceanTheme.mist)
@@ -103,6 +113,7 @@ struct MoveToCurrentSheet: View {
             .padding(.top, OceanSpacing.gap)
             .padding(.bottom, OceanSpacing.section)
         }
+        .paneEdges()
     }
 
     /// A split, or a home that does not exist yet: name it, and the chosen
@@ -161,7 +172,7 @@ struct MoveToCurrentSheet: View {
 
     private func move(to key: String) {
         CurrentRegistry.move(nodes, toKey: key, context: context)
-        dismiss()
+        leave()
     }
 
     private func moveToNew() {
@@ -169,6 +180,12 @@ struct MoveToCurrentSheet: View {
         newName = ""
         guard !name.isEmpty else { return }
         CurrentRegistry.move(nodes, toKey: ThoughtReading.slug(name), name: name, context: context)
-        dismiss()
+        leave()
+    }
+
+    /// Done here: closes the half it stands in beside a split page, or
+    /// dismisses the sheet.
+    private func leave() {
+        if let closePane { closePane() } else { dismiss() }
     }
 }
