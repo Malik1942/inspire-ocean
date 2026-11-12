@@ -13,6 +13,7 @@ struct BranchComposer: View {
     @Environment(\.modelContext) private var context
     @Environment(\.oceanAI) private var ai
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.closePane) private var closePane
 
     @State private var type: BranchType = .concept
     @State private var text: String = ""
@@ -26,10 +27,19 @@ struct BranchComposer: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: OceanSpacing.block) {
-                    OceanSheetHeader(title: Text("Grow a branch")) {
-                        Button("Grow") { grow() }
-                            .buttonStyle(.oceanPrimary)
-                            .disabled(text.trimmed.isEmpty && linkText.trimmed.isEmpty && imageDatas.isEmpty)
+                    // Beside a split page there is no grabber to pull: the
+                    // half has a close of its own.
+                    OceanSheetHeader(title: Text("Grow a branch"), drawsGrabber: closePane == nil) {
+                        if let closePane {
+                            HStack(spacing: OceanSpacing.gap) {
+                                growButton
+                                Button(action: closePane) { Image(systemName: "xmark") }
+                                    .buttonStyle(.oceanIcon)
+                                    .accessibilityLabel("Close")
+                            }
+                        } else {
+                            growButton
+                        }
                     }
                     // Where the branch grows from: a tile, as the thought is
                     // shown everywhere else.
@@ -99,6 +109,7 @@ struct BranchComposer: View {
                 .padding(.top, OceanSpacing.gap)
                 .padding(.bottom, OceanSpacing.section)
             }
+            .paneEdges()
             .background(OceanBackground())
             .contentShape(Rectangle())
             // Tapping outside the editor folds the keyboard; the editor and
@@ -126,6 +137,12 @@ struct BranchComposer: View {
                 }
             }
         }
+    }
+
+    private var growButton: some View {
+        Button("Grow") { grow() }
+            .buttonStyle(.oceanPrimary)
+            .disabled(text.trimmed.isEmpty && linkText.trimmed.isEmpty && imageDatas.isEmpty)
     }
 
     /// One branch type among several: a Secondary chip, selected when it
@@ -164,7 +181,7 @@ struct BranchComposer: View {
         if !imageDatas.isEmpty {
             PictureEnrichmentService.shared.enrich(nodeID: child.id, context: context, ai: ai)
         }
-        dismiss()
+        if let closePane { closePane() } else { dismiss() }
     }
 
     private var normalizedLink: String {

@@ -19,6 +19,7 @@ struct NodeEditSheet: View {
     @Environment(\.modelContext) private var context
     @Environment(\.oceanAI) private var ai
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.closePane) private var closePane
 
     @State private var titleDraft = ""
     @State private var bodyDraft = ""
@@ -84,9 +85,20 @@ struct NodeEditSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: OceanSpacing.block) {
-                    OceanSheetHeader(title: Text("Edit")) {
-                        Button("Save", action: save)
-                            .buttonStyle(.oceanPrimary)
+                    // Beside a split page there is no grabber to pull: the
+                    // half has a close of its own, which keeps nothing, as
+                    // pulling the sheet away keeps nothing.
+                    OceanSheetHeader(title: Text("Edit"), drawsGrabber: closePane == nil) {
+                        if let closePane {
+                            HStack(spacing: OceanSpacing.gap) {
+                                saveButton
+                                Button(action: closePane) { Image(systemName: "xmark") }
+                                    .buttonStyle(.oceanIcon)
+                                    .accessibilityLabel("Close")
+                            }
+                        } else {
+                            saveButton
+                        }
                     }
                     titleSection
                     bodySection
@@ -106,10 +118,22 @@ struct NodeEditSheet: View {
                 .padding(.top, OceanSpacing.gap)
                 .padding(.bottom, OceanSpacing.section)
             }
+            .paneEdges()
             .background(OceanBackground())
             .toolbar(.hidden, for: .navigationBar)
         }
         .onAppear(perform: loadDrafts)
+    }
+
+    private var saveButton: some View {
+        Button("Save", action: save)
+            .buttonStyle(.oceanPrimary)
+    }
+
+    /// Done here: closes the half it stands in beside a split page, or
+    /// dismisses the sheet.
+    private func leave() {
+        if let closePane { closePane() } else { dismiss() }
     }
 
     // MARK: Sections
@@ -439,7 +463,7 @@ struct NodeEditSheet: View {
         let themesChanged = themesDraft != originalThemes
         let linkChanged = normalizedLinkDraft != originalLink
         guard titleChanged || bodyChanged || noteChanged || themesChanged || linkChanged || imageChanged else {
-            dismiss()
+            leave()
             return
         }
 
@@ -497,6 +521,6 @@ struct NodeEditSheet: View {
         if imageChanged, node.hasImages {
             PictureEnrichmentService.shared.enrich(nodeID: node.id, context: context, ai: ai)
         }
-        dismiss()
+        leave()
     }
 }

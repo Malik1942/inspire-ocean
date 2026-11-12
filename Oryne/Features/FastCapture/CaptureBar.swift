@@ -129,13 +129,44 @@ struct CaptureBarPlacement: ViewModifier {
         content.overlay(alignment: .bottom) {
             CaptureBar()
                 .environment(control)
+                .modifier(CaptureBarColumn(control: control))
                 .padding(.horizontal, OceanSpacing.gutter)
-                .padding(.bottom, FastCaptureLayout.tabBarClearance)
+                .padding(.bottom, FastCaptureLayout.restClearance(control.tabBarEdge))
                 .ignoresSafeArea(.keyboard)
                 .opacity(show ? 1 : 0)
                 .allowsHitTesting(show || keepsTouch)
                 .animation(OceanMotion.quick, value: show)
         }
+    }
+}
+
+/// How wide the capture bar, its composer and its toast stand: the page's
+/// own column. On a big screen that is Tide's reading column, or Tide's
+/// trailing half once it splits (the depth's, beside the hero); on a phone
+/// the column is the page and nothing changes. A width rather than a
+/// branch, so an open composer keeps its field, and its focus, when the
+/// page turns.
+///
+/// It stands inside the page's gutters, so the trailing half begins half
+/// the page in, past the gutter: half the width it is given plus a gutter.
+struct CaptureBarColumn: ViewModifier {
+    let control: CaptureControl
+    /// Off for a composer in a sheet, which keeps the sheet's width.
+    var applies = true
+    @Environment(\.isBigScreen) private var isBigScreen
+    @ScaledMetric(relativeTo: .body) private var readable = OceanSize.readableWidth
+    /// The width inside the gutters, read off the full-width frame, which
+    /// the inset never changes.
+    @State private var width: CGFloat = 0
+
+    private var halved: Bool { applies && control.tideSplits }
+
+    func body(content: Content) -> some View {
+        content
+            .frame(maxWidth: applies && isBigScreen && !halved ? readable : .infinity)
+            .padding(.leading, halved ? width / 2 + OceanSpacing.gutter : 0)
+            .frame(maxWidth: .infinity)
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
     }
 }
 

@@ -30,6 +30,11 @@ struct ResurfacingPicture<Caption: View>: View {
     /// sizes, with an empty caption), so the bleed's scrim holds all the way
     /// down rather than fading after the words' first lines.
     var holdsScrim = false
+    /// The stage stands in Tide's left column (a big screen, turned): the
+    /// picture ends beside the depth, so it dissolves sideways into the
+    /// water there, as it does at its foot, rather than standing as a
+    /// photograph's edge.
+    var dissolvesTrailing = false
     @ViewBuilder let caption: Caption
 
     @State private var foot: PictureFoot.Reading?
@@ -51,8 +56,10 @@ struct ResurfacingPicture<Caption: View>: View {
         ZStack(alignment: .top) {
             bleed
                 .ignoresSafeArea(.container, edges: .horizontal)
+                .modifier(SidewaysDissolve(fade: sidewaysFade))
             bleedScrim
                 .ignoresSafeArea(.container, edges: .horizontal)
+                .modifier(SidewaysDissolve(fade: sidewaysFade))
             ZStack(alignment: .bottomLeading) {
                 picture
                     .mask {
@@ -63,12 +70,15 @@ struct ResurfacingPicture<Caption: View>: View {
                     // is cropped to this frame.
                     .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
                     .ignoresSafeArea(.container, edges: .horizontal)
+                    .modifier(SidewaysDissolve(fade: sidewaysFade))
                 // The status bar reads on any picture.
                 LinearGradient(colors: [OceanTheme.scrim, .clear], startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.18))
                     .allowsHitTesting(false)
                     .ignoresSafeArea(.container, edges: .horizontal)
+                    .modifier(SidewaysDissolve(fade: sidewaysFade))
                 captionScrim
                     .ignoresSafeArea(.container, edges: .horizontal)
+                    .modifier(SidewaysDissolve(fade: sidewaysFade))
                 caption
                     .oceanShadow(OceanShadow.text)
                     .oceanReadableColumn()
@@ -91,6 +101,14 @@ struct ResurfacingPicture<Caption: View>: View {
             guard !Task.isCancelled else { return }
             foot = reading
         }
+    }
+
+    /// How much of the picture's width dissolves sideways: its last two
+    /// gutters, the one it reaches past the column and as much again
+    /// inside, so the caption's words never stand on the fade's clear end.
+    private var sidewaysFade: CGFloat {
+        guard dissolvesTrailing, width > 0 else { return 0 }
+        return min(1, 2 * OceanSpacing.gutter / width)
     }
 
     /// What the foot's reading depends on, so a new picture, crop or
@@ -235,6 +253,23 @@ struct ResurfacingPicture<Caption: View>: View {
         let bleed = 0.64 * gray // art-directed: the bleed's own darkening
         guard bleed > 0.26 else { return 0 } // art-directed: the bleed scrim
         return min(1 - 0.26 / bleed, 0.65) // art-directed: the bleed scrim
+    }
+}
+
+/// One of the stage's picture layers dissolving sideways: clear over its
+/// last `fade` of width, whole before it. Nothing at all when `fade` is 0.
+private struct SidewaysDissolve: ViewModifier {
+    let fade: CGFloat
+
+    func body(content: Content) -> some View {
+        if fade > 0 {
+            content.mask {
+                LinearGradient(stops: [.init(color: .black, location: 1 - fade), .init(color: .clear, location: 1)],
+                               startPoint: .leading, endPoint: .trailing)
+            }
+        } else {
+            content
+        }
     }
 }
 

@@ -50,6 +50,23 @@ final class CaptureControl {
     /// and gap; 0 when it is closed. The page keeps a bar this tall so the
     /// system's scroll edge effect runs behind the glass.
     var composerHeight: CGFloat = 0
+    /// Which edge of the window the system put the tab bar on, read off
+    /// the tabs' safe area. The foot until a tab has laid out.
+    enum TabBarEdge {
+        case foot
+        /// Upright beside the page: iPhone Duo's closed display.
+        case side
+        /// Anywhere else, such as along the top on iPad.
+        case elsewhere
+    }
+    var tabBarEdge: TabBarEdge = .foot
+    /// Tide stands in two halves (a big screen, turned): the capture bar
+    /// and its composer keep to the trailing half, the depth's, and leave
+    /// the leading one to today's thought.
+    var tideSplits = false
+    /// A thought or a current stands over Tide's trailing half on a split
+    /// iPhone Duo: the capture bar steps away, as it does under a sheet.
+    var paneOpen = false
     /// What the composer held when a tap in open water put it away. The
     /// bar shows its first line and its disc sends; tapping the bar brings
     /// it back to the field.

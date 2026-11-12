@@ -15,6 +15,8 @@ struct ClusterStreamView: View {
     let theme: String
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.closePane) private var closePane
+    @Environment(\.paneSide) private var paneSide
     @Environment(\.modelContext) private var context
     @Environment(AppState.self) private var appState
     @State private var showCapture = false
@@ -92,6 +94,11 @@ struct ClusterStreamView: View {
                 }
             }
             .tileList()
+            // In the trailing half beside a split page the toolbar column
+            // stands at the list's edge, and a list's margin merges with that
+            // room instead of adding to it: the gutter is kept from the
+            // column on purpose.
+            .safeAreaPadding(.trailing, paneSide == .trailing ? OceanSpacing.gutter : 0)
             .contentMargins(.bottom, OceanSpacing.section, for: .scrollContent)
             .thoughtRemovalToast(removals)
             .background(PageBackground(light: .soft))
@@ -116,7 +123,7 @@ struct ClusterStreamView: View {
                     if let currentRow { CurrentRegistry.rename(currentRow, to: newName, context: context) }
                 }
             }
-            .sheet(isPresented: $moving, onDismiss: { selecting = false; selected = [] }) {
+            .besideSheet(isPresented: $moving, onDismiss: { selecting = false; selected = [] }) {
                 MoveToCurrentSheet(nodes: selectedNodes)
             }
             }
@@ -127,12 +134,13 @@ struct ClusterStreamView: View {
         .presentationBackground(.clear)
         // A summary or a question opens in Ask: step out of the way.
         .onChange(of: appState.selectedTab) { _, tab in
-            if tab == .ask { dismiss() }
+            if tab == .ask { leave() }
         }
         // The one capture surface, opened into this current: the saved node
         // is anchored here (CaptureSession.release), so the live @Query drops
-        // it at the top of this stream on save. Sheet-over-sheet, fine on 17+.
-        .sheet(isPresented: $showCapture) {
+        // it at the top of this stream on save. Sheet-over-sheet, fine on 17+;
+        // beside a split page, the other half.
+        .besideSheet(isPresented: $showCapture) {
             FastCaptureSessionView(
                 request: FastCaptureRequest(
                     source: .inApp,
@@ -158,6 +166,12 @@ struct ClusterStreamView: View {
     /// It opens as every sheet does (OceanSheetHeader), under the system's
     /// grabber: the header leaves its own grabber's room clear, so the name
     /// lands where every sheet's does.
+    /// Leaves this stream: closes the half it stands in beside a split
+    /// page, or dismisses the sheet.
+    private func leave() {
+        if let closePane { closePane() } else { dismiss() }
+    }
+
     private var header: some View {
         VStack(alignment: .leading, spacing: OceanSpacing.inset) {
             OceanSheetHeader(drawsGrabber: false) {
@@ -172,12 +186,23 @@ struct ClusterStreamView: View {
                     .accessibilityHint("Renames this current.")
                 }
             } action: {
-                if !isAdrift, !selecting {
-                    Button { showCapture = true } label: {
-                        Image(systemName: "plus")
+                HStack(spacing: OceanSpacing.gap) {
+                    if !isAdrift, !selecting {
+                        Button { showCapture = true } label: {
+                            Image(systemName: "plus")
+                        }
+                        .buttonStyle(.oceanIcon)
+                        .accessibilityLabel("Add a thought")
                     }
-                    .buttonStyle(.oceanIcon)
-                    .accessibilityLabel("Add a thought")
+                    // Beside a split page there is no grabber to pull: the
+                    // half has a close of its own.
+                    if let closePane {
+                        Button(action: closePane) {
+                            Image(systemName: "xmark")
+                        }
+                        .buttonStyle(.oceanIcon)
+                        .accessibilityLabel("Close")
+                    }
                 }
             }
             if selecting {
@@ -191,7 +216,7 @@ struct ClusterStreamView: View {
             } else if members.count >= 2 {
                 Button {
                     let ids = members.map(\.id)
-                    dismiss()
+                    leave()
                     appState.summarize(ids, title: title)
                 } label: {
                     Label("Summarize", systemImage: "text.line.first.and.arrowtriangle.forward")
