@@ -4,9 +4,10 @@ import SwiftData
 
 /// The same held daily thought as Tide, as one card: its picture fills the
 /// card edge to edge, or, for a thought without one, Tide's warm Reading
-/// light does; the title and a line of its words stand at the card's foot,
-/// bottom left (Malik, 2026-11-12: the earlier header, picture tile, meta row
-/// and buttons were too dense, and the large size too big, so it is gone).
+/// light does; a small Resurfacing label sits top left, and the title and one
+/// line of its words stand at the card's foot, bottom left (Malik, 2026-11-12:
+/// the earlier header, picture tile, meta row and buttons were too dense, and
+/// the large size too big, so it is gone).
 /// Designed as the medium (4x2) card; the small slot wears the same card.
 /// Existing kind and node links preserve widgets already on the Home Screen.
 struct ResurfacingWidget: Widget {
@@ -159,9 +160,16 @@ struct ResurfacingView: View {
             // A Home Screen slot cannot grow, so its words stop at the largest
             // standard size; typeSize is read above the cap, so the card
             // still makes room at accessibility sizes.
-            foot(title: fragment.title, words: fragment.words, wordsAreOwn: fragment.wordsAreOwn,
-                 onPicture: fragment.picture != nil)
-                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+            VStack(alignment: .leading, spacing: 0) {
+                label
+                Spacer(minLength: OceanSpacing.gap)
+                foot(title: fragment.title, words: fragment.words, wordsAreOwn: fragment.wordsAreOwn,
+                     onPicture: fragment.picture != nil)
+            }
+            .padding(OceanSpacing.inset)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+            .accessibilityElement(children: .combine)
         }
     }
 
@@ -179,23 +187,36 @@ struct ResurfacingView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// The card's words at its foot, bottom left: the title, and under it as
-    /// many lines of the thought's words as the card holds. The words give
-    /// up their lines, then themselves, before the title loses one.
-    private func foot(title: String, words: String, wordsAreOwn: Bool, onPicture: Bool) -> some View {
-        ViewThatFits(in: .vertical) {
-            ForEach(Array(wordLines(onPicture: onPicture).reversed()), id: \.self) { lines in
-                stack(title: title, words: words, wordsAreOwn: wordsAreOwn, wordLines: lines)
-            }
-            stack(title: title, words: "", wordsAreOwn: wordsAreOwn, wordLines: 0)
-        }
-        .oceanShadow(OceanShadow.text, enabled: onPicture)
-        .padding(OceanSpacing.inset)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-        .accessibilityElement(children: .combine)
+    /// The word Resurfacing, small, in the stage label's italic serif, laid
+    /// over the card with an overlay blend, so it reads as a translucent mark
+    /// of the picture's or the light's own color rather than ink on top
+    /// (Malik, 2026-11-12). Kept to the small text sizes, a quiet mark beside
+    /// the title.
+    private var label: some View {
+        Text("Resurfacing")
+            .oceanText(OceanType.stageLabel)
+            .foregroundStyle(OceanTheme.stageInk)
+            .blendMode(.overlay) // art-directed: the translucent mark
+            .lineLimit(1)
+            // Outside the role, so the role reads the capped size.
+            .dynamicTypeSize(...DynamicTypeSize.small)
+            .widgetAccentable()
+            .accessibilityAddTraits(.isHeader)
     }
 
-    private func stack(title: String, words: String, wordsAreOwn: Bool, wordLines: Int) -> some View {
+    /// The card's words at its foot: the title, and under it one line of the
+    /// thought's words. The words give way before the title loses a line.
+    private func foot(title: String, words: String, wordsAreOwn: Bool, onPicture: Bool) -> some View {
+        ViewThatFits(in: .vertical) {
+            if !typeSize.isAccessibilitySize {
+                stack(title: title, words: words, wordsAreOwn: wordsAreOwn)
+            }
+            stack(title: title, words: "", wordsAreOwn: wordsAreOwn)
+        }
+        .oceanShadow(OceanShadow.text, enabled: onPicture)
+    }
+
+    private func stack(title: String, words: String, wordsAreOwn: Bool) -> some View {
         VStack(alignment: .leading, spacing: OceanSpacing.tight) {
             Text(title)
                 .oceanText(titleRole)
@@ -203,22 +224,14 @@ struct ResurfacingView: View {
                 .lineLimit(titleLines)
                 .minimumScaleFactor(0.9)
                 .fixedSize(horizontal: false, vertical: true)
-            if wordLines > 0, !words.isEmpty {
+            if !words.isEmpty {
                 Text(words)
                     .oceanText(wordsAreOwn ? OceanType.cardWords : OceanType.secondary)
                     .foregroundStyle(OceanTheme.stageWords)
-                    .lineLimit(wordLines)
+                    .lineLimit(1)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    /// How many lines of words the card offers before it drops them: a
-    /// picture keeps the card's words to its foot, the warm light leaves
-    /// room for more. None at accessibility sizes, where the title needs it.
-    private func wordLines(onPicture: Bool) -> ClosedRange<Int> {
-        if typeSize.isAccessibilitySize { return 1...1 }
-        return 1...(onPicture ? 1 : 2)
     }
 
     /// A thought's name at the stage's smallest step on the medium card;
