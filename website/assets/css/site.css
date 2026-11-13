@@ -325,16 +325,19 @@ html:lang(zh-Hans) .lead { font-weight: 400; }
 .phone__frame { display: block; width: 100%; height: auto; }
 .phone__screen {
   position: absolute;
-  /* The opening sits at 5.333% / 2.5%; the screen bleeds a third of a percent
-     past it on every side, so the frame's bezel always overlaps the seam. Its
-     corners are rounded a little tighter than the opening's 14.4% of the
-     frame's width, which keeps them filled under the frame's own curve. */
-  top: 2.17%;
-  left: 5%;
-  width: 90%;
-  height: 95.66%;
+  /* The screen fills the frame's whole black bezel, up to the silver rail's
+     inner edge (measured on phone-frame.webp: x 35 to 865, y 32 to 1806 of
+     900 x 1840), so no black ring shows between rail and screen. The box is a
+     touch shorter than the capture's aspect, so the cover trims under 1% off
+     its top and bottom. Its corners are a little tighter than the rail's
+     inner curve (17.4% of the frame's width), which keeps them filled under
+     the rail and inside the phone's silhouette. */
+  top: 1.74%;
+  left: 3.89%;
+  width: 92.22%;
+  height: 96.41%;
   object-fit: cover;
-  border-radius: calc(var(--w) * 0.11);
+  border-radius: calc(var(--w) * 0.165);
   background: #000;
 }
 .phone--small { --w: clamp(200px, 19vw, 240px); }
