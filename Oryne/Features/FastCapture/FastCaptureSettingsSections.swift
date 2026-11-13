@@ -1,5 +1,6 @@
 import SwiftUI
 import WatchConnectivity
+import WidgetKit
 
 /// Fast Capture's rows in the settings list. What an outside capture opens
 /// with, and the screenshot it brings, sit in the Capture section; the
@@ -21,6 +22,10 @@ struct FastCaptureOpensWithRows: View {
             }
         }
         .pickerStyle(.menu)
+        // The Quick Capture widget's small card shows this input's glyph.
+        .onChange(of: inputPreferenceRaw) {
+            WidgetCenter.shared.reloadTimelines(ofKind: FastCapturePreferences.widgetKind)
+        }
         Toggle("Auto Screenshot", isOn: $autoScreenshot)
             .accessibilityIdentifier("settings.autoScreenshot")
     }
