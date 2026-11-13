@@ -3,8 +3,7 @@ import WidgetKit
 
 /// Two capture actions, each a word with its symbol; where a narrow phone
 /// leaves a capsule no room for both, the symbol steps aside so the word is
-/// never cut. Ask belongs to the large reading widget's header, outside this
-/// capture row.
+/// never cut.
 struct OceanWidgetActions: View {
     var body: some View {
         GeometryReader { geometry in
