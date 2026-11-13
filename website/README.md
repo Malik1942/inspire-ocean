@@ -94,6 +94,10 @@ fact the water shows is also written on the page, and Reduce Motion (or
   launch (run `brctl download design/screenshot-seed` first). Open the Library once before
   capturing. Status bar 9:41, full battery, dark appearance; `simctl io … screenshot` (1206x2622),
   resized to 640 px, WebP q82. The iPhone 18 Pro and 17 Pro share one screen, so the frame fits.
+  `simctl` screenshots leave out the Dynamic Island (the simulator draws it only in its window, and
+  the profile's `sensor_bar_class_04.pdf` is empty), so each screen gets it composited back: a black
+  stadium at x 460.75 to 745.25, y 41.75 to 152.25 in the 1206x2622 capture, measured from the
+  simulator window's own render of the same frame (mean alpha error 0.004).
   - `tide.webp`: Tide at launch (`OCEAN_START_TAB=tide`), resurfacing "Golden hour on the walk
     home" (relaunch until Vision OCR reads it); clear `resurfacing.restedID` and
     `resurfacing.restedDay` first so Let it rest shows.
