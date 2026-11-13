@@ -139,19 +139,43 @@ struct LibraryView: View {
         }
     }
 
-    /// Today, the seven days before it, and everything earlier. A rolling
-    /// week, not a calendar one, so it is named the way Notes names it.
+    /// The last week day by day, then a section for each month, newest
+    /// first, as Photos lays out a library (Malik, 2026-11-12): Today,
+    /// Yesterday and the Previous 7 Days, named the way Notes names them,
+    /// count calendar days, so last night is Yesterday the next morning.
+    /// A month of this year wears its name alone, an older one its year
+    /// too, both in the system's own words for the reader's language.
     private func timeSections(_ nodes: [Node]) -> [(title: String, nodes: [Node])] {
         let cal = Calendar.current
-        var today: [Node] = [], week: [Node] = [], earlier: [Node] = []
+        let now = Date.now
+        let today = cal.startOfDay(for: now)
+        var sameDay: [Node] = [], dayBefore: [Node] = [], week: [Node] = []
+        var months: [Date: [Node]] = [:]
         for node in nodes {
-            if cal.isDateInToday(node.createdAt) { today.append(node) }
-            else if let days = cal.dateComponents([.day], from: node.createdAt, to: .now).day, days < 7 { week.append(node) }
-            else { earlier.append(node) }
+            let days = cal.dateComponents([.day], from: cal.startOfDay(for: node.createdAt), to: today).day ?? 0
+            switch days {
+            case ...0: sameDay.append(node)
+            case 1: dayBefore.append(node)
+            case 2...7: week.append(node)
+            default:
+                if let month = cal.dateInterval(of: .month, for: node.createdAt)?.start {
+                    months[month, default: []].append(node)
+                }
+            }
         }
-        return [(String(localized: "Today"), today),
-                (String(localized: "Previous 7 Days"), week),
-                (String(localized: "Earlier"), earlier)].filter { !$0.nodes.isEmpty }
+        let thisYear = cal.component(.year, from: now)
+        let recent: [(title: String, nodes: [Node])] = [
+            (String(localized: "Today"), sameDay),
+            (String(localized: "Yesterday"), dayBefore),
+            (String(localized: "Previous 7 Days"), week)
+        ]
+        let older: [(title: String, nodes: [Node])] = months.keys.sorted(by: >).map { month in
+            let title = cal.component(.year, from: month) == thisYear
+                ? month.formatted(.dateTime.month(.wide))
+                : month.formatted(.dateTime.month(.wide).year())
+            return (title, months[month] ?? [])
+        }
+        return (recent + older).filter { !$0.nodes.isEmpty }
     }
 
     var body: some View {
@@ -415,8 +439,8 @@ struct LibraryView: View {
                             .padding(.bottom, OceanSpacing.block)
                     }
                     if focusedAnchorID == nil {
-                        // Unfocused: the Today / Previous 7 Days / Earlier
-                        // sections, one masonry each.
+                        // Unfocused: Today, Previous 7 Days and a section
+                        // per month, one masonry each.
                         ForEach(Array(timeSections(shown).enumerated()), id: \.element.title) { index, section in
                             OceanSectionLabel(Text(section.title))
                                 .padding(.top, index == 0 ? 0 : OceanSpacing.group)
