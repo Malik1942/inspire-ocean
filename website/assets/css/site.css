@@ -177,7 +177,7 @@ h3 { font-size: 17px; line-height: 1.35; font-weight: 500; color: var(--foam); }
 html:lang(zh-Hans) em { font-style: normal; color: inherit; }
 
 .display, .headline, .panel__title, .prose__title, h3 { text-wrap: balance; }
-.lead, .moment, .features p, .card p, .thought__text, .prose p { text-wrap: pretty; }
+.lead, .prose p { text-wrap: pretty; }
 
 html:lang(zh-Hans) .display,
 html:lang(zh-Hans) .headline,
@@ -387,11 +387,6 @@ html:lang(zh-Hans) .hero .display { max-width: 13em; }
 @media (min-width: 900px) { .chapter__grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; } }
 .chapter__grid > * { min-width: 0; }
 .chapter__visual { display: flex; justify-content: center; }
-.chapter__visual--pair { gap: clamp(12px, 3vw, 24px); }
-.chapter__visual--pair .phone { --w: clamp(150px, 42vw, 240px); }
-.features { display: grid; gap: 22px; margin-top: 36px; }
-.features li { padding-left: 18px; border-left: 1px solid rgba(255, 255, 255, 0.12); }
-.features p { margin-top: 4px; font-size: 16px; font-weight: 300; }
 
 /* --------------------------------------------------------- release demo */
 
@@ -421,54 +416,17 @@ html:lang(zh-Hans) .hero .display { max-width: 13em; }
 .release__status { min-height: 1.6em; margin-top: 10px; font-size: 14px; color: var(--warm); }
 .release__note { font-size: 13px; color: var(--hint); }
 
-/* ------------------------------------------------------------- widgets */
-
-.widgets { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: center; gap: 16px; }
-.widget {
-  display: flex;
-  flex-direction: column;
-  padding: 16px;
-  border: 0.5px solid var(--hairline);
-  border-radius: 22px;
-  background: linear-gradient(180deg, var(--abyss), var(--deep) 55%, var(--mid));
-  box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.9);
-}
-.widget--small { width: 158px; height: 158px; }
-.widget--medium { width: 338px; max-width: 100%; height: 158px; }
-.widget__head { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 500; color: var(--warm); }
-.widget__head .i { font-size: 12px; }
-.widget__title { margin-top: auto; font-size: 15px; font-weight: 500; line-height: 1.3; color: var(--foam); }
-.widget--medium .widget__title { margin-top: 8px; font-size: 17px; }
-.widget__snippet {
-  display: -webkit-box;
-  margin-top: 4px;
-  overflow: hidden;
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--mist);
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-.widget__age { margin-top: 4px; font-size: 11px; color: var(--faint); }
-.widget--medium .widget__age { margin-top: auto; }
-
 /* ---------------------------------------------------------------- ask */
 
-.modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 36px; }
-.modes li { padding: 16px; border: 0.5px solid var(--hairline); border-radius: 16px; background: var(--glass); }
-.modes h3 { font-size: 15px; }
-.modes p { margin-top: 4px; font-size: 14px; line-height: 1.45; }
 .footnote { margin-top: 18px; font-size: 13px; color: var(--hint); }
 
 /* ------------------------------------------------------ grow and find */
 
-/* iPhone Duo: copy, the folded and open phones side by side, then three notes */
+/* iPhone Duo: copy, then the folded and open phones side by side */
 .duo__copy { max-width: 46rem; }
 .duo__note { margin-top: 14px; font-size: 15px; color: var(--mist); }
 .duo__visual { max-width: 1100px; margin: clamp(40px, 6vw, 72px) auto 0; }
 .duo__visual img { display: block; width: 100%; height: auto; }
-.duo__features { margin-top: clamp(28px, 5vw, 52px); }
-@media (min-width: 900px) { .duo__features { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; } }
 .grow__grid { display: grid; gap: 24px; }
 @media (min-width: 900px) { .grow__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .panel {
@@ -495,52 +453,6 @@ html:lang(zh-Hans) .hero .display { max-width: 13em; }
 }
 .panel p { max-width: 28em; }
 .panel .phone { margin-top: 28px; margin-bottom: -30%; }
-
-/* ----------------------------------------------------------- use cases */
-
-.tabs { margin-top: 40px; }
-.tabs__list { display: flex; gap: 8px; padding: 2px 2px 8px; overflow-x: auto; scrollbar-width: none; }
-.tabs__list::-webkit-scrollbar { display: none; }
-.tabs__tab {
-  flex: none;
-  height: 36px;
-  padding: 0 16px;
-  border: 0.5px solid rgba(255, 255, 255, 0.18);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--mist);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-}
-.tabs__tab:hover { color: var(--foam); }
-.tabs__tab[aria-selected="true"] { border-color: transparent; background: var(--accent); color: var(--abyss); }
-.tabs__panel { margin-top: 28px; }
-.tabs__panel + .tabs__panel { margin-top: 64px; }
-.tabs--ready .tabs__panel + .tabs__panel { margin-top: 28px; }
-.tabs__title { margin-bottom: 12px; font-size: 22px; }
-.moment { max-width: 30em; font-family: var(--font-display); font-size: clamp(21px, 2.2vw, 27px); line-height: 1.35; color: var(--foam); }
-.thoughts { display: grid; gap: 14px; margin-top: 28px; }
-@media (min-width: 720px) { .thoughts { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-.thought {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 16px;
-  border: 0.5px solid var(--hairline);
-  border-radius: 18px;
-  background: var(--glass);
-}
-.thought__image { height: 128px; margin: -4px -4px 6px; border-radius: 12px; }
-.thought__image--sunset { background: linear-gradient(180deg, #232447 0%, #5b3a6b 36%, #c9694a 70%, #f0ad68 100%); }
-.thought__image--dusk { background: linear-gradient(180deg, #e7b392 0%, #b88675 40%, #5c6072 78%, #3a3f4c 100%); }
-.thought__image--dumplings { background: radial-gradient(60% 50% at 50% 60%, #efe5d3 0%, #cbb89a 45%, #3a3129 100%); }
-.thought__title { font-size: 16px; font-weight: 500; line-height: 1.35; color: var(--foam); }
-.thought__text { font-size: 14px; line-height: 1.5; }
-.thought__source { font-size: 12px; color: var(--hint); }
-/* The app's card meta: the kind icon and a relative time, no tag pill. */
-.thought__meta { display: flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 4px; font-size: 12px; color: var(--hint); }
-.thought__meta .i { font-size: 14px; }
 
 /* ---------------------------------------------------------- comparison */
 

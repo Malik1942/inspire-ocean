@@ -1,7 +1,7 @@
 // Wires the page together: scroll position to choreography to the Ocean, the
-// sound toggles, the language choice, the use-case tabs, and the release
-// demo. The only module that reads the DOM broadly; everything it drives is
-// DOM-free or tested on its own.
+// sound toggles, the language choice, and the release demo. The only module
+// that reads the DOM broadly; everything it drives is DOM-free or tested on
+// its own.
 
 import { createLamps, energyFor, glowsFor, layout, ringsFor, smoothstep } from './choreo.js';
 import { createOcean } from './ocean.js';
@@ -196,54 +196,6 @@ function setupRelease(ocean, sound) {
   });
 }
 
-/** WAI-ARIA tabs, built from panels that read fine as plain sections without JS. */
-function setupTabs() {
-  for (const root of document.querySelectorAll('[data-tabs]')) {
-    const list = root.querySelector('[data-tab-list]');
-    const panels = [...root.querySelectorAll('[data-tab-panel]')];
-    if (!list || panels.length < 2) continue;
-    list.setAttribute('role', 'tablist');
-    if (list.dataset.label) list.setAttribute('aria-label', list.dataset.label);
-    const tabs = panels.map((panel) => {
-      const title = panel.querySelector('[data-tab-title]');
-      const tab = document.createElement('button');
-      tab.type = 'button';
-      tab.className = 'tabs__tab';
-      tab.id = `${panel.id}-tab`;
-      tab.setAttribute('role', 'tab');
-      tab.setAttribute('aria-controls', panel.id);
-      tab.textContent = title.textContent;
-      title.classList.add('vh');
-      panel.setAttribute('role', 'tabpanel');
-      panel.setAttribute('aria-labelledby', tab.id);
-      panel.tabIndex = 0;
-      list.append(tab);
-      return tab;
-    });
-    const select = (index, focus) => {
-      tabs.forEach((tab, i) => {
-        const selected = i === index;
-        tab.setAttribute('aria-selected', String(selected));
-        tab.tabIndex = selected ? 0 : -1;
-        panels[i].hidden = !selected;
-      });
-      if (focus) tabs[index].focus();
-    };
-    tabs.forEach((tab, i) => {
-      tab.addEventListener('click', () => select(i, false));
-      tab.addEventListener('keydown', (event) => {
-        const last = tabs.length - 1;
-        const target = { ArrowRight: i === last ? 0 : i + 1, ArrowLeft: i === 0 ? last : i - 1, Home: 0, End: last }[event.key];
-        if (target === undefined) return;
-        event.preventDefault();
-        select(target, true);
-      });
-    });
-    root.classList.add('tabs--ready');
-    select(0, false);
-  }
-}
-
 function setupLanguage() {
   for (const link of document.querySelectorAll('[data-lang-switch]')) {
     link.addEventListener('click', () => store.set('oryne.lang', link.dataset.langSwitch));
@@ -265,7 +217,6 @@ const sound = setupSound();
 const water = setupOcean(sound);
 const vignettes = mountVignettes(document.querySelectorAll('canvas[data-vignette]'), motionPolicy);
 setupRelease(water?.ocean, sound);
-setupTabs();
 setupLanguage();
 setupPerf(water?.ocean);
 
