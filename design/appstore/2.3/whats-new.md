@@ -1,10 +1,10 @@
 # Oryne 2.3: App Store text
 
-Sources: PR #41 (iPhone Duo and big screens) and the Library's month sections. The app has only an English (U.S.) localization, so there is no Chinese What's New. App Store Connect rejects ✕ and other dingbats in this field; bullets are fine.
+Sources: PR #41 (iPhone Duo and big screens), the Library's month sections, and the widgets (PRs #46, #47, #48), added after 2.3 was first submitted and withdrawn on 2026-11-12. The app has only an English (U.S.) localization, so there is no Chinese What's New. App Store Connect rejects ✕ and other dingbats in this field; bullets are fine.
 
 ## What's New in This Version
 
-Oryne 2.3. Made for iPhone Duo, with more room on iPad.
+Oryne 2.3. Made for iPhone Duo, with more room on iPad, and new widgets.
 
 • Open iPhone Duo and Tide stands in two halves: the thought that came back on one side, what just drifted in on the other.
 • Two screens, one Ocean. A thought, a current, a new branch or an edit opens in the other half, so the page you came from stays in view.
@@ -12,6 +12,8 @@ Oryne 2.3. Made for iPhone Duo, with more room on iPad.
 • On iPad and iPhone Duo, the Library spreads into more columns, and your currents become cards.
 • On big screens the capture bar and Ask keep to a comfortable reading width.
 • The Library now groups your thoughts by month, after Today, Yesterday and the Previous 7 Days, the way Photos does.
+• New widgets. Resurfacing is one card: today's thought fills it with its picture, or stands in Tide's warm light. It now comes in small and medium.
+• Quick Capture brings the capture bar to your Home Screen: tap the question to type, or the ring to whisper. The small one says what it opens, Whisper a thought or Type a thought.
 
 ## Promotional Text (170 characters at most; can change without a new version)
 
