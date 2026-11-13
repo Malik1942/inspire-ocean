@@ -425,6 +425,40 @@
           }
         }
       }
+    },
+    "Whisper a thought": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Whisper a thought"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "说一段语音"
+          }
+        }
+      }
+    },
+    "Type a thought": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type a thought"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "写一条灵感"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

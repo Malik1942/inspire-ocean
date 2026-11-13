@@ -7,7 +7,9 @@ import SwiftUI
 /// does for a thought without a picture, and name themselves in New York.
 /// Medium carries the capture bar as it stands on Tide: the question opens
 /// the keyboard, the ring's disc whispers. Small is one tap into the
-/// preferred input, shown by its glyph in the same disc.
+/// preferred input, so it names that input ("Whisper a thought" or "Type a
+/// thought") and shows its glyph in the same disc, top right: a small widget
+/// has only the one tap, and it should say what the tap does.
 struct QuickCaptureWidget: Widget {
     let kind = FastCapturePreferences.widgetKind
 
@@ -93,23 +95,32 @@ struct QuickCaptureView: View {
         }
     }
 
-    /// The disc top left, the name at the foot: the whole card is the tap.
+    /// The disc top right, what the tap does at the foot, bottom left: the
+    /// whole card is the tap.
     private var small: some View {
         VStack(alignment: .leading, spacing: 0) {
-            CaptureDisc(symbol: entry.input.symbol)
+            HStack {
+                Spacer(minLength: 0)
+                CaptureDisc(symbol: entry.input.symbol)
+            }
             Spacer(minLength: OceanSpacing.gap)
-            title
+            title(smallTitle)
                 .lineLimit(2)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Catch a thought")
+        .accessibilityLabel(smallTitle)
+    }
+
+    /// The one tap's action, in the preferred input.
+    private var smallTitle: LocalizedStringKey {
+        entry.input == .voiceFirst ? "Whisper a thought" : "Type a thought"
     }
 
     /// The name top left, the capture bar at the foot.
     private var medium: some View {
         VStack(alignment: .leading, spacing: 0) {
-            title
+            title("Catch a thought")
                 .lineLimit(1)
             Spacer(minLength: OceanSpacing.gap)
             CaptureBarCopy()
@@ -117,8 +128,8 @@ struct QuickCaptureView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    private var title: some View {
-        Text("Catch a thought")
+    private func title(_ words: LocalizedStringKey) -> some View {
+        Text(words)
             .oceanText(OceanType.thoughtTitleLongest)
             .foregroundStyle(OceanTheme.stageInk)
             .minimumScaleFactor(0.9)
