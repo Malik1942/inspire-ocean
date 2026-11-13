@@ -408,6 +408,23 @@
           }
         }
       }
+    },
+    "What are you noticing?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What are you noticing?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你注意到了什么？"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

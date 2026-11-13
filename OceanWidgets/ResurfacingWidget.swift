@@ -4,8 +4,9 @@ import SwiftData
 
 /// The same held daily thought as Tide, as one card: its picture fills the
 /// card edge to edge, or, for a thought without one, Tide's warm Reading
-/// light does; a small Resurfacing label sits top left, and the title and one
-/// line of its words stand at the card's foot, bottom left (Malik, 2026-11-12:
+/// light does, with a small Resurfacing label top left (on a picture it read
+/// poorly, so the picture card goes without); the title and one line of its
+/// words stand at the card's foot, bottom left (Malik, 2026-11-12:
 /// the earlier header, picture tile, meta row and buttons were too dense, and
 /// the large size too big, so it is gone).
 /// Designed as the medium (4x2) card; the small slot wears the same card.
@@ -161,7 +162,9 @@ struct ResurfacingView: View {
             // standard size; typeSize is read above the cap, so the card
             // still makes room at accessibility sizes.
             VStack(alignment: .leading, spacing: 0) {
-                label
+                if fragment.picture == nil {
+                    label
+                }
                 Spacer(minLength: OceanSpacing.gap)
                 foot(title: fragment.title, words: fragment.words, wordsAreOwn: fragment.wordsAreOwn,
                      onPicture: fragment.picture != nil)
@@ -188,9 +191,9 @@ struct ResurfacingView: View {
     }
 
     /// The word Resurfacing, small, in the stage label's italic serif, laid
-    /// over the card with an overlay blend, so it reads as a translucent mark
-    /// of the picture's or the light's own color rather than ink on top
-    /// (Malik, 2026-11-12). Kept to the small text sizes, a quiet mark beside
+    /// over the warm light with an overlay blend, so it reads as a
+    /// translucent mark of the light's own color rather than ink on top
+    /// (Malik, 2026-11-12). Kept to the small text sizes, a quiet mark above
     /// the title.
     private var label: some View {
         Text("Resurfacing")

@@ -123,6 +123,11 @@ enum FastCapturePreferenceKeys {
 enum FastCapturePreferences {
     static let defaults: UserDefaults = UserDefaults(suiteName: Persistence.appGroupID) ?? .standard
 
+    /// The Quick Capture widget's kind. The app reloads it when the input
+    /// preference changes, since the small card shows that input's glyph;
+    /// placed widgets are keyed by it, so it never changes.
+    static let widgetKind = "com.inspireocean.app.widgets.quickcapture"
+
     static var trigger: FastCaptureTrigger {
         get {
             let raw = defaults.string(forKey: FastCapturePreferenceKeys.trigger)
