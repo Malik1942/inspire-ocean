@@ -88,26 +88,35 @@ fact the water shows is also written on the page, and Reduce Motion (or
   down to 27 KB. Its screen opening is inset 5.333% at the sides and 2.5% top and
   bottom, and its aspect matches the screens exactly, so `.phone__screen` sits in the
   opening without cropping. Measure the opening again if the file is ever replaced.
-- Screens (2026-10-19, the phone-refocus app): Debug build on a throwaway iPhone 17 Pro
-  simulator made for the purpose (`simctl create`), never one with real data:
-  `SIMCTL_CHILD_OCEAN_SCREENSHOT_SEED=1` deletes every thought and seeds ten on each launch.
-  Open the Library once before capturing, so its one-time understanding pass has run and
-  later re-seeds keep their currents. Status bar 9:41, full battery, dark appearance;
-  `simctl io … screenshot`, resized to 640 px, WebP q82.
-  - `tide.webp`: Tide at launch (`OCEAN_START_TAB=tide`), resurfacing "Sunset gradient
-    study"; clear `resurfacing.restedID` and `resurfacing.restedDay` in the App Group plist
-    first so Let it rest shows.
-  - `capture.webp`: Tide, the capture bar tapped and a line typed.
-  - `fast-capture.webp`: `simctl openurl … oryne://capture/whisper`, the take Action Button,
-    widget and Control Center start. The simulator hears no speech, so it shows "Words will
-    follow." instead of words on the water.
-  - `current.webp`: All currents › Light And Color, the sheet pulled to full height.
-  - `ask.webp`: Summarize on that current.
-  - `detail.webp`: the thought page of "Warm to cool, not a filter", short enough to show
-    Grow a branch.
-  - `library.webp`: the Library sorted by Related.
-  - `widget.webp` (2026-09) is the Home Screen with the medium Quick Capture widget, added
-    through the widget gallery (Edit › Add Widget › Oryne); the widgets did not change.
+- Screens (2026-11-12, the 2.1 identity build of main at e18ded2): Debug build on a throwaway
+  iPhone 18 Pro simulator (iOS 27.2, `simctl create`), never one with real data:
+  `SIMCTL_CHILD_OCEAN_SCREENSHOT_SEED=1` deletes every thought and seeds the screenshot set on each
+  launch (run `brctl download design/screenshot-seed` first). Open the Library once before
+  capturing. Status bar 9:41, full battery, dark appearance; `simctl io … screenshot` (1206x2622),
+  resized to 640 px, WebP q82. The iPhone 18 Pro and 17 Pro share one screen, so the frame fits.
+  `simctl` screenshots leave out the Dynamic Island (the simulator draws it only in its window, and
+  the profile's `sensor_bar_class_04.pdf` is empty), so each screen gets it composited back: a black
+  stadium at x 460.75 to 745.25, y 41.75 to 152.25 in the 1206x2622 capture, measured from the
+  simulator window's own render of the same frame (mean alpha error 0.004).
+  - `tide.webp`: Tide at launch (`OCEAN_START_TAB=tide`), resurfacing "Golden hour on the walk
+    home" (relaunch until Vision OCR reads it); clear `resurfacing.restedID` and
+    `resurfacing.restedDay` first so Let it rest shows.
+  - `capture.webp`: Tide, the capture bar tapped and "The light on the ferry railings, gold for a
+    minute and then gone" typed.
+  - `fast-capture.webp`: `simctl openurl … oryne://capture/whisper`. The simulator hears no speech,
+    so it shows "Words will follow."
+  - `current.webp`: Library › currents view › Light and Color, the sheet pulled to full height.
+  - `ask.webp`: Summarize on that current. iOS 27.2 simulators have no Apple Intelligence and show a
+    fixed reading, so this one is from an iOS 26.5 iPhone 17 Pro simulator (same screen), where the
+    on-device model answers.
+  - `detail.webp`: the thought page of "Warm to cool, not a filter", showing Grow a branch.
+  - `library.webp`: the Library in its grid view.
+  - `widget.webp` (2026-09) is the Home Screen with the medium Quick Capture widget; the widgets did
+    not change.
+- iPhone Duo: `assets/img/duo.webp`, the folded and the open Duo side by side on transparency,
+  rendered from Duo simulator captures (Tide folded, a thought open beside the list) in the shapes of
+  Apple's own DeviceKit chrome for the Duo, with the device's shadow kept as alpha so the water shows
+  through. 2200x1088, WebP q86.
 - Social image: `tools/websnap.swift`, a WKWebView snapshot, because only WebKit renders
   New York (`swiftc -O tools/websnap.swift -o websnap`). The stilled hero at 1200×630 with
   the bar, lead and Listen button hidden, the headline at 58px and the hero 30px from the
