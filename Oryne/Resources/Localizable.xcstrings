@@ -4998,6 +4998,16 @@
           }
         }
       }
+    },
+    "Yesterday" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "昨天"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

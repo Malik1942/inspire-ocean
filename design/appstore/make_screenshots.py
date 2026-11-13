@@ -18,6 +18,13 @@ hairline, at 2064x2752 (the 13-inch size App Store Connect asks for). There is
 no iPad frame to put them in, and the watch shot is left out: the watch pairs
 only with iPhone.
 
+usage: python3 design/appstore/make_screenshots.py --duo <duo-screens-dir> <out-dir>
+makes the iPhone Duo set: captures of the inner display turned (2853x2007),
+where the page stands in two halves, each a flat rounded display like the
+iPad's, at 2853x2007 (the inner display's landscape size App Store Connect
+takes). Its screens are tide, currents, library and branch, with the
+captions of the phone shots they match.
+
 usage: python3 design/appstore/make_screenshots.py --hero <out.png>
 makes the universal creative asset (5244x2950) that App Store Connect takes for
 both the product page header and the search results: the website's hero, the
@@ -70,6 +77,20 @@ IPAD_WIDTH = 1500                 # the display, leaving the caption room to bre
 IPAD_TOP = 160
 IPAD_RADIUS = 0.035               # iPad Pro's display corner, as a share of its width
 IPAD_CAPTION_SIZE = 132
+
+# iPhone Duo's inner display turned: the two halves are the point, so each
+# shot opens something beside the page.
+DUO_SIZE = (2853, 2007)
+DUO_WIDTH = 2100
+DUO_TOP = 120
+DUO_RADIUS = 0.03
+DUO_CAPTION_SIZE = 116
+DUO_SHOTS = [
+    ("tide", "Catch ideas before", "they drift away."),
+    ("currents", "Your ideas", "organize themselves."),
+    ("library", "Everything, in order,", "when you want it."),
+    ("branch", "Grow an idea without", "losing the original."),
+]
 
 HERO_SIZE = (5244, 2950)
 HERO_SHOT = ROOT / "design/appstore/2.2/01-tide.png"
@@ -170,31 +191,37 @@ def wrist(screen_path: Path, line1: str, line2: str) -> Image.Image:
 def tablet(screen_path: Path, line1: str, line2: str) -> Image.Image:
     """The iPad's screen as a flat display with the watch shot's hairline,
     and the two-line caption centered in the room beneath it."""
-    canvas = Image.new("RGB", IPAD_SIZE, BACKGROUND)
+    return flat(screen_path, line1, line2, IPAD_SIZE, IPAD_WIDTH, IPAD_TOP, IPAD_RADIUS, IPAD_CAPTION_SIZE)
+
+
+def flat(screen_path: Path, line1: str, line2: str, size: tuple, width: int, top: int,
+         corner: float, caption_size: int) -> Image.Image:
+    """A screen as a flat rounded display, `width` wide and `top` down a
+    canvas of `size`, with the caption centered in the room beneath it."""
+    canvas = Image.new("RGB", size, BACKGROUND)
     screen = Image.open(screen_path).convert("RGB")
-    width = IPAD_WIDTH
     height = round(screen.height * width / screen.width)
     display = screen.resize((width, height), Image.LANCZOS)
-    radius = round(width * IPAD_RADIUS) * 4
+    radius = round(width * corner) * 4
     mask = Image.new("L", (width * 4, height * 4), 0)
     ImageDraw.Draw(mask).rounded_rectangle((0, 0, width * 4 - 1, height * 4 - 1), radius=radius, fill=255)
-    left = (IPAD_SIZE[0] - width) // 2
-    canvas.paste(display, (left, IPAD_TOP), mask.resize((width, height), Image.LANCZOS))
+    left = (size[0] - width) // 2
+    canvas.paste(display, (left, top), mask.resize((width, height), Image.LANCZOS))
     edge = Image.new("L", (width * 4, height * 4), 0)
     ImageDraw.Draw(edge).rounded_rectangle(
         (0, 0, width * 4 - 1, height * 4 - 1), radius=radius, outline=255, width=16)
-    canvas.paste(Image.new("RGB", (width, height), WATCH_EDGE), (left, IPAD_TOP),
+    canvas.paste(Image.new("RGB", (width, height), WATCH_EDGE), (left, top),
                  edge.resize((width, height), Image.LANCZOS))
 
     draw = ImageDraw.Draw(canvas)
-    regular, italic = new_york(False, IPAD_CAPTION_SIZE), new_york(True, IPAD_CAPTION_SIZE)
-    block_top = IPAD_TOP + height
-    space = IPAD_SIZE[1] - block_top
-    line_height = round(IPAD_CAPTION_SIZE * LINE_GAP)
+    regular, italic = new_york(False, caption_size), new_york(True, caption_size)
+    block_top = top + height
+    space = size[1] - block_top
+    line_height = round(caption_size * LINE_GAP)
     y = block_top + (space - 2 * line_height) // 2
     for text, font, color in ((line1, regular, FOAM), (line2, italic, ITALIC)):
         text_width = draw.textlength(text, font=font)
-        draw.text(((IPAD_SIZE[0] - text_width) / 2, y), text, font=font, fill=color)
+        draw.text(((size[0] - text_width) / 2, y), text, font=font, fill=color)
         y += line_height
     return canvas
 
@@ -238,6 +265,17 @@ def main() -> None:
         out.mkdir(parents=True, exist_ok=True)
         for index, (name, line1, line2) in enumerate(SHOTS, 1):
             image = tablet(screens / f"{name}.png", line1, line2)
+            target = out / f"{index:02d}-{name}.png"
+            image.save(target, optimize=True)
+            print(target.name, image.size)
+        return
+
+    if sys.argv[1] == "--duo":
+        screens, out = Path(sys.argv[2]), Path(sys.argv[3])
+        out.mkdir(parents=True, exist_ok=True)
+        for index, (name, line1, line2) in enumerate(DUO_SHOTS, 1):
+            image = flat(screens / f"{name}.png", line1, line2,
+                         DUO_SIZE, DUO_WIDTH, DUO_TOP, DUO_RADIUS, DUO_CAPTION_SIZE)
             target = out / f"{index:02d}-{name}.png"
             image.save(target, optimize=True)
             print(target.name, image.size)
