@@ -462,6 +462,13 @@ html:lang(zh-Hans) .hero .display { max-width: 13em; }
 
 /* ------------------------------------------------------ grow and find */
 
+/* iPhone Duo: copy, the folded and open phones side by side, then three notes */
+.duo__copy { max-width: 46rem; }
+.duo__note { margin-top: 14px; font-size: 15px; color: var(--mist); }
+.duo__visual { max-width: 1100px; margin: clamp(40px, 6vw, 72px) auto 0; }
+.duo__visual img { display: block; width: 100%; height: auto; }
+.duo__features { margin-top: clamp(28px, 5vw, 52px); }
+@media (min-width: 900px) { .duo__features { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; } }
 .grow__grid { display: grid; gap: 24px; }
 @media (min-width: 900px) { .grow__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .panel {
