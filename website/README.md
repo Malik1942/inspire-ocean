@@ -112,7 +112,7 @@ fact the water shows is also written on the page, and Reduce Motion (or
   - `detail.webp`: the thought page of "Warm to cool, not a filter", showing Grow a branch.
   - `library.webp`: the Library in its grid view.
   - `widget.webp` (2026-11-12): the Home Screen with Oryne's three cards, added from the widget
-    gallery (Edit › Add Widget, search "Oryne"): Quick Capture medium and small (one card each, the ring top right), and the Resurfacing
+    gallery (Edit › Add Widget, search "Oryne"): Quick Capture medium and small, and the Resurfacing
     card while Tide resurfaced "Golden hour on the walk home".
 - iPhone Duo: `assets/img/duo.webp`, the folded and the open Duo side by side on transparency,
   rendered from Duo simulator captures (Tide folded, a thought open beside the list) in the shapes of
