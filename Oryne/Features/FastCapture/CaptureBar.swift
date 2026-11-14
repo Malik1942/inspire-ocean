@@ -135,6 +135,11 @@ struct CaptureBarPlacement: ViewModifier {
                 .ignoresSafeArea(.keyboard)
                 .opacity(show ? 1 : 0)
                 .allowsHitTesting(show || keepsTouch)
+                // Invisible is not gone: at opacity 0 the bar's button and
+                // disc stay in the accessibility tree, so on Ask and the
+                // Library VoiceOver reached a "Capture a thought" nobody
+                // can see, under Ask's own bar. Out with its touches.
+                .accessibilityHidden(!(show || keepsTouch))
                 .animation(OceanMotion.quick, value: show)
         }
     }
